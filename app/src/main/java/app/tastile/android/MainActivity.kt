@@ -8,15 +8,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.navigation.TastileNavGraph
+import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.theme.TastileTheme
 import dagger.hilt.android.AndroidEntryPoint
-import io.github.jan.supabase.SupabaseClient
-
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import io.github.jan.supabase.auth.handleDeeplinks
 import kotlinx.coroutines.launch
+import io.github.jan.supabase.SupabaseClient
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -24,6 +28,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var supabaseClient: SupabaseClient
+
+    @Inject
+    lateinit var authRepository: AuthRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,12 +40,15 @@ class MainActivity : ComponentActivity() {
         
         enableEdgeToEdge()
         setContent {
-            TastileTheme {
+            val dashboardViewModel: DashboardViewModel = hiltViewModel()
+            val themeMode by dashboardViewModel.themeMode.collectAsStateWithLifecycle()
+
+            TastileTheme(themeMode = themeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TastileNavGraph()
+                    TastileNavGraph(dashboardViewModel = dashboardViewModel)
                 }
             }
         }
@@ -46,12 +56,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleDeepLink(intent)
     }
 
     private fun handleDeepLink(intent: Intent?) {
-        // TODO: Implement deep link handling for OAuth
-        // Note: handleDeeplinks API changed in Supabase 3.x
-        // For now, manual session exchange via auth.exchangeCodeForSession() is required
+        if (intent?.data == null) return
+        lifecycleScope.launch {
+            runCatching {
+                val handled = authRepository.handleDeepLink(intent)
+                if (!handled) {
+                    supabaseClient.handleDeeplinks(intent)
+                }
+            }.onFailure {
+                it.printStackTrace()
+            }
+        }
     }
 }

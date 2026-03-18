@@ -7,6 +7,7 @@ import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,8 +26,7 @@ class TileRepository @Inject constructor(
                     eq("user_id", userId)
                     exact("deleted_at", null)
                 }
-                order("updated_at", Order.DESCENDING)
-                limit(20)
+                order("created_at", Order.DESCENDING)
             }
             .decodeList<Tile>()
     }
@@ -35,9 +35,11 @@ class TileRepository @Inject constructor(
         val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
         val tile = Tile(
             userId = userId,
+            localTileId = UUID.randomUUID().toString(),
             title = title,
             lifecycle = "Ready",
-            updatedAt = now
+            localCreatedAt = now,
+            localUpdatedAt = now
         )
         
         return client.from(TABLE_TILES)

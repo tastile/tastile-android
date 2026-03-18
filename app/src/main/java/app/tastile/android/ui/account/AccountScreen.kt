@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -135,7 +135,7 @@ fun AccountScreen(
                             onClick = { viewModel.signOut(onSignOut) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.ExitToApp, contentDescription = null)
+                            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Sign Out")
                         }

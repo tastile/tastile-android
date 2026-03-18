@@ -21,12 +21,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             
-            <!-- Deep link for OAuth callback -->
-            <intent-filter android:autoVerify="true">
+            <!-- Deep link for OAuth callback (custom scheme) -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="tastile" android:host="auth" android:pathPrefix="/callback" />
+            </intent-filter>
+
+            <!-- Fallback deep link in case Supabase redirects to site URL -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tastile.app" />
             </intent-filter>
         </activity>
     </application>
