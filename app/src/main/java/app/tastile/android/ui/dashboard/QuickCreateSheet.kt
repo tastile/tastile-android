@@ -9,13 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -73,6 +74,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.max
 
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun QuickCreateSheet(
     viewModel: DashboardViewModel,
@@ -695,7 +697,7 @@ private fun DateTimeField(
                 )
             )
             IconButton(onClick = { showDatePicker = true }) {
-                Icon(Icons.Default.CalendarMonth, contentDescription = if (locale == AppLocale.JA) "日付選択" else "Select date")
+                Icon(Icons.Default.DateRange, contentDescription = if (locale == AppLocale.JA) "日付選択" else "Select date")
             }
         }
         if (timeEditable) {
