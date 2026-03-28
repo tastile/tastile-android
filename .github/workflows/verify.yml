@@ -26,5 +26,8 @@ jobs:
           java-version: "21"
           cache: gradle
 
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x ./gradlew
+
       - name: Verify JVM test suite
         run: ./gradlew testDebugUnitTest
