@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.core.content.getSystemService
 import app.tastile.android.core.CoreBridgeError
@@ -11,6 +12,8 @@ import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.data.repository.AuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.datetime.Clock
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,18 +51,15 @@ class ExecutionAlarmScheduler @Inject constructor(
 
     fun cancelAll() {
         prefs.getStringSet(KEY_SCHEDULED_ALARMS, emptySet()).orEmpty().forEach { alarmId ->
-            alarmManager.cancel(buildPendingIntent(alarmId, createIntentPayload(alarmId, AlarmTriggerType.FIXED_START, "", "")))
+            alarmManager.cancel(buildPendingIntent(createIntentPayload(alarmId, AlarmTriggerType.FIXED_START, "", "")))
         }
         prefs.edit().remove(KEY_SCHEDULED_ALARMS).apply()
     }
 
     private fun schedule(spec: ScheduledAlarmSpec) {
-        val pendingIntent = buildPendingIntent(
-            spec.id,
-            createIntentPayload(spec.id, spec.type, spec.tileId, spec.tileTitle)
-        )
+        val pendingIntent = buildPendingIntent(createIntentPayload(spec.id, spec.type, spec.tileId, spec.tileTitle))
         val triggerAtMillis = spec.triggerAt.toEpochMilliseconds()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
+        if (shouldUseExactAlarm(Build.VERSION.SDK_INT, alarmManager.canScheduleExactAlarms())) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         } else {
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
@@ -69,6 +69,7 @@ class ExecutionAlarmScheduler @Inject constructor(
     private fun createIntentPayload(alarmId: String, type: AlarmTriggerType, tileId: String, tileTitle: String): Intent {
         return Intent(context, ExecutionAlarmReceiver::class.java).apply {
             action = ACTION_EXECUTION_ALARM
+            data = Uri.parse(alarmIntentUri(alarmId))
             putExtra(EXTRA_ALARM_ID, alarmId)
             putExtra(EXTRA_TRIGGER_TYPE, type.name)
             putExtra(EXTRA_TILE_ID, tileId)
@@ -76,10 +77,10 @@ class ExecutionAlarmScheduler @Inject constructor(
         }
     }
 
-    private fun buildPendingIntent(alarmId: String, intent: Intent): PendingIntent {
+    private fun buildPendingIntent(intent: Intent): PendingIntent {
         return PendingIntent.getBroadcast(
             context,
-            alarmId.hashCode(),
+            0,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -107,4 +108,13 @@ class ExecutionAlarmScheduler @Inject constructor(
         const val EXTRA_TILE_ID = "extra_tile_id"
         const val EXTRA_TILE_TITLE = "extra_tile_title"
     }
+}
+
+internal fun shouldUseExactAlarm(apiLevel: Int, canScheduleExactAlarms: Boolean): Boolean {
+    return apiLevel < Build.VERSION_CODES.S || canScheduleExactAlarms
+}
+
+internal fun alarmIntentUri(alarmId: String): String {
+    val encodedAlarmId = URLEncoder.encode(alarmId, StandardCharsets.UTF_8)
+    return "tastile://execution-alarm/$encodedAlarmId"
 }

@@ -75,10 +75,15 @@ class TileRepository @Inject constructor(
         val ack = tryApplyCoreCommand(COMMAND_TILE_CREATE, payload)
         if (ack != null) {
             persistEmittedEvents(userId, ack)
-            currentSnapshotOrNull()
-                ?.tiles
-                ?.firstOrNull { it.id !in existingIds || it.title == trimmedTitle }
-                ?.let { return it.toTile() }
+            val snapshotAfter = currentSnapshotOrNull()
+            val generatedId = ack.generatedTileId()
+            val createdTile = when {
+                generatedId != null ->
+                    snapshotAfter?.tiles?.firstOrNull { it.id == generatedId }
+                else ->
+                    snapshotAfter?.tiles?.firstOrNull { it.id !in existingIds }
+            }
+            createdTile?.let { return it.toTile() }
         }
 
         val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()

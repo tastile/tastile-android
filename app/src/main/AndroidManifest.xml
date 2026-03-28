@@ -47,7 +47,7 @@
         <receiver
             android:name=".notifications.ExecutionAlarmRescheduleReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
