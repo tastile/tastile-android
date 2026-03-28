@@ -5,18 +5,35 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    id("com.github.willir.rust.cargo-ndk-android")
 }
+
+val releaseStoreFile = providers.gradleProperty("RELEASE_STORE_FILE")
+val releaseStorePassword = providers.gradleProperty("RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS")
+val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD")
+val supabaseUrl = providers.gradleProperty("SUPABASE_URL")
+val supabaseAnonKey = providers.gradleProperty("SUPABASE_ANON_KEY")
+val tastileCoreDir = rootDir.resolve("../tastile-core")
+val hasReleaseSigning =
+    releaseStoreFile.isPresent &&
+        releaseStorePassword.isPresent &&
+        releaseKeyAlias.isPresent &&
+        releaseKeyPassword.isPresent
+val hasSupabaseConfig = supabaseUrl.isPresent && supabaseAnonKey.isPresent
 
 android {
     namespace = "app.tastile.android"
     compileSdk = 35
 
     signingConfigs {
-        create("release") {
-            storeFile = file(project.findProperty("RELEASE_STORE_FILE") as String)
-            storePassword = project.findProperty("RELEASE_STORE_PASSWORD") as String
-            keyAlias = project.findProperty("RELEASE_KEY_ALIAS") as String
-            keyPassword = project.findProperty("RELEASE_KEY_PASSWORD") as String
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile.get())
+                storePassword = releaseStorePassword.get()
+                keyAlias = releaseKeyAlias.get()
+                keyPassword = releaseKeyPassword.get()
+            }
         }
     }
 
@@ -24,17 +41,19 @@ android {
         applicationId = "app.tastile.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.2.0"
-        
-        buildConfigField("String", "SUPABASE_URL", "\"${project.findProperty("SUPABASE_URL") ?: ""}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${project.findProperty("SUPABASE_ANON_KEY") ?: ""}\"")
+        versionCode = 10
+        versionName = "0.2.2"
+
+        buildConfigField("String", "SUPABASE_URL", "\"${supabaseUrl.orNull ?: ""}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${supabaseAnonKey.orNull ?: ""}\"")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -52,6 +71,54 @@ android {
         compose = true
         buildConfig = true
     }
+}
+
+val releaseSigningInstructions = """
+Release signing is not configured.
+Add RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD
+to your user-level ~/.gradle/gradle.properties or pass them as -P properties when running release tasks.
+""".trimIndent()
+
+val missingCoreInstructions = """
+Missing sibling repository: ../tastile-core
+Clone tastile-core next to tastile-android before building Android artifacts that compile native libraries.
+""".trimIndent()
+
+val missingSupabaseInstructions = """
+Supabase client configuration is missing.
+Define SUPABASE_URL and SUPABASE_ANON_KEY in gradle.properties or ~/.gradle/gradle.properties before installing debug builds on a device.
+""".trimIndent()
+
+gradle.taskGraph.whenReady {
+    val requestedReleaseBuild =
+        allTasks.any { task ->
+            task.project == project && (task.name == "assembleRelease" || task.name == "bundleRelease")
+        }
+    val requestedDeviceInstall =
+        allTasks.any { task ->
+            task.project == project && (task.name == "installDebug" || task.name.startsWith("connected"))
+        }
+    if (requestedReleaseBuild && !hasReleaseSigning) {
+        throw GradleException(releaseSigningInstructions)
+    }
+    if (requestedDeviceInstall && !hasSupabaseConfig) {
+        throw GradleException(missingSupabaseInstructions)
+    }
+}
+
+tasks.configureEach {
+    if (name.startsWith("buildCargoNdk")) {
+        doFirst {
+            check(tastileCoreDir.isDirectory) { missingCoreInstructions }
+        }
+    }
+}
+
+cargoNdk {
+    // Use workspace root so cargo-ndk resolves shared workspace target outputs correctly.
+    module = "../tastile-core"
+    targets = arrayListOf("arm64", "arm", "x86", "x86_64")
+    librariesNames = arrayListOf("libtastile_core.so")
 }
 
 dependencies {
@@ -86,6 +153,10 @@ dependencies {
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("io.mockk:mockk:1.13.12")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

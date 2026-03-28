@@ -3,29 +3,19 @@ package app.tastile.android.ui.memo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.TileRepository
+import app.tastile.android.data.repository.CurrentUserProvider
+import app.tastile.android.data.repository.MemoTileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import javax.inject.Inject
 
 @HiltViewModel
 class MemoViewModel @Inject constructor(
-    private val tileRepository: TileRepository,
-    private val authRepository: AuthRepository,
-    private val supabaseClient: SupabaseClient
+    private val tileRepository: MemoTileRepository,
+    private val currentUserProvider: CurrentUserProvider
 ) : ViewModel() {
 
     private val _recentTiles = MutableStateFlow<List<Tile>>(emptyList())
@@ -52,21 +42,9 @@ class MemoViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
-                val session = authRepository.currentSession
-                val userId = session?.user?.id
+                val userId = currentUserProvider.currentUserId()
                 if (userId != null) {
-                    // Get 5 most recent non-deleted tiles
-                    val tiles = supabaseClient.from("tiles")
-                        .select {
-                            filter {
-                                eq("user_id", userId)
-                                exact("deleted_at", null)
-                            }
-                            order("updated_at", Order.DESCENDING)
-                            limit(5)
-                        }
-                        .decodeList<Tile>()
-                    
+                    val tiles = tileRepository.getRecentTiles(userId, limit = 5)
                     _recentTiles.value = tiles
                     
                     // Select first tile by default
@@ -94,37 +72,7 @@ class MemoViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _error.value = null
-                val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-                
-                // Get current annotation_conditions
-                val tile = supabaseClient.from("tiles")
-                    .select {
-                        filter {
-                            eq("id", tileId)
-                        }
-                    }
-                    .decodeSingle<Tile>()
-                
-                // Build updated annotation_conditions with note
-                val currentAnnotations = tile.annotationConditions ?: buildJsonObject { }
-                val updatedAnnotations = buildJsonObject {
-                    currentAnnotations.entries.forEach { (key, value) ->
-                        put(key, value)
-                    }
-                    put("note", JsonPrimitive(note))
-                }
-                
-                // Update tile
-                supabaseClient.from("tiles")
-                    .update({
-                        set("annotation_conditions", updatedAnnotations)
-                        set("updated_at", now)
-                    }) {
-                        filter {
-                            eq("id", tileId)
-                        }
-                    }
-                
+                tileRepository.saveMemo(tileId, note)
                 _saveSuccess.value = true
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to save memo"

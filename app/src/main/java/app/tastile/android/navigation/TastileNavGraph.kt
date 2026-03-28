@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -66,7 +69,7 @@ sealed class Screen(
     data object Execute : Screen("dashboard/execute", "Execute", Icons.Default.Home)
     data object Tiles : Screen("dashboard/tiles", "Tiles", Icons.Default.List)
     data object New : Screen("dashboard/new", "New", Icons.Default.Add)
-    data object Integrations : Screen("dashboard/integrations", "Integrations", Icons.Default.Build)
+    data object Integrations : Screen("dashboard/integrations", "Connect", Icons.Default.Build)
     data object Settings : Screen("dashboard/settings", "Settings", Icons.Default.Settings)
     data object Account : Screen("dashboard/account", "Account", Icons.Default.Settings, tabItem = false)
 }
@@ -115,10 +118,14 @@ fun MainAppScaffold(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 1.dp) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -144,7 +151,10 @@ fun MainAppScaffold(
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier.navigationBarsPadding()
+            ) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
 
@@ -154,13 +164,16 @@ fun MainAppScaffold(
                             selected = false,
                             onClick = { showCreateSheet = true },
                             icon = { Icon(screen.icon, contentDescription = screen.title) },
-                            label = { Text(screen.title) }
+                            label = { Text(screen.title, maxLines = 1) },
+                            alwaysShowLabel = true
                         )
                     } else {
+                        val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                         NavigationBarItem(
                             icon = { Icon(screen.icon, contentDescription = screen.title) },
-                            label = { Text(screen.title) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            label = { Text(screen.title, maxLines = 1) },
+                            alwaysShowLabel = isSelected,
+                            selected = isSelected,
                             onClick = {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }

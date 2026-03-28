@@ -8,3 +8,9 @@ plugins {
     // Rust NDK plugin for building core as Android native library
     id("com.github.willir.rust.cargo-ndk-android") version "0.3.4" apply false
 }
+
+tasks.register("verify") {
+    group = "verification"
+    description = "Runs the repository verification suite."
+    dependsOn(":app:testDebugUnitTest")
+}

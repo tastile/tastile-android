@@ -1,0 +1,138 @@
+package app.tastile.android.data.repository
+
+import app.tastile.android.core.CoreCommandAck
+import app.tastile.android.core.CoreCommandRequest
+import app.tastile.android.core.CoreEventEnvelopeRecord
+import app.tastile.android.core.CoreRuntimeService
+import app.tastile.android.core.CoreSnapshot
+import app.tastile.android.core.CoreTileSnapshot
+import app.tastile.android.notifications.ExecutionNotificationCoordinator
+import io.github.jan.supabase.SupabaseClient
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class TileRepositoryCoreCommandTest {
+
+    @Test
+    fun startTile_usesCoreCommandAndReturnsProjectedSnapshotTile() = runTest {
+        val service = RecordingCoreRuntimeService(
+            snapshot = CoreSnapshot(
+                revision = 2,
+                activeTileId = "tile-123",
+                tiles = listOf(
+                    CoreTileSnapshot(id = "tile-123", title = "Focus block", lifecycle = "Started")
+                )
+            )
+        )
+        val repository = TileRepository(
+            client = mockk<SupabaseClient>(relaxed = true),
+            coreRuntimeService = service,
+            executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
+            eventRepository = mockk<EventRepository>(relaxed = true),
+            currentUserProvider = mockk<CurrentUserProvider> {
+                every { currentUserId() } returns "user-1"
+            }
+        )
+
+        val tile = repository.startTile("tile-123")
+
+        assertEquals("tile.start", service.lastCommand?.type)
+        assertEquals("tile-123", service.lastCommand?.payload?.string("tile_id"))
+        assertEquals("tile-123", tile.id)
+        assertEquals("Started", tile.lifecycle)
+        assertEquals("Focus block", tile.title)
+    }
+
+    @Test
+    fun getActiveStartedTile_prefersCoreSnapshotProjection() = runTest {
+        val service = RecordingCoreRuntimeService(
+            snapshot = CoreSnapshot(
+                revision = 8,
+                activeTileId = "tile-active",
+                tiles = listOf(
+                    CoreTileSnapshot(id = "tile-ready", title = "Inbox", lifecycle = "Ready"),
+                    CoreTileSnapshot(id = "tile-active", title = "Deep work", lifecycle = "Started")
+                )
+            )
+        )
+        val repository = TileRepository(
+            client = mockk<SupabaseClient>(relaxed = true),
+            coreRuntimeService = service,
+            executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
+            eventRepository = mockk<EventRepository>(relaxed = true),
+            currentUserProvider = mockk<CurrentUserProvider> {
+                every { currentUserId() } returns "user-1"
+            }
+        )
+
+        val active = repository.getActiveStartedTile("user-1")
+
+        assertEquals("tile-active", active?.id)
+        assertEquals("Deep work", active?.title)
+        assertEquals("Started", active?.lifecycle)
+    }
+
+    @Test
+    fun getActiveStartedTile_returnsNullWhenSnapshotHasNoActiveTile() = runTest {
+        val repository = TileRepository(
+            client = mockk<SupabaseClient>(relaxed = true),
+            coreRuntimeService = RecordingCoreRuntimeService(
+                snapshot = CoreSnapshot(revision = 1, tiles = emptyList())
+            ),
+            executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
+            eventRepository = mockk<EventRepository>(relaxed = true),
+            currentUserProvider = mockk<CurrentUserProvider> {
+                every { currentUserId() } returns "user-1"
+            }
+        )
+
+        val active = repository.getActiveStartedTile("user-1")
+
+        assertNull(active)
+    }
+
+    @Test
+    fun continueTile_usesCoreCommand() = runTest {
+        val service = RecordingCoreRuntimeService(
+            snapshot = CoreSnapshot(revision = 3, activeTileId = "tile-continue")
+        )
+        val repository = TileRepository(
+            client = mockk<SupabaseClient>(relaxed = true),
+            coreRuntimeService = service,
+            executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
+            eventRepository = mockk<EventRepository>(relaxed = true),
+            currentUserProvider = mockk<CurrentUserProvider> {
+                every { currentUserId() } returns "user-1"
+            }
+        )
+
+        repository.continueTile("tile-continue")
+
+        assertEquals("tile.continue", service.lastCommand?.type)
+        assertEquals("tile-continue", service.lastCommand?.payload?.string("tile_id"))
+    }
+
+    private class RecordingCoreRuntimeService(
+        private var snapshot: CoreSnapshot
+    ) : CoreRuntimeService {
+        var lastCommand: CoreCommandRequest? = null
+
+        override fun applyCommand(command: CoreCommandRequest): CoreCommandAck {
+            lastCommand = command
+            return CoreCommandAck(accepted = true, commandId = "cmd-1")
+        }
+
+        override fun replaceEventLog(events: List<CoreEventEnvelopeRecord>): CoreCommandAck {
+            return CoreCommandAck(accepted = true, commandId = "sync.replace_event_log")
+        }
+
+        override fun currentSnapshot(): CoreSnapshot = snapshot
+    }
+
+    private fun JsonObject.string(key: String): String? = this[key]?.toString()?.trim('"')
+}
