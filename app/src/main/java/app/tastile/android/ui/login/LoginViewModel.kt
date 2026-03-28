@@ -2,27 +2,34 @@ package app.tastile.android.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.AuthRepositoryContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepositoryContract
 ) : ViewModel() {
 
     val sessionStatus: StateFlow<SessionStatus> = authRepository.sessionStatus
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     fun signInWithGoogle() {
         viewModelScope.launch {
             try {
+                _error.value = null
                 authRepository.signInWithGoogle()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                // Handle error
-                e.printStackTrace()
+                _error.value = "Unable to sign in"
             }
         }
     }
@@ -30,10 +37,17 @@ class LoginViewModel @Inject constructor(
     fun signOut() {
         viewModelScope.launch {
             try {
+                _error.value = null
                 authRepository.signOut()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                _error.value = "Unable to sign out"
             }
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }

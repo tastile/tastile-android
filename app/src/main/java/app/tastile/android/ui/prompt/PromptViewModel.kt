@@ -3,12 +3,9 @@ package app.tastile.android.ui.prompt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.model.TileLifecycle
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.TileRepository
+import app.tastile.android.data.repository.CurrentUserProvider
+import app.tastile.android.data.repository.PromptTileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,16 +14,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.minutes
 
 @HiltViewModel
 class PromptViewModel @Inject constructor(
-    private val tileRepository: TileRepository,
-    private val authRepository: AuthRepository,
-    private val supabaseClient: SupabaseClient
+    private val tileRepository: PromptTileRepository,
+    private val currentUserProvider: CurrentUserProvider
 ) : ViewModel() {
 
     private val _activeTile = MutableStateFlow<Tile?>(null)
@@ -41,11 +34,6 @@ class PromptViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Threshold in minutes to show prompt (25 minutes)
-    companion object {
-        private const val PROMPT_THRESHOLD_MINUTES = 25
-    }
-
     init {
         loadActiveTile()
         startElapsedTimeCounter()
@@ -56,21 +44,9 @@ class PromptViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
-                val session = authRepository.currentSession
-                val userId = session?.user?.id
+                val userId = currentUserProvider.currentUserId()
                 if (userId != null) {
-                    // Get the most recent Started tile
-                    val tiles = supabaseClient.from("tiles")
-                        .select {
-                            filter {
-                                eq("user_id", userId)
-                                eq("lifecycle", TileLifecycle.STARTED.value)
-                                exact("deleted_at", null)
-                            }
-                        }
-                        .decodeList<Tile>()
-                    
-                    _activeTile.value = tiles.firstOrNull()
+                    _activeTile.value = tileRepository.getActiveStartedTile(userId)
                     updateElapsedTime()
                 }
             } catch (e: Exception) {
@@ -105,7 +81,10 @@ class PromptViewModel @Inject constructor(
         try {
             val now = Clock.System.now()
             val elapsed = now - updatedTime
-            _elapsedMinutes.value = elapsed.inWholeMinutes.toInt()
+            val latest = _activeTile.value
+            if (latest?.id == tile.id && latest.updatedAt == tile.updatedAt) {
+                _elapsedMinutes.value = elapsed.inWholeMinutes.toInt()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -117,17 +96,7 @@ class PromptViewModel @Inject constructor(
             try {
                 _error.value = null
                 val tileId = _activeTile.value?.id ?: return@launch
-                val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-                
-                supabaseClient.from("tiles")
-                    .update({
-                        set("updated_at", now)
-                    }) {
-                        filter {
-                            eq("id", tileId)
-                        }
-                    }
-                
+                tileRepository.continueTile(tileId)
                 loadActiveTile()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to continue tile"

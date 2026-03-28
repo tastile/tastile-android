@@ -4,32 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.EventRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.UserSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import java.util.UUID
 import javax.inject.Inject
 
 data class CreateTileDraft(
@@ -64,7 +52,7 @@ data class CreateTileDraft(
 class DashboardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val profileRepository: ProfileRepository,
-    private val eventRepository: EventRepository,
+    private val tileRepository: TileRepository,
     private val userSettingsRepository: UserSettingsRepository
 ) : ViewModel() {
     private val _tiles = MutableStateFlow<List<Tile>>(emptyList())
@@ -88,12 +76,8 @@ class DashboardViewModel @Inject constructor(
     private val _locale = MutableStateFlow(userSettingsRepository.getLocale())
     val locale: StateFlow<AppLocale> = _locale.asStateFlow()
 
-    private val openSegments = mutableMapOf<String, String>()
-    private var activeTileId: String? = null
-
     init {
         refreshAll()
-        startPollingSync()
     }
 
     fun refreshAll() {
@@ -105,7 +89,7 @@ class DashboardViewModel @Inject constructor(
                 val userId = session?.user?.id
                 _email.value = session?.user?.email.orEmpty()
                 if (userId != null) {
-                    rebuildStateFromEvents(userId)
+                    _tiles.value = tileRepository.getTiles(userId)
                     _profile.value = profileRepository.getProfile(userId)
                 }
             } catch (e: Exception) {
@@ -121,20 +105,20 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.currentSession?.user?.id ?: return@launch
             try {
-                val tileId = UUID.randomUUID().toString()
-                val tilePayload = buildTilePayload(
-                    tileId = tileId,
-                    draft = draft.copy(
-                        title = draft.title.trim(),
-                        nextAction = draft.nextAction?.ifBlank { null },
-                        doneDefinition = draft.doneDefinition?.ifBlank { null },
-                        labels = draft.labels.filter { it.isNotBlank() },
-                        project = draft.project?.ifBlank { null },
-                        memo = draft.memo?.ifBlank { null }
+                tileRepository.createTile(
+                    userId = userId,
+                    payload = buildCreatePayload(
+                        draft.copy(
+                            title = draft.title.trim(),
+                            nextAction = draft.nextAction?.ifBlank { null },
+                            doneDefinition = draft.doneDefinition?.ifBlank { null },
+                            labels = draft.labels.filter { it.isNotBlank() },
+                            project = draft.project?.ifBlank { null },
+                            memo = draft.memo?.ifBlank { null }
+                        )
                     )
                 )
-                appendEvent(userId, "tile:$tileId", "tile_created", buildJsonObject { put("tile", tilePayload) })
-                rebuildStateFromEvents(userId)
+                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to create tile"
             }
@@ -143,21 +127,9 @@ class DashboardViewModel @Inject constructor(
 
     fun startTile(tileId: String) {
         viewModelScope.launch {
-            val userId = authRepository.currentSession?.user?.id ?: return@launch
             try {
-                val now = nowIso()
-                val segmentId = UUID.randomUUID().toString()
-                appendEvent(userId, "tile:$tileId", "tile_started", buildJsonObject {
-                    put("tile_id", JsonPrimitive(tileId))
-                    put("started_at", JsonPrimitive(now))
-                })
-                appendEvent(userId, "tile:$tileId", "segment_started", buildJsonObject {
-                    put("segment_id", JsonPrimitive(segmentId))
-                    put("tile_id", JsonPrimitive(tileId))
-                    put("mode", JsonPrimitive("work"))
-                    put("started_at", JsonPrimitive(now))
-                })
-                rebuildStateFromEvents(userId)
+                tileRepository.startTile(tileId)
+                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to start tile"
             }
@@ -166,23 +138,9 @@ class DashboardViewModel @Inject constructor(
 
     fun completeTile(tileId: String) {
         viewModelScope.launch {
-            val userId = authRepository.currentSession?.user?.id ?: return@launch
             try {
-                val now = nowIso()
-                val openSegmentId = openSegments[tileId]
-                if (!openSegmentId.isNullOrBlank()) {
-                    appendEvent(userId, "tile:$tileId", "segment_ended", buildJsonObject {
-                        put("segment_id", JsonPrimitive(openSegmentId))
-                        put("tile_id", JsonPrimitive(tileId))
-                        put("mode", JsonPrimitive("work"))
-                        put("ended_at", JsonPrimitive(now))
-                    })
-                }
-                appendEvent(userId, "tile:$tileId", "tile_completed", buildJsonObject {
-                    put("tile_id", JsonPrimitive(tileId))
-                    put("completed_at", JsonPrimitive(now))
-                })
-                rebuildStateFromEvents(userId)
+                tileRepository.completeTile(tileId)
+                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to complete tile"
             }
@@ -191,14 +149,9 @@ class DashboardViewModel @Inject constructor(
 
     fun deferTile(tileId: String) {
         viewModelScope.launch {
-            val userId = authRepository.currentSession?.user?.id ?: return@launch
             try {
-                appendEvent(userId, "tile:$tileId", "tile_deferred", buildJsonObject {
-                    put("tile_id", JsonPrimitive(tileId))
-                    put("deferred_at", JsonPrimitive(nowIso()))
-                    put("next_start_at", JsonNull)
-                })
-                rebuildStateFromEvents(userId)
+                tileRepository.pauseTile(tileId)
+                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to defer tile"
             }
@@ -207,13 +160,9 @@ class DashboardViewModel @Inject constructor(
 
     fun deleteTile(tileId: String) {
         viewModelScope.launch {
-            val userId = authRepository.currentSession?.user?.id ?: return@launch
             try {
-                appendEvent(userId, "tile:$tileId", "tile_deleted", buildJsonObject {
-                    put("tile_id", JsonPrimitive(tileId))
-                    put("deleted_at", JsonPrimitive(nowIso()))
-                })
-                rebuildStateFromEvents(userId)
+                tileRepository.deleteTile(tileId)
+                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to delete tile"
             }
@@ -247,123 +196,12 @@ class DashboardViewModel @Inject constructor(
         userSettingsRepository.setLocale(locale)
     }
 
-    private fun startPollingSync() {
-        viewModelScope.launch {
-            while (isActive) {
-                val userId = authRepository.currentSession?.user?.id
-                if (userId != null) runCatching { rebuildStateFromEvents(userId) }
-                delay(5000)
-            }
-        }
-    }
-
-    private suspend fun appendEvent(userId: String, aggregateId: String, eventType: String, payload: JsonObject) {
-        eventRepository.append(
-            userId = userId,
-            aggregateId = aggregateId,
-            eventType = eventType,
-            payload = payload,
-            occurredAtIso = nowIso()
-        )
-    }
-
-    private suspend fun rebuildStateFromEvents(userId: String) {
-        val rows = eventRepository.loadAll(userId)
-        val map = linkedMapOf<String, Tile>()
-        openSegments.clear()
-        activeTileId = null
-
-        for (row in rows) {
-            val payload = row.eventPayload ?: row.payloadJson ?: continue
-            when (row.eventType) {
-                "tile_created" -> {
-                    parseTileFromPayload(payload)?.let { map[it.id] = it }
-                }
-                "tile_started" -> {
-                    val tileId = payload.string("tile_id") ?: continue
-                    val tile = map[tileId] ?: continue
-                    map[tileId] = tile.copy(lifecycle = TileLifecycle.STARTED.value)
-                    activeTileId = tileId
-                }
-                "segment_started" -> {
-                    val tileId = payload.string("tile_id") ?: continue
-                    val segmentId = payload.string("segment_id") ?: continue
-                    openSegments[tileId] = segmentId
-                }
-                "segment_ended" -> {
-                    val tileId = payload.string("tile_id") ?: continue
-                    openSegments.remove(tileId)
-                }
-                "tile_completed" -> {
-                    val tileId = payload.string("tile_id") ?: continue
-                    val tile = map[tileId] ?: continue
-                    map[tileId] = tile.copy(lifecycle = TileLifecycle.DONE.value)
-                    if (activeTileId == tileId) activeTileId = null
-                }
-                "tile_deferred" -> {
-                    val tileId = payload.string("tile_id") ?: continue
-                    val tile = map[tileId] ?: continue
-                    map[tileId] = tile.copy(lifecycle = TileLifecycle.READY.value)
-                    if (activeTileId == tileId) activeTileId = null
-                }
-                "tile_deleted" -> {
-                    val tileId = payload.string("tile_id") ?: continue
-                    map.remove(tileId)
-                    openSegments.remove(tileId)
-                    if (activeTileId == tileId) activeTileId = null
-                }
-            }
-        }
-
-        _tiles.value = map.values.reversed()
-    }
-
-    private fun parseTileFromPayload(payload: JsonObject): Tile? {
-        val tile = payload.obj("tile") ?: return null
-        val core = tile.obj("core")
-        val annotation = tile.obj("annotation")
-        val objective = tile.obj("objective")
-        val temporal = tile.obj("temporal")
-        val interruption = tile.obj("interruption")
-        val automation = tile.obj("automation")
-        val work = tile.obj("work")
-
-        val tileId = core?.string("id") ?: return null
-        val title = core.string("title") ?: return null
-        val labels = annotation?.array("labels") ?: JsonArray(emptyList())
-
-        return Tile(
-            id = tileId,
-            userId = "",
-            localTileId = tileId,
-            title = title,
-            nextAction = core.string("nextAction"),
-            doneDefinition = core.string("doneDefinition"),
-            temporalConditions = temporal,
-            objectiveConditions = objective,
-            interruptionConditions = interruption,
-            automationConditions = automation,
-            lifecycle = TileLifecycle.READY.value,
-            annotationConditions = buildJsonObject {
-                put("semanticRole", annotation?.string("semanticRole")?.let { JsonPrimitive(it) } ?: JsonPrimitive("work"))
-                put("labels", labels)
-                put("timedLabels", annotation?.array("timedLabels") ?: JsonArray(emptyList()))
-                put("segments", work?.array("segments") ?: JsonArray(emptyList()))
-            },
-            createdAt = nowIso(),
-            updatedAt = nowIso(),
-            localCreatedAt = nowIso(),
-            localUpdatedAt = nowIso(),
-            deletedAt = null
-        )
-    }
-
-    private fun buildTilePayload(tileId: String, draft: CreateTileDraft): JsonObject {
+    private fun buildCreatePayload(draft: CreateTileDraft) = buildJsonObject {
         val recurrenceObject = if (draft.objectiveMode == "recurring") {
             buildJsonObject {
                 put("generator", buildJsonObject {
                     put(
-                        "stepMin",
+                        "step_min",
                         JsonPrimitive(
                             when (draft.recurrenceFrequency) {
                                 "weekly" -> 7 * 24 * 60
@@ -372,11 +210,11 @@ class DashboardViewModel @Inject constructor(
                             }
                         )
                     )
-                    put("anchorEpochMin", JsonNull)
+                    put("anchor_epoch_min", JsonNull)
                 })
                 put("window", buildJsonObject {
-                    put("startOffsetMin", JsonPrimitive(parseTimeToMin(draft.recurrenceStartTime)))
-                    put("endOffsetMin", JsonPrimitive(parseTimeToMin(draft.recurrenceEndTime)))
+                    put("start_offset_min", JsonPrimitive(parseTimeToMin(draft.recurrenceStartTime)))
+                    put("end_offset_min", JsonPrimitive(parseTimeToMin(draft.recurrenceEndTime)))
                 })
                 put("selector", buildJsonObject {
                     put(
@@ -402,64 +240,43 @@ class DashboardViewModel @Inject constructor(
             addAll(draft.labels.filter { it.isNotBlank() })
         }
 
-        return buildJsonObject {
-            put("core", buildJsonObject {
-                put("id", JsonPrimitive(tileId))
-                put("title", JsonPrimitive(draft.title))
-                put("nextAction", (draft.memo ?: draft.nextAction)?.let { JsonPrimitive(it) } ?: JsonNull)
-                put("doneDefinition", draft.doneDefinition?.let { JsonPrimitive(it) } ?: JsonNull)
-                put("startedAt", JsonNull)
-                put("completedAt", JsonNull)
-            })
-            put("work", buildJsonObject { put("segments", buildJsonArray {}) })
-            put("temporal", buildJsonObject {
-                put("releaseAt", draft.recurrenceValidFromIso?.let { JsonPrimitive(it) } ?: JsonNull)
-                put("dueAt", draft.recurrenceValidToIso?.let { JsonPrimitive(it) } ?: JsonNull)
-                put("fixedStart", if (draft.useStartAt) draft.startAtIso?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull)
-                put("fixedEnd", if (draft.useEndAt) draft.endAtIso?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull)
-                put("activeStart", if (draft.useStartAt) draft.startAtIso?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull)
-                put("activeEnd", if (draft.useEndAt) draft.endAtIso?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull)
-            })
-            put("objective", buildJsonObject {
-                put("objectiveMode", JsonPrimitive(draft.objectiveMode))
-                put("targetWorkMin", draft.targetWorkMin?.let { JsonPrimitive(it) } ?: JsonNull)
-                put("targetRestMin", JsonNull)
-                put("doneRule", JsonPrimitive("manual"))
-                put("recurrence", recurrenceObject)
-            })
-            put("interruption", buildJsonObject {
-                put("interruptPenalty", JsonPrimitive(3)); put("resumePenalty", JsonPrimitive(3))
-                put("breakSplitsWork", JsonPrimitive(draft.breakSplitsWork)); put("externalInterruptOnly", JsonPrimitive(false))
-            })
-            put("automation", buildJsonObject {
-                put("promptOnStart", JsonPrimitive(false)); put("promptOnEnd", JsonPrimitive(true))
-                put("autoStartAllowed", JsonPrimitive(false)); put("autoEndAllowed", JsonPrimitive(false))
-            })
-            put("annotation", buildJsonObject {
-                put("semanticRole", JsonPrimitive(draft.tileKind))
-                put("labels", buildJsonArray { mergedLabels.forEach { add(JsonPrimitive(it)) } })
-                put("timedLabels", buildJsonArray {})
-            })
-        }
+        put("title", JsonPrimitive(draft.title))
+        put("next_action", (draft.memo ?: draft.nextAction)?.let { JsonPrimitive(it) } ?: JsonNull)
+        put("done_definition", draft.doneDefinition?.let { JsonPrimitive(it) } ?: JsonNull)
+        put("temporal", buildJsonObject {
+            put("release_at", draft.recurrenceValidFromIso?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("due_at", draft.recurrenceValidToIso?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("fixed_start", if (draft.useStartAt) draft.startAtIso?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull)
+            put("fixed_end", if (draft.useEndAt) draft.endAtIso?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull)
+            put("active_start", if (draft.useStartAt) draft.startAtIso?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull)
+            put("active_end", if (draft.useEndAt) draft.endAtIso?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull)
+        })
+        put("objective", buildJsonObject {
+            put("objective_mode", JsonPrimitive(draft.objectiveMode))
+            put("target_work_min", draft.targetWorkMin?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("target_rest_min", JsonNull)
+            put("done_rule", JsonPrimitive("manual"))
+            put("recurrence", recurrenceObject)
+        })
+        put("interruption", buildJsonObject {
+            put("interrupt_penalty", JsonPrimitive(3))
+            put("resume_penalty", JsonPrimitive(3))
+            put("break_splits_work", JsonPrimitive(draft.breakSplitsWork))
+            put("external_interrupt_only", JsonPrimitive(false))
+        })
+        put("automation", buildJsonObject {
+            put("prompt_on_start", JsonPrimitive(false))
+            put("prompt_on_end", JsonPrimitive(true))
+            put("auto_start_allowed", JsonPrimitive(false))
+            put("auto_end_allowed", JsonPrimitive(false))
+        })
+        put("annotation", buildJsonObject {
+            put("semantic_role", JsonPrimitive(draft.tileKind))
+            put("labels", kotlinx.serialization.json.buildJsonArray { mergedLabels.forEach { add(JsonPrimitive(it)) } })
+            put("timed_labels", kotlinx.serialization.json.buildJsonArray { })
+        })
     }
-
-    private fun nowIso(): String = Clock.System.now().toString()
 }
-
-private fun JsonObject?.string(key: String): String? {
-    return this?.get(key)?.jsonPrimitive?.contentOrNull
-}
-
-private fun JsonObject?.obj(key: String): JsonObject? {
-    return this?.get(key) as? JsonObject
-}
-
-private fun JsonObject?.array(key: String): JsonArray? {
-    return this?.get(key) as? JsonArray
-}
-
-fun Tile.isStarted(): Boolean = lifecycle == TileLifecycle.STARTED.value
-fun Tile.isDone(): Boolean = lifecycle == TileLifecycle.DONE.value
 
 private fun parseTimeToMin(value: String?): Int {
     if (value.isNullOrBlank() || !value.contains(":")) return 0

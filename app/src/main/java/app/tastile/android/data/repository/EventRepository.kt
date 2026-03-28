@@ -1,11 +1,14 @@
 package app.tastile.android.data.repository
 
+import app.tastile.android.core.CoreEventEnvelopeRecord
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -67,6 +70,30 @@ class EventRepository @Inject constructor(
                 "caused_by_command_id" to (causedByCommandId ?: UUID.randomUUID().toString()),
                 "request_id" to requestId,
                 "sequence_number" to System.currentTimeMillis()
+            )
+        )
+    }
+
+    suspend fun appendEmittedEvent(
+        userId: String,
+        envelope: CoreEventEnvelopeRecord,
+        sequenceNumber: Long
+    ) {
+        val eventType = envelope.event["type"]?.jsonPrimitive?.content ?: return
+        client.from(TABLE_EVENTS).insert(
+            mapOf(
+                "user_id" to userId,
+                "event_id" to envelope.eventId,
+                "aggregate_id" to envelope.aggregateId,
+                "event_type" to eventType,
+                "event_payload" to envelope.event,
+                "payload_json" to envelope.event,
+                "occurred_at" to envelope.occurredAt,
+                "actor_type" to envelope.actor.actorType,
+                "actor_id" to envelope.actor.actorId,
+                "caused_by_command_id" to envelope.causedByCommandId,
+                "request_id" to envelope.requestId,
+                "sequence_number" to sequenceNumber
             )
         )
     }

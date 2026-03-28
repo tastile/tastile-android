@@ -12,19 +12,19 @@
 ### 1.1 キーストア生成
 ```bash
 keytool -genkeypair -v \
-  -keystore tastile-release.jks \
+  -keystore /secure/path/tastile-upload-key.jks \
   -keyalg RSA -keysize 2048 -validity 10000 \
   -alias tastile \
   -storepass <STORE_PASSWORD> \
   -keypass <KEY_PASSWORD> \
   -dname "CN=Tastile, OU=Mobile, O=Tastile, L=Tokyo, ST=Tokyo, C=JP"
 ```
-- 出力先: `tastile-android/tastile-release.jks`
-- **重要**: .gitignore に追加すること
+- 出力先: repo 外の安全な場所
+- **重要**: キーストアとパスワードを repo に置かないこと
 
-### 1.2 `gradle.properties` に署名情報追加
+### 1.2 ユーザー環境の `~/.gradle/gradle.properties` に署名情報追加
 ```properties
-RELEASE_STORE_FILE=../tastile-release.jks
+RELEASE_STORE_FILE=/secure/path/tastile-upload-key.jks
 RELEASE_STORE_PASSWORD=<STORE_PASSWORD>
 RELEASE_KEY_ALIAS=tastile
 RELEASE_KEY_PASSWORD=<KEY_PASSWORD>
@@ -114,7 +114,6 @@ ls -la app/build/outputs/bundle/release/app-release.aab
 
 ### 4.1 .gitignore 確認
 ```
-tastile-release.jks
 *.jks
 local.properties
 ```

@@ -14,17 +14,19 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepository @Inject constructor(
     private val client: SupabaseClient
-) {
+) : CurrentUserProvider, AuthRepositoryContract {
     private val oauthRedirectUrl = "tastile://auth/callback"
 
     val currentSession get() = client.auth.currentSessionOrNull()
-    val sessionStatus: StateFlow<SessionStatus> get() = client.auth.sessionStatus
+    override val sessionStatus: StateFlow<SessionStatus> get() = client.auth.sessionStatus
 
-    suspend fun signInWithGoogle() {
+    override fun currentUserId(): String? = currentSession?.user?.id
+
+    override suspend fun signInWithGoogle() {
         client.auth.signInWith(Google, redirectUrl = oauthRedirectUrl)
     }
 
-    suspend fun signOut() {
+    override suspend fun signOut() {
         client.auth.signOut()
     }
 

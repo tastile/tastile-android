@@ -1,141 +1,66 @@
 # Tastile Android
 
-Android client for Tastile task management app.
+Android client for Tastile. The app is written in Kotlin with Jetpack Compose, uses Supabase for mobile-facing auth/data access, and integrates with `tastile-core` through Android native libraries built from the sibling Rust repository.
 
-## Architecture
+## Current State
 
-This app uses **tastile-core** (Rust) as native libraries via JNI:
+- Active Android app with unit-test coverage for core runtime, sync, notifications, and selected view models.
+- Native bridge is partially integrated. Some mobile flows still read from Supabase directly while command execution/state projection is moving behind `tastile-core`.
+- This repository assumes `tastile-core` is cloned next to it as `../tastile-core` for Android artifact builds.
 
-```
-Android App (Kotlin/Jetpack Compose)
-    ↓ (JNI via JNA or native bindings)
-libtastile_core.so (Rust compiled for Android)
-    ↓ (relative path at build time)
-../tastile-core/
+## Repository Layout
+
+```text
+app/                    Android application module
+docs/                   Architecture, development, plans, and operations docs
+gradle/                 Wrapper files
+build.gradle.kts        Root build and verification entrypoints
+README.md               High-level orientation
+CONTRIBUTING.md         Day-to-day contributor workflow
+SECURITY.md             Secret handling and reporting guidance
 ```
 
 ## Prerequisites
 
+- JDK 17 or JDK 21
 - Android Studio Hedgehog or newer
-- Android SDK 26+
+- Android SDK with API 35 and NDK installed
 - Rust toolchain with Android targets:
-  ```bash
-  rustup target add aarch64-linux-android
-  rustup target add armv7-linux-androideabi
-  rustup target add i686-linux-android
-  rustup target add x86_64-linux-android
-  ```
-- NDK (installed via Android Studio)
-- cargo-ndk:
-  ```bash
-  cargo install cargo-ndk
-  ```
-
-## Building
-
-### Automatic Build (Recommended)
-
-The Gradle plugin automatically builds core:
 
 ```bash
-./gradlew assembleDebug
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+cargo install cargo-ndk
 ```
 
-This will:
-1. Build tastile-core for all Android architectures
-2. Copy `.so` files to `app/src/main/jniLibs/`
-3. Build Android app
+## Quick Start
 
-### Manual Build
+1. Clone `tastile-android` and `tastile-core` as sibling directories.
+2. Ensure `JAVA_HOME` points to JDK 17 or 21.
+3. Run `./gradlew verify` to execute the JVM verification suite.
+4. Run `./gradlew assembleDebug` to build the debug APK and native libraries.
 
-If you need to build core separately:
+## Build Modes
 
-```bash
-cd ../tastile-core
+- `./gradlew verify`
+  Runs the repository verification suite. This is the default pre-push command.
+- `./gradlew testDebugUnitTest`
+  Runs Android unit tests without requiring a release keystore.
+- `./gradlew assembleDebug`
+  Builds the Android app and compiles native libraries from `../tastile-core`.
+- `./gradlew bundleRelease`
+  Requires release signing properties in `~/.gradle/gradle.properties` or `-P...` flags.
 
-# Build all Android targets
-cargo ndk -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 build --release
+Release signing credentials must never be committed. The build fails fast if they are missing for release tasks.
 
-# Or with the Gradle plugin
-cd ../tastile-android
-./gradlew cargoNdkBuild
-```
+## Documentation
 
-## Project Structure
+- [Docs Index](./docs/README.md)
+- [Architecture](./docs/architecture.md)
+- [Development Guide](./docs/development.md)
+- [Release Operations](./docs/operations/release-plan.md)
 
-```
-tastile-android/
-├── app/
-│   ├── build.gradle.kts       # App build config with cargoNdk
-│   └── src/
-│       ├── main/
-│       │   ├── jniLibs/       # Auto-generated .so files
-│       │   └── java/
-│       │       └── ...        # Kotlin source
-│       └── test/
-├── build.gradle.kts           # Root build config
-└── settings.gradle.kts
-```
+## Notes
 
-## Core Integration
-
-### build.gradle.kts
-
-```kotlin
-plugins {
-    id("com.github.willir.rust.cargo-ndk-android")
-}
-
-cargoNdk {
-    module = "../../tastile-core"  // Relative path to core
-    targets = listOf("arm64", "arm", "x86", "x86_64")
-    outputDirectory = "src/main/jniLibs"
-}
-```
-
-### Kotlin JNI Bridge (Planned)
-
-```kotlin
-// app/src/main/java/app/tastile/android/core/TastileCore.kt
-object TastileCore {
-    init {
-        System.loadLibrary("tastile_core")
-    }
-    
-    external fun createTile(title: String): String
-    external fun getTiles(): List<Tile>
-    // ...
-}
-```
-
-## Important
-
-**Never copy core code into this folder!**
-
-The `jniLibs/` directory is auto-generated and gitignored. Always reference `../tastile-core`.
-
-When core is updated:
-1. Rebuild: `./gradlew assembleDebug`
-2. Or: `cargo ndk build` then rebuild Android
-
-## Migration Notes
-
-Currently the app uses Supabase directly. Migration plan to core:
-
-1. [ ] Add JNI bridge module in tastile-core
-2. [ ] Create `TastileCore` Kotlin wrapper class
-3. [ ] Replace `TileRepository` calls with core calls
-4. [ ] Replace `AuthRepository` with core auth
-5. [ ] Remove direct Supabase dependency
-
-## Dependencies
-
-- Jetpack Compose BOM 2024.12.01
-- Hilt 2.56.2
-- Kotlinx Serialization 1.7.3
-- cargo-ndk-android plugin 0.3.4
-
-## Build Outputs
-
-- Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
-- Release AAB: `app/build/outputs/bundle/release/app-release.aab`
+- `app/src/main/jniLibs/` is generated output and should not be committed.
+- Publishable Supabase client values live in `gradle.properties`. Upload keys and machine-local settings belong in user-level Gradle properties instead.
+- If `tastile-core` is missing, native build tasks fail with an explicit message instead of a cargo error cascade.

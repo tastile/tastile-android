@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,6 +30,7 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val sessionStatus by viewModel.sessionStatus.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.error.collectAsStateWithLifecycle()
 
     // Auto-navigate when authenticated
     if (sessionStatus is SessionStatus.Authenticated) {
@@ -83,6 +85,14 @@ fun LoginScreen(
             )
 
             Spacer(modifier = Modifier.height(48.dp))
+
+            errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                AssistChip(
+                    onClick = viewModel::clearError,
+                    label = { Text(message) },
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
 
             Button(
                 onClick = { viewModel.signInWithGoogle() },
