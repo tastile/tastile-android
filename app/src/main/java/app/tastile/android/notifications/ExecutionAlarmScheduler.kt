@@ -36,7 +36,7 @@ class ExecutionAlarmScheduler @Inject constructor(
     }
 
     suspend fun isAlarmStillRelevant(alarmId: String): Boolean {
-        val userId = authRepository.currentSession?.user?.id ?: return false
+        authRepository.currentSession?.user?.id ?: return false
         val snapshot = currentSnapshotOrNull() ?: return false
         return ExecutionAlarmPlanner.plan(snapshot, Clock.System.now()).any { it.id == alarmId }
     }
@@ -59,7 +59,12 @@ class ExecutionAlarmScheduler @Inject constructor(
     private fun schedule(spec: ScheduledAlarmSpec) {
         val pendingIntent = buildPendingIntent(createIntentPayload(spec.id, spec.type, spec.tileId, spec.tileTitle))
         val triggerAtMillis = spec.triggerAt.toEpochMilliseconds()
-        if (shouldUseExactAlarm(Build.VERSION.SDK_INT, alarmManager.canScheduleExactAlarms())) {
+        val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            false
+        }
+        if (shouldUseExactAlarm(Build.VERSION.SDK_INT, canScheduleExact)) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         } else {
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
@@ -89,11 +94,7 @@ class ExecutionAlarmScheduler @Inject constructor(
     private fun currentSnapshotOrNull(): app.tastile.android.core.CoreSnapshot? {
         return try {
             coreRuntimeService.currentSnapshot()
-        } catch (_: CoreBridgeError.LibraryLoadFailed) {
-            null
-        } catch (_: CoreBridgeError.NativeMethodUnavailable) {
-            null
-        } catch (_: CoreBridgeError.SnapshotParseFailed) {
+        } catch (_: CoreBridgeError) {
             null
         }
     }

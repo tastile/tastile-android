@@ -40,7 +40,13 @@ class TastileCoreBridge(
             throw CoreBridgeError.NativeMethodUnavailable(methodName = "getSnapshot", source = error)
         }
 
-        return CoreSnapshot.fromJson(snapshotJson)
+        return try {
+            CoreSnapshot.fromJson(snapshotJson)
+        } catch (error: CoreBridgeError.SnapshotParseFailed) {
+            throw error
+        } catch (error: Exception) {
+            throw CoreBridgeError.SnapshotParseFailed(rawPayload = snapshotJson, source = error)
+        }
     }
 
     fun replaceEventLog(events: List<CoreEventEnvelopeRecord>): CoreCommandAck {

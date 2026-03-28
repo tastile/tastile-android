@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.repository.AuthRepositoryContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,8 +26,10 @@ class LoginViewModel @Inject constructor(
             try {
                 _error.value = null
                 authRepository.signInWithGoogle()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to sign in"
+                _error.value = "Unable to sign in"
             }
         }
     }
@@ -36,8 +39,10 @@ class LoginViewModel @Inject constructor(
             try {
                 _error.value = null
                 authRepository.signOut()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to sign out"
+                _error.value = "Unable to sign out"
             }
         }
     }

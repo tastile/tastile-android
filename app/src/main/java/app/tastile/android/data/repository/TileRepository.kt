@@ -43,7 +43,9 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun getTiles(userId: String): List<Tile> {
-        projectedSnapshotTiles()?.let { return it }
+        if (canUseSnapshotForUser(userId)) {
+            projectedSnapshotTiles()?.let { return it }
+        }
 
         return client.from(TABLE_TILES)
             .select {
@@ -199,7 +201,7 @@ class TileRepository @Inject constructor(
     }
 
     override suspend fun getActiveStartedTile(userId: String): Tile? {
-        val snapshot = currentSnapshotOrNull()
+        val snapshot = if (canUseSnapshotForUser(userId)) currentSnapshotOrNull() else null
         snapshot?.activeTileId?.let { activeId ->
             snapshot.tiles.firstOrNull { it.id == activeId }
                 ?.let { return it.toTile(activeTileId = snapshot.activeTileId, phaseStartedAt = snapshot.phaseStartedAt) }
@@ -244,7 +246,9 @@ class TileRepository @Inject constructor(
     }
 
     override suspend fun getRecentTiles(userId: String, limit: Int): List<Tile> {
-        projectedSnapshotTiles()?.take(limit)?.let { return it }
+        if (canUseSnapshotForUser(userId)) {
+            projectedSnapshotTiles()?.take(limit)?.let { return it }
+        }
 
         return client.from(TABLE_TILES)
             .select {
@@ -309,6 +313,11 @@ class TileRepository @Inject constructor(
         }
     }
 
+    private fun canUseSnapshotForUser(userId: String): Boolean {
+        val currentUserId = currentUserProvider.currentUserId()
+        return !currentUserId.isNullOrBlank() && currentUserId == userId
+    }
+
     private fun findSnapshotTile(tileId: String): Tile? {
         val snapshot = currentSnapshotOrNull() ?: return null
         return snapshot.tiles.firstOrNull { it.id == tileId }
@@ -318,27 +327,19 @@ class TileRepository @Inject constructor(
     private fun currentSnapshotOrNull(): CoreSnapshot? {
         return try {
             coreRuntimeService.currentSnapshot()
-        } catch (_: CoreBridgeError.LibraryLoadFailed) {
-            null
-        } catch (_: CoreBridgeError.NativeMethodUnavailable) {
-            null
-        } catch (_: CoreBridgeError.SnapshotParseFailed) {
+        } catch (_: CoreBridgeError) {
             null
         }
     }
 
     private fun tryApplyCoreCommand(type: String, payload: kotlinx.serialization.json.JsonObject): app.tastile.android.core.CoreCommandAck? {
+        if (currentUserProvider.currentUserId().isNullOrBlank()) return null
         return try {
             val ack = coreRuntimeService.applyCommand(CoreCommandRequest(type = type, payload = payload))
+            if (!ack.accepted) return null
             executionNotificationCoordinator.syncOnce()
             ack
-        } catch (_: CoreBridgeError.LibraryLoadFailed) {
-            null
-        } catch (_: CoreBridgeError.NativeMethodUnavailable) {
-            null
-        } catch (_: CoreBridgeError.CommandResponseParseFailed) {
-            null
-        } catch (_: CoreBridgeError.SnapshotParseFailed) {
+        } catch (_: CoreBridgeError) {
             null
         }
     }

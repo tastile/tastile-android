@@ -89,11 +89,7 @@ class ExecutionAlarmReceiver : BroadcastReceiver() {
     private fun snapshotPromptContent(locale: AppLocale): Pair<String, String>? {
         val snapshot = try {
             coreRuntimeService.currentSnapshot()
-        } catch (_: CoreBridgeError.LibraryLoadFailed) {
-            return null
-        } catch (_: CoreBridgeError.NativeMethodUnavailable) {
-            return null
-        } catch (_: CoreBridgeError.SnapshotParseFailed) {
+        } catch (_: CoreBridgeError) {
             return null
         }
         val prompt = snapshot.promptQueue.firstOrNull() ?: return null

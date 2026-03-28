@@ -35,7 +35,7 @@ class LoginViewModelTest {
 
         viewModel.signInWithGoogle()
 
-        assertEquals("Google sign-in failed", viewModel.error.value)
+        assertEquals("Unable to sign in", viewModel.error.value)
     }
 
     @Test
@@ -45,7 +45,7 @@ class LoginViewModelTest {
 
         viewModel.signOut()
 
-        assertEquals("Sign out failed", viewModel.error.value)
+        assertEquals("Unable to sign out", viewModel.error.value)
     }
 
     @Test

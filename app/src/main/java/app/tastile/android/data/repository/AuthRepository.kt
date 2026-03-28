@@ -53,12 +53,8 @@ class AuthRepository @Inject constructor(
             return true
         }
 
-        return runCatching {
-            client.auth.exchangeCodeForSession(deeplink, true)
-            true
-        }.getOrElse {
-            false
-        }
+        client.auth.exchangeCodeForSession(deeplink, true)
+        return true
     }
 
     private fun parseParams(raw: String?): Map<String, String> {
