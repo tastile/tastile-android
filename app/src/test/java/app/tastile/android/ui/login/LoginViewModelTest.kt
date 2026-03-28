@@ -1,6 +1,6 @@
 package app.tastile.android.ui.login
 
-import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.AuthRepositoryContract
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

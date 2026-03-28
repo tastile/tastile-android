@@ -53,6 +53,7 @@ class PromptViewModelTest {
 
         assertEquals(listOf("tile-1"), repository.continuedTileIds)
         assertEquals(2, repository.activeTileRequestCount)
+        assertEquals("2025-01-01T00:05:00Z", viewModel.activeTile.value?.updatedAt)
     }
 
     @Test

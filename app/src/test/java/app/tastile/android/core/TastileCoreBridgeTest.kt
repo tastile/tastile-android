@@ -114,8 +114,8 @@ class TastileCoreBridgeTest {
 
         try {
             bridge.applyCommand(CoreCommandRequest(type = "tile.start"))
-            fail("Expected SnapshotParseFailed")
-        } catch (error: CoreBridgeError.SnapshotParseFailed) {
+            fail("Expected CommandResponseParseFailed")
+        } catch (error: CoreBridgeError.CommandResponseParseFailed) {
             assertTrue(error.rawPayload.contains("\"accepted\":false"))
         }
     }

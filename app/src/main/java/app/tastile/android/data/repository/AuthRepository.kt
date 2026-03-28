@@ -14,7 +14,7 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepository @Inject constructor(
     private val client: SupabaseClient
-) : CurrentUserProvider, app.tastile.android.ui.login.AuthRepositoryContract {
+) : CurrentUserProvider, AuthRepositoryContract {
     private val oauthRedirectUrl = "tastile://auth/callback"
 
     val currentSession get() = client.auth.currentSessionOrNull()

@@ -86,10 +86,10 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            if (!errorMessage.isNullOrBlank()) {
+            errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
                 AssistChip(
                     onClick = viewModel::clearError,
-                    label = { Text(errorMessage!!) },
+                    label = { Text(message) },
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
             }

@@ -6,13 +6,13 @@ import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.core.PersistentCoreRuntimeService
 import app.tastile.android.core.SharedPreferencesCoreCommandStore
 import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.AuthRepositoryContract
 import app.tastile.android.data.repository.CurrentUserProvider
 import app.tastile.android.data.repository.MemoTileRepository
 import app.tastile.android.data.repository.PromptTileRepository
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.sync.CoreEventSyncService
 import app.tastile.android.sync.DefaultCoreEventSyncService
-import app.tastile.android.ui.login.AuthRepositoryContract
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

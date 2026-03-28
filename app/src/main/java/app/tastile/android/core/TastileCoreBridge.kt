@@ -19,7 +19,7 @@ class TastileCoreBridge(
         val response = CoreCommandResponse.fromJson(responseJson)
         if (!response.accepted) {
             val err = response.error
-                ?: throw CoreBridgeError.SnapshotParseFailed(
+                ?: throw CoreBridgeError.CommandResponseParseFailed(
                     rawPayload = responseJson,
                     source = IllegalStateException("Native response has accepted=false but missing error field")
                 )

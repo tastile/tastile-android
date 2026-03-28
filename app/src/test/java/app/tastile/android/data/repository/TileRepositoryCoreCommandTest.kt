@@ -156,6 +156,30 @@ class TileRepositoryCoreCommandTest {
         assertEquals("tile-created", tile.id)
     }
 
+    @Test
+    fun recordingCoreRuntimeService_canReturnRejectedAck() {
+        val rejectedAck = CoreCommandAck(
+            accepted = false,
+            commandId = "cmd-rejected",
+            metadata = buildJsonObject { put("reason", "duplicate") }
+        )
+        val service = RecordingCoreRuntimeService(
+            snapshotBeforeCommand = CoreSnapshot(revision = 1),
+            ack = rejectedAck
+        )
+
+        val ack = service.applyCommand(
+            CoreCommandRequest(
+                type = "tile.create",
+                payload = buildJsonObject { put("title", "Inbox") }
+            )
+        )
+
+        assertEquals(false, ack.accepted)
+        assertEquals("cmd-rejected", ack.commandId)
+        assertEquals("duplicate", ack.metadata?.get("reason")?.toString()?.trim('"'))
+    }
+
     private class RecordingCoreRuntimeService(
         private val snapshotBeforeCommand: CoreSnapshot,
         private val snapshotAfterCommand: CoreSnapshot = snapshotBeforeCommand,

@@ -43,7 +43,7 @@ class ExecutionAlarmReceiver : BroadcastReceiver() {
                 if (canPostNotifications(context)) {
                     ExecutionNotificationChannels.ensure(context)
                     val type = intent.getStringExtra(ExecutionAlarmScheduler.EXTRA_TRIGGER_TYPE)
-                        ?.let(AlarmTriggerType::valueOf)
+                        ?.let { rawType -> enumValues<AlarmTriggerType>().firstOrNull { it.name == rawType } }
                         ?: AlarmTriggerType.PROMPT
                     val tileTitle = intent.getStringExtra(ExecutionAlarmScheduler.EXTRA_TILE_TITLE).orEmpty()
                     val locale = userSettingsRepository.getLocale()

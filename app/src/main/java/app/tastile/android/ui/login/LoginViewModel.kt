@@ -2,7 +2,7 @@ package app.tastile.android.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.AuthRepositoryContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,12 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-interface AuthRepositoryContract {
-    val sessionStatus: StateFlow<SessionStatus>
-    suspend fun signInWithGoogle()
-    suspend fun signOut()
-}
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(

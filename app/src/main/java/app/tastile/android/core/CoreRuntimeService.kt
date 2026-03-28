@@ -78,47 +78,52 @@ class PersistentCoreRuntimeService(
     private val bridge: TastileCoreBridge = TastileCoreBridge(),
     private val commandStore: CoreCommandStore
 ) : CoreRuntimeService {
+    private val runtimeLock = Any()
+
     @Volatile
     private var replayed = false
 
     override fun applyCommand(command: CoreCommandRequest): CoreCommandAck {
-        ensureReplayed()
-        val ack = bridge.applyCommand(command)
-        if (shouldPersist(command.type)) {
-            val commands = commandStore.load().toMutableList()
-            commands += normalizeForPersistence(command, ack)
-            commandStore.save(commands)
+        synchronized(runtimeLock) {
+            ensureReplayedLocked()
+            val ack = bridge.applyCommand(command)
+            if (shouldPersist(command.type)) {
+                val commands = commandStore.load().toMutableList()
+                commands += normalizeForPersistence(command, ack)
+                commandStore.save(commands)
+            }
+            return ack
         }
-        return ack
     }
 
     override fun replaceEventLog(events: List<CoreEventEnvelopeRecord>): CoreCommandAck {
-        val ack = bridge.replaceEventLog(events)
-        commandStore.saveImportedEvents(events)
-        commandStore.save(emptyList())
-        replayed = true
-        return ack
+        synchronized(runtimeLock) {
+            val ack = bridge.replaceEventLog(events)
+            commandStore.saveImportedEvents(events)
+            commandStore.save(emptyList())
+            replayed = true
+            return ack
+        }
     }
 
     override fun currentSnapshot(): CoreSnapshot {
-        ensureReplayed()
-        return bridge.currentSnapshot()
+        synchronized(runtimeLock) {
+            ensureReplayedLocked()
+            return bridge.currentSnapshot()
+        }
     }
 
-    private fun ensureReplayed() {
+    private fun ensureReplayedLocked() {
         if (replayed) return
 
-        synchronized(this) {
-            if (replayed) return
-            val importedEvents = commandStore.loadImportedEvents()
-            if (importedEvents.isNotEmpty()) {
-                bridge.replaceEventLog(importedEvents)
-            }
-            commandStore.load().forEach { command ->
-                bridge.applyCommand(command)
-            }
-            replayed = true
+        val importedEvents = commandStore.loadImportedEvents()
+        if (importedEvents.isNotEmpty()) {
+            bridge.replaceEventLog(importedEvents)
         }
+        commandStore.load().forEach { command ->
+            bridge.applyCommand(command)
+        }
+        replayed = true
     }
 
     private fun normalizeForPersistence(
