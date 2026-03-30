@@ -2,10 +2,13 @@ package app.tastile.android.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.GoogleCalendarIntegrationSettings
+import app.tastile.android.data.repository.IntegrationRepository
 import app.tastile.android.data.repository.ProfileRepository
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.ThemeMode
@@ -18,6 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 
 data class CreateTileDraft(
@@ -53,8 +58,10 @@ class DashboardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val profileRepository: ProfileRepository,
     private val tileRepository: TileRepository,
-    private val userSettingsRepository: UserSettingsRepository
+    private val userSettingsRepository: UserSettingsRepository,
+    private val integrationRepository: IntegrationRepository
 ) : ViewModel() {
+    private val cardMapper = DashboardCardMapper()
     private val _tiles = MutableStateFlow<List<Tile>>(emptyList())
     val tiles: StateFlow<List<Tile>> = _tiles.asStateFlow()
 
@@ -76,6 +83,11 @@ class DashboardViewModel @Inject constructor(
     private val _locale = MutableStateFlow(userSettingsRepository.getLocale())
     val locale: StateFlow<AppLocale> = _locale.asStateFlow()
 
+    private val _timeline = MutableStateFlow<List<CoreTimelineItem>>(emptyList())
+    val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
+    private val _googleCalendarIntegration = MutableStateFlow<GoogleCalendarIntegrationSettings?>(null)
+    val googleCalendarIntegration: StateFlow<GoogleCalendarIntegrationSettings?> = _googleCalendarIntegration.asStateFlow()
+
     init {
         refreshAll()
     }
@@ -91,6 +103,8 @@ class DashboardViewModel @Inject constructor(
                 if (userId != null) {
                     _tiles.value = tileRepository.getTiles(userId)
                     _profile.value = profileRepository.getProfile(userId)
+                    _timeline.value = tileRepository.getTimeline()
+                    _googleCalendarIntegration.value = integrationRepository.getSettings().googleCalendar
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load dashboard data"
@@ -182,8 +196,117 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun signOut() {
+        viewModelScope.launch {
+            try {
+                _error.value = null
+                authRepository.signOut()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to sign out"
+            }
+        }
+    }
+
     fun clearError() {
         _error.value = null
+    }
+
+    fun connectGoogleCalendar() {
+        viewModelScope.launch {
+            try {
+                _googleCalendarIntegration.value =
+                    integrationRepository.updateGoogleCalendarConnected(true).googleCalendar
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to connect google calendar"
+            }
+        }
+    }
+
+    fun disconnectGoogleCalendar() {
+        viewModelScope.launch {
+            try {
+                _googleCalendarIntegration.value =
+                    integrationRepository.updateGoogleCalendarConnected(false).googleCalendar
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to disconnect google calendar"
+            }
+        }
+    }
+
+    fun syncGoogleCalendarNow() {
+        viewModelScope.launch {
+            try {
+                integrationRepository.triggerSync()
+                _googleCalendarIntegration.value =
+                    integrationRepository.markGoogleCalendarSyncedNow().googleCalendar
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to sync google calendar"
+            }
+        }
+    }
+
+    fun buildExecuteCards(): List<DashboardCardModel> = cardMapper.buildExecuteCards(_tiles.value)
+
+    fun buildTileCards(): List<DashboardCardModel> = cardMapper.buildTileCards(_tiles.value)
+
+    fun handleCardAction(action: CardAction) {
+        when (action) {
+            is CardAction.TriggerPrompt -> triggerPrompt(action.tileId)
+        }
+    }
+
+    private fun triggerPrompt(tileId: String) {
+        viewModelScope.launch {
+            try {
+                tileRepository.continueTile(tileId)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to trigger prompt"
+            }
+        }
+    }
+
+    fun rescheduleTimelineItem(item: CoreTimelineItem, minuteOffset: Int, zoomScale: Float) {
+        viewModelScope.launch {
+            try {
+                val snapMin = snapByZoom(zoomScale)
+                val start = parseIsoOrNull(item.startAt) ?: return@launch
+                val end = parseIsoOrNull(item.endAt ?: item.startAt)?.let { parsed ->
+                    if (parsed.isAfter(start)) parsed else start.plusSeconds(60)
+                } ?: start.plusSeconds(30 * 60)
+                val durationSeconds = Duration.between(start, end).seconds
+                val movedStart = start.plusSeconds(minuteOffset.toLong() * 60L)
+                val movedStartMin = movedStart.epochSecond / 60L
+                val snappedStartMin = (movedStartMin / snapMin) * snapMin
+                val snappedStart = Instant.ofEpochSecond(snappedStartMin * 60L)
+                val snappedEnd = snappedStart.plusSeconds(durationSeconds)
+                val tileId = item.tileId ?: return@launch
+                tileRepository.rescheduleTile(
+                    tileId = tileId,
+                    startAtIso = snappedStart.toString(),
+                    endAtIso = snappedEnd.toString()
+                )
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to reschedule timeline item"
+            }
+        }
+    }
+
+    fun createTimelineTile(title: String, startAtIso: String, endAtIso: String) {
+        createTile(
+            CreateTileDraft(
+                title = title,
+                useStartAt = true,
+                useEndAt = true,
+                startAtIso = startAtIso,
+                endAtIso = endAtIso
+            )
+        )
+    }
+
+    fun deleteTimelineTile(tileId: String) {
+        deleteTile(tileId)
     }
 
     fun setThemeMode(mode: ThemeMode) {
@@ -275,6 +398,23 @@ class DashboardViewModel @Inject constructor(
             put("labels", kotlinx.serialization.json.buildJsonArray { mergedLabels.forEach { add(JsonPrimitive(it)) } })
             put("timed_labels", kotlinx.serialization.json.buildJsonArray { })
         })
+    }
+}
+
+private fun parseIsoOrNull(value: String?): Instant? {
+    if (value.isNullOrBlank()) return null
+    return try {
+        Instant.parse(value)
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private fun snapByZoom(zoomScale: Float): Long {
+    return when {
+        zoomScale >= 2.5f -> 1L
+        zoomScale >= 1.4f -> 5L
+        else -> 15L
     }
 }
 

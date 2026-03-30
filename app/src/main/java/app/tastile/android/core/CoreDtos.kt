@@ -2,6 +2,7 @@ package app.tastile.android.core
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -27,17 +28,24 @@ data class CoreCommandRequest(
 
 @Serializable
 data class CoreActorRecord(
+    @SerialName("actor_type")
     val actorType: String,
+    @SerialName("actor_id")
     val actorId: String
 )
 
 @Serializable
 data class CoreEventEnvelopeRecord(
+    @SerialName("event_id")
     val eventId: String,
+    @SerialName("aggregate_id")
     val aggregateId: String,
+    @SerialName("occurred_at")
     val occurredAt: String,
     val actor: CoreActorRecord,
+    @SerialName("caused_by_command_id")
     val causedByCommandId: String? = null,
+    @SerialName("request_id")
     val requestId: String? = null,
     val event: JsonObject
 ) {

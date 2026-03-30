@@ -1,10 +1,8 @@
 package app.tastile.android.ui.dashboard.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,14 +28,12 @@ fun HelpBadge(text: String) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(16.dp)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
+                    .size(16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "?",
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontSize = 10.sp
                 )
             }
         }

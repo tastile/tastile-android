@@ -23,9 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
@@ -45,7 +44,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.data.model.Tile
@@ -246,8 +244,7 @@ fun QuickCreateSheet(
         ) {
             Text(
                 t("クイック作成", "Quick Create"),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleMedium
             )
             IconButton(onClick = onClose) {
                 Icon(Icons.Default.Close, contentDescription = t("閉じる", "Close"))
@@ -586,7 +583,6 @@ fun QuickCreateSheet(
         if (error != null) {
             Text(
                 text = error ?: "",
-                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -680,7 +676,7 @@ private fun DateTimeField(
     val parsedMinute = time.split(":").getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, style = MaterialTheme.typography.bodySmall)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -690,11 +686,7 @@ private fun DateTimeField(
                 onValueChange = {},
                 modifier = Modifier.weight(1f),
                 readOnly = true,
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                )
+                singleLine = true
             )
             IconButton(onClick = { showDatePicker = true }) {
                 Icon(Icons.Default.DateRange, contentDescription = if (locale == AppLocale.JA) "日付選択" else "Select date")
@@ -710,11 +702,7 @@ private fun DateTimeField(
                     onValueChange = {},
                     modifier = Modifier.weight(1f),
                     readOnly = true,
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    )
+                    singleLine = true
                 )
                 IconButton(onClick = { showTimePicker = true }) {
                     Icon(Icons.Default.Schedule, contentDescription = if (locale == AppLocale.JA) "時刻選択" else "Select time")

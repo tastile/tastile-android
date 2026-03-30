@@ -38,11 +38,14 @@ class UserSettingsRepository @Inject constructor(
 
 enum class ThemeMode(val value: String) {
     LIGHT("light"),
-    GRAY("gray"),
     DARK("dark");
 
     companion object {
-        fun from(value: String): ThemeMode = entries.firstOrNull { it.value == value } ?: DARK
+        fun from(value: String): ThemeMode = when (value) {
+            LIGHT.value -> LIGHT
+            DARK.value -> DARK
+            else -> DARK
+        }
     }
 }
 

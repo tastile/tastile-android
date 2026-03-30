@@ -1,6 +1,8 @@
 package app.tastile.android.ui.login
 
+import android.content.Context
 import app.tastile.android.data.repository.AuthRepositoryContract
+import io.mockk.mockk
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,6 +19,7 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
+    private val context = mockk<Context>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -33,9 +36,21 @@ class LoginViewModelTest {
         val repository = FakeAuthRepository(signInError = IllegalStateException("Google sign-in failed"))
         val viewModel = LoginViewModel(repository)
 
-        viewModel.signInWithGoogle()
+        viewModel.signInWithGoogle(context)
 
-        assertEquals("Unable to sign in", viewModel.error.value)
+        assertEquals("Google sign-in failed", viewModel.error.value)
+        assertEquals(false, viewModel.isSigningIn.value)
+    }
+
+    @Test
+    fun signInWithGoogle_whenRepositorySucceeds_resetsSigningInAndKeepsErrorNull() {
+        val repository = FakeAuthRepository()
+        val viewModel = LoginViewModel(repository)
+
+        viewModel.signInWithGoogle(context)
+
+        assertNull(viewModel.error.value)
+        assertEquals(false, viewModel.isSigningIn.value)
     }
 
     @Test
@@ -53,7 +68,7 @@ class LoginViewModelTest {
         val repository = FakeAuthRepository(signInError = IllegalStateException("Google sign-in failed"))
         val viewModel = LoginViewModel(repository)
 
-        viewModel.signInWithGoogle()
+        viewModel.signInWithGoogle(context)
         viewModel.clearError()
 
         assertNull(viewModel.error.value)
@@ -67,7 +82,7 @@ class LoginViewModelTest {
 
         override val sessionStatus: StateFlow<SessionStatus> = status
 
-        override suspend fun signInWithGoogle() {
+        override suspend fun signInWithGoogle(context: Context) {
             signInError?.let { throw it }
         }
 

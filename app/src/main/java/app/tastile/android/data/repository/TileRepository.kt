@@ -4,6 +4,7 @@ import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.core.CoreCommandRequest
 import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.core.CoreSnapshot
+import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.CoreTileSnapshot
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
@@ -39,6 +40,7 @@ class TileRepository @Inject constructor(
         private const val COMMAND_TILE_DELETE = "tile.delete"
         private const val COMMAND_TILE_PAUSE = "tile.pause"
         private const val COMMAND_TILE_CONTINUE = "tile.continue"
+        private const val COMMAND_TILE_RESCHEDULE = "tile.reschedule"
         private const val COMMAND_MEMO_ATTACH = "memo.attach"
     }
 
@@ -243,6 +245,25 @@ class TileRepository @Inject constructor(
                     eq("id", tileId)
                 }
             }
+    }
+
+    suspend fun getTimeline(): List<CoreTimelineItem> {
+        return currentSnapshotOrNull()?.timeline.orEmpty()
+    }
+
+    suspend fun rescheduleTile(tileId: String, startAtIso: String, endAtIso: String) {
+        val ack = tryApplyCoreCommand(
+            COMMAND_TILE_RESCHEDULE,
+            buildJsonObject {
+                put("tile_id", JsonPrimitive(tileId))
+                put("start_at", JsonPrimitive(startAtIso))
+                put("end_at", JsonPrimitive(endAtIso))
+            }
+        )
+        if (ack != null) {
+            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
+            return
+        }
     }
 
     override suspend fun getRecentTiles(userId: String, limit: Int): List<Tile> {

@@ -14,6 +14,7 @@ val releaseKeyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS")
 val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD")
 val supabaseUrl = providers.gradleProperty("SUPABASE_URL")
 val supabaseAnonKey = providers.gradleProperty("SUPABASE_ANON_KEY")
+val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
 val tastileCoreDir = rootDir.resolve("../tastile-core")
 val hasReleaseSigning =
     releaseStoreFile.isPresent &&
@@ -46,6 +47,7 @@ android {
 
         buildConfigField("String", "SUPABASE_URL", "\"${supabaseUrl.orNull ?: ""}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${supabaseAnonKey.orNull ?: ""}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
     }
 
     buildTypes {
@@ -153,6 +155,11 @@ dependencies {
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
+    // Credential Manager / Google Identity
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
