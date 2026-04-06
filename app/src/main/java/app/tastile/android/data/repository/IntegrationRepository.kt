@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -332,33 +333,15 @@ class IntegrationRepository @Inject constructor(
         val accessToken = client.auth.currentSessionOrNull()?.accessToken
             ?: throw IllegalStateException("Not authenticated")
         val anonKey = BuildConfig.SUPABASE_ANON_KEY
-        val selectedBaseUrl = lastSuccessfulBaseUrl ?: daemonBaseUrls.firstOrNull()
-            ?: throw IllegalStateException("No daemon base url is configured")
-        val endpoint = URL("$selectedBaseUrl/read/events/state")
-        val connection = (endpoint.openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            doInput = true
-            setRequestProperty("Accept", "text/event-stream")
-            setRequestProperty("Authorization", "Bearer $accessToken")
-            if (anonKey.isNotBlank()) {
-                setRequestProperty("apikey", anonKey)
-            }
-            connectTimeout = 15_000
-            readTimeout = 0
-        }
-
-        val streamReader = withContext(Dispatchers.IO) {
-            val status = connection.responseCode
-            if (status !in 200..299) {
-                throw IllegalStateException("Failed to open state event stream: HTTP $status")
-            }
-            connection.inputStream.bufferedReader()
-        }
-
-        val readingJob = kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+        var streamReader: java.io.BufferedReader? = null
+        var connection: HttpURLConnection? = null
+        val readingJob = launch(Dispatchers.IO) {
             try {
-                while (true) {
-                    val line = streamReader.readLine() ?: break
+                val streamConnection = openStateStreamConnection(accessToken, anonKey)
+                connection = streamConnection.first
+                streamReader = streamConnection.second
+                while (isActive) {
+                    val line = streamReader?.readLine() ?: break
                     if (!line.startsWith("data:", ignoreCase = true)) continue
                     val payload = line.removePrefix("data:").trim()
                     if (payload.isNotEmpty()) {
@@ -367,20 +350,20 @@ class IntegrationRepository @Inject constructor(
                 }
             } catch (_: Exception) {
             } finally {
-                streamReader.close()
-                connection.disconnect()
+                runCatching { streamReader?.close() }
+                connection?.disconnect()
                 channel.close()
             }
         }
 
         awaitClose {
             readingJob.cancel()
-            runCatching { streamReader.close() }
-            connection.disconnect()
+            runCatching { streamReader?.close() }
+            connection?.disconnect()
         }
     }
 
-    private fun postSettingsPayload(payload: String): IntegrationSettingsResponse {
+    private suspend fun postSettingsPayload(payload: String): IntegrationSettingsResponse {
         val (status, responseText) = executeDaemonRequest(
             path = "/auth/integrations/settings",
             method = "POST",
@@ -392,47 +375,83 @@ class IntegrationRepository @Inject constructor(
         return json.decodeFromString(responseText)
     }
 
-    private fun executeDaemonRequest(
+    private suspend fun executeDaemonRequest(
         path: String,
         method: String,
         payload: String? = null,
         withContentType: Boolean = true,
         requiresAuth: Boolean = true
     ): Pair<Int, String> {
-        val accessToken = client.auth.currentSessionOrNull()?.accessToken
-        val anonKey = BuildConfig.SUPABASE_ANON_KEY
-        return runWithDaemonFallback(daemonBaseUrls) { baseUrl ->
-            val endpoint = URL("$baseUrl$path")
-            val connection = (endpoint.openConnection() as HttpURLConnection).apply {
-                requestMethod = method
-                doInput = true
-                doOutput = method != "GET"
-                if (requiresAuth) {
-                    val token = accessToken ?: throw IllegalStateException("Not authenticated")
-                    setRequestProperty("Authorization", "Bearer $token")
+        return withContext(Dispatchers.IO) {
+            val accessToken = client.auth.currentSessionOrNull()?.accessToken
+            val anonKey = BuildConfig.SUPABASE_ANON_KEY
+            runWithDaemonFallback(daemonBaseCandidates()) { baseUrl ->
+                val endpoint = URL("$baseUrl$path")
+                val connection = (endpoint.openConnection() as HttpURLConnection).apply {
+                    requestMethod = method
+                    doInput = true
+                    doOutput = method != "GET"
+                    if (requiresAuth) {
+                        val token = accessToken ?: throw IllegalStateException("Not authenticated")
+                        setRequestProperty("Authorization", "Bearer $token")
+                    }
+                    if (anonKey.isNotBlank()) {
+                        setRequestProperty("apikey", anonKey)
+                    }
+                    if (withContentType) {
+                        setRequestProperty("Content-Type", "application/json")
+                    }
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
                 }
+                if (payload != null) {
+                    OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(payload) }
+                }
+                val status = connection.responseCode
+                val responseText = if (status in 200..299) {
+                    connection.inputStream.bufferedReader().use { it.readText() }
+                } else {
+                    connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                }
+                if (status in 200..299) {
+                    lastSuccessfulBaseUrl = baseUrl
+                }
+                status to responseText
+            }
+        }
+    }
+
+    private fun daemonBaseCandidates(): List<String> {
+        return listOfNotNull(lastSuccessfulBaseUrl, *daemonBaseUrls.toTypedArray()).distinct()
+    }
+
+    private fun openStateStreamConnection(
+        accessToken: String,
+        anonKey: String
+    ): Pair<HttpURLConnection, java.io.BufferedReader> {
+        return runWithDaemonFallback(daemonBaseCandidates()) { baseUrl ->
+            val endpoint = URL("$baseUrl/read/events/state")
+            val connection = (endpoint.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                doInput = true
+                setRequestProperty("Accept", "text/event-stream")
+                setRequestProperty("Authorization", "Bearer $accessToken")
                 if (anonKey.isNotBlank()) {
                     setRequestProperty("apikey", anonKey)
                 }
-                if (withContentType) {
-                    setRequestProperty("Content-Type", "application/json")
-                }
                 connectTimeout = 15_000
-                readTimeout = 15_000
-            }
-            if (payload != null) {
-                OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(payload) }
+                readTimeout = 0
             }
             val status = connection.responseCode
-            val responseText = if (status in 200..299) {
-                connection.inputStream.bufferedReader().use { it.readText() }
-            } else {
-                connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (status !in 200..299) {
+                connection.disconnect()
+                throw IllegalStateException("Failed to open state event stream: HTTP $status")
             }
+            val reader = connection.inputStream.bufferedReader()
             if (status in 200..299) {
                 lastSuccessfulBaseUrl = baseUrl
             }
-            status to responseText
+            connection to reader
         }
     }
 

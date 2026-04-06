@@ -103,8 +103,8 @@ class DashboardViewModelTest {
 
         val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
 
-        viewModel.handleCardAction(CardAction.StartBreak("tile-1"))
-        viewModel.handleCardAction(CardAction.ExtendTile("tile-1", minutes = 10))
+        viewModel.handleCardAction(CardAction.StartBreak)
+        viewModel.handleCardAction(CardAction.ExtendTile(minutes = 10))
         viewModel.handleCardAction(CardAction.DeferTile("tile-1"))
 
         coVerify(atLeast = 1) { tileRepository.startBreak(5, null) }

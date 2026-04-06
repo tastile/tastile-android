@@ -316,8 +316,8 @@ class DashboardViewModel @Inject constructor(
             is CardAction.CompleteTile -> completeTile(action.tileId)
             is CardAction.DeferTile -> deferTile(action.tileId)
             is CardAction.DeleteTile -> deleteTile(action.tileId)
-            is CardAction.StartBreak -> startBreak()
-            is CardAction.EndBreak -> endBreak()
+            CardAction.StartBreak -> startBreak()
+            CardAction.EndBreak -> endBreak()
             is CardAction.ExtendTile -> extendTile(action.minutes)
         }
     }

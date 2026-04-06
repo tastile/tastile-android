@@ -14,9 +14,9 @@ sealed interface CardAction {
     data class CompleteTile(val tileId: String) : CardAction
     data class DeferTile(val tileId: String) : CardAction
     data class DeleteTile(val tileId: String) : CardAction
-    data class StartBreak(val tileId: String) : CardAction
-    data class EndBreak(val tileId: String) : CardAction
-    data class ExtendTile(val tileId: String, val minutes: Int = 10) : CardAction
+    data object StartBreak : CardAction
+    data object EndBreak : CardAction
+    data class ExtendTile(val minutes: Int = 10) : CardAction
 }
 
 enum class CardStatus {

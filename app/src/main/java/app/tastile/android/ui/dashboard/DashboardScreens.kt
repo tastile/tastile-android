@@ -473,8 +473,8 @@ private fun CardPrimaryActions(
         CardStatus.STARTED -> listOf(
             "Complete" to CardAction.CompleteTile(tileId),
             "Defer" to CardAction.DeferTile(tileId),
-            "Break" to CardAction.StartBreak(tileId),
-            "Extend+10" to CardAction.ExtendTile(tileId, minutes = 10)
+            "Break" to CardAction.StartBreak,
+            "Extend+10" to CardAction.ExtendTile(minutes = 10)
         )
         CardStatus.DONE, CardStatus.ARCHIVED -> listOf(
             "Delete" to CardAction.DeleteTile(tileId)

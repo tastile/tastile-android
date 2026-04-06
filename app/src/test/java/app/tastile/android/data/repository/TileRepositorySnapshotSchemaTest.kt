@@ -1,6 +1,7 @@
 package app.tastile.android.data.repository
 
 import app.tastile.android.data.model.TileLifecycle
+import app.tastile.android.data.model.Tile
 import app.tastile.android.core.CoreTimelineItem
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -223,6 +224,49 @@ class TileRepositorySnapshotSchemaTest {
         assertEquals("tile-1", normalized.first().tileId)
         assertEquals("2026-04-05T00:00:00Z", normalized.first().startAt)
         assertEquals("2026-04-05T00:30:00Z", normalized.first().endAt)
+    }
+
+    @Test
+    fun normalizeCoreTimeline_parsesOffsetIsoValues() {
+        val now = Instant.parse("2026-04-05T12:00:00Z")
+        val source = listOf(
+            CoreTimelineItem(
+                id = "work-offset",
+                tileId = "tile-offset",
+                title = "Offset",
+                type = "work",
+                status = "active",
+                startAt = "2026-04-05T10:00:00+09:00",
+                endAt = "2026-04-05T10:45:00+09:00"
+            )
+        )
+
+        val normalized = normalizeCoreTimeline(source, now, ZoneOffset.UTC)
+
+        assertEquals(1, normalized.size)
+        assertEquals("2026-04-05T01:00:00Z", normalized.first().startAt)
+        assertEquals("2026-04-05T01:45:00Z", normalized.first().endAt)
+    }
+
+    @Test
+    fun buildTimelineFromTiles_usesOffsetStartWhenCalculatingTargetEnd() {
+        val tile = Tile(
+            id = "tile-offset",
+            title = "Offset",
+            lifecycle = TileLifecycle.READY.value,
+            temporalConditions = buildJsonObject {
+                put("fixed_start", JsonPrimitive("2026-04-05T10:00:00+09:00"))
+            },
+            objectiveConditions = buildJsonObject {
+                put("target_work_min", JsonPrimitive(30))
+            }
+        )
+
+        val timeline = buildTimelineFromTiles(listOf(tile), Instant.parse("2026-04-05T12:00:00Z"))
+
+        assertEquals(1, timeline.size)
+        assertEquals("2026-04-05T10:00:00+09:00", timeline.first().startAt)
+        assertEquals("2026-04-05T01:30:00Z", timeline.first().endAt)
     }
 
     @Test

@@ -26,6 +26,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -257,8 +259,8 @@ class TileRepository @Inject constructor(
             items = timeline.map { item ->
                 val durationMin = if (!item.endAt.isNullOrBlank()) {
                     runCatching {
-                        val start = Instant.parse(item.startAt)
-                        val end = Instant.parse(item.endAt)
+                        val start = parseIsoInstant(item.startAt) ?: return@runCatching 0L
+                        val end = parseIsoInstant(item.endAt) ?: return@runCatching 0L
                         ((end.epochSecond - start.epochSecond) / 60L).coerceAtLeast(0L)
                     }.getOrDefault(0L)
                 } else {
@@ -272,7 +274,8 @@ class TileRepository @Inject constructor(
                     startedAt = item.startAt,
                     endedAt = item.endAt,
                     durationMin = durationMin,
-                    isActive = item.status.equals("started", ignoreCase = true)
+                    isActive = item.status.equals("active", ignoreCase = true) ||
+                        item.status.equals("started", ignoreCase = true)
                 )
             }
         )
@@ -794,26 +797,39 @@ class TileRepository @Inject constructor(
     }
 
     private fun shouldRetryWithoutDeletedAtFilter(error: Exception): Boolean {
-        if (!hasHttpStatusCode(error, 400) && error.javaClass.simpleName != "BadRequestRestException") return false
+        if (!isBadRequestError(error)) return false
         val message = error.message.orEmpty().lowercase()
         return message.contains("deleted_at") && message.contains("column")
     }
 
     private fun shouldRetryAsSnapshotSchema(error: Exception): Boolean {
-        if (!hasHttpStatusCode(error, 400) && error.javaClass.simpleName != "BadRequestRestException") return false
+        if (!isBadRequestError(error)) return false
         val message = error.message.orEmpty().lowercase()
         return (message.contains("id") && message.contains("column")) ||
             (message.contains("local_tile_id") && message.contains("column")) ||
             (message.contains("deleted_at") && message.contains("column"))
     }
 
+    private fun isBadRequestError(error: Throwable): Boolean {
+        if (hasHttpStatusCode(error, 400)) return true
+        return throwableChain(error).any { throwable ->
+            val message = throwable.message.orEmpty()
+            throwable.javaClass.name.contains("badrequest", ignoreCase = true) ||
+                message.contains("bad request", ignoreCase = true) ||
+                Regex("""\b400\b""").containsMatchIn(message)
+        }
+    }
+
     private fun hasHttpStatusCode(error: Throwable, expected: Int): Boolean {
+        return throwableChain(error).any { extractStatusCode(it) == expected }
+    }
+
+    private fun throwableChain(error: Throwable): Sequence<Throwable> = sequence {
         var current: Throwable? = error
         while (current != null) {
-            if (extractStatusCode(current) == expected) return true
+            yield(current)
             current = current.cause
         }
-        return false
     }
 
     private fun extractStatusCode(error: Throwable): Int? {
@@ -1037,7 +1053,11 @@ private fun parseIsoInstant(value: String): Instant? {
     return try {
         Instant.parse(value)
     } catch (_: Exception) {
-        null
+        try {
+            ZonedDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME).toInstant()
+        } catch (_: Exception) {
+            null
+        }
     }
 }
 
@@ -1066,7 +1086,7 @@ internal fun buildTimelineFromTiles(tiles: List<Tile>, now: Instant): List<CoreT
             }
             ?: return@mapNotNull null
         val targetEnd = tile.targetWorkMin()?.let { minutes ->
-            Instant.parse(startAt).plusSeconds(minutes * 60).toString()
+            parseIsoInstant(startAt)?.plusSeconds(minutes * 60)?.toString()
         }
         val endAt = when (tile.lifecycle) {
             TileLifecycle.DONE.value -> tile.updatedAt ?: scheduledEnd ?: targetEnd ?: startAt
