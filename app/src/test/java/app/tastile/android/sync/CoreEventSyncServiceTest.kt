@@ -73,7 +73,28 @@ class CoreEventSyncServiceTest {
         assertTrue(imported.event.toString().contains("next_action"))
     }
 
+    @Test
+    fun syncUserEvents_clearsCoreWhenLegacyEventsTableIsMissing() = runTest {
+        val repository = mockk<EventRepository>()
+        val runtime = mockk<CoreRuntimeService>()
+        val importedSlot = slot<List<CoreEventEnvelopeRecord>>()
+        val service = DefaultCoreEventSyncService(repository, runtime)
+
+        coEvery { repository.loadAll("user-1") } throws NotFoundRestException(
+            "Could not find the table 'public.events' in the schema cache"
+        )
+        every { runtime.replaceEventLog(capture(importedSlot)) } returns CoreCommandAck(accepted = true)
+        every { runtime.applyCommand(any()) } returns CoreCommandAck(accepted = true)
+        every { runtime.currentSnapshot() } returns CoreSnapshot(revision = 12)
+
+        service.syncUserEvents("user-1")
+
+        assertEquals(emptyList<CoreEventEnvelopeRecord>(), importedSlot.captured)
+    }
+
     companion object {
         private val UUID_REGEX = Regex("^[0-9a-fA-F-]{36}$")
     }
+
+    private class NotFoundRestException(message: String) : RuntimeException(message)
 }

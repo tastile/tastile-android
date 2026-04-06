@@ -27,9 +27,23 @@ class DefaultCoreEventSyncService @Inject constructor(
     private val coreRuntimeService: CoreRuntimeService
 ) : CoreEventSyncService {
     override suspend fun syncUserEvents(userId: String) {
-        val rows = eventRepository.loadAll(userId)
+        val rows = try {
+            eventRepository.loadAll(userId)
+        } catch (error: Exception) {
+            if (isLegacyEventsTableMissing(error)) {
+                coreRuntimeService.replaceEventLog(emptyList())
+                return
+            }
+            throw error
+        }
         val envelopes = rows.map(::toCoreEnvelope)
         coreRuntimeService.replaceEventLog(envelopes)
+    }
+
+    private fun isLegacyEventsTableMissing(error: Exception): Boolean {
+        if (error.javaClass.simpleName != "NotFoundRestException") return false
+        val message = error.message.orEmpty().lowercase()
+        return message.contains("public.events") || message.contains("table 'events'") || message.contains("relation \"events\"")
     }
 
     private fun toCoreEnvelope(row: EventRow): CoreEventEnvelopeRecord {

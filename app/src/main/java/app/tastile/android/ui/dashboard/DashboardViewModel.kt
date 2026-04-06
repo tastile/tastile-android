@@ -87,6 +87,10 @@ class DashboardViewModel @Inject constructor(
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
     private val _googleCalendarIntegration = MutableStateFlow<GoogleCalendarIntegrationSettings?>(null)
     val googleCalendarIntegration: StateFlow<GoogleCalendarIntegrationSettings?> = _googleCalendarIntegration.asStateFlow()
+    private val _statsDiagnostics = MutableStateFlow("n/a")
+    val statsDiagnostics: StateFlow<String> = _statsDiagnostics.asStateFlow()
+    private val _daemonStatusSummary = MutableStateFlow("daemon=n/a")
+    val daemonStatusSummary: StateFlow<String> = _daemonStatusSummary.asStateFlow()
 
     init {
         refreshAll()
@@ -105,8 +109,19 @@ class DashboardViewModel @Inject constructor(
                     _profile.value = profileRepository.getProfile(userId)
                     _timeline.value = tileRepository.getTimeline()
                     _googleCalendarIntegration.value = integrationRepository.getSettings().googleCalendar
+                    val daemon = integrationRepository.lastSuccessfulDaemonBaseUrl() ?: "unresolved"
+                    _statsDiagnostics.value = "${tileRepository.latestReadDiagnostics()} daemon=$daemon"
+                    refreshDaemonStatusInternal()
+                } else {
+                    _tiles.value = emptyList()
+                    _timeline.value = emptyList()
+                    _profile.value = null
+                    _googleCalendarIntegration.value = null
+                    _statsDiagnostics.value = "source=none reason=unauthenticated"
+                    _daemonStatusSummary.value = "daemon=unauthenticated"
                 }
             } catch (e: Exception) {
+                _statsDiagnostics.value = "source=error reason=${e.javaClass.simpleName}"
                 _error.value = e.message ?: "Failed to load dashboard data"
             } finally {
                 _loading.value = false
@@ -164,7 +179,7 @@ class DashboardViewModel @Inject constructor(
     fun deferTile(tileId: String) {
         viewModelScope.launch {
             try {
-                tileRepository.pauseTile(tileId)
+                tileRepository.deferTile(tileId)
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to defer tile"
@@ -245,6 +260,51 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun triggerDaemonTick() {
+        viewModelScope.launch {
+            try {
+                integrationRepository.triggerTick()
+                refreshDaemonStatusInternal()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to trigger daemon tick"
+            }
+        }
+    }
+
+    fun resetLocalSyncData() {
+        viewModelScope.launch {
+            try {
+                val res = integrationRepository.resetLocalSyncData()
+                _daemonStatusSummary.value = "recovery=reset-local applied=${res.applied} ok=${res.ok}"
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to reset local sync data"
+            }
+        }
+    }
+
+    fun redownloadRemoteSyncData() {
+        viewModelScope.launch {
+            try {
+                val res = integrationRepository.redownloadRemoteSyncData()
+                _daemonStatusSummary.value = "recovery=redownload-remote applied=${res.applied} ok=${res.ok}"
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to redownload remote sync data"
+            }
+        }
+    }
+
+    fun refreshDaemonStatus() {
+        viewModelScope.launch {
+            try {
+                refreshDaemonStatusInternal()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to refresh daemon status"
+            }
+        }
+    }
+
     fun buildExecuteCards(): List<DashboardCardModel> = cardMapper.buildExecuteCards(_tiles.value)
 
     fun buildTileCards(): List<DashboardCardModel> = cardMapper.buildTileCards(_tiles.value)
@@ -252,16 +312,56 @@ class DashboardViewModel @Inject constructor(
     fun handleCardAction(action: CardAction) {
         when (action) {
             is CardAction.TriggerPrompt -> triggerPrompt(action.tileId)
+            is CardAction.StartTile -> startTile(action.tileId)
+            is CardAction.CompleteTile -> completeTile(action.tileId)
+            is CardAction.DeferTile -> deferTile(action.tileId)
+            is CardAction.DeleteTile -> deleteTile(action.tileId)
+            is CardAction.StartBreak -> startBreak()
+            is CardAction.EndBreak -> endBreak()
+            is CardAction.ExtendTile -> extendTile(action.minutes)
         }
     }
 
     private fun triggerPrompt(tileId: String) {
         viewModelScope.launch {
             try {
-                tileRepository.continueTile(tileId)
+                tileRepository.requestPrompt(tileId)
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to trigger prompt"
+            }
+        }
+    }
+
+    private fun startBreak() {
+        viewModelScope.launch {
+            try {
+                tileRepository.startBreak(breakMin = 5)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to start break"
+            }
+        }
+    }
+
+    private fun endBreak() {
+        viewModelScope.launch {
+            try {
+                tileRepository.endBreak()
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to end break"
+            }
+        }
+    }
+
+    private fun extendTile(minutes: Int) {
+        viewModelScope.launch {
+            try {
+                tileRepository.extendTile(minutes)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to extend tile"
             }
         }
     }
@@ -398,6 +498,20 @@ class DashboardViewModel @Inject constructor(
             put("labels", kotlinx.serialization.json.buildJsonArray { mergedLabels.forEach { add(JsonPrimitive(it)) } })
             put("timed_labels", kotlinx.serialization.json.buildJsonArray { })
         })
+    }
+
+    private suspend fun refreshDaemonStatusInternal() {
+        val syncStatus = integrationRepository.getSyncStatus()
+        val runtimePaths = integrationRepository.getRuntimePaths()
+        val quota = integrationRepository.getTileQuota()
+        val syncSummary = if (syncStatus.running) "running" else "idle"
+        _daemonStatusSummary.value = buildString {
+            append("sync=$syncSummary")
+            syncStatus.lastSuccessAt?.let { append(" last_success=$it") }
+            if (!syncStatus.lastError.isNullOrBlank()) append(" last_error=${syncStatus.lastError}")
+            append(" quota=${quota.tileCount}/${quota.maxTiles}")
+            append(" profile=${runtimePaths.profileName}")
+        }
     }
 }
 

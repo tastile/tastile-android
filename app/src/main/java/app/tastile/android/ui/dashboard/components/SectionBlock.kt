@@ -1,5 +1,6 @@
 package app.tastile.android.ui.dashboard.components
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -14,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
+@SuppressLint("ModifierParameter")
 fun SectionBlock(
     title: String? = null,
     helpText: String? = null,

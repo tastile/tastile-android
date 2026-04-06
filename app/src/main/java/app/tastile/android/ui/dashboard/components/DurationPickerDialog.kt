@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 
 @Composable
 fun DurationPickerDialog(
@@ -42,7 +43,7 @@ fun DurationPickerDialog(
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = String.format("%02d:%02d", hours, minutes),
+                    text = String.format(Locale.US, "%02d:%02d", hours, minutes),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -53,7 +54,7 @@ fun DurationPickerDialog(
                         IconButton(onClick = { hours = (hours + 1).coerceIn(0, 99) }) {
                             Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
                         }
-                        Text(String.format("%02d", hours), style = MaterialTheme.typography.titleLarge)
+                        Text(String.format(Locale.US, "%02d", hours), style = MaterialTheme.typography.titleLarge)
                         IconButton(onClick = { hours = (hours - 1).coerceIn(0, 99) }) {
                             Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
                         }
@@ -65,7 +66,7 @@ fun DurationPickerDialog(
                         IconButton(onClick = { minutes = (minutes + 5).coerceIn(0, 59) }) {
                             Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
                         }
-                        Text(String.format("%02d", minutes), style = MaterialTheme.typography.titleLarge)
+                        Text(String.format(Locale.US, "%02d", minutes), style = MaterialTheme.typography.titleLarge)
                         IconButton(onClick = { minutes = (minutes - 5).coerceIn(0, 59) }) {
                             Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
                         }

@@ -18,13 +18,12 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -37,8 +36,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.core.CoreTimelineItem
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneOffset
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -49,9 +50,9 @@ fun TimelineScreen(viewModel: DashboardViewModel) {
     val pxPerMinute = 1.2f * zoomScale
     val hourHeightDp = (pxPerMinute * 60f).dp
     val timelineHeightDp = (hourHeightDp.value * 24f).dp
-    val arranged = remember(rawItems) { layoutOverlaps(rawItems) }
+    val arranged = remember(rawItems) { arrangeVisibleBlocks(rawItems, Instant.now(), ZoneId.systemDefault()) }
     val scrollState = rememberScrollState()
-    var contentWidthPx by remember { mutableStateOf(0) }
+    var contentWidthPx by remember { mutableIntStateOf(0) }
     val timeLabelWidth = 56.dp
 
     Column(
@@ -103,7 +104,7 @@ private fun TimeLabelsColumn(width: androidx.compose.ui.unit.Dp, hourHeight: and
         repeat(24) { hour ->
             Box(modifier = Modifier.height(hourHeight)) {
                 Text(
-                    text = "%02d:00".format(hour),
+                    text = "%02d:00".format(Locale.US, hour),
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(top = 2.dp)
                 )
@@ -138,10 +139,8 @@ private fun TimelineEventBlock(
     totalWidthPx: Int,
     pxPerMinute: Float
 ) {
-    val startMinute = parseMinuteOfDay(block.item.startAt)
-    val endMinute = parseMinuteOfDay(block.item.endAt ?: block.item.startAt)
-    val durationMin = max(1, endMinute - startMinute)
-    val topPx = startMinute * pxPerMinute
+    val durationMin = max(1, block.endMinute - block.startMinute)
+    val topPx = block.startMinute * pxPerMinute
     val heightPx = durationMin * pxPerMinute
     val columnWidthPx = if (block.columnCount <= 0) totalWidthPx.toFloat() else totalWidthPx.toFloat() / block.columnCount.toFloat()
     val leftPx = block.columnIndex * columnWidthPx
@@ -155,72 +154,109 @@ private fun TimelineEventBlock(
             .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = {}, modifier = Modifier.width(22.dp).height(22.dp)) {
-                Icon(imageVector = statusIcon(block.item.status), contentDescription = "Status")
-            }
+            Icon(
+                imageVector = statusIcon(block.item.status),
+                contentDescription = "Status",
+                modifier = Modifier.width(18.dp).height(18.dp)
+            )
             Text(block.item.title, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
         }
     }
 }
 
-private data class ArrangedBlock(
+internal data class ArrangedBlock(
     val item: CoreTimelineItem,
+    val startMinute: Int,
+    val endMinute: Int,
     val columnIndex: Int,
     val columnCount: Int
 )
 
-private fun layoutOverlaps(items: List<CoreTimelineItem>): List<ArrangedBlock> {
-    val sorted = items.sortedBy { it.startAt }
-    val groups = mutableListOf<MutableList<CoreTimelineItem>>()
-    sorted.forEach { item ->
-        val itemStart = parseInstant(item.startAt) ?: return@forEach
-        val itemEnd = parseInstant(item.endAt ?: item.startAt)?.plusSeconds(60) ?: itemStart.plusSeconds(60)
+private data class TimelineWindow(
+    val item: CoreTimelineItem,
+    val start: Instant,
+    val end: Instant,
+    val startMinute: Int,
+    val endMinute: Int
+)
+
+@Suppress("UNUSED_PARAMETER")
+internal fun arrangeVisibleBlocks(
+    items: List<CoreTimelineItem>,
+    now: Instant,
+    zoneId: ZoneId
+): List<ArrangedBlock> {
+    val sorted = items.mapNotNull { item ->
+        val start = parseInstant(item.startAt) ?: return@mapNotNull null
+        val parsedEnd = parseInstant(item.endAt ?: item.startAt)
+        val end = when {
+            parsedEnd == null -> start.plusSeconds(60)
+            parsedEnd.isAfter(start) -> parsedEnd
+            else -> start.plusSeconds(60)
+        }
+        val startMinute = minuteOfDay(start, zoneId)
+        val endMinute = minuteOfDay(end, zoneId).coerceAtLeast(startMinute + 1)
+        TimelineWindow(
+            item = item,
+            start = start,
+            end = end,
+            startMinute = startMinute,
+            endMinute = endMinute
+        )
+    }.sortedBy { it.start }
+    val groups = mutableListOf<MutableList<TimelineWindow>>()
+    sorted.forEach { window ->
         val targetGroup = groups.firstOrNull { group ->
             group.any { existing ->
-                val aStart = parseInstant(existing.startAt) ?: return@any false
-                val aEnd = parseInstant(existing.endAt ?: existing.startAt)?.plusSeconds(60) ?: aStart.plusSeconds(60)
-                itemStart < aEnd && aStart < itemEnd
+                window.start < existing.end && existing.start < window.end
             }
         }
-        if (targetGroup == null) groups += mutableListOf(item) else targetGroup += item
+        if (targetGroup == null) groups += mutableListOf(window) else targetGroup += window
     }
 
     val result = mutableListOf<ArrangedBlock>()
     groups.forEach { group ->
-        val placed = mutableListOf<Pair<CoreTimelineItem, Int>>()
-        group.forEach { item ->
+        val placed = mutableListOf<Pair<TimelineWindow, Int>>()
+        group.forEach { window ->
             var col = 0
-            while (placed.any { (existing, c) -> c == col && overlaps(existing, item) }) {
+            while (placed.any { (existing, c) -> c == col && overlaps(existing, window) }) {
                 col++
             }
-            placed += item to col
+            placed += window to col
         }
         val totalCols = (placed.maxOfOrNull { it.second } ?: 0) + 1
-        placed.forEach { (item, col) ->
-            result += ArrangedBlock(item = item, columnIndex = col, columnCount = totalCols)
+        placed.forEach { (window, col) ->
+            result += ArrangedBlock(
+                item = window.item,
+                startMinute = window.startMinute,
+                endMinute = window.endMinute,
+                columnIndex = col,
+                columnCount = totalCols
+            )
         }
     }
     return result
 }
 
-private fun overlaps(a: CoreTimelineItem, b: CoreTimelineItem): Boolean {
-    val aStart = parseInstant(a.startAt) ?: return false
-    val aEnd = parseInstant(a.endAt ?: a.startAt)?.plusSeconds(60) ?: aStart.plusSeconds(60)
-    val bStart = parseInstant(b.startAt) ?: return false
-    val bEnd = parseInstant(b.endAt ?: b.startAt)?.plusSeconds(60) ?: bStart.plusSeconds(60)
-    return aStart < bEnd && bStart < aEnd
+private fun overlaps(a: TimelineWindow, b: TimelineWindow): Boolean {
+    return a.start < b.end && b.start < a.end
 }
 
-private fun parseMinuteOfDay(iso: String): Int {
-    val instant = parseInstant(iso) ?: return 0
-    val dt = instant.atZone(ZoneOffset.UTC)
+private fun minuteOfDay(instant: Instant, zoneId: ZoneId): Int {
+    val dt = instant.atZone(zoneId)
     return dt.hour * 60 + dt.minute
 }
 
-private fun parseInstant(iso: String): Instant? = try {
-    Instant.parse(iso)
-} catch (_: Exception) {
-    null
+internal fun parseInstant(iso: String): Instant? {
+    return try {
+        Instant.parse(iso)
+    } catch (_: Exception) {
+        try {
+            ZonedDateTime.parse(iso, DateTimeFormatter.ISO_DATE_TIME).toInstant()
+        } catch (_: Exception) {
+            null
+        }
+    }
 }
 
 private fun statusIcon(status: String) = when (status.lowercase()) {
