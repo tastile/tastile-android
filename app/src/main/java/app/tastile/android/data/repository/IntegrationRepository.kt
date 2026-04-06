@@ -429,7 +429,9 @@ class IntegrationRepository @Inject constructor(
             } else {
                 connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
             }
-            lastSuccessfulBaseUrl = baseUrl
+            if (status in 200..299) {
+                lastSuccessfulBaseUrl = baseUrl
+            }
             status to responseText
         }
     }

@@ -794,17 +794,56 @@ class TileRepository @Inject constructor(
     }
 
     private fun shouldRetryWithoutDeletedAtFilter(error: Exception): Boolean {
-        if (error.javaClass.simpleName != "BadRequestRestException") return false
+        if (!hasHttpStatusCode(error, 400) && error.javaClass.simpleName != "BadRequestRestException") return false
         val message = error.message.orEmpty().lowercase()
         return message.contains("deleted_at") && message.contains("column")
     }
 
     private fun shouldRetryAsSnapshotSchema(error: Exception): Boolean {
-        if (error.javaClass.simpleName != "BadRequestRestException") return false
+        if (!hasHttpStatusCode(error, 400) && error.javaClass.simpleName != "BadRequestRestException") return false
         val message = error.message.orEmpty().lowercase()
         return (message.contains("id") && message.contains("column")) ||
             (message.contains("local_tile_id") && message.contains("column")) ||
             (message.contains("deleted_at") && message.contains("column"))
+    }
+
+    private fun hasHttpStatusCode(error: Throwable, expected: Int): Boolean {
+        var current: Throwable? = error
+        while (current != null) {
+            if (extractStatusCode(current) == expected) return true
+            current = current.cause
+        }
+        return false
+    }
+
+    private fun extractStatusCode(error: Throwable): Int? {
+        val methodNames = listOf("getStatus", "getStatusCode", "getCode")
+        for (methodName in methodNames) {
+            val value = runCatching {
+                error.javaClass.methods.firstOrNull { it.name == methodName && it.parameterCount == 0 }?.invoke(error)
+            }.getOrNull()
+            val parsed = parseStatusCode(value)
+            if (parsed != null) return parsed
+        }
+
+        val fieldNames = listOf("status", "statusCode", "code")
+        for (fieldName in fieldNames) {
+            val value = runCatching {
+                error.javaClass.getDeclaredField(fieldName).apply { isAccessible = true }.get(error)
+            }.getOrNull()
+            val parsed = parseStatusCode(value)
+            if (parsed != null) return parsed
+        }
+        return null
+    }
+
+    private fun parseStatusCode(value: Any?): Int? {
+        return when (value) {
+            is Int -> value
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull()
+            else -> null
+        }
     }
 
     private suspend fun querySnapshotSchemaTiles(

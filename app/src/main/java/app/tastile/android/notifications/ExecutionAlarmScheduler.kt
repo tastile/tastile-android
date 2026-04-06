@@ -61,7 +61,12 @@ class ExecutionAlarmScheduler @Inject constructor(
     private fun schedule(spec: ScheduledAlarmSpec) {
         val pendingIntent = buildPendingIntent(createIntentPayload(spec.id, spec.type, spec.tileId, spec.tileTitle))
         val triggerAtMillis = spec.triggerAt.toEpochMilliseconds()
-        val canUseExactAlarm = shouldUseExactAlarm(Build.VERSION.SDK_INT, alarmManager.canScheduleExactAlarms())
+        val canScheduleExactAlarms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            false
+        }
+        val canUseExactAlarm = shouldUseExactAlarm(Build.VERSION.SDK_INT, canScheduleExactAlarms)
         if (canUseExactAlarm) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         } else {

@@ -50,7 +50,7 @@ fun TimelineScreen(viewModel: DashboardViewModel) {
     val pxPerMinute = 1.2f * zoomScale
     val hourHeightDp = (pxPerMinute * 60f).dp
     val timelineHeightDp = (hourHeightDp.value * 24f).dp
-    val arranged = remember(rawItems) { arrangeVisibleBlocks(rawItems, Instant.now(), ZoneId.systemDefault()) }
+    val arranged = remember(rawItems) { arrangeVisibleBlocks(rawItems, ZoneId.systemDefault()) }
     val scrollState = rememberScrollState()
     var contentWidthPx by remember { mutableIntStateOf(0) }
     val timeLabelWidth = 56.dp
@@ -180,10 +180,8 @@ private data class TimelineWindow(
     val endMinute: Int
 )
 
-@Suppress("UNUSED_PARAMETER")
 internal fun arrangeVisibleBlocks(
     items: List<CoreTimelineItem>,
-    now: Instant,
     zoneId: ZoneId
 ): List<ArrangedBlock> {
     val sorted = items.mapNotNull { item ->

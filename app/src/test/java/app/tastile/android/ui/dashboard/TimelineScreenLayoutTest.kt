@@ -4,7 +4,6 @@ import app.tastile.android.core.CoreTimelineItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
-import java.time.Instant
 import java.time.ZoneOffset
 
 class TimelineScreenLayoutTest {
@@ -18,7 +17,6 @@ class TimelineScreenLayoutTest {
 
     @Test
     fun arrangeVisibleBlocks_keepsItemsOutsideCurrentDay() {
-        val now = Instant.parse("2026-04-05T12:00:00Z")
         val items = listOf(
             CoreTimelineItem(
                 id = "a",
@@ -40,14 +38,13 @@ class TimelineScreenLayoutTest {
             )
         )
 
-        val blocks = arrangeVisibleBlocks(items, now, ZoneOffset.UTC)
+        val blocks = arrangeVisibleBlocks(items, ZoneOffset.UTC)
 
         assertEquals(2, blocks.size)
     }
 
     @Test
     fun arrangeVisibleBlocks_assignsDifferentLanesForOverlap() {
-        val now = Instant.parse("2026-04-05T12:00:00Z")
         val items = listOf(
             CoreTimelineItem(
                 id = "a",
@@ -69,7 +66,7 @@ class TimelineScreenLayoutTest {
             )
         )
 
-        val blocks = arrangeVisibleBlocks(items, now, ZoneOffset.UTC)
+        val blocks = arrangeVisibleBlocks(items, ZoneOffset.UTC)
 
         assertEquals(2, blocks.size)
         assertEquals(2, blocks[0].columnCount)
