@@ -27,9 +27,62 @@ class DefaultCoreEventSyncService @Inject constructor(
     private val coreRuntimeService: CoreRuntimeService
 ) : CoreEventSyncService {
     override suspend fun syncUserEvents(userId: String) {
-        val rows = eventRepository.loadAll(userId)
+        val rows = try {
+            eventRepository.loadAll(userId)
+        } catch (error: Exception) {
+            if (isLegacyEventsTableMissing(error)) {
+                coreRuntimeService.replaceEventLog(emptyList())
+                return
+            }
+            throw error
+        }
         val envelopes = rows.map(::toCoreEnvelope)
         coreRuntimeService.replaceEventLog(envelopes)
+    }
+
+    private fun isLegacyEventsTableMissing(error: Exception): Boolean {
+        if (!hasHttpStatusCode(error, 404) && error.javaClass.simpleName != "NotFoundRestException") return false
+        val message = error.message.orEmpty().lowercase()
+        return message.contains("public.events") || message.contains("table 'events'") || message.contains("relation \"events\"")
+    }
+
+    private fun hasHttpStatusCode(error: Throwable, expected: Int): Boolean {
+        var current: Throwable? = error
+        while (current != null) {
+            if (extractStatusCode(current) == expected) return true
+            current = current.cause
+        }
+        return false
+    }
+
+    private fun extractStatusCode(error: Throwable): Int? {
+        val methodNames = listOf("getStatus", "getStatusCode", "getCode")
+        for (methodName in methodNames) {
+            val value = runCatching {
+                error.javaClass.methods.firstOrNull { it.name == methodName && it.parameterCount == 0 }?.invoke(error)
+            }.getOrNull()
+            val parsed = parseStatusCode(value)
+            if (parsed != null) return parsed
+        }
+
+        val fieldNames = listOf("status", "statusCode", "code")
+        for (fieldName in fieldNames) {
+            val value = runCatching {
+                error.javaClass.getDeclaredField(fieldName).apply { isAccessible = true }.get(error)
+            }.getOrNull()
+            val parsed = parseStatusCode(value)
+            if (parsed != null) return parsed
+        }
+        return null
+    }
+
+    private fun parseStatusCode(value: Any?): Int? {
+        return when (value) {
+            is Int -> value
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull()
+            else -> null
+        }
     }
 
     private fun toCoreEnvelope(row: EventRow): CoreEventEnvelopeRecord {

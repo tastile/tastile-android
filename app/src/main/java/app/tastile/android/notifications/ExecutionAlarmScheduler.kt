@@ -2,6 +2,7 @@ package app.tastile.android.notifications
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -56,15 +57,17 @@ class ExecutionAlarmScheduler @Inject constructor(
         prefs.edit().remove(KEY_SCHEDULED_ALARMS).apply()
     }
 
+    @SuppressLint("MissingPermission")
     private fun schedule(spec: ScheduledAlarmSpec) {
         val pendingIntent = buildPendingIntent(createIntentPayload(spec.id, spec.type, spec.tileId, spec.tileTitle))
         val triggerAtMillis = spec.triggerAt.toEpochMilliseconds()
-        val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val canScheduleExactAlarms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             alarmManager.canScheduleExactAlarms()
         } else {
             false
         }
-        if (shouldUseExactAlarm(Build.VERSION.SDK_INT, canScheduleExact)) {
+        val canUseExactAlarm = shouldUseExactAlarm(Build.VERSION.SDK_INT, canScheduleExactAlarms)
+        if (canUseExactAlarm) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         } else {
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
@@ -116,6 +119,6 @@ internal fun shouldUseExactAlarm(apiLevel: Int, canScheduleExactAlarms: Boolean)
 }
 
 internal fun alarmIntentUri(alarmId: String): String {
-    val encodedAlarmId = URLEncoder.encode(alarmId, StandardCharsets.UTF_8)
+    val encodedAlarmId = URLEncoder.encode(alarmId, StandardCharsets.UTF_8.name())
     return "tastile://execution-alarm/$encodedAlarmId"
 }

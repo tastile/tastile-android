@@ -10,6 +10,13 @@ import kotlinx.serialization.json.jsonPrimitive
 
 sealed interface CardAction {
     data class TriggerPrompt(val tileId: String) : CardAction
+    data class StartTile(val tileId: String) : CardAction
+    data class CompleteTile(val tileId: String) : CardAction
+    data class DeferTile(val tileId: String) : CardAction
+    data class DeleteTile(val tileId: String) : CardAction
+    data object StartBreak : CardAction
+    data object EndBreak : CardAction
+    data class ExtendTile(val minutes: Int = 10) : CardAction
 }
 
 enum class CardStatus {

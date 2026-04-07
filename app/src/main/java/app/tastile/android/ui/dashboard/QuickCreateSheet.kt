@@ -71,6 +71,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.max
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -749,7 +750,7 @@ private fun DateTimeField(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onTimeChange(String.format("%02d:%02d", timePickerState.hour, timePickerState.minute))
+                        onTimeChange(String.format(Locale.US, "%02d:%02d", timePickerState.hour, timePickerState.minute))
                         showTimePicker = false
                     }
                 ) {

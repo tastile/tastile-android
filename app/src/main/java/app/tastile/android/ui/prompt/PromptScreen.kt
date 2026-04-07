@@ -48,6 +48,7 @@ fun PromptScreen(
 ) {
     val activeTile by viewModel.activeTile.collectAsStateWithLifecycle()
     val elapsedMinutes by viewModel.elapsedMinutes.collectAsStateWithLifecycle()
+    val pendingPrompt by viewModel.pendingPrompt.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     
@@ -99,10 +100,10 @@ fun PromptScreen(
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
-                } else if (activeTile != null && elapsedMinutes >= 25) {
+                } else if (pendingPrompt != null && activeTile != null) {
                     ActivePromptCard(
                         tile = activeTile!!,
-                        elapsedMinutes = elapsedMinutes,
+                        elapsedMinutes = pendingPrompt?.suggestedMinutes ?: elapsedMinutes,
                         onContinue = { viewModel.continueTile() },
                         onTakeBreak = { viewModel.takeBreak() },
                         onComplete = { viewModel.completeTile() }

@@ -3,14 +3,12 @@ package app.tastile.android.notifications
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 
 object ExecutionNotificationChannels {
     const val STATUS = "execution-status"
     const val ALERTS = "execution-alerts"
 
     fun ensure(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
             NotificationChannel(

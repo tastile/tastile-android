@@ -26,6 +26,7 @@ val hasSupabaseConfig = supabaseUrl.isPresent && supabaseAnonKey.isPresent
 android {
     namespace = "app.tastile.android"
     compileSdk = 35
+    ndkVersion = "27.1.12297006"
 
     signingConfigs {
         if (hasReleaseSigning) {
@@ -72,6 +73,14 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    lint {
+        disable += setOf(
+            "GradleDependency",
+            "ObsoleteLintCustomCheck",
+            "IconDuplicates",
+            "IconLauncherShape"
+        )
     }
 }
 

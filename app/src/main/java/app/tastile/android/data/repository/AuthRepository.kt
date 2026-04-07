@@ -1,5 +1,6 @@
 package app.tastile.android.data.repository
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -100,6 +101,7 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    @SuppressLint("CredentialManagerSignInWithGoogle")
     private suspend fun tryGetGoogleIdToken(
         context: Context,
         credentialManager: CredentialManager,

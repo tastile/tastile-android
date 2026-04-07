@@ -121,6 +121,7 @@ fun IntegrationsDashboardScreen(viewModel: DashboardViewModel) {
 fun SettingsDashboardScreen(viewModel: DashboardViewModel) {
     val theme by viewModel.themeMode.collectAsStateWithLifecycle()
     val locale by viewModel.locale.collectAsStateWithLifecycle()
+    val daemonStatusSummary by viewModel.daemonStatusSummary.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     fun t(ja: String, en: String): String = if (locale == AppLocale.JA) ja else en
 
@@ -159,6 +160,22 @@ fun SettingsDashboardScreen(viewModel: DashboardViewModel) {
             Text(t("ログアウト", "Sign Out"))
         }
 
+        Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(t("デーモン", "Daemon"))
+            Text(
+                text = daemonStatusSummary,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { viewModel.refreshDaemonStatus() }) { Text(t("状態更新", "Refresh")) }
+                OutlinedButton(onClick = { viewModel.triggerDaemonTick() }) { Text(t("Tick実行", "Trigger Tick")) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { viewModel.resetLocalSyncData() }) { Text(t("ローカル再構築", "Reset Local")) }
+                OutlinedButton(onClick = { viewModel.redownloadRemoteSyncData() }) { Text(t("再ダウンロード", "Redownload")) }
+            }
+        }
+
         if (!error.isNullOrBlank()) {
             Text(
                 text = error.orEmpty(),
@@ -174,6 +191,7 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
     val profile by viewModel.profile.collectAsStateWithLifecycle()
     val email by viewModel.email.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val statsDiagnostics by viewModel.statsDiagnostics.collectAsStateWithLifecycle()
     val locale by viewModel.locale.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
     fun t(ja: String, en: String): String = if (locale == AppLocale.JA) ja else en
@@ -229,6 +247,10 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
                 Text(t("進行中", "In Progress") + ": $started")
                 Text(t("準備完了", "Ready") + ": $ready")
                 Text(t("完了率", "Completion Rate") + ": $completionRate%")
+                Text(
+                    text = t("診断", "Diagnostics") + ": $statsDiagnostics",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
             "usage" -> Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(t("利用ダッシュボード", "Usage Dashboard"))
@@ -406,8 +428,12 @@ private fun DashboardCardRenderer(
             }
 
             when (card) {
-                is DashboardCardModel.BaseCard -> Unit
-                is DashboardCardModel.TimePriorityCard -> Unit
+                is DashboardCardModel.BaseCard -> {
+                    CardPrimaryActions(card.id, card.status, onAction)
+                }
+                is DashboardCardModel.TimePriorityCard -> {
+                    CardPrimaryActions(card.id, card.status, onAction)
+                }
 
                 is DashboardCardModel.TimelineCard -> {
                     card.items.forEach { item ->
@@ -428,6 +454,42 @@ private fun DashboardCardRenderer(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardPrimaryActions(
+    tileId: String,
+    status: CardStatus,
+    onAction: (CardAction) -> Unit
+) {
+    val actions = when (status) {
+        CardStatus.READY -> listOf(
+            "Start" to CardAction.StartTile(tileId),
+            "Delete" to CardAction.DeleteTile(tileId)
+        )
+        CardStatus.STARTED -> listOf(
+            "Complete" to CardAction.CompleteTile(tileId),
+            "Defer" to CardAction.DeferTile(tileId),
+            "Break" to CardAction.StartBreak,
+            "Extend+10" to CardAction.ExtendTile(minutes = 10)
+        )
+        CardStatus.DONE, CardStatus.ARCHIVED -> listOf(
+            "Delete" to CardAction.DeleteTile(tileId)
+        )
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        actions.forEach { (label, action) ->
+            OutlinedButton(
+                onClick = { onAction(action) },
+                modifier = Modifier.height(34.dp)
+            ) {
+                Text(label)
             }
         }
     }

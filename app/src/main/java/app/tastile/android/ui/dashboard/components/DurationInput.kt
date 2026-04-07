@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 
 @Composable
 fun DurationInput(
@@ -31,7 +32,7 @@ fun DurationInput(
     var showPicker by remember { mutableStateOf(false) }
     val parsedHours = hours.toIntOrNull()?.coerceIn(0, 99) ?: 0
     val parsedMinutes = minutes.toIntOrNull()?.coerceIn(0, 59) ?: 0
-    val displayValue = String.format("%02d:%02d", parsedHours, parsedMinutes)
+    val displayValue = String.format(Locale.US, "%02d:%02d", parsedHours, parsedMinutes)
 
     Row(
         modifier = modifier.fillMaxWidth(),
