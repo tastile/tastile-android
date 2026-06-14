@@ -6,6 +6,7 @@ import app.tastile.android.data.model.Plan
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.TastileAuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,10 +44,11 @@ class AccountViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
+                val authState = authRepository.authState.value as? TastileAuthState.Authenticated
                 val session = authRepository.currentSession
-                val userId = session?.user?.id
+                val userId = authState?.userId ?: session?.user?.id
                 
-                _email.value = session?.user?.email ?: ""
+                _email.value = authState?.email ?: session?.user?.email ?: ""
                 
                 if (userId != null) {
                     _profile.value = profileRepository.getProfile(userId)
@@ -64,8 +66,7 @@ class AccountViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _error.value = null
-                val session = authRepository.currentSession
-                val userId = session?.user?.id
+                val userId = authRepository.currentUserId()
                 
                 if (userId != null) {
                     val updatedProfile = profileRepository.updateDisplayName(userId, name)

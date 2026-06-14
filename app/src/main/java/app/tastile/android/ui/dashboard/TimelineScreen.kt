@@ -1,7 +1,6 @@
 package app.tastile.android.ui.dashboard
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,24 +17,21 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.core.CoreTimelineItem
-import java.time.Duration
+import app.tastile.android.data.repository.CalendarProjectionResponse
+import app.tastile.android.ui.designsystem.AppBodyText
+import app.tastile.android.ui.designsystem.AppScreenTitle
+import app.tastile.android.ui.designsystem.AppSecondaryButton
+import app.tastile.android.ui.designsystem.AppTheme
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -43,55 +39,69 @@ import java.util.Locale
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+enum class CalendarViewMode {
+    DAY,
+    WEEK,
+    MONTH
+}
+
 @Composable
-fun TimelineScreen(viewModel: DashboardViewModel) {
-    val rawItems by viewModel.timeline.collectAsStateWithLifecycle()
-    var zoomScale by remember { mutableFloatStateOf(1.6f) }
-    val pxPerMinute = 1.2f * zoomScale
-    val hourHeightDp = (pxPerMinute * 60f).dp
-    val timelineHeightDp = (hourHeightDp.value * 24f).dp
-    val arranged = remember(rawItems) { arrangeVisibleBlocks(rawItems, ZoneId.systemDefault()) }
-    val scrollState = rememberScrollState()
-    var contentWidthPx by remember { mutableIntStateOf(0) }
-    val timeLabelWidth = 56.dp
+fun TimelineScreen(
+    viewModel: DashboardViewModel,
+    mode: CalendarViewMode = CalendarViewMode.MONTH
+) {
+    val monthProjection by viewModel.calendarMonthProjection.collectAsStateWithLifecycle()
+    val timeline by viewModel.timeline.collectAsStateWithLifecycle()
+    when (mode) {
+        CalendarViewMode.MONTH -> MonthCalendarScreen(
+            projection = monthProjection,
+            fallbackTimeline = timeline,
+            modifier = Modifier.fillMaxSize()
+        )
+        CalendarViewMode.DAY -> DayAgendaScreen(monthProjection, timeline, Modifier.fillMaxSize())
+        CalendarViewMode.WEEK -> WeekAgendaScreen(monthProjection, timeline, Modifier.fillMaxSize())
+    }
+}
+
+@Composable
+private fun DayAgendaScreen(
+    projection: CalendarProjectionResponse?,
+    timeline: List<CoreTimelineItem>,
+    modifier: Modifier = Modifier
+) {
+    val zone = ZoneId.systemDefault()
+    val today = LocalDate.now(zone)
+    val todayBlocks = (projection?.blocks ?: timelineToProjectionBlocks(timeline))
+        .filter { block -> parseInstant(block.startAt)?.atZone(zone)?.toLocalDate() == today }
+        .sortedBy { parseInstant(it.startAt) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTransformGestures { _, _, zoom, _ ->
-                    zoomScale = (zoomScale * zoom).coerceIn(0.8f, 3.2f)
-                }
-            }
+        modifier = modifier
+            .background(AppTheme.colors.background)
+            .padding(12.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Box(modifier = Modifier.width(timeLabelWidth))
-            Text("Timeline", style = MaterialTheme.typography.titleMedium)
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-        ) {
-            TimeLabelsColumn(
-                width = timeLabelWidth,
-                hourHeight = hourHeightDp,
-                modifier = Modifier.height(timelineHeightDp)
+        AppScreenTitle("Day View")
+        AppBodyText(today.toString())
+        if (todayBlocks.isEmpty()) {
+            AppBodyText(
+                text = "No scheduled blocks today",
+                modifier = Modifier.padding(top = 12.dp)
             )
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(timelineHeightDp)
-                    .onSizeChanged { contentWidthPx = it.width }
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                HourGrid(hourHeight = hourHeightDp, modifier = Modifier.fillMaxSize())
-                arranged.forEach { block ->
-                    TimelineEventBlock(
-                        block = block,
-                        totalWidthPx = contentWidthPx,
-                        pxPerMinute = pxPerMinute
+        } else {
+            todayBlocks.forEach { block ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                ) {
+                    AppBodyText(
+                        text = parseInstant(block.startAt)?.atZone(zone)?.format(
+                            DateTimeFormatter.ofPattern("HH:mm", Locale.US)
+                        ) ?: "--:--",
+                        modifier = Modifier.width(56.dp)
                     )
+                    AppBodyText(block.title)
                 }
             }
         }
@@ -99,37 +109,42 @@ fun TimelineScreen(viewModel: DashboardViewModel) {
 }
 
 @Composable
-private fun TimeLabelsColumn(width: androidx.compose.ui.unit.Dp, hourHeight: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.width(width)) {
-        repeat(24) { hour ->
-            Box(modifier = Modifier.height(hourHeight)) {
-                Text(
-                    text = "%02d:00".format(Locale.US, hour),
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+private fun WeekAgendaScreen(
+    projection: CalendarProjectionResponse?,
+    timeline: List<CoreTimelineItem>,
+    modifier: Modifier = Modifier
+) {
+    val zone = ZoneId.systemDefault()
+    val today = LocalDate.now(zone)
+    val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
+    val weekDays = (0..6).map { weekStart.plusDays(it.toLong()) }
+    val blocks = projection?.blocks ?: timelineToProjectionBlocks(timeline)
+
+    Column(
+        modifier = modifier
+            .background(AppTheme.colors.background)
+            .padding(12.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        AppScreenTitle("Week View")
+        weekDays.forEach { day ->
+            val count = blocks.count { block ->
+                parseInstant(block.startAt)?.atZone(zone)?.toLocalDate() == day
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+            ) {
+                AppBodyText(day.dayOfWeek.name.take(3), modifier = Modifier.width(56.dp))
+                AppBodyText("$count items")
             }
         }
-    }
-}
-
-@Composable
-private fun HourGrid(hourHeight: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
-        repeat(24) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(hourHeight)
-                    .background(MaterialTheme.colorScheme.surface)
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-            )
-        }
+        AppSecondaryButton(
+            text = "Today",
+            onClick = {},
+            modifier = Modifier.padding(top = 16.dp)
+        )
     }
 }
 
@@ -150,7 +165,7 @@ private fun TimelineEventBlock(
             .offset { IntOffset(leftPx.roundToInt(), topPx.roundToInt()) }
             .width((columnWidthPx / androidx.compose.ui.platform.LocalDensity.current.density).dp)
             .height((heightPx / androidx.compose.ui.platform.LocalDensity.current.density).dp)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+            .background(AppTheme.colors.primary.copy(alpha = 0.16f))
             .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -159,7 +174,7 @@ private fun TimelineEventBlock(
                 contentDescription = "Status",
                 modifier = Modifier.width(18.dp).height(18.dp)
             )
-            Text(block.item.title, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            AppBodyText(block.item.title, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -263,3 +278,13 @@ private fun statusIcon(status: String) = when (status.lowercase()) {
     else -> Icons.Default.RadioButtonUnchecked
 }
 
+private fun timelineToProjectionBlocks(items: List<CoreTimelineItem>): List<app.tastile.android.data.repository.CalendarProjectionBlockResponse> {
+    return items.map { item ->
+        app.tastile.android.data.repository.CalendarProjectionBlockResponse(
+            tileId = item.tileId,
+            title = item.title,
+            startAt = item.startAt,
+            endAt = item.endAt ?: item.startAt
+        )
+    }
+}

@@ -36,8 +36,7 @@ class NowViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
-                val session = authRepository.currentSession
-                val userId = session?.user?.id
+                val userId = authRepository.currentUserId()
                 if (userId != null) {
                     _tiles.value = tileRepository.getTiles(userId)
                 }
@@ -55,8 +54,7 @@ class NowViewModel @Inject constructor(
         
         viewModelScope.launch {
             try {
-                val session = authRepository.currentSession
-                val userId = session?.user?.id
+                val userId = authRepository.currentUserId()
                 if (userId != null) {
                     tileRepository.createTile(userId, title)
                     loadTiles() // Refresh list

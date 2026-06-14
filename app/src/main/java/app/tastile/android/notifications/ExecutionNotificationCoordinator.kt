@@ -42,7 +42,7 @@ class ExecutionNotificationCoordinator @Inject constructor(
 
     @SuppressLint("MissingPermission")
     fun syncOnce() {
-        val userId = authRepository.currentSession?.user?.id
+        val userId = authRepository.currentUserId()
         if (userId.isNullOrBlank()) {
             NotificationManagerCompat.from(context).cancel(ALERT_NOTIFICATION_ID)
             return
