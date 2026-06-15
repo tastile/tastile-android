@@ -48,8 +48,8 @@ android {
         applicationId = "app.tastile.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "0.2.8"
+        versionCode = 17
+        versionName = "0.2.9"
 
         buildConfigField("String", "SUPABASE_URL", "\"${supabaseUrl.orNull ?: ""}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${supabaseAnonKey.orNull ?: ""}\"")
