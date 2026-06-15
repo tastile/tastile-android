@@ -44,8 +44,8 @@ internal data class MonthCalendarCell(
 @Composable
 fun MonthCalendarScreen(
     projection: CalendarProjectionResponse?,
+    modifier: Modifier = Modifier,
     fallbackTimeline: List<CoreTimelineItem> = emptyList(),
-    modifier: Modifier = Modifier
 ) {
     val effectiveProjection = projection ?: buildFallbackMonthProjection(fallbackTimeline)
 
