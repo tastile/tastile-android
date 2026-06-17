@@ -9,6 +9,4 @@ RELEASE_KEY_ALIAS=
 RELEASE_KEY_PASSWORD=
 
 # Runtime config (also read by CI from GitHub Secrets)
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
 GOOGLE_WEB_CLIENT_ID=
