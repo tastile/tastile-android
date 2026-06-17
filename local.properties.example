@@ -1,0 +1,14 @@
+# Tastile Android local development configuration
+# Copy to local.properties (gitignored) and fill in values (same as GitHub Secrets).
+# DO NOT commit local.properties
+
+# Signing keystore
+RELEASE_STORE_FILE=
+RELEASE_STORE_PASSWORD=
+RELEASE_KEY_ALIAS=
+RELEASE_KEY_PASSWORD=
+
+# Runtime config (also read by CI from GitHub Secrets)
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+GOOGLE_WEB_CLIENT_ID=
