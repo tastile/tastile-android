@@ -28,10 +28,11 @@ RELEASE_KEY_PASSWORD=...
 
 Release tasks fail fast when these values are missing.
 
-## Supabase Configuration
+## AWS Cognito Configuration
 
-The repository currently carries publishable mobile client values in `gradle.properties`.
-If those values change, keep them aligned with the shared backend/web configuration.
+`GOOGLE_WEB_CLIENT_ID` (Cognito Hosted UI, Google OAuth federated identity) lives in `local.properties`
+and is read into `gradle.properties` at build time. Keep it aligned with the AWS-only connection model
+documented in `tastile-desktop/CLAUDE.md`.
 
 ## Clean Re-Clone Workflow
 
