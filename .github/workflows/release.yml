@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.2.3)"
+        required: true
+        type: string
+      track:
+        description: "Play track"
+        default: "internal"
+        type: choice
+        options: [internal, beta, production]
+
+permissions:
+  contents: write
+
+jobs:
+  build-aab:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout core repo as sibling for cargo-ndk
+        uses: actions/checkout@v4
+        with:
+          repository: tastile/tastile-core
+          token: ${{ secrets.CORE_REPO_READ_TOKEN }}
+          path: .deps/tastile-core
+
+      - name: Create sibling symlink for cargo-ndk module
+        run: |
+          ln -sfn "$GITHUB_WORKSPACE/.deps/tastile-core" "$GITHUB_WORKSPACE/../tastile-core"
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Install Rust + cargo-ndk + Android targets
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          source "$HOME/.cargo/env"
+          rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+          cargo install cargo-ndk
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > /tmp/keystore.jks
+          ls -l /tmp/keystore.jks
+
+      - name: Write local.properties from Secrets
+        run: |
+          cat > local.properties <<EOF
+          RELEASE_STORE_FILE=/tmp/keystore.jks
+          RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+          GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          EOF
+
+      - name: Build AAB
+        run: ./gradlew bundleRelease
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
+
+  upload-play:
+    needs: build-aab
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-release
+          path: dist/
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: app.tastile.android
+          releaseFiles: dist/app-release.aab
+          track: ${{ github.event.inputs.track || 'internal' }}
+          status: completed
+          mappingFile: dist/mapping.txt
+
+  upload-github-release:
+    needs: build-aab
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release
+          path: dist/
+
+      - name: Upload AAB to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build-aab.outputs.version }}
+          TAG_NAME: v${{ needs.build-aab.outputs.version }}
+        run: |
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" dist/app-release.aab dist/mapping.txt --clobber
+          else
+            gh release create "$TAG_NAME" \
+              dist/app-release.aab dist/mapping.txt \
+              --title "$TAG_NAME" --generate-notes
+          fi
