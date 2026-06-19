@@ -2,10 +2,11 @@ package app.tastile.android
 
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.app.KeyguardManager
-import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.os.Build
+import android.app.AlarmManager
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
@@ -20,8 +21,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.TastileAuthState
-import app.tastile.android.data.repository.UserSettingsRepository
 import app.tastile.android.navigation.TastileNavGraph
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
@@ -29,13 +28,20 @@ import app.tastile.android.sync.SyncCoordinator
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.theme.TastileTheme
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.jan.supabase.auth.handleDeeplinks
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.launch
+import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.collectLatest
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val dashboardViewModel: DashboardViewModel by viewModels()
+    private var exactAlarmAccessRequested = false
+
+    @Inject
+    lateinit var supabaseClient: SupabaseClient
 
     @Inject
     lateinit var authRepository: AuthRepository
@@ -46,25 +52,11 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var executionNotificationCoordinator: ExecutionNotificationCoordinator
 
-    @Inject
-    lateinit var userSettingsRepository: UserSettingsRepository
-
-    private var securityUnlockInProgress = false
-
     private val requestNotificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
             executionNotificationCoordinator.start()
-        }
-    }
-
-    private val requestSecurityUnlock = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        securityUnlockInProgress = false
-        if (result.resultCode != RESULT_OK) {
-            finish()
         }
     }
 
@@ -89,19 +81,6 @@ class MainActivity : ComponentActivity() {
         }
 
         observeSessionForCoreSync()
-        requestSecurityUnlockIfNeeded()
-    }
-
-    override fun onStart() {
-        super.onStart()
-        requestSecurityUnlockIfNeeded()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        if (!isChangingConfigurations) {
-            userSettingsRepository.recordSecurityLockLeftAt()
-        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -114,7 +93,10 @@ class MainActivity : ComponentActivity() {
         if (intent?.data == null) return
         lifecycleScope.launch {
             runCatching {
-                authRepository.handleDeepLink(intent)
+                val handled = authRepository.handleDeepLink(intent)
+                if (!handled) {
+                    supabaseClient.handleDeeplinks(intent)
+                }
             }.onFailure {
                 it.printStackTrace()
             }
@@ -123,19 +105,24 @@ class MainActivity : ComponentActivity() {
 
     private fun observeSessionForCoreSync() {
         lifecycleScope.launch {
-            authRepository.authState.collectLatest { status ->
-                if (status !is TastileAuthState.Authenticated) {
+            authRepository.sessionStatus.collectLatest { status ->
+                if (status !is SessionStatus.Authenticated) {
                     executionNotificationCoordinator.stop()
                     return@collectLatest
                 }
-                val refreshToken = status.refreshToken ?: return@collectLatest
+                val session = status.session
+                val userId = session.user?.id ?: return@collectLatest
+                val accessToken = session.accessToken
+                val refreshToken = session.refreshToken
+                if (accessToken.isBlank() || refreshToken.isBlank()) return@collectLatest
                 requestNotificationPermissionIfNeeded()
+                requestExactAlarmAccessIfNeeded()
                 executionNotificationCoordinator.start()
 
                 runCatching {
                     syncCoordinator.onSessionAvailable(
-                        userId = status.userId,
-                        accessToken = status.idToken,
+                        userId = userId,
+                        accessToken = accessToken,
                         refreshToken = refreshToken
                     )
                 }.onFailure { error ->
@@ -156,19 +143,15 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    private fun requestSecurityUnlockIfNeeded() {
-        if (securityUnlockInProgress || !userSettingsRepository.shouldRequireSecurityUnlock()) {
-            return
-        }
-        val keyguard = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager ?: return
-        if (!keyguard.isDeviceSecure) {
-            return
-        }
-        val intent = keyguard.createConfirmDeviceCredentialIntent(
-            "Unlock Tastile",
-            "Confirm your device lock to continue."
-        ) ?: return
-        securityUnlockInProgress = true
-        requestSecurityUnlock.launch(intent)
+    private fun requestExactAlarmAccessIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || exactAlarmAccessRequested) return
+        val alarmManager = getSystemService(AlarmManager::class.java) ?: return
+        if (alarmManager.canScheduleExactAlarms()) return
+        exactAlarmAccessRequested = true
+        startActivity(
+            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:$packageName")
+            }
+        )
     }
 }

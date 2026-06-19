@@ -1,7 +1,6 @@
 package app.tastile.android.notifications
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -33,7 +32,6 @@ class ExecutionAlarmReceiver : BroadcastReceiver() {
     @Inject
     lateinit var userSettingsRepository: UserSettingsRepository
 
-    @SuppressLint("MissingPermission")
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
@@ -51,23 +49,19 @@ class ExecutionAlarmReceiver : BroadcastReceiver() {
                     val locale = userSettingsRepository.getLocale()
                     val content = snapshotPromptContent(locale)
                         ?: alarmContent(type, tileTitle, locale)
-                    try {
-                        NotificationManagerCompat.from(context).notify(
-                            alarmId.hashCode(),
-                            NotificationCompat.Builder(context, ExecutionNotificationChannels.ALERTS)
-                                .setSmallIcon(R.drawable.ic_notification_tastile)
-                                .setContentTitle(content.first)
-                                .setContentText(content.second)
-                                .setStyle(NotificationCompat.BigTextStyle().bigText(content.second))
-                                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                .setCategory(NotificationCompat.CATEGORY_ALARM)
-                                .setAutoCancel(true)
-                                .setContentIntent(ExecutionNotificationIntents.openApp(context))
-                                .build()
-                        )
-                    } catch (_: SecurityException) {
-                        return@launch
-                    }
+                    NotificationManagerCompat.from(context).notify(
+                        alarmId.hashCode(),
+                        NotificationCompat.Builder(context, ExecutionNotificationChannels.ALERTS)
+                            .setSmallIcon(R.drawable.ic_notification_tastile)
+                            .setContentTitle(content.first)
+                            .setContentText(content.second)
+                            .setStyle(NotificationCompat.BigTextStyle().bigText(content.second))
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setCategory(NotificationCompat.CATEGORY_ALARM)
+                            .setAutoCancel(true)
+                            .setContentIntent(ExecutionNotificationIntents.openApp(context))
+                            .build()
+                    )
                 }
                 scheduler.rescheduleFromCurrentState()
             } finally {

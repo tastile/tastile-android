@@ -1,160 +1,134 @@
-# tastile-android リリースプラン
-
-Production releases are fully automated via
-`.github/workflows/release.yml`. This document is the operator-facing
-playbook: what the workflow does, what secrets it reads, how to drive a
-release, and how to roll back.
-
----
+# tastile-android リリースプラン (内部テスト)
 
 ## 前提
-
-- **Play Console アカウント**: 登録済み (developer fee paid)
-- **署名キーストア**: 1 個。base64 で GitHub Secrets (`ANDROID_KEYSTORE_BASE64`)
-  に格納。パスワード・alias・key password は別シークレット
-- **リリーストラック**: 内部テスト (`internal`) を既定。`beta` / `production`
-  への昇格は `workflow_dispatch` の `track` 入力で指定
+- Google Play Console アカウント: **未作成** (ユーザーが手動で $25 支払い・登録)
+- 署名キーストア: **新規作成**
+- リリーストラック: **内部テスト** (最大100人、審査不要、即時配信)
 
 ---
 
-## ワークフロー全体像
+## Step 1: 署名キーストア作成 + Release ビルド設定
 
-`.github/workflows/release.yml` は tag push (`v*`) または `workflow_dispatch`
-で動き、3 つのジョブで構成される:
-
-### Job 1: `build-aab` (ubuntu-latest)
-
-1. このリポジトリをチェックアウト
-2. **`tastile-core` を sibling として checkout** — `cargo-ndk` が
-   `../tastile-core` を参照するため。`CORE_REPO_READ_TOKEN` が必要
-3. JDK 17 (Temurin) セットアップ
-4. Rust toolchain + `cargo-ndk` インストール、4 つの Android target を追加
-5. `ANDROID_KEYSTORE_BASE64` を base64 デコードし `/tmp/keystore.jks` に展開
-6. `local.properties` を Secrets から materialize:
-
-   ```properties
-   RELEASE_STORE_FILE=/tmp/keystore.jks
-   RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-   RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
-   RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
-   GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
-   ```
-
-7. `./gradlew bundleRelease` で AAB ビルド
-8. AAB + mapping.txt を `app-release` という artifact にアップロード
-
-### Job 2: `upload-play` (ubuntu-latest)
-
-`r0adkll/upload-google-play@v1` を使い、artifact をダウンロード → Play
-Console にアップロード。track は `workflow_dispatch` 入力 or 既定の
-`internal`。status は `completed` で即時公開 (内部テストでは審査不要)。
-
-### Job 3: `upload-github-release` (ubuntu-latest)
-
-同じ AAB + mapping.txt を GitHub Release に attach。Release が未作成なら
-`gh release create` で自動生成。
-
----
-
-## 実行手順
-
-### 通常リリース (version bump + tag)
-
+### 1.1 キーストア生成
 ```bash
-# 1. version 更新 (build.gradle.kts の versionName / versionCode)
-# 2. コミット
-git add app/build.gradle.kts
-git commit -m "chore: bump version to 1.2.3"
-# 3. タグを打って push
-git tag v1.2.3
-git push origin main
-git push origin v1.2.3
+keytool -genkeypair -v \
+  -keystore /secure/path/tastile-upload-key.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias tastile \
+  -storepass <STORE_PASSWORD> \
+  -keypass <KEY_PASSWORD> \
+  -dname "CN=Tastile, OU=Mobile, O=Tastile, L=Tokyo, ST=Tokyo, C=JP"
+```
+- 出力先: repo 外の安全な場所
+- **重要**: キーストアとパスワードを repo に置かないこと
+
+### 1.2 ユーザー環境の `~/.gradle/gradle.properties` に署名情報追加
+```properties
+RELEASE_STORE_FILE=/secure/path/tastile-upload-key.jks
+RELEASE_STORE_PASSWORD=<STORE_PASSWORD>
+RELEASE_KEY_ALIAS=tastile
+RELEASE_KEY_PASSWORD=<KEY_PASSWORD>
 ```
 
-CI が自動で `build-aab` → `upload-play` (track=internal) →
-`upload-github-release` を実行する。
+### 1.3 `app/build.gradle.kts` に signingConfigs 追加
+```kotlin
+android {
+    signingConfigs {
+        create("release") {
+            storeFile = file(project.findProperty("RELEASE_STORE_FILE") as String)
+            storePassword = project.findProperty("RELEASE_STORE_PASSWORD") as String
+            keyAlias = project.findProperty("RELEASE_KEY_ALIAS") as String
+            keyPassword = project.findProperty("RELEASE_KEY_PASSWORD") as String
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
+            proguardFiles(...)
+        }
+    }
+}
+```
 
-### Ad-hoc リリース (任意の version で再デプロイ)
+### 1.4 AAB (Android App Bundle) ビルド
+```bash
+./gradlew bundleRelease
+```
+出力: `app/build/outputs/bundle/release/app-release.aab`
 
-GitHub の Actions タブから "Release" ワークフローを選び:
-
-- `version` 入力: デプロイしたいバージョン (例: `1.2.3`)
-- `track` 入力: `internal` / `beta` / `production` のいずれか
-
-"Run workflow" を押す。
-
-### 内部テストから production への昇格
-
-Play Console で手動昇格する (Gradle Play Publisher は使っていない)。CI の
-責務は「正しい track に AAB を置く」まで。昇格判断は人が行う。
-
----
-
-## 必要な GitHub Secrets
-
-| Secret                              | 用途                                     |
-|-------------------------------------|------------------------------------------|
-| `CORE_REPO_READ_TOKEN`              | `tastile-core` の sibling checkout 用 PAT |
-| `ANDROID_KEYSTORE_BASE64`           | base64 エンコードされた keystore JKS     |
-| `ANDROID_KEYSTORE_PASSWORD`         | Keystore password                        |
-| `ANDROID_KEY_ALIAS`                 | Key alias                                |
-| `ANDROID_KEY_PASSWORD`              | Key password                             |
-| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`  | Play Console service-account JSON        |
-| `GOOGLE_WEB_CLIENT_ID`              | buildConfig 用 (Cognito Hosted UI の OAuth) |
-| `GITHUB_TOKEN`                      | 自動付与 (GitHub Release 作成)           |
-
-値の出所とローテーション手順は
-[tastile-core/docs/production/secrets-and-deploy.md](https://github.com/tastile/tastile-core/blob/main/docs/production/secrets-and-deploy.md)
-に集約。
+### 1.5 ビルド検証
+```bash
+# AAB が生成されたか確認
+ls -la app/build/outputs/bundle/release/app-release.aab
+```
 
 ---
 
-## Play Console 初回セットアップ (一度だけ)
+## Step 2: ストアリスティング準備
 
-アカウント作成・身元確認・$25 支払いなどのブラウザ操作は人手で行う。CI が
-必要とするのは以下:
+### 2.1 必要なアセット
+- [ ] アプリアイコン 512x512 PNG (ストア用ハイレゾアイコン)
+- [ ] フィーチャーグラフィック 1024x500 PNG (任意だが推奨)
+- [ ] スクリーンショット 最低2枚 (phone)
+  - 内部テストでは最低限でOK
 
-1. **Service Account 作成** (Google Cloud Console → IAM → Service Accounts)
-2. **JSON キーをダウンロード** し、`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` の
-   生 JSON として Secrets に登録
-3. **Play Console で Service Account にアクセス権を付与** (Setup → API access)
-4. **アプリ作成** (Play Console → Create app) — パッケージ名 `app.tastile.android`
-5. **トラック作成** (Release → Internal testing → Create track)
-
-これ以降は GitHub Actions からトラックへ直接アップロード可能。
-
----
-
-## ストアリスティング (Play Console)
-
-アセット・説明文・スクリーンショットは Play Console の UI から管理する
-(これらは CI の管轄外):
-
-- アイコン 512x512 PNG
-- フィーチャーグラフィック 1024x500 PNG
-- スクリーンショット (phone) 最低 2 枚
-- 短い説明・詳しい説明
-- プライバシーポリシー URL: `https://tastile.app/privacy`
+### 2.2 ストア情報
+```
+アプリ名: Tastile
+短い説明: Execution control for intentional work
+詳しい説明: Tastile helps you focus on one task at a time with
+  execution control. Create tiles, start working, and complete
+  tasks with intention. Not a task manager — an execution system.
+カテゴリ: 仕事効率化
+メールアドレス: <developer email>
+プライバシーポリシー URL: https://tastile.app/privacy
+```
 
 ---
 
-## Rollback
+## Step 3: Google Play Console 設定 (ユーザー手動)
 
-Android のロールバックは Play Console 経由で行う:
+### 3.1 アカウント作成
+1. https://play.google.com/console にアクセス
+2. Google アカウントでログイン
+3. $25 の登録料を支払い
+4. 本人確認 (数日かかる場合あり)
 
-1. Play Console → 該当リリース → **Release > History**
-2. 戻したい revision を選び "Release to <track>" で再公開
-3. 内部テストトラックなら即時反映。本番の場合は staged rollout を使う
+### 3.2 アプリ作成
+1. 「アプリを作成」
+2. アプリ名: Tastile
+3. デフォルト言語: 日本語
+4. アプリ / ゲーム: アプリ
+5. 無料 / 有料: 無料
 
-CI 側でロールバックはしない (Play Console の audit trail が正本)。
-mapping.txt は新しいリリースで上書きされるが、Play Console の Deobfuscation
-は過去の mapping も保持する。
+### 3.3 内部テスト設定
+1. テスト > 内部テスト > 「新しいリリースを作成」
+2. AAB をアップロード
+3. テスター追加 (メールアドレスリスト)
+4. リリースを公開
+
+---
+
+## Step 4: 仕上げ
+
+### 4.1 .gitignore 確認
+```
+*.jks
+local.properties
+```
+
+### 4.2 CLAUDE.md 更新
+- リリースビルドコマンド追記
+- 署名設定の説明追記
+
+### 4.3 versionCode / versionName 確認
+- 現在: versionCode=1, versionName="0.1.0"
+- 内部テストとして妥当
 
 ---
 
 ## 実行者の区分
 
-- **GitHub Actions が実行**: AAB ビルド、Play アップロード、GitHub Release
-  作成のすべて
-- **人が実行 (必要時のみ)**: バージョン bump コミット + tag push、初回の
-  Play Console セットアップ、production 昇格判断、ロールバック判断
+**Claude が実行**: Step 1 (署名キー生成、Gradle 設定、AAB ビルド)、Step 4
+**ユーザーが手動実行**: Step 2 (アセット準備)、Step 3 (Play Console)

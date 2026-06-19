@@ -1,11 +1,11 @@
 # Tastile Android
 
-Android client for Tastile. The app is written in Kotlin with Jetpack Compose, auth and data access go through AWS (Cognito Hosted UI + the `tastile-core` API), and integrates with `tastile-core` through Android native libraries built from the sibling Rust repository.
+Android client for Tastile. The app is written in Kotlin with Jetpack Compose, uses Supabase for mobile-facing auth/data access, and integrates with `tastile-core` through Android native libraries built from the sibling Rust repository.
 
 ## Current State
 
 - Active Android app with unit-test coverage for core runtime, sync, notifications, and selected view models.
-- Native bridge is partially integrated. Auth and data access go through AWS (Cognito + the `tastile-core` API); command execution/state projection sits behind `tastile-core`.
+- Native bridge is partially integrated. Some mobile flows still read from Supabase directly while command execution/state projection is moving behind `tastile-core`.
 - This repository assumes `tastile-core` is cloned next to it as `../tastile-core` for Android artifact builds.
 
 ## Repository Layout
@@ -62,5 +62,5 @@ Release signing credentials must never be committed. The build fails fast if the
 ## Notes
 
 - `app/src/main/jniLibs/` is generated output and should not be committed.
-- `GOOGLE_WEB_CLIENT_ID` (Cognito OAuth) lives in `local.properties` and is read into `gradle.properties` at build time. Upload keys and machine-local settings belong in user-level Gradle properties instead.
+- Publishable Supabase client values live in `gradle.properties`. Upload keys and machine-local settings belong in user-level Gradle properties instead.
 - If `tastile-core` is missing, native build tasks fail with an explicit message instead of a cargo error cascade.
