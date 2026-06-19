@@ -219,6 +219,57 @@ class CoreRuntimeServiceTest {
         assertTrue(imported[1].contains("\"tile-remote\""))
         assertEquals("tile-remote", snapshot.activeTileId)
     }
+
+    @Test
+    fun replaceEventLog_serializesEnvelopeWithSnakeCaseKeysForCoreRuntime() {
+        val imported = mutableListOf<String>()
+        val service: CoreRuntimeService = PersistentCoreRuntimeService(
+            bridge = TastileCoreBridge(
+                libraryLoader = { },
+                nativeBindings = object : TastileCoreBridge.NativeBindings {
+                    override fun dispatchCommand(commandJson: String): String = """
+                        {"accepted":true,"commandId":"ok","eventIds":["evt-1"]}
+                    """.trimIndent()
+
+                    override fun replaceEventLog(eventsJson: String): String {
+                        imported += eventsJson
+                        return """{"accepted":true,"commandId":"sync.replace_event_log","eventIds":[]}"""
+                    }
+
+                    override fun getSnapshot(): String = """{"revision":0,"tiles":[]}"""
+                }
+            ),
+            commandStore = InMemoryCoreCommandStore()
+        )
+
+        service.replaceEventLog(
+            listOf(
+                CoreEventEnvelopeRecord(
+                    eventId = "11111111-1111-1111-1111-111111111111",
+                    aggregateId = "tile:tile-remote",
+                    occurredAt = "2026-03-27T09:00:00Z",
+                    actor = CoreActorRecord(
+                        actorType = "system",
+                        actorId = "22222222-2222-2222-2222-222222222222"
+                    ),
+                    causedByCommandId = "33333333-3333-3333-3333-333333333333",
+                    requestId = "44444444-4444-4444-4444-444444444444",
+                    event = buildJsonObject {
+                        put("type", JsonPrimitive("tile_created"))
+                    }
+                )
+            )
+        )
+
+        val payload = imported.single()
+        assertTrue(payload.contains("\"event_id\""))
+        assertTrue(payload.contains("\"aggregate_id\""))
+        assertTrue(payload.contains("\"occurred_at\""))
+        assertTrue(payload.contains("\"caused_by_command_id\""))
+        assertTrue(payload.contains("\"request_id\""))
+        assertTrue(payload.contains("\"actor_type\""))
+        assertTrue(payload.contains("\"actor_id\""))
+    }
 }
 
 private class InMemoryCoreCommandStore(

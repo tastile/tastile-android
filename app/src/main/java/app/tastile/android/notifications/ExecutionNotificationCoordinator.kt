@@ -1,6 +1,7 @@
 package app.tastile.android.notifications
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -39,8 +40,9 @@ class ExecutionNotificationCoordinator @Inject constructor(
         alarmScheduler.cancelAll()
     }
 
+    @SuppressLint("MissingPermission")
     fun syncOnce() {
-        val userId = authRepository.currentSession?.user?.id
+        val userId = authRepository.currentUserId()
         if (userId.isNullOrBlank()) {
             NotificationManagerCompat.from(context).cancel(ALERT_NOTIFICATION_ID)
             return
@@ -54,19 +56,23 @@ class ExecutionNotificationCoordinator @Inject constructor(
 
         val locale = userSettingsRepository.getLocale()
         val content = promptContent(prompt, locale)
-        NotificationManagerCompat.from(context).notify(
-            ALERT_NOTIFICATION_ID,
-            NotificationCompat.Builder(context, ExecutionNotificationChannels.ALERTS)
-                .setSmallIcon(R.drawable.ic_notification_tastile)
-                .setContentTitle(content.first)
-                .setContentText(content.second)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(content.second))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_REMINDER)
-                .setAutoCancel(true)
-                .setContentIntent(createOpenAppIntent())
-                .build()
-        )
+        try {
+            NotificationManagerCompat.from(context).notify(
+                ALERT_NOTIFICATION_ID,
+                NotificationCompat.Builder(context, ExecutionNotificationChannels.ALERTS)
+                    .setSmallIcon(R.drawable.ic_notification_tastile)
+                    .setContentTitle(content.first)
+                    .setContentText(content.second)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(content.second))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                    .setAutoCancel(true)
+                    .setContentIntent(createOpenAppIntent())
+                    .build()
+            )
+        } catch (_: SecurityException) {
+            return
+        }
     }
 
     private fun promptContent(prompt: CorePromptQueueItem, locale: AppLocale): Pair<String, String> {

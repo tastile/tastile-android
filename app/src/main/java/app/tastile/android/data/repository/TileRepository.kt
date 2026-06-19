@@ -230,7 +230,7 @@ class TileRepository @Inject constructor(
         )
     }
 
-    suspend fun getPendingPrompt(): PromptViewResponse? {
+    override suspend fun getPendingPrompt(): PromptViewResponse? {
         val snapshot = currentSnapshotOrNull() ?: return null
         val pending = snapshot.promptQueue.firstOrNull { it.status.equals("pending", true) } ?: return null
         val title = pending.tileId?.let { id -> snapshot.tiles.firstOrNull { it.id == id }?.title } ?: "Prompt"
@@ -544,7 +544,7 @@ class TileRepository @Inject constructor(
         }
     }
 
-    suspend fun requestPrompt(tileId: String): Boolean {
+    override suspend fun requestPrompt(tileId: String): Boolean {
         val ack = tryApplyCoreCommand(
             COMMAND_PROMPT_REQUEST,
             buildJsonObject { put("tile_id", JsonPrimitive(tileId)) }
