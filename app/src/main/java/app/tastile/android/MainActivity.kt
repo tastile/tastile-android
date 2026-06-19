@@ -156,6 +156,7 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
 
+    @Suppress("DEPRECATION") // createConfirmDeviceCredentialIntent is the only API that reuses the device's existing PIN/pattern/password prompt without pulling in androidx.biometric.
     private fun requestSecurityUnlockIfNeeded() {
         if (securityUnlockInProgress || !userSettingsRepository.shouldRequireSecurityUnlock()) {
             return
