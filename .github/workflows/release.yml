@@ -96,7 +96,6 @@ jobs:
           tracks: ${{ github.event.inputs.track || 'internal' }}
           status: completed
           mappingFile: dist/mapping.txt
-          changesNotSentForReview: true
 
   upload-github-release:
     needs: build-aab
