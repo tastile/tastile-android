@@ -93,9 +93,10 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: app.tastile.android
           releaseFiles: dist/app-release.aab
-          track: ${{ github.event.inputs.track || 'internal' }}
+          tracks: ${{ github.event.inputs.track || 'internal' }}
           status: completed
           mappingFile: dist/mapping.txt
+          changesNotSentForReview: true
 
   upload-github-release:
     needs: build-aab
