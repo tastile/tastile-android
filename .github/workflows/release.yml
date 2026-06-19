@@ -26,28 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout core repo as sibling for cargo-ndk
-        uses: actions/checkout@v4
-        with:
-          repository: tastile/tastile-core
-          token: ${{ secrets.CORE_REPO_READ_TOKEN }}
-          path: .deps/tastile-core
-
-      - name: Create sibling symlink for cargo-ndk module
-        run: |
-          ln -sfn "$GITHUB_WORKSPACE/.deps/tastile-core" "$GITHUB_WORKSPACE/../tastile-core"
-
       - uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: temurin
-
-      - name: Install Rust + cargo-ndk + Android targets
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-          source "$HOME/.cargo/env"
-          rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
-          cargo install cargo-ndk
 
       - name: Resolve version
         id: version

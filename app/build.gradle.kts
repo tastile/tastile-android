@@ -5,7 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
-    id("com.github.willir.rust.cargo-ndk-android")
+
 }
 
 val releaseStoreFile = providers.gradleProperty("RELEASE_STORE_FILE")
@@ -15,7 +15,6 @@ val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD")
 val supabaseUrl = providers.gradleProperty("SUPABASE_URL")
 val supabaseAnonKey = providers.gradleProperty("SUPABASE_ANON_KEY")
 val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
-val tastileCoreDir = rootDir.resolve("../tastile-core")
 val hasReleaseSigning =
     releaseStoreFile.isPresent &&
         releaseStorePassword.isPresent &&
@@ -90,11 +89,6 @@ Add RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_K
 to your user-level ~/.gradle/gradle.properties or pass them as -P properties when running release tasks.
 """.trimIndent()
 
-val missingCoreInstructions = """
-Missing sibling repository: ../tastile-core
-Clone tastile-core next to tastile-android before building Android artifacts that compile native libraries.
-""".trimIndent()
-
 val missingSupabaseInstructions = """
 Supabase client configuration is missing.
 Define SUPABASE_URL and SUPABASE_ANON_KEY in gradle.properties or ~/.gradle/gradle.properties before installing debug builds on a device.
@@ -115,21 +109,6 @@ gradle.taskGraph.whenReady {
     if (requestedDeviceInstall && !hasSupabaseConfig) {
         throw GradleException(missingSupabaseInstructions)
     }
-}
-
-tasks.configureEach {
-    if (name.startsWith("buildCargoNdk")) {
-        doFirst {
-            check(tastileCoreDir.isDirectory) { missingCoreInstructions }
-        }
-    }
-}
-
-cargoNdk {
-    // Use workspace root so cargo-ndk resolves shared workspace target outputs correctly.
-    module = "../tastile-core"
-    targets = arrayListOf("arm64", "arm", "x86", "x86_64")
-    librariesNames = arrayListOf("libtastile_core.so")
 }
 
 dependencies {
