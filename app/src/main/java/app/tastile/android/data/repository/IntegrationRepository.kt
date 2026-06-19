@@ -1,8 +1,5 @@
 package app.tastile.android.data.repository
 
-import app.tastile.android.BuildConfig
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +21,7 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
 import java.net.URL
+import java.net.URLEncoder
 import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,15 +29,31 @@ import javax.inject.Singleton
 @Serializable
 data class GoogleCalendarIntegrationSettings(
     val connected: Boolean = false,
+    @SerialName("provider_status") val providerStatus: String = "disconnected",
     @SerialName("can_read") val canRead: Boolean = true,
     @SerialName("can_write") val canWrite: Boolean = true,
     @SerialName("account_email") val accountEmail: String? = null,
+    @SerialName("selected_calendar_id") val selectedCalendarId: String? = null,
+    @SerialName("granted_scopes") val grantedScopes: List<String> = emptyList(),
+    @SerialName("sync_mode") val syncMode: String = "push_only",
+    @SerialName("read_policy") val readPolicy: String = "import_and_block_scheduling",
+    @SerialName("write_policy") val writePolicy: String = "tastile_owned_only",
     @SerialName("last_synced_at") val lastSyncedAt: String? = null,
+    @SerialName("last_full_sync_at") val lastFullSyncAt: String? = null,
 )
 
 @Serializable
 data class IntegrationSettingsResponse(
     @SerialName("google_calendar") val googleCalendar: GoogleCalendarIntegrationSettings
+)
+
+@Serializable
+data class CalendarSyncPlanPreviewResponse(
+    val provider: String,
+    @SerialName("selected_calendar_id") val selectedCalendarId: String? = null,
+    @SerialName("sync_mode") val syncMode: String = "push_only",
+    @SerialName("read_policy") val readPolicy: String = "import_and_block_scheduling",
+    @SerialName("write_policy") val writePolicy: String = "tastile_owned_only"
 )
 
 @Serializable
@@ -104,7 +118,7 @@ data class OAuthExchangeResponse(
 
 @Singleton
 class IntegrationRepository @Inject constructor(
-    private val client: SupabaseClient
+    private val authRepository: AuthRepository
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private val daemonBaseUrls = defaultDaemonBaseUrls()
@@ -135,6 +149,10 @@ class IntegrationRepository @Inject constructor(
         canRead: Boolean? = null,
         canWrite: Boolean? = null,
         accountEmail: String? = null,
+        selectedCalendarId: String? = null,
+        syncMode: String? = null,
+        readPolicy: String? = null,
+        writePolicy: String? = null,
         lastSyncedAt: String? = null
     ): IntegrationSettingsResponse {
         val payload = buildJsonObject {
@@ -151,11 +169,46 @@ class IntegrationRepository @Inject constructor(
                             put("account_email", JsonPrimitive(accountEmail))
                         }
                     }
+                    if (selectedCalendarId != null) {
+                        if (selectedCalendarId.isBlank()) {
+                            put("selected_calendar_id", JsonNull)
+                        } else {
+                            put("selected_calendar_id", JsonPrimitive(selectedCalendarId))
+                        }
+                    }
+                    if (!syncMode.isNullOrBlank()) put("sync_mode", JsonPrimitive(syncMode))
+                    if (!readPolicy.isNullOrBlank()) put("read_policy", JsonPrimitive(readPolicy))
+                    if (!writePolicy.isNullOrBlank()) put("write_policy", JsonPrimitive(writePolicy))
                     if (lastSyncedAt != null) put("last_synced_at", JsonPrimitive(lastSyncedAt))
                 }
             )
         }.toString()
         return postSettingsPayload(payload)
+    }
+
+    suspend fun getCalendarSyncPlanPreview(): CalendarSyncPlanPreviewResponse {
+        val (status, responseText) = executeDaemonRequest(
+            path = "/auth/integrations/calendar/sync-plan",
+            method = "GET"
+        )
+        if (status !in 200..299) {
+            throw IllegalStateException("Failed to load calendar sync plan: HTTP $status $responseText")
+        }
+        return json.decodeFromString(responseText)
+    }
+
+    suspend fun getCalendarMonthProjection(anchor: String? = null): CalendarProjectionResponse {
+        val query = anchor?.takeIf { it.isNotBlank() }?.let {
+            "?anchor=${URLEncoder.encode(it, Charsets.UTF_8.name())}"
+        }.orEmpty()
+        val (status, responseText) = executeDaemonRequest(
+            path = "/views/calendar/month$query",
+            method = "GET"
+        )
+        if (status !in 200..299) {
+            throw IllegalStateException("Failed to load calendar month projection: HTTP $status $responseText")
+        }
+        return json.decodeFromString(responseText)
     }
 
     suspend fun triggerSync() {
@@ -309,8 +362,7 @@ class IntegrationRepository @Inject constructor(
     suspend fun isAuthenticated(): Boolean {
         val session = getSession() ?: return false
         if (!session.accessToken.isNullOrBlank()) return true
-        val currentAccessToken = client.auth.currentSessionOrNull()?.accessToken
-        return !currentAccessToken.isNullOrBlank()
+        return !authRepository.currentIdToken().isNullOrBlank()
     }
 
     suspend fun checkHealth(): Boolean {
@@ -330,14 +382,13 @@ class IntegrationRepository @Inject constructor(
     }
 
     fun streamStateEvents(): Flow<String> = callbackFlow {
-        val accessToken = client.auth.currentSessionOrNull()?.accessToken
+        val accessToken = authRepository.currentIdToken()
             ?: throw IllegalStateException("Not authenticated")
-        val anonKey = BuildConfig.SUPABASE_ANON_KEY
         var streamReader: java.io.BufferedReader? = null
         var connection: HttpURLConnection? = null
         val readingJob = launch(Dispatchers.IO) {
             try {
-                val streamConnection = openStateStreamConnection(accessToken, anonKey)
+                val streamConnection = openStateStreamConnection(accessToken)
                 connection = streamConnection.first
                 streamReader = streamConnection.second
                 while (isActive) {
@@ -383,8 +434,7 @@ class IntegrationRepository @Inject constructor(
         requiresAuth: Boolean = true
     ): Pair<Int, String> {
         return withContext(Dispatchers.IO) {
-            val accessToken = client.auth.currentSessionOrNull()?.accessToken
-            val anonKey = BuildConfig.SUPABASE_ANON_KEY
+            val accessToken = authRepository.currentIdToken()
             runWithDaemonFallback(daemonBaseCandidates()) { baseUrl ->
                 val endpoint = URL("$baseUrl$path")
                 val connection = (endpoint.openConnection() as HttpURLConnection).apply {
@@ -394,9 +444,6 @@ class IntegrationRepository @Inject constructor(
                     if (requiresAuth) {
                         val token = accessToken ?: throw IllegalStateException("Not authenticated")
                         setRequestProperty("Authorization", "Bearer $token")
-                    }
-                    if (anonKey.isNotBlank()) {
-                        setRequestProperty("apikey", anonKey)
                     }
                     if (withContentType) {
                         setRequestProperty("Content-Type", "application/json")
@@ -426,8 +473,7 @@ class IntegrationRepository @Inject constructor(
     }
 
     private fun openStateStreamConnection(
-        accessToken: String,
-        anonKey: String
+        accessToken: String
     ): Pair<HttpURLConnection, java.io.BufferedReader> {
         return runWithDaemonFallback(daemonBaseCandidates()) { baseUrl ->
             val endpoint = URL("$baseUrl/read/events/state")
@@ -436,9 +482,6 @@ class IntegrationRepository @Inject constructor(
                 doInput = true
                 setRequestProperty("Accept", "text/event-stream")
                 setRequestProperty("Authorization", "Bearer $accessToken")
-                if (anonKey.isNotBlank()) {
-                    setRequestProperty("apikey", anonKey)
-                }
                 connectTimeout = 15_000
                 readTimeout = 0
             }

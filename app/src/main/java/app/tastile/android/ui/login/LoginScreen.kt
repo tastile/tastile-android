@@ -19,7 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.jan.supabase.auth.status.SessionStatus
+import app.tastile.android.data.repository.TastileAuthState
 
 @Composable
 fun LoginScreen(
@@ -27,12 +27,12 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val sessionStatus by viewModel.sessionStatus.collectAsStateWithLifecycle()
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
     val errorMessage by viewModel.error.collectAsStateWithLifecycle()
     val isSigningIn by viewModel.isSigningIn.collectAsStateWithLifecycle()
 
     // Auto-navigate when authenticated
-    if (sessionStatus is SessionStatus.Authenticated) {
+    if (authState is TastileAuthState.Authenticated) {
         onLoginSuccess()
     }
 
@@ -51,7 +51,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(text = "Sign in to continue", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+        Text(text = "Use your Tastile account to continue", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -64,11 +64,11 @@ fun LoginScreen(
         }
 
         Button(
-            onClick = { viewModel.signInWithGoogle(context) },
+            onClick = { viewModel.signInWithCognito(context) },
             enabled = !isSigningIn
         ) {
             Text(
-                text = if (isSigningIn) "Signing in..." else "Sign in with Google",
+                text = if (isSigningIn) "Opening account..." else "Continue with Tastile account",
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }

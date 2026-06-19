@@ -28,7 +28,7 @@ class ExecutionAlarmScheduler @Inject constructor(
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     suspend fun rescheduleFromCurrentState() {
-        val userId = authRepository.currentSession?.user?.id
+        val userId = authRepository.currentUserId()
         if (userId.isNullOrBlank()) {
             cancelAll()
             return
@@ -37,7 +37,7 @@ class ExecutionAlarmScheduler @Inject constructor(
     }
 
     suspend fun isAlarmStillRelevant(alarmId: String): Boolean {
-        authRepository.currentSession?.user?.id ?: return false
+        authRepository.currentUserId() ?: return false
         val snapshot = currentSnapshotOrNull() ?: return false
         return ExecutionAlarmPlanner.plan(snapshot, Clock.System.now()).any { it.id == alarmId }
     }

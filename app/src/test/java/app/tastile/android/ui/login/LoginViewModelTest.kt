@@ -2,6 +2,7 @@ package app.tastile.android.ui.login
 
 import android.content.Context
 import app.tastile.android.data.repository.AuthRepositoryContract
+import app.tastile.android.data.repository.TastileAuthState
 import io.mockk.mockk
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Dispatchers
@@ -32,22 +33,22 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun signInWithGoogle_whenRepositoryFails_exposesErrorMessage() {
-        val repository = FakeAuthRepository(signInError = IllegalStateException("Google sign-in failed"))
+    fun signInWithCognito_whenRepositoryFails_exposesErrorMessage() {
+        val repository = FakeAuthRepository(signInError = IllegalStateException("Cognito sign-in failed"))
         val viewModel = LoginViewModel(repository)
 
-        viewModel.signInWithGoogle(context)
+        viewModel.signInWithCognito(context)
 
-        assertEquals("Google sign-in failed", viewModel.error.value)
+        assertEquals("Cognito sign-in failed", viewModel.error.value)
         assertEquals(false, viewModel.isSigningIn.value)
     }
 
     @Test
-    fun signInWithGoogle_whenRepositorySucceeds_resetsSigningInAndKeepsErrorNull() {
+    fun signInWithCognito_whenRepositorySucceeds_resetsSigningInAndKeepsErrorNull() {
         val repository = FakeAuthRepository()
         val viewModel = LoginViewModel(repository)
 
-        viewModel.signInWithGoogle(context)
+        viewModel.signInWithCognito(context)
 
         assertNull(viewModel.error.value)
         assertEquals(false, viewModel.isSigningIn.value)
@@ -65,10 +66,10 @@ class LoginViewModelTest {
 
     @Test
     fun clearError_resetsCurrentError() {
-        val repository = FakeAuthRepository(signInError = IllegalStateException("Google sign-in failed"))
+        val repository = FakeAuthRepository(signInError = IllegalStateException("Cognito sign-in failed"))
         val viewModel = LoginViewModel(repository)
 
-        viewModel.signInWithGoogle(context)
+        viewModel.signInWithCognito(context)
         viewModel.clearError()
 
         assertNull(viewModel.error.value)
@@ -79,8 +80,14 @@ class LoginViewModelTest {
         private val signOutError: Exception? = null
     ) : AuthRepositoryContract {
         private val status = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
+        private val auth = MutableStateFlow<TastileAuthState>(TastileAuthState.Unauthenticated)
 
+        override val authState: StateFlow<TastileAuthState> = auth
         override val sessionStatus: StateFlow<SessionStatus> = status
+
+        override suspend fun signInWithCognito(context: Context) {
+            signInError?.let { throw it }
+        }
 
         override suspend fun signInWithGoogle(context: Context) {
             signInError?.let { throw it }
@@ -89,5 +96,7 @@ class LoginViewModelTest {
         override suspend fun signOut() {
             signOutError?.let { throw it }
         }
+
+        override fun currentIdToken(): String? = null
     }
 }

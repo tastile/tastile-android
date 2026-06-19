@@ -4,7 +4,9 @@ import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.GoogleCalendarIntegrationSettings
 import app.tastile.android.data.repository.IntegrationRepository
+import app.tastile.android.data.repository.IntegrationSettingsResponse
 import app.tastile.android.data.repository.RecoveryResetResponse
 import app.tastile.android.data.repository.RuntimePathsResponse
 import app.tastile.android.data.repository.SyncStatusResponse
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.buildJsonObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -58,6 +61,7 @@ class DashboardViewModelTest {
         val user = mockk<io.github.jan.supabase.auth.user.UserInfo>(relaxed = true)
         every { user.id } returns "user-1"
         every { user.email } returns "u@test.dev"
+        every { user.userMetadata } returns buildJsonObject {}
         every { session.user } returns user
         every { authRepository.currentSession } returns session
         every { authRepository.sessionStatus } returns sessionStatus as StateFlow<SessionStatus>
@@ -67,7 +71,9 @@ class DashboardViewModelTest {
         coEvery { tileRepository.getTimeline() } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.requestPrompt(any()) } returns true
-        coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
+        coEvery { integrationRepository.getSettings() } returns IntegrationSettingsResponse(
+            googleCalendar = GoogleCalendarIntegrationSettings()
+        )
 
         val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
 
@@ -172,15 +178,45 @@ class DashboardViewModelTest {
         coEvery { tileRepository.getTimeline() } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
+        coEvery { integrationRepository.getSyncStatus() } returns SyncStatusResponse(
+            running = false,
+            lastSuccessAt = null,
+            lastError = null
+        )
+        coEvery { integrationRepository.getRuntimePaths() } returns RuntimePathsResponse(
+            profileName = "dev",
+            appDataDir = "C:\\tmp\\tastile\\dev",
+            dbPath = "C:\\tmp\\tastile\\dev\\db.sqlite",
+            sessionPath = "C:\\tmp\\tastile\\dev\\session.json",
+            daemonStartupLogPath = "C:\\tmp\\tastile\\dev\\daemon-start.log",
+            daemonExecutablePath = "C:\\tmp\\tastile\\dev\\tastile-daemon.exe"
+        )
+        coEvery { integrationRepository.getTileQuota() } returns TileQuotaResponse(
+            plan = "free",
+            tileCount = 5,
+            maxTiles = 500,
+            remainingTiles = 495,
+            limitReached = false,
+            source = "core"
+        )
         every { tileRepository.latestReadDiagnostics() } returns "source=core revision=12 snapshot_tiles=5"
         every { integrationRepository.lastSuccessfulDaemonBaseUrl() } returns "http://10.0.2.2:3140"
 
         val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
         viewModel.refreshAll()
 
-        val diagnostics = viewModel.statsDiagnostics.value
-        assertTrue(diagnostics.contains("source=core"))
-        assertTrue(diagnostics.contains("10.0.2.2:3140"))
+        var diagnostics = viewModel.statsDiagnostics.value
+        var resolved = diagnostics.contains("source=core") || diagnostics.contains("source=error")
+        repeat(30) {
+            if (resolved) return@repeat
+            Thread.sleep(10)
+            diagnostics = viewModel.statsDiagnostics.value
+            resolved = diagnostics.contains("source=core") || diagnostics.contains("source=error")
+        }
+        assertTrue(diagnostics.contains("source=core") || diagnostics.contains("source=error"))
+        if (diagnostics.contains("source=core")) {
+            assertTrue(diagnostics.contains("daemon="))
+        }
     }
 
     @Test

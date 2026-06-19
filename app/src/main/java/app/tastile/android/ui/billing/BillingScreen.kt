@@ -33,8 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.ui.login.LoginViewModel
-import io.github.jan.supabase.auth.status.SessionStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
@@ -47,9 +47,9 @@ fun BillingScreen(
     var canGoBack by remember { mutableStateOf(false) }
     var webView: WebView? by remember { mutableStateOf(null) }
     
-    // Get access token from current session
-    val session by loginViewModel.sessionStatus.collectAsStateWithLifecycle()
-    val accessToken = (session as? SessionStatus.Authenticated)?.session?.accessToken ?: ""
+    // Pass the Cognito ID token through the callback-aware web entrypoint.
+    val authState by loginViewModel.authState.collectAsStateWithLifecycle()
+    val accessToken = (authState as? TastileAuthState.Authenticated)?.idToken ?: ""
     
     // Build URL with access token for authentication
     val baseUrl = "https://tastile.app/pricing"

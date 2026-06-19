@@ -7,9 +7,12 @@ import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.CalendarProjectionResponse
+import app.tastile.android.data.repository.CalendarSyncPlanPreviewResponse
 import app.tastile.android.data.repository.GoogleCalendarIntegrationSettings
 import app.tastile.android.data.repository.IntegrationRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.UserSettingsRepository
@@ -19,8 +22,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
@@ -70,6 +78,8 @@ class DashboardViewModel @Inject constructor(
 
     private val _email = MutableStateFlow("")
     val email: StateFlow<String> = _email.asStateFlow()
+    private val _avatarUrl = MutableStateFlow<String?>(null)
+    val avatarUrl: StateFlow<String?> = _avatarUrl.asStateFlow()
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
@@ -82,6 +92,10 @@ class DashboardViewModel @Inject constructor(
 
     private val _locale = MutableStateFlow(userSettingsRepository.getLocale())
     val locale: StateFlow<AppLocale> = _locale.asStateFlow()
+    private val _securityLockEnabled = MutableStateFlow(userSettingsRepository.getSecurityLockEnabled())
+    val securityLockEnabled: StateFlow<Boolean> = _securityLockEnabled.asStateFlow()
+    private val _securityLockTimeoutMinutes = MutableStateFlow(userSettingsRepository.getSecurityLockTimeoutMinutes())
+    val securityLockTimeoutMinutes: StateFlow<Int> = _securityLockTimeoutMinutes.asStateFlow()
 
     private val _timeline = MutableStateFlow<List<CoreTimelineItem>>(emptyList())
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
@@ -91,6 +105,10 @@ class DashboardViewModel @Inject constructor(
     val statsDiagnostics: StateFlow<String> = _statsDiagnostics.asStateFlow()
     private val _daemonStatusSummary = MutableStateFlow("daemon=n/a")
     val daemonStatusSummary: StateFlow<String> = _daemonStatusSummary.asStateFlow()
+    private val _calendarMonthProjection = MutableStateFlow<CalendarProjectionResponse?>(null)
+    val calendarMonthProjection: StateFlow<CalendarProjectionResponse?> = _calendarMonthProjection.asStateFlow()
+    private val _calendarSyncPlanPreview = MutableStateFlow<CalendarSyncPlanPreviewResponse?>(null)
+    val calendarSyncPlanPreview: StateFlow<CalendarSyncPlanPreviewResponse?> = _calendarSyncPlanPreview.asStateFlow()
 
     init {
         refreshAll()
@@ -101,14 +119,30 @@ class DashboardViewModel @Inject constructor(
             _loading.value = true
             _error.value = null
             try {
+                val authState = authRepository.authState.value as? TastileAuthState.Authenticated
                 val session = authRepository.currentSession
-                val userId = session?.user?.id
-                _email.value = session?.user?.email.orEmpty()
+                val userId = authState?.userId ?: session?.user?.id
+                _email.value = authState?.email ?: session?.user?.email.orEmpty()
+                val metadataAvatar = session?.user?.userMetadata
+                    ?.let(::extractAvatarUrlFromMetadata)
                 if (userId != null) {
                     _tiles.value = tileRepository.getTiles(userId)
                     _profile.value = profileRepository.getProfile(userId)
+                    _avatarUrl.value = metadataAvatar ?: _profile.value?.avatarUrl
                     _timeline.value = tileRepository.getTimeline()
                     _googleCalendarIntegration.value = integrationRepository.getSettings().googleCalendar
+                    runCatching {
+                        integrationRepository.getCalendarMonthProjection()
+                    }.onSuccess { projection ->
+                        _calendarMonthProjection.value = projection
+                    }.onFailure { calendarError ->
+                        _calendarMonthProjection.value = null
+                        _error.value = "Calendar sync unavailable showing fallback timeline"
+                        _statsDiagnostics.value = "calendar_projection_error=${calendarError.javaClass.simpleName}"
+                    }
+                    _calendarSyncPlanPreview.value = runCatching {
+                        integrationRepository.getCalendarSyncPlanPreview()
+                    }.getOrNull()
                     val daemon = integrationRepository.lastSuccessfulDaemonBaseUrl() ?: "unresolved"
                     _statsDiagnostics.value = "${tileRepository.latestReadDiagnostics()} daemon=$daemon"
                     refreshDaemonStatusInternal()
@@ -116,7 +150,10 @@ class DashboardViewModel @Inject constructor(
                     _tiles.value = emptyList()
                     _timeline.value = emptyList()
                     _profile.value = null
+                    _avatarUrl.value = null
                     _googleCalendarIntegration.value = null
+                    _calendarMonthProjection.value = null
+                    _calendarSyncPlanPreview.value = null
                     _statsDiagnostics.value = "source=none reason=unauthenticated"
                     _daemonStatusSummary.value = "daemon=unauthenticated"
                 }
@@ -132,7 +169,7 @@ class DashboardViewModel @Inject constructor(
     fun createTile(draft: CreateTileDraft) {
         if (draft.title.isBlank()) return
         viewModelScope.launch {
-            val userId = authRepository.currentSession?.user?.id ?: return@launch
+            val userId = authRepository.currentUserId() ?: return@launch
             try {
                 tileRepository.createTile(
                     userId = userId,
@@ -203,7 +240,7 @@ class DashboardViewModel @Inject constructor(
         if (trimmed.isBlank()) return
         viewModelScope.launch {
             try {
-                val userId = authRepository.currentSession?.user?.id ?: return@launch
+                val userId = authRepository.currentUserId() ?: return@launch
                 _profile.value = profileRepository.updateDisplayName(userId, trimmed)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to update profile"
@@ -256,6 +293,20 @@ class DashboardViewModel @Inject constructor(
                     integrationRepository.markGoogleCalendarSyncedNow().googleCalendar
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to sync google calendar"
+            }
+        }
+    }
+
+    fun updateGoogleCalendarPolicy(syncMode: String, selectedCalendarId: String?) {
+        viewModelScope.launch {
+            try {
+                _googleCalendarIntegration.value = integrationRepository.updateGoogleCalendarIntegration(
+                    syncMode = syncMode,
+                    selectedCalendarId = selectedCalendarId
+                ).googleCalendar
+                _calendarSyncPlanPreview.value = integrationRepository.getCalendarSyncPlanPreview()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to update google calendar policy"
             }
         }
     }
@@ -419,6 +470,17 @@ class DashboardViewModel @Inject constructor(
         userSettingsRepository.setLocale(locale)
     }
 
+    fun setSecurityLockEnabled(enabled: Boolean) {
+        _securityLockEnabled.value = enabled
+        userSettingsRepository.setSecurityLockEnabled(enabled)
+    }
+
+    fun setSecurityLockTimeoutMinutes(minutes: Int) {
+        val normalized = minutes.coerceIn(1, 240)
+        _securityLockTimeoutMinutes.value = normalized
+        userSettingsRepository.setSecurityLockTimeoutMinutes(normalized)
+    }
+
     private fun buildCreatePayload(draft: CreateTileDraft) = buildJsonObject {
         val recurrenceObject = if (draft.objectiveMode == "recurring") {
             buildJsonObject {
@@ -512,6 +574,20 @@ class DashboardViewModel @Inject constructor(
             append(" quota=${quota.tileCount}/${quota.maxTiles}")
             append(" profile=${runtimePaths.profileName}")
         }
+    }
+}
+
+private fun extractAvatarUrlFromMetadata(metadata: JsonObject): String? {
+    val direct = listOf("avatar_url", "picture", "photo_url", "avatar")
+        .firstNotNullOfOrNull { key -> metadata[key]?.jsonPrimitive?.contentOrNull }
+    if (!direct.isNullOrBlank()) return direct
+
+    val identities = metadata["identities"]?.jsonArray ?: return null
+    return identities.firstNotNullOfOrNull { identityElement ->
+        val identity = runCatching { identityElement.jsonObject }.getOrNull() ?: return@firstNotNullOfOrNull null
+        val identityData = identity["identity_data"]?.jsonObject ?: return@firstNotNullOfOrNull null
+        listOf("avatar_url", "picture", "photo_url")
+            .firstNotNullOfOrNull { key -> identityData[key]?.jsonPrimitive?.contentOrNull }
     }
 }
 
