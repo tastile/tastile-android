@@ -13,9 +13,3 @@ tasks.register("verify") {
     description = "Runs the repository verification suite."
     dependsOn(":app:testDebugUnitTest")
 }
-
-tasks.register("verify") {
-    group = "verification"
-    description = "Runs the repository verification suite."
-    dependsOn(":app:testDebugUnitTest")
-}
