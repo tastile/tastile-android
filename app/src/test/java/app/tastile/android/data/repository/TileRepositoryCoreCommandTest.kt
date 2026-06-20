@@ -7,7 +7,6 @@ import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.core.CoreSnapshot
 import app.tastile.android.core.CoreTileSnapshot
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
-import io.github.jan.supabase.SupabaseClient
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -32,7 +31,6 @@ class TileRepositoryCoreCommandTest {
             )
         )
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -63,7 +61,6 @@ class TileRepositoryCoreCommandTest {
             )
         )
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -82,7 +79,6 @@ class TileRepositoryCoreCommandTest {
     @Test
     fun getActiveStartedTile_returnsNullWhenSnapshotHasNoActiveTile() = runTest {
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = RecordingCoreRuntimeService(
                 snapshotBeforeCommand = CoreSnapshot(revision = 1, tiles = emptyList())
             ),
@@ -104,7 +100,6 @@ class TileRepositoryCoreCommandTest {
             snapshotBeforeCommand = CoreSnapshot(revision = 3, activeTileId = "tile-continue")
         )
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -123,7 +118,6 @@ class TileRepositoryCoreCommandTest {
     fun deferTile_usesCoreCommand() = runTest {
         val service = RecordingCoreRuntimeService(snapshotBeforeCommand = CoreSnapshot(revision = 3))
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -144,7 +138,6 @@ class TileRepositoryCoreCommandTest {
     fun startBreak_usesCoreCommand() = runTest {
         val service = RecordingCoreRuntimeService(snapshotBeforeCommand = CoreSnapshot(revision = 3))
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -164,7 +157,6 @@ class TileRepositoryCoreCommandTest {
     fun endBreak_usesCoreCommand() = runTest {
         val service = RecordingCoreRuntimeService(snapshotBeforeCommand = CoreSnapshot(revision = 3))
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -182,7 +174,6 @@ class TileRepositoryCoreCommandTest {
     fun extendTile_usesCoreCommand() = runTest {
         val service = RecordingCoreRuntimeService(snapshotBeforeCommand = CoreSnapshot(revision = 3))
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -201,7 +192,6 @@ class TileRepositoryCoreCommandTest {
     fun completeTile_withScopeAndNextTile_usesCoreCommandPayload() = runTest {
         val service = RecordingCoreRuntimeService(snapshotBeforeCommand = CoreSnapshot(revision = 3))
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -222,7 +212,6 @@ class TileRepositoryCoreCommandTest {
     fun attachMemo_withMemoKind_usesCoreCommandPayload() = runTest {
         val service = RecordingCoreRuntimeService(snapshotBeforeCommand = CoreSnapshot(revision = 3))
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),
@@ -261,7 +250,6 @@ class TileRepositoryCoreCommandTest {
             )
         )
         val repository = TileRepository(
-            client = mockk<SupabaseClient>(relaxed = true),
             coreRuntimeService = service,
             executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
             eventRepository = mockk<EventRepository>(relaxed = true),

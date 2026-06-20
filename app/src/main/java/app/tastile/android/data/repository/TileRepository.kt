@@ -10,7 +10,6 @@ import app.tastile.android.core.CoreTileSnapshot
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
-import io.github.jan.supabase.SupabaseClient
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -37,19 +36,6 @@ class TileRepository @Inject constructor(
     private val eventRepository: EventRepository,
     private val currentUserProvider: CurrentUserProvider
 ) : PromptTileRepository, MemoTileRepository {
-    constructor(
-        @Suppress("UNUSED_PARAMETER") client: SupabaseClient,
-        coreRuntimeService: CoreRuntimeService,
-        executionNotificationCoordinator: ExecutionNotificationCoordinator,
-        eventRepository: EventRepository,
-        currentUserProvider: CurrentUserProvider
-    ) : this(
-        coreRuntimeService = coreRuntimeService,
-        executionNotificationCoordinator = executionNotificationCoordinator,
-        eventRepository = eventRepository,
-        currentUserProvider = currentUserProvider
-    )
-
     companion object {
         private const val COMMAND_TILE_CREATE = "tile.create"
         private const val COMMAND_TILE_START = "tile.start"

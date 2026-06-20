@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.repository.AuthRepositoryContract
 import app.tastile.android.data.repository.TastileAuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +18,6 @@ class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepositoryContract
 ) : ViewModel() {
     val authState: StateFlow<TastileAuthState> = authRepository.authState
-    val sessionStatus: StateFlow<SessionStatus> = authRepository.sessionStatus
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     private val _isSigningIn = MutableStateFlow(false)

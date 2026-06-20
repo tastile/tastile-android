@@ -4,7 +4,6 @@ import android.content.Context
 import app.tastile.android.data.repository.AuthRepositoryContract
 import app.tastile.android.data.repository.TastileAuthState
 import io.mockk.mockk
-import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,11 +78,9 @@ class LoginViewModelTest {
         private val signInError: Exception? = null,
         private val signOutError: Exception? = null
     ) : AuthRepositoryContract {
-        private val status = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
         private val auth = MutableStateFlow<TastileAuthState>(TastileAuthState.Unauthenticated)
 
         override val authState: StateFlow<TastileAuthState> = auth
-        override val sessionStatus: StateFlow<SessionStatus> = status
 
         override suspend fun signInWithCognito(context: Context) {
             signInError?.let { throw it }

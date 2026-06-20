@@ -7,8 +7,7 @@ import android.util.Base64
 import android.util.Log
 import app.tastile.android.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.github.jan.supabase.auth.status.SessionStatus
- 
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.StateFlow
@@ -41,11 +40,8 @@ class AuthRepository @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
     private val prefs = context.getSharedPreferences("tastile_cognito_auth", Context.MODE_PRIVATE)
     private val _authState = MutableStateFlow(loadStoredAuthState())
-    private val _sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
-
     val currentSession: Any? get() = null
     override val authState: StateFlow<TastileAuthState> = _authState.asStateFlow()
-    override val sessionStatus: StateFlow<SessionStatus> = _sessionStatus.asStateFlow()
 
     override fun currentUserId(): String? =
         (_authState.value as? TastileAuthState.Authenticated)?.userId
@@ -65,7 +61,6 @@ class AuthRepository @Inject constructor(
     override suspend fun signOut() {
         prefs.edit().clear().apply()
         _authState.value = TastileAuthState.Unauthenticated
-        _sessionStatus.value = SessionStatus.NotAuthenticated(isSignOut = true)
     }
 
     suspend fun handleDeepLink(intent: Intent): Boolean {

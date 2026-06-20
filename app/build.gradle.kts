@@ -140,9 +140,6 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.navigation:navigation-compose:2.8.5")
 
-    // Kept only for existing auth status types; runtime data uses Tastile Core API.
-    implementation(platform("io.github.jan-tennert.supabase:bom:3.0.3"))
-    implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.ktor:ktor-client-okhttp:3.1.3")
 
     // Serialization

@@ -15,13 +15,10 @@ import app.tastile.android.data.repository.ProfileRepository
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.UserSettingsRepository
-import io.github.jan.supabase.auth.user.UserSession
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -31,7 +28,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import io.github.jan.supabase.auth.status.SessionStatus
 import io.mockk.coEvery
 import io.mockk.coVerify
 import app.tastile.android.core.CoreTimelineItem
@@ -56,15 +52,7 @@ class DashboardViewModelTest {
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        val sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
-        val session = mockk<UserSession>(relaxed = true)
-        val user = mockk<io.github.jan.supabase.auth.user.UserInfo>(relaxed = true)
-        every { user.id } returns "user-1"
-        every { user.email } returns "u@test.dev"
-        every { user.userMetadata } returns buildJsonObject {}
-        every { session.user } returns user
-        every { authRepository.currentSession } returns session
-        every { authRepository.sessionStatus } returns sessionStatus as StateFlow<SessionStatus>
+        every { authRepository.currentSession } returns null
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
@@ -89,14 +77,7 @@ class DashboardViewModelTest {
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        val sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
-        val session = mockk<UserSession>(relaxed = true)
-        val user = mockk<io.github.jan.supabase.auth.user.UserInfo>(relaxed = true)
-        every { user.id } returns "user-1"
-        every { user.email } returns "u@test.dev"
-        every { session.user } returns user
-        every { authRepository.currentSession } returns session
-        every { authRepository.sessionStatus } returns sessionStatus as StateFlow<SessionStatus>
+        every { authRepository.currentSession } returns null
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
@@ -125,14 +106,7 @@ class DashboardViewModelTest {
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        val sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
-        val session = mockk<UserSession>(relaxed = true)
-        val user = mockk<io.github.jan.supabase.auth.user.UserInfo>(relaxed = true)
-        every { user.id } returns "user-1"
-        every { user.email } returns "u@test.dev"
-        every { session.user } returns user
-        every { authRepository.currentSession } returns session
-        every { authRepository.sessionStatus } returns sessionStatus as StateFlow<SessionStatus>
+        every { authRepository.currentSession } returns null
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
@@ -164,14 +138,7 @@ class DashboardViewModelTest {
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        val sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
-        val session = mockk<UserSession>(relaxed = true)
-        val user = mockk<io.github.jan.supabase.auth.user.UserInfo>(relaxed = true)
-        every { user.id } returns "user-1"
-        every { user.email } returns "u@test.dev"
-        every { session.user } returns user
-        every { authRepository.currentSession } returns session
-        every { authRepository.sessionStatus } returns sessionStatus as StateFlow<SessionStatus>
+        every { authRepository.currentSession } returns null
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
@@ -226,9 +193,7 @@ class DashboardViewModelTest {
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        val sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
         every { authRepository.currentSession } returns null
-        every { authRepository.sessionStatus } returns sessionStatus as StateFlow<SessionStatus>
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
 
@@ -245,14 +210,7 @@ class DashboardViewModelTest {
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        val sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
-        val session = mockk<UserSession>(relaxed = true)
-        val user = mockk<io.github.jan.supabase.auth.user.UserInfo>(relaxed = true)
-        every { user.id } returns "user-1"
-        every { user.email } returns "u@test.dev"
-        every { session.user } returns user
-        every { authRepository.currentSession } returns session
-        every { authRepository.sessionStatus } returns sessionStatus as StateFlow<SessionStatus>
+        every { authRepository.currentSession } returns null
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
@@ -280,14 +238,7 @@ class DashboardViewModelTest {
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        val sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
-        val session = mockk<UserSession>(relaxed = true)
-        val user = mockk<io.github.jan.supabase.auth.user.UserInfo>(relaxed = true)
-        every { user.id } returns "user-1"
-        every { user.email } returns "u@test.dev"
-        every { session.user } returns user
-        every { authRepository.currentSession } returns session
-        every { authRepository.sessionStatus } returns sessionStatus as StateFlow<SessionStatus>
+        every { authRepository.currentSession } returns null
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()

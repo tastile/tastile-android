@@ -3,7 +3,7 @@
 ## Sensitive Material
 
 - Release keystores, keystore passwords, and machine-local Gradle settings must stay out of this repository.
-- Publishable Supabase mobile client values may exist in source control, but server secrets must not.
+- Publishable Cognito client values may exist in source control, but server secrets must not.
 
 ## Reporting
 

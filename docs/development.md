@@ -28,10 +28,10 @@ RELEASE_KEY_PASSWORD=...
 
 Release tasks fail fast when these values are missing.
 
-## Supabase Configuration
+## AWS Cognito Configuration
 
-The repository currently carries publishable mobile client values in `gradle.properties`.
-If those values change, keep them aligned with the shared backend/web configuration.
+The repository uses AWS Cognito for authentication. Cognito configuration is set via BuildConfig fields.
+Keep them aligned with the shared backend/web configuration.
 
 ## Clean Re-Clone Workflow
 
