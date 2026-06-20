@@ -9,9 +9,12 @@ import java.net.ConnectException
 class IntegrationRepositoryNetworkFallbackTest {
 
     @Test
-    fun defaultDaemonBaseUrls_prefersHostLoopbackAfterLocalhost() {
+    fun defaultDaemonBaseUrls_prefersCloudApiBeforeLocalhost() {
         val urls = defaultDaemonBaseUrls()
-        assertEquals(listOf("http://127.0.0.1:3140", "http://10.0.2.2:3140"), urls)
+        assertEquals(
+            listOf("https://api.tastile.app", "http://127.0.0.1:3140", "http://10.0.2.2:3140"),
+            urls
+        )
     }
 
     @Test

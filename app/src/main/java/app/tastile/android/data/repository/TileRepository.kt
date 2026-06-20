@@ -1,5 +1,6 @@
 package app.tastile.android.data.repository
 
+import app.tastile.android.BuildConfig
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.core.CoreCommandRequest
 import app.tastile.android.core.CoreRuntimeService
@@ -17,6 +18,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -28,6 +30,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -63,8 +67,15 @@ class TileRepository @Inject constructor(
     private var latestReadDiagnostics: String = "source=unknown"
     @Volatile
     private var latestSupabaseTiles: List<Tile> = emptyList()
+    private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun getTiles(userId: String): List<Tile> {
+        readCloudTiles()?.let { tiles ->
+            latestReadDiagnostics = "source=cloud count=${tiles.size} user_match=true"
+            latestSupabaseTiles = tiles
+            return tiles
+        }
+
         if (canUseSnapshotForUser(userId)) {
             projectedSnapshotTiles()?.let {
                 val snapshot = currentSnapshotOrNull()
@@ -92,6 +103,30 @@ class TileRepository @Inject constructor(
         }
         latestSupabaseTiles = tiles
         return tiles
+    }
+
+    private suspend fun readCloudTiles(): List<Tile>? {
+        val baseUrl = BuildConfig.TASTILE_CORE_URL.trim().trimEnd('/')
+        val token = currentUserProvider.currentIdToken()
+        if (baseUrl.isBlank() || token.isNullOrBlank()) return null
+        return try {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val connection = (URL("$baseUrl/read/tiles").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                val status = connection.responseCode
+                if (status !in 200..299) return@withContext null
+                val body = connection.inputStream.bufferedReader().use { it.readText() }
+                json.decodeFromString<CloudTilesResponse>(body).tiles.map { it.toTile(userId = currentUserProvider.currentUserId().orEmpty()) }
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     suspend fun getTiles(): TilesResponse {
@@ -925,6 +960,79 @@ class TileRepository @Inject constructor(
             updatedAt = if (activeTileId == id) phaseStartedAt else null
         )
     }
+}
+
+@Serializable
+internal data class CloudTilesResponse(
+    val tiles: List<CloudTileView> = emptyList()
+)
+
+@Serializable
+internal data class CloudTileView(
+    val id: String,
+    val title: String = "",
+    val lifecycle: String = TileLifecycle.READY.value,
+    @SerialName("next_action") val nextActionSnake: String? = null,
+    val nextAction: String? = null,
+    @SerialName("done_definition") val doneDefinitionSnake: String? = null,
+    val doneDefinition: String? = null,
+    val temporal: CloudTileTemporal? = null,
+    @SerialName("target_work_min") val targetWorkMinSnake: Int? = null,
+    val targetWorkMin: Int? = null
+) {
+    fun toTile(userId: String): Tile {
+        val temporalJson = temporal?.toJson()
+        val targetWork = targetWorkMinSnake ?: targetWorkMin
+        return Tile(
+            id = id,
+            userId = userId,
+            localTileId = id,
+            title = title,
+            nextAction = nextActionSnake ?: nextAction,
+            doneDefinition = doneDefinitionSnake ?: doneDefinition,
+            temporalConditions = temporalJson,
+            objectiveConditions = targetWork?.takeIf { it > 0 }?.let {
+                buildJsonObject { put("target_work_min", JsonPrimitive(it)) }
+            },
+            lifecycle = lifecycle
+        )
+    }
+}
+
+@Serializable
+internal data class CloudTileTemporal(
+    val tz: String? = null,
+    @SerialName("release_at") val releaseAtSnake: String? = null,
+    val releaseAt: String? = null,
+    @SerialName("due_at") val dueAtSnake: String? = null,
+    val dueAt: String? = null,
+    @SerialName("fixed_start") val fixedStartSnake: String? = null,
+    val fixedStart: String? = null,
+    @SerialName("fixed_end") val fixedEndSnake: String? = null,
+    val fixedEnd: String? = null,
+    @SerialName("active_start") val activeStartSnake: String? = null,
+    val activeStart: String? = null,
+    @SerialName("active_end") val activeEndSnake: String? = null,
+    val activeEnd: String? = null
+) {
+    fun toJson(): JsonObject {
+        return buildJsonObject {
+            putStringIfPresent("tz", tz)
+            putStringIfPresent("release_at", releaseAtSnake ?: releaseAt)
+            putStringIfPresent("due_at", dueAtSnake ?: dueAt)
+            putStringIfPresent("fixed_start", fixedStartSnake ?: fixedStart)
+            putStringIfPresent("fixed_end", fixedEndSnake ?: fixedEnd)
+            putStringIfPresent("active_start", activeStartSnake ?: activeStart)
+            putStringIfPresent("active_end", activeEndSnake ?: activeEnd)
+        }
+    }
+}
+
+private fun kotlinx.serialization.json.JsonObjectBuilder.putStringIfPresent(
+    key: String,
+    value: String?
+) {
+    if (!value.isNullOrBlank()) put(key, JsonPrimitive(value))
 }
 
 @Serializable

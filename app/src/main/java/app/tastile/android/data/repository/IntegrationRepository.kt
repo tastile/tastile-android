@@ -1,5 +1,6 @@
 package app.tastile.android.data.repository
 
+import app.tastile.android.BuildConfig
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.Dispatchers
@@ -127,6 +128,9 @@ class IntegrationRepository @Inject constructor(
 
     suspend fun getSettings(): IntegrationSettingsResponse {
         val (status, responseText) = executeDaemonRequest(path = "/auth/integrations/settings", method = "GET")
+        if (status == 404) {
+            return IntegrationSettingsResponse(GoogleCalendarIntegrationSettings())
+        }
         if (status !in 200..299) {
             throw IllegalStateException("Failed to load integrations: HTTP $status $responseText")
         }
@@ -259,6 +263,9 @@ class IntegrationRepository @Inject constructor(
 
     suspend fun getSyncStatus(): SyncStatusResponse {
         val (status, responseText) = executeDaemonRequest(path = "/sync/status", method = "GET")
+        if (status == 404) {
+            return SyncStatusResponse()
+        }
         if (status !in 200..299) {
             throw IllegalStateException("Failed to load sync status: HTTP $status $responseText")
         }
@@ -271,6 +278,16 @@ class IntegrationRepository @Inject constructor(
             method = "GET",
             requiresAuth = false
         )
+        if (status == 404) {
+            return RuntimePathsResponse(
+                profileName = "cloud",
+                appDataDir = "",
+                dbPath = "",
+                sessionPath = "",
+                daemonStartupLogPath = "",
+                daemonExecutablePath = ""
+            )
+        }
         if (status !in 200..299) {
             throw IllegalStateException("Failed to load runtime paths: HTTP $status $responseText")
         }
@@ -503,8 +520,9 @@ class IntegrationRepository @Inject constructor(
 
 internal fun defaultDaemonBaseUrls(overrideBaseUrl: String? = null): List<String> {
     val configured = overrideBaseUrl?.trim()?.takeIf { it.isNotEmpty() }
+    val core = BuildConfig.TASTILE_CORE_URL.trim().takeIf { it.isNotEmpty() }
     val defaults = listOf("http://127.0.0.1:3140", "http://10.0.2.2:3140")
-    return listOfNotNull(configured, *defaults.toTypedArray())
+    return listOfNotNull(configured, core, *defaults.toTypedArray())
         .distinct()
 }
 
