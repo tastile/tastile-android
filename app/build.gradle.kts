@@ -11,8 +11,6 @@ val releaseStoreFile = providers.gradleProperty("RELEASE_STORE_FILE")
 val releaseStorePassword = providers.gradleProperty("RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS")
 val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD")
-val supabaseUrl = providers.gradleProperty("SUPABASE_URL")
-val supabaseAnonKey = providers.gradleProperty("SUPABASE_ANON_KEY")
 val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
 val cognitoClientId = providers.gradleProperty("COGNITO_CLIENT_ID")
 val cognitoRegion = providers.gradleProperty("COGNITO_REGION")
@@ -25,7 +23,6 @@ val hasReleaseSigning =
         releaseStorePassword.isPresent &&
         releaseKeyAlias.isPresent &&
         releaseKeyPassword.isPresent
-val hasSupabaseConfig = supabaseUrl.isPresent && supabaseAnonKey.isPresent
 
 android {
     namespace = "app.tastile.android"
@@ -47,11 +44,9 @@ android {
         applicationId = "app.tastile.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21
-        versionName = "0.2.12"
+        versionCode = 22
+        versionName = "0.2.13"
 
-        buildConfigField("String", "SUPABASE_URL", "\"${supabaseUrl.orNull ?: ""}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${supabaseAnonKey.orNull ?: ""}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
         buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: "2b9fkkb4u5di8veelnmjkmnldj"}\"")
         buildConfigField("String", "COGNITO_REGION", "\"${cognitoRegion.orNull ?: "ap-northeast-1"}\"")
@@ -100,25 +95,13 @@ Add RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_K
 to your user-level ~/.gradle/gradle.properties or pass them as -P properties when running release tasks.
 """.trimIndent()
 
-val missingSupabaseInstructions = """
-Supabase client configuration is missing.
-Define SUPABASE_URL and SUPABASE_ANON_KEY in gradle.properties or ~/.gradle/gradle.properties before installing debug builds on a device.
-""".trimIndent()
-
 gradle.taskGraph.whenReady {
     val requestedReleaseBuild =
         allTasks.any { task ->
             task.project == project && (task.name == "assembleRelease" || task.name == "bundleRelease")
         }
-    val requestedDeviceInstall =
-        allTasks.any { task ->
-            task.project == project && (task.name == "installDebug" || task.name.startsWith("connected"))
-        }
     if (requestedReleaseBuild && !hasReleaseSigning) {
         throw GradleException(releaseSigningInstructions)
-    }
-    if (requestedDeviceInstall && !hasSupabaseConfig) {
-        throw GradleException(missingSupabaseInstructions)
     }
 }
 
@@ -157,11 +140,9 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.navigation:navigation-compose:2.8.5")
 
-    // Supabase
+    // Kept only for existing auth status types; runtime data uses Tastile Core API.
     implementation(platform("io.github.jan-tennert.supabase:bom:3.0.3"))
-    implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:auth-kt")
-    implementation("io.github.jan-tennert.supabase:compose-auth")
     implementation("io.ktor:ktor-client-okhttp:3.1.3")
 
     // Serialization

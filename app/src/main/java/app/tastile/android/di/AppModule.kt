@@ -1,6 +1,5 @@
 package app.tastile.android.di
 
-import app.tastile.android.data.SupabaseClientFactory
 import app.tastile.android.core.CoreCommandStore
 import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.core.PersistentCoreRuntimeService
@@ -17,16 +16,11 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import io.github.jan.supabase.SupabaseClient
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-    @Provides
-    @Singleton
-    fun provideSupabaseClient(): SupabaseClient = SupabaseClientFactory.create()
-
     @Provides
     @Singleton
     fun provideCoreCommandStore(store: SharedPreferencesCoreCommandStore): CoreCommandStore = store

@@ -1,6 +1,5 @@
 package app.tastile.android.data.repository
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,14 +7,6 @@ import android.util.Base64
 import android.util.Log
 import app.tastile.android.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.exceptions.NoCredentialException
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
  
 import kotlinx.coroutines.Dispatchers
@@ -40,8 +31,7 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val client: SupabaseClient
+    @ApplicationContext private val context: Context
 ) : CurrentUserProvider, AuthRepositoryContract {
     private companion object {
         private const val TAG = "AuthRepository"
@@ -51,60 +41,18 @@ class AuthRepository @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
     private val prefs = context.getSharedPreferences("tastile_cognito_auth", Context.MODE_PRIVATE)
     private val _authState = MutableStateFlow(loadStoredAuthState())
+    private val _sessionStatus = MutableStateFlow<SessionStatus>(SessionStatus.NotAuthenticated(isSignOut = false))
 
-    val currentSession get() = client.auth.currentSessionOrNull()
+    val currentSession: Any? get() = null
     override val authState: StateFlow<TastileAuthState> = _authState.asStateFlow()
-    override val sessionStatus: StateFlow<SessionStatus> get() = client.auth.sessionStatus
+    override val sessionStatus: StateFlow<SessionStatus> = _sessionStatus.asStateFlow()
 
     override fun currentUserId(): String? =
-        (_authState.value as? TastileAuthState.Authenticated)?.userId ?: currentSession?.user?.id
+        (_authState.value as? TastileAuthState.Authenticated)?.userId
 
     override fun currentIdToken(): String? =
         (_authState.value as? TastileAuthState.Authenticated)?.idToken?.takeIf { !isJwtExpired(it) }
             ?: refreshCognitoSessionOrNull()?.idToken
-
-    private suspend fun signInWithGoogleWithCredentialManager(
-        context: Context,
-        credentialManager: CredentialManager
-    ) {
-        val webClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
-        if (webClientId.isBlank()) {
-            throw IllegalStateException("GOOGLE_WEB_CLIENT_ID is missing")
-        }
-        val idToken = try {
-            tryGetGoogleIdToken(
-                context = context,
-                credentialManager = credentialManager,
-                webClientId = webClientId
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Credential Manager flow failed", e)
-            throw IllegalStateException(
-                "Credential Manager failed: ${e.message ?: e.javaClass.simpleName}",
-                e
-            )
-        }
-
-        val session = try {
-            withContext(Dispatchers.IO) { exchangeGoogleIdTokenForSession(idToken) }
-        } catch (e: Exception) {
-            Log.e(TAG, "Supabase token exchange failed", e)
-            throw IllegalStateException(
-                "Supabase token exchange failed: ${e.message ?: e.javaClass.simpleName}",
-                e
-            )
-        }
-
-        try {
-            client.auth.importAuthToken(session.accessToken, session.refreshToken, true, true)
-        } catch (e: Exception) {
-            Log.e(TAG, "Session import failed", e)
-            throw IllegalStateException(
-                "Session import failed: ${e.message ?: e.javaClass.simpleName}",
-                e
-            )
-        }
-    }
 
     override suspend fun signInWithCognito(context: Context) {
         startCognitoHostedUi(context)
@@ -114,55 +62,10 @@ class AuthRepository @Inject constructor(
         startCognitoHostedUi(context, identityProvider = "Google")
     }
 
-    @SuppressLint("CredentialManagerSignInWithGoogle")
-    private suspend fun tryGetGoogleIdToken(
-        context: Context,
-        credentialManager: CredentialManager,
-        webClientId: String
-    ): String {
-        val authorizedOnlyOption = GetGoogleIdOption.Builder()
-            .setServerClientId(webClientId)
-            .setFilterByAuthorizedAccounts(true)
-            .setAutoSelectEnabled(true)
-            .build()
-        val authorizedOnlyRequest = GetCredentialRequest.Builder()
-            .addCredentialOption(authorizedOnlyOption)
-            .build()
-
-        val response = try {
-            credentialManager.getCredential(context = context, request = authorizedOnlyRequest)
-        } catch (e: NoCredentialException) {
-            val broaderOption = GetGoogleIdOption.Builder()
-                .setServerClientId(webClientId)
-                .setFilterByAuthorizedAccounts(false)
-                .setAutoSelectEnabled(false)
-                .build()
-            val broaderRequest = GetCredentialRequest.Builder()
-                .addCredentialOption(broaderOption)
-                .build()
-            try {
-                credentialManager.getCredential(context = context, request = broaderRequest)
-            } catch (nested: NoCredentialException) {
-                val explicitSignInOption = GetSignInWithGoogleOption.Builder(webClientId).build()
-                val explicitSignInRequest = GetCredentialRequest.Builder()
-                    .addCredentialOption(explicitSignInOption)
-                    .build()
-                credentialManager.getCredential(context = context, request = explicitSignInRequest)
-            }
-        }
-
-        val idTokenCredential = GoogleIdTokenCredential.createFrom(response.credential.data)
-        val idToken = idTokenCredential.idToken
-        if (idToken.isBlank()) {
-            throw IllegalStateException("Google ID token is empty")
-        }
-        return idToken
-    }
-
     override suspend fun signOut() {
         prefs.edit().clear().apply()
         _authState.value = TastileAuthState.Unauthenticated
-        client.auth.signOut()
+        _sessionStatus.value = SessionStatus.NotAuthenticated(isSignOut = true)
     }
 
     suspend fun handleDeepLink(intent: Intent): Boolean {
@@ -214,56 +117,6 @@ class AuthRepository @Inject constructor(
             }
             .toMap()
     }
-
-    private fun exchangeGoogleIdTokenForSession(idToken: String): TokenSession {
-        val supabaseUrl = BuildConfig.SUPABASE_URL
-        val anonKey = BuildConfig.SUPABASE_ANON_KEY
-        if (supabaseUrl.isBlank() || anonKey.isBlank()) {
-            throw IllegalStateException("Supabase config is missing")
-        }
-
-        val endpoint = URL("$supabaseUrl/auth/v1/token?grant_type=id_token")
-        val connection = (endpoint.openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            doOutput = true
-            setRequestProperty("apikey", anonKey)
-            setRequestProperty("Authorization", "Bearer $anonKey")
-            setRequestProperty("Content-Type", "application/json")
-            connectTimeout = 15_000
-            readTimeout = 15_000
-        }
-
-        val payload = buildJsonObject {
-            put("provider", JsonPrimitive("google"))
-            put("id_token", JsonPrimitive(idToken))
-        }.toString()
-
-        OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(payload) }
-
-        val status = connection.responseCode
-        val responseText = if (status in 200..299) {
-            connection.inputStream.bufferedReader().use { it.readText() }
-        } else {
-            connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-        }
-
-        if (status !in 200..299) {
-            throw IllegalStateException("Supabase ID token exchange failed: HTTP $status $responseText")
-        }
-
-        val response = json.parseToJsonElement(responseText).jsonObject
-        val accessToken = response["access_token"]?.jsonPrimitive?.contentOrNull
-        val refreshToken = response["refresh_token"]?.jsonPrimitive?.contentOrNull
-        if (accessToken.isNullOrBlank() || refreshToken.isNullOrBlank()) {
-            throw IllegalStateException("Supabase response missing access/refresh token")
-        }
-        return TokenSession(accessToken, refreshToken)
-    }
-
-    private data class TokenSession(
-        val accessToken: String,
-        val refreshToken: String
-    )
 
     private fun startCognitoHostedUi(context: Context, identityProvider: String? = null) {
         val redirectUri = BuildConfig.COGNITO_REDIRECT_URI

@@ -11,11 +11,6 @@ import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Order
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -32,20 +27,30 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TileRepository @Inject constructor(
-    private val client: SupabaseClient,
     private val coreRuntimeService: CoreRuntimeService,
     private val executionNotificationCoordinator: ExecutionNotificationCoordinator,
     private val eventRepository: EventRepository,
     private val currentUserProvider: CurrentUserProvider
 ) : PromptTileRepository, MemoTileRepository {
+    constructor(
+        @Suppress("UNUSED_PARAMETER") client: SupabaseClient,
+        coreRuntimeService: CoreRuntimeService,
+        executionNotificationCoordinator: ExecutionNotificationCoordinator,
+        eventRepository: EventRepository,
+        currentUserProvider: CurrentUserProvider
+    ) : this(
+        coreRuntimeService = coreRuntimeService,
+        executionNotificationCoordinator = executionNotificationCoordinator,
+        eventRepository = eventRepository,
+        currentUserProvider = currentUserProvider
+    )
+
     companion object {
-        private const val TABLE_TILES = "tiles"
         private const val COMMAND_TILE_CREATE = "tile.create"
         private const val COMMAND_TILE_START = "tile.start"
         private const val COMMAND_TILE_COMPLETE = "tile.complete"
@@ -66,13 +71,13 @@ class TileRepository @Inject constructor(
     @Volatile
     private var latestReadDiagnostics: String = "source=unknown"
     @Volatile
-    private var latestSupabaseTiles: List<Tile> = emptyList()
+    private var latestCloudTiles: List<Tile> = emptyList()
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun getTiles(userId: String): List<Tile> {
         readCloudTiles()?.let { tiles ->
             latestReadDiagnostics = "source=cloud count=${tiles.size} user_match=true"
-            latestSupabaseTiles = tiles
+            latestCloudTiles = tiles
             return tiles
         }
 
@@ -89,20 +94,9 @@ class TileRepository @Inject constructor(
             }
         }
 
-        val (tiles, deletedAtFallbackUsed) = querySupabaseTiles(
-            userId = userId,
-            orderBy = "created_at"
-        )
-        latestReadDiagnostics = buildString {
-            append("source=supabase")
-            append(" count=${tiles.size}")
-            append(" user_match=${canUseSnapshotForUser(userId)}")
-            if (deletedAtFallbackUsed) {
-                append(" schema_fallback=deleted_at_missing")
-            }
-        }
-        latestSupabaseTiles = tiles
-        return tiles
+        latestReadDiagnostics = "source=cloud_unavailable count=0 user_match=${canUseSnapshotForUser(userId)}"
+        latestCloudTiles = emptyList()
+        return emptyList()
     }
 
     private suspend fun readCloudTiles(): List<Tile>? {
@@ -172,7 +166,10 @@ class TileRepository @Inject constructor(
         findSnapshotTile(tileId)?.let { return it }
         val userId = currentUserProvider.currentUserId().orEmpty()
         if (userId.isBlank()) return null
-        return querySupabaseTiles(userId = userId, orderBy = "updated_at").first.firstOrNull { it.id == tileId }
+        if (latestCloudTiles.isEmpty()) {
+            latestCloudTiles = readCloudTiles().orEmpty()
+        }
+        return latestCloudTiles.firstOrNull { it.id == tileId }
     }
 
     suspend fun getEditableTileById(tileId: String): Tile? {
@@ -195,14 +192,8 @@ class TileRepository @Inject constructor(
                 )
             }
             else -> {
-                val userId = currentUserProvider.currentUserId().orEmpty()
-                if (userId.isBlank()) emptyList() else {
-                    querySupabaseTiles(
-                        userId = userId,
-                        orderBy = "updated_at",
-                        lifecycle = TileLifecycle.STARTED.value
-                    ).first
-                }
+                readCloudTiles().orEmpty()
+                    .filter { it.lifecycle.equals(TileLifecycle.STARTED.value, ignoreCase = true) }
             }
         }
         return TilesInProgressResponse(tiles = tiles, count = tiles.size)
@@ -346,21 +337,7 @@ class TileRepository @Inject constructor(
             createdTile?.let { return it.toTile() }
         }
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-        val tile = Tile(
-            userId = userId,
-            localTileId = UUID.randomUUID().toString(),
-            title = trimmedTitle,
-            lifecycle = "Ready",
-            localCreatedAt = now,
-            localUpdatedAt = now
-        )
-        
-        return client.from(TABLE_TILES)
-            .insert(tile) {
-                select()
-            }
-            .decodeSingle<Tile>()
+        throw IllegalStateException("Cloud command rejected: create tile")
     }
 
     suspend fun startTile(tileId: String): Tile {
@@ -373,19 +350,7 @@ class TileRepository @Inject constructor(
             findSnapshotTile(tileId)?.let { return it }
         }
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-        
-        return client.from(TABLE_TILES)
-            .update({
-                set("lifecycle", "Started")
-                set("updated_at", now)
-            }) {
-                filter {
-                    eq("id", tileId)
-                }
-                select()
-            }
-            .decodeSingle<Tile>()
+        throw IllegalStateException("Cloud command rejected: start tile")
     }
 
     override suspend fun completeTile(tileId: String): Tile {
@@ -420,19 +385,7 @@ class TileRepository @Inject constructor(
             return null
         }
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-
-        return client.from(TABLE_TILES)
-            .update({
-                set("lifecycle", "Done")
-                set("updated_at", now)
-            }) {
-                filter {
-                    eq("id", effectiveTileId)
-                }
-                select()
-            }
-            .decodeSingle<Tile>()
+        throw IllegalStateException("Cloud command rejected: complete tile")
     }
 
     suspend fun deleteTile(tileId: String) {
@@ -445,16 +398,7 @@ class TileRepository @Inject constructor(
             return
         }
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-        
-        client.from(TABLE_TILES)
-            .update({
-                set("deleted_at", now)
-            }) {
-                filter {
-                    eq("id", tileId)
-                }
-            }
+        throw IllegalStateException("Cloud command rejected: delete tile")
     }
 
     override suspend fun pauseTile(tileId: String) {
@@ -467,17 +411,7 @@ class TileRepository @Inject constructor(
             return
         }
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-        
-        client.from(TABLE_TILES)
-            .update({
-                set("lifecycle", "Ready")
-                set("updated_at", now)
-            }) {
-                filter {
-                    eq("id", tileId)
-                }
-            }
+        throw IllegalStateException("Cloud command rejected: pause tile")
     }
 
     override suspend fun getActiveStartedTile(userId: String): Tile? {
@@ -490,13 +424,8 @@ class TileRepository @Inject constructor(
             ?.let { return it.toTile(activeTileId = snapshot.activeTileId, phaseStartedAt = snapshot.phaseStartedAt) }
         if (snapshot != null && snapshot.revision > 0) return null
 
-        val (tiles, _) = querySupabaseTiles(
-            userId = userId,
-            orderBy = "updated_at",
-            lifecycle = TileLifecycle.STARTED.value,
-            rowLimit = 1
-        )
-        return tiles.firstOrNull()
+        return readCloudTiles().orEmpty()
+            .firstOrNull { it.lifecycle.equals(TileLifecycle.STARTED.value, ignoreCase = true) }
     }
 
     override suspend fun continueTile(tileId: String) {
@@ -509,15 +438,7 @@ class TileRepository @Inject constructor(
             return
         }
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-        client.from(TABLE_TILES)
-            .update({
-                set("updated_at", now)
-            }) {
-                filter {
-                    eq("id", tileId)
-                }
-            }
+        throw IllegalStateException("Cloud command rejected: continue tile")
     }
 
     suspend fun deferTile(tileId: String, reason: String? = null, minutes: Int? = null) {
@@ -646,21 +567,15 @@ class TileRepository @Inject constructor(
             }
             latestReadDiagnostics = buildString {
                 append(latestReadDiagnostics)
-                append(" timeline_source=supabase_fallback")
+                append(" timeline_source=cloud_fallback")
                 append(" core_timeline_count=${snapshotTimeline.size}")
                 append(" core_synthetic_breaks=$syntheticBreaks")
             }
         }
-        if (latestSupabaseTiles.isEmpty()) {
-            val userId = currentUserProvider.currentUserId()
-            if (!userId.isNullOrBlank()) {
-                latestSupabaseTiles = querySupabaseTiles(
-                    userId = userId,
-                    orderBy = "updated_at"
-                ).first
-            }
+        if (latestCloudTiles.isEmpty()) {
+            latestCloudTiles = readCloudTiles().orEmpty()
         }
-        val fallback = buildTimelineFromTiles(latestSupabaseTiles, Instant.now())
+        val fallback = buildTimelineFromTiles(latestCloudTiles, Instant.now())
         latestReadDiagnostics = buildString {
             append(latestReadDiagnostics)
             append(" fallback_timeline_count=${fallback.size}")
@@ -688,11 +603,10 @@ class TileRepository @Inject constructor(
             projectedSnapshotTiles()?.take(limit)?.let { return it }
         }
 
-        return querySupabaseTiles(
-            userId = userId,
-            orderBy = "updated_at",
-            rowLimit = limit.toLong()
-        ).first
+        if (latestCloudTiles.isEmpty()) {
+            latestCloudTiles = readCloudTiles().orEmpty()
+        }
+        return latestCloudTiles.take(limit)
     }
 
     override suspend fun saveMemo(tileId: String, note: String) {
@@ -717,35 +631,7 @@ class TileRepository @Inject constructor(
             return
         }
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
-        val currentAnnotations = client.from(TABLE_TILES)
-            .select {
-                filter {
-                    eq("id", tileId)
-                }
-                limit(1)
-            }
-            .decodeList<Tile>()
-            .firstOrNull()
-            ?.annotationConditions
-            ?: buildJsonObject { }
-        val updatedAnnotations = buildJsonObject {
-            currentAnnotations.entries.forEach { (key, value) ->
-                put(key, value)
-            }
-            put("note", JsonPrimitive(text))
-            if (!memoKind.isNullOrBlank()) put("memo_kind", JsonPrimitive(memoKind))
-        }
-
-        client.from(TABLE_TILES)
-            .update({
-                set("annotation_conditions", updatedAnnotations)
-                set("updated_at", now)
-            }) {
-                filter {
-                    eq("id", tileId)
-                }
-            }
+        throw IllegalStateException("Cloud command rejected: attach memo")
     }
 
     private fun projectedSnapshotTiles(): List<Tile>? {
@@ -773,149 +659,6 @@ class TileRepository @Inject constructor(
         } catch (_: CoreBridgeError) {
             null
         }
-    }
-
-    private suspend fun querySupabaseTiles(
-        userId: String,
-        orderBy: String,
-        lifecycle: String? = null,
-        rowLimit: Long? = null
-    ): Pair<List<Tile>, Boolean> {
-        return try {
-            querySupabaseTilesInternal(
-                userId = userId,
-                orderBy = orderBy,
-                lifecycle = lifecycle,
-                rowLimit = rowLimit,
-                includeDeletedAtFilter = true
-            ) to false
-        } catch (error: Exception) {
-            if (shouldRetryAsSnapshotSchema(error)) {
-                querySnapshotSchemaTiles(
-                    userId = userId,
-                    lifecycle = lifecycle,
-                    rowLimit = rowLimit
-                ) to true
-            } else {
-                if (!shouldRetryWithoutDeletedAtFilter(error)) throw error
-                querySupabaseTilesInternal(
-                    userId = userId,
-                    orderBy = orderBy,
-                    lifecycle = lifecycle,
-                    rowLimit = rowLimit,
-                    includeDeletedAtFilter = false
-                ) to true
-            }
-        }
-    }
-
-    private suspend fun querySupabaseTilesInternal(
-        userId: String,
-        orderBy: String,
-        lifecycle: String?,
-        rowLimit: Long?,
-        includeDeletedAtFilter: Boolean
-    ): List<Tile> {
-        return client.from(TABLE_TILES)
-            .select {
-                filter {
-                    eq("user_id", userId)
-                    lifecycle?.let { eq("lifecycle", it) }
-                    if (includeDeletedAtFilter) {
-                        exact("deleted_at", null)
-                    }
-                }
-                order(orderBy, Order.DESCENDING)
-                rowLimit?.let { limit(it) }
-            }
-            .decodeList<Tile>()
-    }
-
-    private fun shouldRetryWithoutDeletedAtFilter(error: Exception): Boolean {
-        if (!isBadRequestError(error)) return false
-        val message = error.message.orEmpty().lowercase()
-        return message.contains("deleted_at") && message.contains("column")
-    }
-
-    private fun shouldRetryAsSnapshotSchema(error: Exception): Boolean {
-        if (!isBadRequestError(error)) return false
-        val message = error.message.orEmpty().lowercase()
-        return (message.contains("id") && message.contains("column")) ||
-            (message.contains("local_tile_id") && message.contains("column")) ||
-            (message.contains("deleted_at") && message.contains("column"))
-    }
-
-    private fun isBadRequestError(error: Throwable): Boolean {
-        if (hasHttpStatusCode(error, 400)) return true
-        return throwableChain(error).any { throwable ->
-            val message = throwable.message.orEmpty()
-            throwable.javaClass.name.contains("badrequest", ignoreCase = true) ||
-                message.contains("bad request", ignoreCase = true) ||
-                Regex("""\b400\b""").containsMatchIn(message)
-        }
-    }
-
-    private fun hasHttpStatusCode(error: Throwable, expected: Int): Boolean {
-        return throwableChain(error).any { extractStatusCode(it) == expected }
-    }
-
-    private fun throwableChain(error: Throwable): Sequence<Throwable> = sequence {
-        var current: Throwable? = error
-        while (current != null) {
-            yield(current)
-            current = current.cause
-        }
-    }
-
-    private fun extractStatusCode(error: Throwable): Int? {
-        val methodNames = listOf("getStatus", "getStatusCode", "getCode")
-        for (methodName in methodNames) {
-            val value = runCatching {
-                error.javaClass.methods.firstOrNull { it.name == methodName && it.parameterCount == 0 }?.invoke(error)
-            }.getOrNull()
-            val parsed = parseStatusCode(value)
-            if (parsed != null) return parsed
-        }
-
-        val fieldNames = listOf("status", "statusCode", "code")
-        for (fieldName in fieldNames) {
-            val value = runCatching {
-                error.javaClass.getDeclaredField(fieldName).apply { isAccessible = true }.get(error)
-            }.getOrNull()
-            val parsed = parseStatusCode(value)
-            if (parsed != null) return parsed
-        }
-        return null
-    }
-
-    private fun parseStatusCode(value: Any?): Int? {
-        return when (value) {
-            is Int -> value
-            is Number -> value.toInt()
-            is String -> value.toIntOrNull()
-            else -> null
-        }
-    }
-
-    private suspend fun querySnapshotSchemaTiles(
-        userId: String,
-        lifecycle: String?,
-        rowLimit: Long?
-    ): List<Tile> {
-        val rows = client.from(TABLE_TILES)
-            .select {
-                filter {
-                    eq("user_id", userId)
-                }
-                order("updated_at", Order.DESCENDING)
-            }
-            .decodeList<SnapshotTileRow>()
-        return rows
-            .map { snapshotRowToTile(it, userId) }
-            .filter { tile -> lifecycle == null || tile.lifecycle == lifecycle }
-            .let { tiles ->
-                if (rowLimit == null) tiles else tiles.take(rowLimit.toInt())
-            }
     }
 
     fun latestReadDiagnostics(): String = latestReadDiagnostics

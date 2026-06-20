@@ -45,10 +45,10 @@ class AccountViewModel @Inject constructor(
             _error.value = null
             try {
                 val authState = authRepository.authState.value as? TastileAuthState.Authenticated
-                val session = authRepository.currentSession
-                val userId = authState?.userId ?: session?.user?.id
+                val legacySession = authRepository.currentSession
+                val userId = authState?.userId ?: legacySession.readNestedString("user", "id")
                 
-                _email.value = authState?.email ?: session?.user?.email ?: ""
+                _email.value = authState?.email ?: legacySession.readNestedString("user", "email").orEmpty()
                 
                 if (userId != null) {
                     _profile.value = profileRepository.getProfile(userId)
@@ -96,9 +96,25 @@ class AccountViewModel @Inject constructor(
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to sign out"
                 e.printStackTrace()
-            }
         }
     }
+}
+
+private fun Any?.readNestedString(vararg propertyNames: String): String? {
+    var current: Any? = this
+    for (propertyName in propertyNames) {
+        current = current?.javaClass?.methods
+            ?.firstOrNull { method ->
+                method.parameterCount == 0 &&
+                    method.name.equals(
+                        "get${propertyName.replaceFirstChar { it.uppercase() }}",
+                        ignoreCase = true
+                    )
+            }
+            ?.invoke(current)
+    }
+    return current as? String
+}
 
     fun isProUser(): Boolean {
         return _profile.value?.plan == Plan.PRO.value
