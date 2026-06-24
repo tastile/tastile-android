@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -78,5 +79,10 @@ fun MobileScaffold(
         }
     }
 
-    // Task 22 will hook BackHandler here.
+    // Task 21: prioritize overlay dismissal over nav pop on system back press.
+    val overlayCurrent by overlayViewModel.current.collectAsStateWithLifecycle()
+    BackHandler(enabled = overlayCurrent !is Overlay.Hidden) {
+        dashboardViewModel.clearSelectedTile()
+        overlayViewModel.dismiss()
+    }
 }
