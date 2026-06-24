@@ -45,15 +45,21 @@ class QuickCreateSheetMobileTest {
     @Test
     fun `QuickCreateSheetMobile shows Quick Create title when overlay is QuickCreate`() {
         val overlay = OverlayViewModel()
-        overlay.show(Overlay.QuickCreate)
+        val vm = newDashboardViewModel()
 
         rule.setContent {
             QuickCreateSheetMobile(
                 overlay = overlay,
-                dashboardViewModel = newDashboardViewModel(),
+                dashboardViewModel = vm,
             )
         }
+        rule.waitForIdle()
+        rule.onNodeWithText("Quick Create").assertDoesNotExist()
 
+        rule.runOnUiThread {
+            overlay.show(Overlay.QuickCreate)
+        }
+        rule.waitForIdle()
         rule.onNodeWithText("Quick Create").assertIsDisplayed()
     }
 

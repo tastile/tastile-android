@@ -4,7 +4,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,9 +19,9 @@ fun QuickCreateSheetMobile(
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     if (current is Overlay.QuickCreate) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = { overlay.dismiss() },
             sheetState = sheetState,
@@ -31,10 +30,6 @@ fun QuickCreateSheetMobile(
                 viewModel = dashboardViewModel,
                 onClose = { overlay.dismiss() },
             )
-        }
-    } else {
-        LaunchedEffect(current) {
-            sheetState.hide()
         }
     }
 }
