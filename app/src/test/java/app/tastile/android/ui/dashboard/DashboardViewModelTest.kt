@@ -10,6 +10,7 @@ import app.tastile.android.data.repository.IntegrationSettingsResponse
 import app.tastile.android.data.repository.RecoveryResetResponse
 import app.tastile.android.data.repository.RuntimePathsResponse
 import app.tastile.android.data.repository.SyncStatusResponse
+import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.TileQuotaResponse
 import app.tastile.android.data.repository.ProfileRepository
 import app.tastile.android.data.repository.ThemeMode
@@ -140,6 +141,15 @@ class DashboardViewModelTest {
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
         every { authRepository.currentSession } returns null
+        every { authRepository.authState } returns MutableStateFlow(
+            TastileAuthState.Authenticated(
+                userId = "user-1",
+                email = "test@example.com",
+                idToken = "id-token",
+                accessToken = "access-token",
+                refreshToken = null
+            )
+        )
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
@@ -175,13 +185,17 @@ class DashboardViewModelTest {
 
         var diagnostics = viewModel.statsDiagnostics.value
         var resolved = diagnostics.contains("source=core") || diagnostics.contains("source=error")
-        repeat(30) {
-            if (resolved) return@repeat
-            Thread.sleep(10)
+        val timeoutMs = 5_000L
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!resolved && System.currentTimeMillis() < deadline) {
+            Thread.sleep(20)
             diagnostics = viewModel.statsDiagnostics.value
             resolved = diagnostics.contains("source=core") || diagnostics.contains("source=error")
         }
-        assertTrue(diagnostics.contains("source=core") || diagnostics.contains("source=error"))
+        assertTrue(
+            "statsDiagnostics did not resolve to source=core|source=error within ${timeoutMs}ms; last value: $diagnostics",
+            diagnostics.contains("source=core") || diagnostics.contains("source=error")
+        )
         if (diagnostics.contains("source=core")) {
             assertTrue(diagnostics.contains("daemon="))
         }
