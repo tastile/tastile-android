@@ -76,13 +76,13 @@ fun MobileScaffold(
                 composable("settings") { SettingsScreen(viewModel = dashboardViewModel) }
             }
             OverlayLayer(overlayViewModel)
-        }
-    }
 
-    // Task 21: prioritize overlay dismissal over nav pop on system back press.
-    val overlayCurrent by overlayViewModel.current.collectAsStateWithLifecycle()
-    BackHandler(enabled = overlayCurrent !is Overlay.Hidden) {
-        dashboardViewModel.clearSelectedTile()
-        overlayViewModel.dismiss()
+            // Task 21: prioritize overlay dismissal over nav pop on system back press.
+            val overlayCurrent by overlayViewModel.current.collectAsStateWithLifecycle()
+            BackHandler(enabled = overlayCurrent !is Overlay.Hidden) {
+                dashboardViewModel.clearSelectedTile()
+                overlayViewModel.dismiss()
+            }
+        }
     }
 }
