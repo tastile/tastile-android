@@ -93,7 +93,7 @@ private fun FilterRow(current: TileFilter, onChange: (TileFilter) -> Unit) {
                 modifier = Modifier
                     .clickable { onChange(f) }
                     .padding(AppTheme.spacing.xs)
-                    .semantics { contentDescription = "Filter: ${f.name}" },
+                    .semantics(mergeDescendants = true) { contentDescription = "Filter: ${f.name}" },
                 style = MaterialTheme.typography.labelLarge,
             )
         }
@@ -121,7 +121,7 @@ private fun TileRow(tile: Tile, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(AppTheme.spacing.sm)
-            .semantics { contentDescription = "$stateLabel: ${tile.title}" },
+            .semantics(mergeDescendants = true) { contentDescription = "$stateLabel: ${tile.title}" },
         style = MaterialTheme.typography.bodyMedium,
     )
 }

@@ -94,7 +94,7 @@ private fun TileRow(tile: Tile) {
     Text(
         text = "$glyph ${tile.title}",
         style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.semantics {
+        modifier = Modifier.semantics(mergeDescendants = true) {
             contentDescription = "$stateLabel: ${tile.title}"
         },
     )

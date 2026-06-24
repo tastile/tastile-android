@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.tabs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,16 +16,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.data.model.Integration
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.designsystem.AppLoading
 import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.Overlay
+import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.SidePanelSection
 
 @Composable
-fun IntegrationsScreen(viewModel: DashboardViewModel) {
+fun IntegrationsScreen(
+    viewModel: DashboardViewModel,
+    overlay: OverlayViewModel = hiltViewModel(),
+) {
     val integrations by viewModel.integrations.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
 
@@ -45,20 +54,27 @@ fun IntegrationsScreen(viewModel: DashboardViewModel) {
             .padding(horizontal = AppTheme.spacing.md, vertical = AppTheme.spacing.sm),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
     ) {
-        connected.forEach { IntegrationRow(integration = it, glyph = "●") }
-        available.forEach { IntegrationRow(integration = it, glyph = "○") }
+        connected.forEach { IntegrationRow(integration = it, glyph = "●", overlay = overlay) }
+        available.forEach { IntegrationRow(integration = it, glyph = "○", overlay = overlay) }
     }
 }
 
 @Composable
-private fun IntegrationRow(integration: Integration, glyph: String) {
+private fun IntegrationRow(
+    integration: Integration,
+    glyph: String,
+    overlay: OverlayViewModel,
+) {
     val action = if (integration.connected) "⚙" else "+"
     val status = if (integration.connected) "connected" else "available"
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(role = Role.Button) {
+                overlay.show(Overlay.SidePanel(SidePanelSection.Preferences))
+            }
             .padding(vertical = AppTheme.spacing.xs)
-            .semantics { contentDescription = "${integration.name}: $status" },
+            .semantics(mergeDescendants = true) { contentDescription = "${integration.name}: $status" },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
