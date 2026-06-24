@@ -24,9 +24,9 @@ val hasReleaseSigning =
         releaseKeyAlias.isPresent &&
         releaseKeyPassword.isPresent
 
-android {
+extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     namespace = "app.tastile.android"
-    compileSdk = 35
+    compileSdk = 38
     ndkVersion = "27.1.12297006"
 
     signingConfigs {
@@ -43,7 +43,7 @@ android {
     defaultConfig {
         applicationId = "app.tastile.android"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 38
         versionCode = 22
         versionName = "0.2.13"
 
@@ -59,6 +59,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -72,9 +73,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -84,8 +82,19 @@ android {
             "GradleDependency",
             "ObsoleteLintCustomCheck",
             "IconDuplicates",
-            "IconLauncherShape"
+            "IconLauncherShape",
+            "AppBundleCredentials"
         )
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -144,7 +153,7 @@ dependencies {
 
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-    
+
     // Date/Time
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 
@@ -158,13 +167,17 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
     // Credential Manager / Google Identity
-    implementation("androidx.credentials:credentials:1.3.0")
-    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("androidx.credentials:credentials:1.6.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.2.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.robolectric:robolectric:4.14")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
