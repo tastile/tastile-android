@@ -28,10 +28,9 @@ class SidePanelSheetTest {
         rule.waitForIdle()
 
         rule.onNodeWithText("Calendar").assertIsDisplayed()
-        // "Day" is the default selection and is rendered with bracket markers
-        // ("[Day]"); assert on the exact text the UI produces so the
-        // semantics tree has a single, unambiguous match.
-        rule.onNodeWithText("[Day]").assertIsDisplayed()
+        // "Day" is the default selection; active label uses primary color +
+        // titleSmall style (no brackets), so plain "Day" matches exactly.
+        rule.onNodeWithText("Day").assertIsDisplayed()
         rule.onNodeWithText("Week").assertIsDisplayed()
         rule.onNodeWithText("Month").assertIsDisplayed()
     }
