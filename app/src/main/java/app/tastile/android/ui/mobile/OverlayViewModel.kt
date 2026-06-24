@@ -1,11 +1,14 @@
 package app.tastile.android.ui.mobile
 
 import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class OverlayViewModel : ViewModel() {
+@HiltViewModel
+class OverlayViewModel @Inject constructor() : ViewModel() {
 
     private val _current = MutableStateFlow<Overlay>(Overlay.Hidden)
     val current: StateFlow<Overlay> = _current.asStateFlow()
