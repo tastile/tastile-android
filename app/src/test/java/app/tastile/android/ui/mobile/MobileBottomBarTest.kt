@@ -1,39 +1,63 @@
 package app.tastile.android.ui.mobile
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.List
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.Icon
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
-import app.tastile.android.ui.mobile.designsystem.MobileTokens
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.R
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import androidx.test.ext.junit.runners.AndroidJUnit4
 
 @RunWith(AndroidJUnit4::class)
 class MobileBottomBarTest {
 
     @get:Rule
-    val rule = createComposeRule()
+    val rule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun `bottom bar renders 5 slots with role Button`() {
+        var execute: String = ""
+        var tiles: String = ""
+        var quickCreate: String = ""
+        var integrations: String = ""
+        var settings: String = ""
+
         rule.setContent {
+            val context = LocalContext.current
+            execute = context.getString(R.string.mobile_bottom_execute)
+            tiles = context.getString(R.string.mobile_bottom_tiles)
+            quickCreate = context.getString(R.string.mobile_bottom_quick_create)
+            integrations = context.getString(R.string.mobile_bottom_integrations)
+            settings = context.getString(R.string.mobile_bottom_settings)
+
             MobileBottomBar(
                 currentRoute = "execute",
                 onSelect = {},
                 onQuickCreate = {},
             )
         }
-        rule.onNodeWithContentDescription("Execute").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Tiles").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Quick create").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Integrations").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Settings").assertIsDisplayed()
+
+        rule.onNodeWithContentDescription(execute)
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+        rule.onNodeWithContentDescription(tiles)
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+        rule.onNodeWithContentDescription(quickCreate)
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+        rule.onNodeWithContentDescription(integrations)
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+        rule.onNodeWithContentDescription(settings)
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
     }
 }

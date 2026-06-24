@@ -1,5 +1,8 @@
 package app.tastile.android.ui.mobile
 
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -12,11 +15,12 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.ui.mobile.designsystem.MobileTokens
 
 @Composable
@@ -29,30 +33,30 @@ fun MobileBottomBar(
     NavigationBar(modifier = modifier) {
         BottomSlot(
             icon = Icons.Outlined.FlashOn,
-            description = "Execute",
+            descriptionRes = R.string.mobile_bottom_execute,
             selected = currentRoute == "execute",
             onClick = { onSelect("execute") },
         )
         BottomSlot(
             icon = Icons.Outlined.Tune,
-            description = "Tiles",
+            descriptionRes = R.string.mobile_bottom_tiles,
             selected = currentRoute == "tiles",
             onClick = { onSelect("tiles") },
         )
         BottomActionSlot(
             icon = Icons.Outlined.Add,
-            description = "Quick create",
+            descriptionRes = R.string.mobile_bottom_quick_create,
             onClick = onQuickCreate,
         )
         BottomSlot(
             icon = Icons.Outlined.Extension,
-            description = "Integrations",
+            descriptionRes = R.string.mobile_bottom_integrations,
             selected = currentRoute == "integrations",
             onClick = { onSelect("integrations") },
         )
         BottomSlot(
             icon = Icons.Outlined.Settings,
-            description = "Settings",
+            descriptionRes = R.string.mobile_bottom_settings,
             selected = currentRoute == "settings",
             onClick = { onSelect("settings") },
         )
@@ -60,9 +64,9 @@ fun MobileBottomBar(
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.BottomSlot(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    description: String,
+private fun RowScope.BottomSlot(
+    icon: ImageVector,
+    @StringRes descriptionRes: Int,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
@@ -72,18 +76,20 @@ private fun androidx.compose.foundation.layout.RowScope.BottomSlot(
         icon = {
             Icon(
                 imageVector = icon,
-                contentDescription = stringResource(id = description.toDescriptionRes()),
+                contentDescription = stringResource(id = descriptionRes),
                 modifier = Modifier.size(MobileTokens.iconVisualSize),
             )
         },
-        modifier = Modifier.semantics { role = Role.Button },
+        modifier = Modifier
+            .semantics { role = Role.Button }
+            .heightIn(min = MobileTokens.iconHitTarget),
     )
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.BottomActionSlot(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    description: String,
+private fun RowScope.BottomActionSlot(
+    icon: ImageVector,
+    @StringRes descriptionRes: Int,
     onClick: () -> Unit,
 ) {
     NavigationBarItem(
@@ -92,19 +98,12 @@ private fun androidx.compose.foundation.layout.RowScope.BottomActionSlot(
         icon = {
             Icon(
                 imageVector = icon,
-                contentDescription = stringResource(id = description.toDescriptionRes()),
+                contentDescription = stringResource(id = descriptionRes),
                 modifier = Modifier.size(MobileTokens.iconVisualSize),
             )
         },
-        modifier = Modifier.semantics { role = Role.Button },
+        modifier = Modifier
+            .semantics { role = Role.Button }
+            .heightIn(min = MobileTokens.iconHitTarget),
     )
-}
-
-private fun String.toDescriptionRes(): Int = when (this) {
-    "Execute" -> app.tastile.android.R.string.mobile_bottom_execute
-    "Tiles" -> app.tastile.android.R.string.mobile_bottom_tiles
-    "Quick create" -> app.tastile.android.R.string.mobile_bottom_quick_create
-    "Integrations" -> app.tastile.android.R.string.mobile_bottom_integrations
-    "Settings" -> app.tastile.android.R.string.mobile_bottom_settings
-    else -> app.tastile.android.R.string.mobile_bottom_settings
 }
