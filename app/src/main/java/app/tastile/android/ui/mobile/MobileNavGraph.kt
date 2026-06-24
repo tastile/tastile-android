@@ -5,8 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.tastile.android.data.repository.DashboardViewModel
 import app.tastile.android.data.repository.TastileAuthState
+import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.login.LoginScreen
 import app.tastile.android.ui.login.LoginViewModel
 
