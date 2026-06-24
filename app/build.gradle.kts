@@ -26,7 +26,7 @@ val hasReleaseSigning =
 
 extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     namespace = "app.tastile.android"
-    compileSdk = 38
+    compileSdk = 35
     ndkVersion = "27.1.12297006"
 
     signingConfigs {
@@ -43,7 +43,7 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     defaultConfig {
         applicationId = "app.tastile.android"
         minSdk = 26
-        targetSdk = 38
+        targetSdk = 35
         versionCode = 22
         versionName = "0.2.13"
 
@@ -158,8 +158,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.56.2")
-    ksp("com.google.dagger:hilt-compiler:2.56.2")
+    implementation("com.google.dagger:hilt-android:2.59.2")
+    ksp("com.google.dagger:hilt-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Lifecycle
