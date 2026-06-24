@@ -3,6 +3,7 @@ package app.tastile.android.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.data.model.Integration
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
@@ -122,6 +124,18 @@ class DashboardViewModel @Inject constructor(
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
     private val _googleCalendarIntegration = MutableStateFlow<GoogleCalendarIntegrationSettings?>(null)
     val googleCalendarIntegration: StateFlow<GoogleCalendarIntegrationSettings?> = _googleCalendarIntegration.asStateFlow()
+
+    val integrations: StateFlow<List<Integration>> = googleCalendarIntegration
+        .map { gc ->
+            listOf(
+                Integration(
+                    id = "google_calendar",
+                    name = "Calendar",
+                    connected = gc?.connected == true,
+                ),
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     private val _statsDiagnostics = MutableStateFlow("n/a")
     val statsDiagnostics: StateFlow<String> = _statsDiagnostics.asStateFlow()
     private val _daemonStatusSummary = MutableStateFlow("daemon=n/a")
