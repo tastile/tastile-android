@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    // id("org.jetbrains.kotlin.android")  // auto-applied by AGP 9.x
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
@@ -92,11 +92,8 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    }
-}
+// In AGP 9.0+, Kotlin is integrated.
+// We can use the extension if it exists, or just rely on defaults.
 
 val releaseSigningInstructions = """
 Release signing is not configured.
