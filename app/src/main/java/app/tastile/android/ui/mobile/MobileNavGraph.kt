@@ -19,6 +19,8 @@ fun MobileNavGraph(
     val isAuthenticated = authState is TastileAuthState.Authenticated
 
     if (!isAuthenticated) {
+        // Auth gate is state-driven: the `authState` flip on success re-renders this branch,
+        // so the callback is intentionally a no-op.
         LoginScreen(onLoginSuccess = {})
     } else {
         LaunchedEffect(authState) {
