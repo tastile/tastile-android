@@ -147,6 +147,10 @@ fun selectTile(id: String) { _selectedTileId.value = id }
 fun clearSelectedTile() { _selectedTileId.value = null }
 ```
 
+呼び出し元:
+- `selectTile(id)`: `OverlayViewModel.show(Overlay.TileEdit(id))` と同じ `MobileScaffold` 内の handler から呼ぶ(`MobileScaffold` は両 ViewModel を保持する)
+- `clearSelectedTile()`: `OverlayViewModel.dismiss()` が呼ばれると同時に `MobileScaffold` 内の `LaunchedEffect(overlay.current)` で発火する。`current` が `Hidden` に戻った瞬間にクリアする
+
 既存メソッド・既存フィールドは **変更しない**。
 
 ### 4.5 Hilt モジュール
@@ -168,6 +172,7 @@ object MobileOverlayModule {
 - **画面内ラベル文字列ゼロ**。入力欄は `OutlinedTextField` の `label`(フローティング時のみ表示)+ `placeholder` で表現
 - **アイコンが視覚アンカー**。Material Symbols Outlined 24dp 統一
 - **ボタンは icon-only**。テキスト併記禁止。意味は Tooltip か下方の micro-copy 1 行で伝える
+- **タブ / ナビ項目は icon-only が望ましい**。ただし QuickCreateSheet の sub-panel タブ(`base / repeat / wait / auto / meta`)など、5 種以上のカテゴリを区別する必要があり、アイコン単体では曖昧になる箇所は **icon + 1 ワード** を許可する(Web の `QuickTileCreate.tsx` 準拠)
 - **見出し語を使わない**。「Settings」「General」「Connected」 等のヘッダ文字列は廃止
 - **ステータス色は文字/アイコンと冗長化**(`○ ▶ ✓ ·`)で色覚多様性対応
 
