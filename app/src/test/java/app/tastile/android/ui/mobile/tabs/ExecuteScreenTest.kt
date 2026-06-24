@@ -1,6 +1,9 @@
 package app.tastile.android.ui.mobile.tabs
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -22,6 +25,17 @@ class ExecuteScreenTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
+    private fun stubVm(
+        tiles: List<Tile>,
+        loading: Boolean = false,
+    ): DashboardViewModel {
+        val vm = mockk<DashboardViewModel>(relaxed = true)
+        every { vm.tiles } returns MutableStateFlow(tiles)
+        every { vm.loading } returns MutableStateFlow(loading)
+        every { vm.locale } returns MutableStateFlow(app.tastile.android.data.repository.AppLocale.EN)
+        return vm
+    }
+
     @Test
     fun `renders active tile title when one exists`() {
         val active = Tile(
@@ -29,14 +43,36 @@ class ExecuteScreenTest {
             title = "Code review",
             lifecycle = TileLifecycle.STARTED.value,
         )
-        val vm = mockk<DashboardViewModel>(relaxed = true)
-        every { vm.tiles } returns MutableStateFlow(listOf(active))
-        every { vm.loading } returns MutableStateFlow(false)
-        every { vm.locale } returns MutableStateFlow(app.tastile.android.data.repository.AppLocale.EN)
+        val vm = stubVm(listOf(active))
 
         rule.setContent { ExecuteScreen(viewModel = vm) }
         rule.onAllNodesWithText("Code review", substring = true, useUnmergedTree = true)
             .onFirst()
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun `shows indeterminate progress while loading with no tiles`() {
+        val vm = stubVm(tiles = emptyList(), loading = true)
+
+        rule.setContent { ExecuteScreen(viewModel = vm) }
+        rule.onAllNodes(
+            SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo.Indeterminate),
+        )
+            .onFirst()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun `does not render active section when no started tile exists`() {
+        val ready = Tile(
+            id = "t2",
+            title = "Standup",
+            lifecycle = TileLifecycle.READY.value,
+        )
+        val vm = stubVm(listOf(ready))
+
+        rule.setContent { ExecuteScreen(viewModel = vm) }
+        rule.onAllNodesWithText("▶").assertCountEquals(0)
     }
 }
