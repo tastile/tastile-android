@@ -4,4 +4,8 @@
     <string name="mobile_bottom_quick_create">クイック作成</string>
     <string name="mobile_bottom_integrations">連携</string>
     <string name="mobile_bottom_settings">設定</string>
+    <string name="mobile_top_menu">メニューを開く</string>
+    <string name="mobile_top_search">検索</string>
+    <string name="mobile_top_notifications">通知</string>
+    <string name="mobile_top_avatar">アカウントメニュー</string>
 </resources>
