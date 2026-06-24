@@ -22,7 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.UserSettingsRepository
-import app.tastile.android.navigation.TastileNavGraph
+import app.tastile.android.ui.mobile.MobileNavGraph
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import app.tastile.android.sync.SyncCoordinator
@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TastileNavGraph(dashboardViewModel = dashboardViewModel)
+                    MobileNavGraph(dashboardViewModel = dashboardViewModel)
                 }
             }
         }
