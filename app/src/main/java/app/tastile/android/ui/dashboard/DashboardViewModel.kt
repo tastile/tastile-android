@@ -18,8 +18,11 @@ import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.UserSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -72,6 +75,24 @@ class DashboardViewModel @Inject constructor(
     private val cardMapper = DashboardCardMapper()
     private val _tiles = MutableStateFlow<List<Tile>>(emptyList())
     val tiles: StateFlow<List<Tile>> = _tiles.asStateFlow()
+
+    private val _selectedTileId = MutableStateFlow<String?>(null)
+
+    val selectedTile: StateFlow<Tile?> = combine(tiles, _selectedTileId) { list, id ->
+        id?.let { tid -> list.firstOrNull { it.id == tid } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun selectTile(id: String) {
+        _selectedTileId.value = id
+    }
+
+    fun clearSelectedTile() {
+        _selectedTileId.value = null
+    }
+
+    internal fun replaceTilesForTest(list: List<Tile>) {
+        _tiles.value = list
+    }
 
     private val _profile = MutableStateFlow<Profile?>(null)
     val profile: StateFlow<Profile?> = _profile.asStateFlow()
