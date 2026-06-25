@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Tastile</string>
+    <string name="app_name" translatable="false">Tastile</string>
     <string name="mobile_bottom_execute">Execute</string>
     <string name="mobile_bottom_tiles">Tiles</string>
     <string name="mobile_bottom_quick_create">Quick create</string>

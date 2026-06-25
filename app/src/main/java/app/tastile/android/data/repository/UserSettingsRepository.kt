@@ -1,6 +1,7 @@
 package app.tastile.android.data.repository
 
 import android.content.Context
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,7 +18,7 @@ class UserSettingsRepository @Inject constructor(
     }
 
     fun setThemeMode(mode: ThemeMode) {
-        prefs.edit().putString(KEY_THEME, mode.value).apply()
+        prefs.edit { putString(KEY_THEME, mode.value) }
     }
 
     fun getLocale(): AppLocale {
@@ -26,24 +27,24 @@ class UserSettingsRepository @Inject constructor(
     }
 
     fun setLocale(locale: AppLocale) {
-        prefs.edit().putString(KEY_LOCALE, locale.value).apply()
+        prefs.edit { putString(KEY_LOCALE, locale.value) }
     }
 
     fun getSecurityLockEnabled(): Boolean = prefs.getBoolean(KEY_SECURITY_LOCK_ENABLED, true)
 
     fun setSecurityLockEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_SECURITY_LOCK_ENABLED, enabled).apply()
+        prefs.edit { putBoolean(KEY_SECURITY_LOCK_ENABLED, enabled) }
     }
 
     fun getSecurityLockTimeoutMinutes(): Int =
         prefs.getInt(KEY_SECURITY_LOCK_TIMEOUT_MINUTES, 10).coerceIn(1, 240)
 
     fun setSecurityLockTimeoutMinutes(minutes: Int) {
-        prefs.edit().putInt(KEY_SECURITY_LOCK_TIMEOUT_MINUTES, minutes.coerceIn(1, 240)).apply()
+        prefs.edit { putInt(KEY_SECURITY_LOCK_TIMEOUT_MINUTES, minutes.coerceIn(1, 240)) }
     }
 
     fun recordSecurityLockLeftAt(nowMillis: Long = System.currentTimeMillis()) {
-        prefs.edit().putLong(KEY_SECURITY_LOCK_LEFT_AT_MILLIS, nowMillis).apply()
+        prefs.edit { putLong(KEY_SECURITY_LOCK_LEFT_AT_MILLIS, nowMillis) }
     }
 
     fun shouldRequireSecurityUnlock(nowMillis: Long = System.currentTimeMillis()): Boolean =

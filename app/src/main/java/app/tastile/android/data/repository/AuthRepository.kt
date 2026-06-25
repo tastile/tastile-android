@@ -5,6 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Base64
 import android.util.Log
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import app.tastile.android.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 
@@ -59,7 +61,7 @@ class AuthRepository @Inject constructor(
     }
 
     override suspend fun signOut() {
-        prefs.edit().clear().apply()
+        prefs.edit { clear() }
         _authState.value = TastileAuthState.Unauthenticated
     }
 
@@ -128,18 +130,18 @@ class AuthRepository @Inject constructor(
         val verifier = generatePkceVerifier()
         val challenge = pkceS256(verifier)
         val state = generateState()
-        prefs.edit()
-            .putString("pkce_verifier", verifier)
-            .putString("oauth_state", state)
-            .apply()
+        prefs.edit {
+            putString("pkce_verifier", verifier)
+            putString("oauth_state", state)
+        }
 
-        val authUrl = Uri.parse(CognitoAuthStartUrlBuilder.build(
+        val authUrl = CognitoAuthStartUrlBuilder.build(
             webAuthBaseUrl = webAuthBaseUrl,
             redirectUri = redirectUri,
             codeChallenge = challenge,
             state = state,
             identityProvider = identityProvider
-        ))
+        ).toUri()
 
         context.startActivity(
             Intent(Intent.ACTION_VIEW, authUrl).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -157,15 +159,15 @@ class AuthRepository @Inject constructor(
             exchangeCognitoCode(code, verifier)
         }
         val claims = parseIdTokenClaims(token.idToken)
-        prefs.edit()
-            .remove("oauth_state")
-            .remove("pkce_verifier")
-            .putString("id_token", token.idToken)
-            .putString("access_token", token.accessToken)
-            .putString("refresh_token", token.refreshToken)
-            .putString("user_id", claims.sub)
-            .putString("email", claims.email)
-            .apply()
+        prefs.edit {
+            remove("oauth_state")
+            remove("pkce_verifier")
+            putString("id_token", token.idToken)
+            putString("access_token", token.accessToken)
+            putString("refresh_token", token.refreshToken)
+            putString("user_id", claims.sub)
+            putString("email", claims.email)
+        }
         _authState.value = TastileAuthState.Authenticated(
             userId = claims.sub,
             email = claims.email,
@@ -187,15 +189,15 @@ class AuthRepository @Inject constructor(
         }
 
         val claims = parseIdTokenClaims(idToken)
-        prefs.edit()
-            .remove("oauth_state")
-            .remove("pkce_verifier")
-            .putString("id_token", idToken)
-            .putString("access_token", accessToken)
-            .putString("refresh_token", refreshToken)
-            .putString("user_id", claims.sub)
-            .putString("email", claims.email)
-            .apply()
+        prefs.edit {
+            remove("oauth_state")
+            remove("pkce_verifier")
+            putString("id_token", idToken)
+            putString("access_token", accessToken)
+            putString("refresh_token", refreshToken)
+            putString("user_id", claims.sub)
+            putString("email", claims.email)
+        }
         _authState.value = TastileAuthState.Authenticated(
             userId = claims.sub,
             email = claims.email,
@@ -254,13 +256,13 @@ class AuthRepository @Inject constructor(
         return try {
             val token = refreshCognitoToken(refreshToken)
             val claims = parseIdTokenClaims(token.idToken)
-            prefs.edit()
-                .putString("id_token", token.idToken)
-                .putString("access_token", token.accessToken)
-                .putString("refresh_token", token.refreshToken ?: refreshToken)
-                .putString("user_id", claims.sub)
-                .putString("email", claims.email)
-                .apply()
+            prefs.edit {
+                putString("id_token", token.idToken)
+                putString("access_token", token.accessToken)
+                putString("refresh_token", token.refreshToken ?: refreshToken)
+                putString("user_id", claims.sub)
+                putString("email", claims.email)
+            }
             val authenticated = TastileAuthState.Authenticated(
                 userId = claims.sub,
                 email = claims.email,
@@ -272,7 +274,7 @@ class AuthRepository @Inject constructor(
             authenticated
         } catch (e: Exception) {
             Log.e(TAG, "Cognito refresh failed", e)
-            prefs.edit().clear().apply()
+            prefs.edit { clear() }
             _authState.value = TastileAuthState.Unauthenticated
             null
         }

@@ -5,9 +5,10 @@ import android.app.PendingIntent
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
+import androidx.core.content.edit
 import androidx.core.content.getSystemService
+import androidx.core.net.toUri
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.data.repository.AuthRepository
@@ -47,14 +48,14 @@ class ExecutionAlarmScheduler @Inject constructor(
         val alarms = ExecutionAlarmPlanner.plan(snapshot, Clock.System.now())
         if (alarms.isEmpty()) return
         alarms.forEach { schedule(it) }
-        prefs.edit().putStringSet(KEY_SCHEDULED_ALARMS, alarms.map { it.id }.toSet()).apply()
+        prefs.edit { putStringSet(KEY_SCHEDULED_ALARMS, alarms.map { it.id }.toSet()) }
     }
 
     fun cancelAll() {
         prefs.getStringSet(KEY_SCHEDULED_ALARMS, emptySet()).orEmpty().forEach { alarmId ->
             alarmManager.cancel(buildPendingIntent(createIntentPayload(alarmId, AlarmTriggerType.FIXED_START, "", "")))
         }
-        prefs.edit().remove(KEY_SCHEDULED_ALARMS).apply()
+        prefs.edit { remove(KEY_SCHEDULED_ALARMS) }
     }
 
     @SuppressLint("MissingPermission")
@@ -77,7 +78,7 @@ class ExecutionAlarmScheduler @Inject constructor(
     private fun createIntentPayload(alarmId: String, type: AlarmTriggerType, tileId: String, tileTitle: String): Intent {
         return Intent(context, ExecutionAlarmReceiver::class.java).apply {
             action = ACTION_EXECUTION_ALARM
-            data = Uri.parse(alarmIntentUri(alarmId))
+            data = alarmIntentUri(alarmId).toUri()
             putExtra(EXTRA_ALARM_ID, alarmId)
             putExtra(EXTRA_TRIGGER_TYPE, type.name)
             putExtra(EXTRA_TILE_ID, tileId)

@@ -30,8 +30,10 @@
                 <data android:scheme="tastile" android:host="auth" android:pathPrefix="/callback" />
             </intent-filter>
 
-            <!-- Web callback fallback for auth and billing entrypoints. -->
-            <intent-filter>
+            <!-- Web callback fallback for auth and billing entrypoints.
+                 autoVerify="false" because Digital Asset Links for app.tastile.app are
+                 not configured; this is a deep link, not an Android App Link. -->
+            <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />

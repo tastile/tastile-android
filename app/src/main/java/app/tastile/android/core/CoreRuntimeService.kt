@@ -1,6 +1,7 @@
 package app.tastile.android.core
 
 import android.content.Context
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
@@ -47,9 +48,9 @@ class SharedPreferencesCoreCommandStore @Inject constructor(
     }
 
     override fun save(commands: List<CoreCommandRequest>) {
-        prefs.edit()
-            .putString(KEY_COMMANDS, coreJson.encodeToString(commands))
-            .apply()
+        prefs.edit {
+            putString(KEY_COMMANDS, coreJson.encodeToString(commands))
+        }
     }
 
     override fun loadImportedEvents(): List<CoreEventEnvelopeRecord> {
@@ -62,9 +63,9 @@ class SharedPreferencesCoreCommandStore @Inject constructor(
     }
 
     override fun saveImportedEvents(events: List<CoreEventEnvelopeRecord>) {
-        prefs.edit()
-            .putString(KEY_IMPORTED_EVENTS, coreJson.encodeToString(events))
-            .apply()
+        prefs.edit {
+            putString(KEY_IMPORTED_EVENTS, coreJson.encodeToString(events))
+        }
     }
 
     private companion object {
