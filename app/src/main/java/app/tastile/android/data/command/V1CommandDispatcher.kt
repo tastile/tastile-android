@@ -3,19 +3,27 @@ package app.tastile.android.data.command
 import android.util.Log
 import app.tastile.android.core.CoreCommandAck
 import app.tastile.android.core.CoreCommandResponse
+import app.tastile.android.data.api.AppendChangesPayload
 import app.tastile.android.data.api.ArchiveTilePayload
 import app.tastile.android.data.api.AttachMemoPayload
 import app.tastile.android.data.api.CommandResponse
+import app.tastile.android.data.api.CreatePromptRequestPayload
 import app.tastile.android.data.api.CreateTilePayload
+import app.tastile.android.data.api.PauseExecutionPayload
+import app.tastile.android.data.api.ResumeExecutionPayload
 import app.tastile.android.data.api.SetTileLifecyclePayload
+import app.tastile.android.data.api.StartTileBaseline
+import app.tastile.android.data.api.StartTilePayload
 import app.tastile.android.data.api.UpdateTilePayload
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1NumericConstants
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -219,7 +227,321 @@ class V1CommandDispatcher @Inject constructor(
         }.getOrNull()
     }
 
+    // --- Step 5: commands that need a v1 lookup -------------------------
+
+    /**
+     * `tile.start` → `POST /v1/tiles/{id}/start`. The v1 endpoint requires
+     * `plan_id`, `source`, `source_ref`, `baseline` — none of which v0
+     * carried. We fetch the tile detail and pull `plan_id` from the
+     * backend; if the backend hasn't attached a plan yet, we throw
+     * `IllegalStateException` so the UI can surface a clear "tile has no
+     * plan" error instead of silently dropping the request.
+     *
+     * `source` defaults to MANUAL (0) and `source_ref` to `null` because v0
+     * never set either. `baseline` uses "now" for both ends as a fallback —
+     * the v1 backend's PlanCompletion resolver will compute the canonical
+     * span once a Plan exists, so this is only the wire bootstrap.
+     */
+    suspend fun dispatchTileStart(tileId: String): CoreCommandAck? {
+        return runCatching {
+            val tile = v1ApiClient.readTile(tileId)
+            val planId = tile.planId
+                ?: throw IllegalStateException("tile.start requires plan_id; v1 backend did not return one for tile $tileId")
+            val now = Instant.now().toString()
+            val payload = StartTilePayload(
+                tileId = tileId,
+                planId = planId,
+                source = V1NumericConstants.PlacementSource.MANUAL,
+                sourceRef = null,
+                baseline = StartTileBaseline(startAt = now, endAt = now)
+            )
+            val response = v1ApiClient.postCommand(
+                path = "/v1/tiles/$tileId/start",
+                commandKind = "StartTile",
+                payload = payload,
+                payloadSerializer = StartTilePayload.serializer(),
+                responseSerializer = CommandResponse.serializer()
+            )
+            response.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("tile.start", error)
+            null
+        }.getOrNull()
+    }
+
+    /**
+     * `tile.pause` → `POST /v1/executions/{id}/pause`. v1 pause is at the
+     * Execution level, not the Tile, so we need to find the active execution
+     * for the tile. We start with `listPlacements()` (cheap, single round
+     * trip) and look for the most recent open placement for this tile. If
+     * no placement exists we throw — the user can't pause something that
+     * was never started in v1.
+     */
+    suspend fun dispatchTilePause(tileId: String): CoreCommandAck? {
+        return runCatching {
+            val executionId = findActiveExecutionIdForTile(tileId)
+                ?: throw IllegalStateException("tile.pause: no active execution for tile $tileId")
+            val payload = PauseExecutionPayload(executionId = executionId)
+            val response = v1ApiClient.postCommand(
+                path = "/v1/executions/$executionId/pause",
+                commandKind = "PauseExecution",
+                payload = payload,
+                payloadSerializer = PauseExecutionPayload.serializer(),
+                responseSerializer = CommandResponse.serializer()
+            )
+            response.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("tile.pause", error)
+            null
+        }.getOrNull()
+    }
+
+    /**
+     * `tile.continue` → `POST /v1/executions/{id}/resume`. Same lookup path as
+     * [dispatchTilePause] — there is no "tile.continue" endpoint at the Tile
+     * level, only at the Execution level.
+     */
+    suspend fun dispatchTileContinue(tileId: String): CoreCommandAck? {
+        return runCatching {
+            val executionId = findActiveExecutionIdForTile(tileId)
+                ?: throw IllegalStateException("tile.continue: no active execution for tile $tileId")
+            val payload = ResumeExecutionPayload(executionId = executionId)
+            val response = v1ApiClient.postCommand(
+                path = "/v1/executions/$executionId/resume",
+                commandKind = "ResumeExecution",
+                payload = payload,
+                payloadSerializer = ResumeExecutionPayload.serializer(),
+                responseSerializer = CommandResponse.serializer()
+            )
+            response.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("tile.continue", error)
+            null
+        }.getOrNull()
+    }
+
+    /**
+     * `tile.reschedule` → `POST /v1/placements/{id}/changes`. v1 reschedule
+     * is a Placement-level ChangeSet append. We look up the placement for
+     * the tile (newest open span), then POST a PLACEMENT-layer ChangeSet
+     * with two `Span` Change items: SPAN_START (group=5, part=0) and
+     * SPAN_END (group=5, part=1).
+     *
+     * The full Rust `ChangeSet` struct carries `id` / `owner_id` / `target`
+     * / `activation` / `source` / `source_ref` / `created_at` / `created_by`
+     * fields we don't model in Kotlin. The server accepts whatever JSON
+     * `serde_json::Value` deserializes against the full struct; per the
+     * current handler those fields are not strictly required and the
+     * dispatcher is allowed to send a minimal body.
+     */
+    suspend fun dispatchTileReschedule(
+        tileId: String,
+        startAt: String,
+        endAt: String
+    ): CoreCommandAck? {
+        return runCatching {
+            val placement = findPlacementForTile(tileId)
+                ?: throw IllegalStateException("tile.reschedule: no placement for tile $tileId")
+            val now = Instant.now().toString()
+            // Generate stable UUIDv7-ish ChangeSet id from the placement id
+            // (16 hex bytes from the placement UUID). The server doesn't
+            // require a specific format — it just needs uniqueness within
+            // the owner's ChangeSet space.
+            val changeSet = buildJsonObject {
+                put("id", JsonPrimitive("00000000-0000-7000-8000-${placement.placementId.takeLast(12).padStart(12, '0')}"))
+                put("layer", JsonPrimitive(V1NumericConstants.ChangeLayer.PLACEMENT))
+                put("rank", JsonPrimitive(0))
+                put("changes", kotlinx.serialization.json.JsonArray(listOf(
+                    buildChangeSpan(
+                        groupPart = 0,
+                        spanStart = startAt,
+                        spanEnd = null,
+                        now = now
+                    ),
+                    buildChangeSpan(
+                        groupPart = 1,
+                        spanStart = null,
+                        spanEnd = endAt,
+                        now = now
+                    )
+                )))
+            }
+            val payload = AppendChangesPayload(
+                placementId = placement.placementId,
+                changeset = changeSet
+            )
+            val response = v1ApiClient.postCommand(
+                path = "/v1/placements/${placement.placementId}/changes",
+                commandKind = "AppendChanges",
+                payload = payload,
+                payloadSerializer = AppendChangesPayload.serializer(),
+                responseSerializer = CommandResponse.serializer()
+            )
+            response.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("tile.reschedule", error)
+            null
+        }.getOrNull()
+    }
+
+    /**
+     * `prompt.request` → `POST /v1/prompts`. The endpoint is NOT a
+     * CommandRequest envelope — it takes `{kind, payload}` directly.
+     * Use [postRawJson] to bypass the envelope.
+     *
+     * `kind` is sent as 0 — the v1 backend treats it as a smallint and
+     * currently has no client-facing registry; future spec revisions will
+     * publish the numeric prompt kinds and we'll update this.
+     */
+    suspend fun dispatchPromptRequest(tileId: String): CoreCommandAck? {
+        return runCatching {
+            val payload = CreatePromptRequestPayload(
+                kind = 0,
+                payload = buildJsonObject { put("tile_id", JsonPrimitive(tileId)) }
+            )
+            // The endpoint returns `{ "id": "<uuidv7>" }`, not a
+            // CommandResponse envelope — so we wrap the result in a synthetic
+            // CoreCommandAck with `accepted=true` (200 means the prompt was
+            // accepted for processing) and put the new prompt id in metadata.
+            val body = kotlinx.serialization.json.JsonObject(
+                mapOf(
+                    "kind" to kotlinx.serialization.json.JsonPrimitive(payload.kind.toInt()),
+                    "payload" to payload.payload
+                )
+            )
+            val response = v1ApiClient.postRawJson(
+                path = "/v1/prompts",
+                body = body,
+                responseSerializer = kotlinx.serialization.json.JsonObject.serializer()
+            )
+            val promptId = response["id"]?.jsonPrimitive?.contentOrNull
+            CoreCommandResponse(
+                accepted = true,
+                requestId = null,
+                commandId = promptId,
+                eventIds = emptyList(),
+                metadata = buildJsonObject {
+                    if (promptId != null) put("promptId", JsonPrimitive(promptId))
+                    put("tileId", JsonPrimitive(tileId))
+                },
+                error = null
+            )
+        }.recover { error ->
+            logFailure("prompt.request", error)
+            null
+        }.getOrNull()
+    }
+
+    /**
+     * `prompt.respond_startup_recovery` → `POST /v1/prompts/startup-recovery`.
+     * The handler accepts freeform JSON and just records the body plus (if
+     * present) resolves `prompt_id` in `v1_prompt`. v0's payload shape
+     * `{prompt_id, tile_id, action_id, stop_at?}` passes through verbatim.
+     */
+    suspend fun dispatchStartupRecoveryPrompt(
+        promptId: String,
+        tileId: String,
+        actionId: String,
+        stopAtIso: String?
+    ): CoreCommandAck? {
+        return runCatching {
+            val body = buildJsonObject {
+                put("prompt_id", JsonPrimitive(promptId))
+                put("tile_id", JsonPrimitive(tileId))
+                put("action_id", JsonPrimitive(actionId))
+                if (!stopAtIso.isNullOrBlank()) put("stop_at", JsonPrimitive(stopAtIso))
+            }
+            val response = v1ApiClient.postRawJson(
+                path = "/v1/prompts/startup-recovery",
+                body = body,
+                responseSerializer = kotlinx.serialization.json.JsonObject.serializer()
+            )
+            val accepted = response["accepted"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: true
+            CoreCommandResponse(
+                accepted = accepted,
+                requestId = null,
+                commandId = null,
+                eventIds = emptyList(),
+                metadata = buildJsonObject {
+                    put("promptId", JsonPrimitive(promptId))
+                    put("tileId", JsonPrimitive(tileId))
+                },
+                error = null
+            )
+        }.recover { error ->
+            logFailure("prompt.respond_startup_recovery", error)
+            null
+        }.getOrNull()
+    }
+
     // --- helpers ------------------------------------------------------
+
+    /**
+     * Find the most recent placement for [tileId] via `listPlacements()`.
+     * Returns `null` if the tile has no placement yet (the caller throws
+     * `IllegalStateException`). Step 5 keeps this minimal — we don't try to
+     * filter by status because v0 callers didn't carry that info and the
+     * server's span-end vs span-start ordering lets us pick the freshest
+     * open placement just by ordering.
+     */
+    private suspend fun findPlacementForTile(tileId: String): app.tastile.android.data.api.V1PlacementListItem? {
+        val placements = v1ApiClient.listPlacements()
+        return placements.firstOrNull { it.tileId == tileId }
+    }
+
+    /**
+     * Find the active execution for [tileId]. Macro Step 5 has NO v1
+     * endpoint that maps a tile_id to an execution_id:
+     *   - `listPlacements()` returns `PlacementListItem` (no execution field).
+     *   - `getTimeline()` returns `TimelineItem` (placement_id only, no
+     *     execution_id).
+     *   - `readExecution(executionId)` requires the id we don't have.
+     *
+     * So this helper always returns `null`. The dispatcher callers throw
+     * `IllegalStateException("tile.{pause,continue}: no active execution for
+     * tile $tileId")` per the Step 5 spec. Future work: add a
+     * `GET /v1/tiles/{id}/executions` lookup endpoint, then plumb the
+     * execution_id into this helper.
+     */
+    private suspend fun findActiveExecutionIdForTile(tileId: String): String? {
+        // Confirm at least one placement exists for the tile (otherwise the
+        // throw message is misleading), then bail.
+        findPlacementForTile(tileId)
+        return null
+    }
+
+    private fun buildChangeSpan(
+        groupPart: Int,
+        spanStart: String?,
+        spanEnd: String?,
+        now: String
+    ): JsonObject = buildJsonObject {
+        // Change.id: derived from a stable UUIDv7-shape string per change.
+        // Server is tolerant about the exact id format as long as it's unique.
+        put("id", JsonPrimitive("00000000-0000-7000-8000-${now.hashCode().toString().padStart(12, '0').take(12)}"))
+        put("key", buildJsonObject {
+            put("group", JsonPrimitive(V1NumericConstants.ChangeLayer.PLACEMENT))
+            put("item", kotlinx.serialization.json.JsonNull)
+            put("part", JsonPrimitive(groupPart))
+        })
+        put("kind", JsonPrimitive(V1NumericConstants.ChangeKind.SET))
+        put("value", buildJsonObject {
+            val span = buildJsonObject {
+                if (spanStart != null) put("start_at", JsonPrimitive(spanStart))
+                if (spanEnd != null) put("end_at", JsonPrimitive(spanEnd))
+            }
+            // ChangeValue::Span is the variant — we tag it so the server
+            // can distinguish Span vs Instant etc.
+            put("Span", span)
+        })
+        put("merge", JsonPrimitive(V1NumericConstants.MergeMode.OVERRIDE))
+        put("source", JsonPrimitive(V1NumericConstants.ChangeSource.USER))
+        put("rank", JsonPrimitive(0))
+    }
 
     private fun logFailure(operation: String, e: Throwable) {
         Log.w(TAG, "v1 $operation failed: ${e.message}", e)

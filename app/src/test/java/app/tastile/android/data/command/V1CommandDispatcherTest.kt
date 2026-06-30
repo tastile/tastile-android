@@ -10,10 +10,14 @@ import app.tastile.android.data.api.V1NumericConstants
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -347,5 +351,296 @@ class V1CommandDispatcherTest {
         )
         assertNotNull(ack)
         assertEquals("t-x", ack!!.generatedTileId())
+    }
+
+    // --- Step 5: tile.start ---------------------------------------------
+
+    @Test
+    fun dispatchTileStart_fetchesPlanIdAndPostsStartTilePayload() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.readTile("t-123") } returns app.tastile.android.data.api.TileDetailView(
+            id = "t-123",
+            kind = V1NumericConstants.TileKind.PLACEMENT,
+            ownerId = "user-1",
+            revision = 1L,
+            title = "Walk dog",
+            planId = "p-7"
+        )
+        coEvery {
+            apiClient.postCommand(
+                path = "/v1/tiles/t-123/start",
+                commandKind = "StartTile",
+                payload = any<Any>(),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        } returns okResponse("t-123")
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        val ack = dispatcher.dispatchTileStart("t-123")
+
+        assertNotNull(ack)
+        coVerify(exactly = 1) { apiClient.readTile("t-123") }
+        coVerify(exactly = 1) {
+            apiClient.postCommand(
+                path = "/v1/tiles/t-123/start",
+                commandKind = "StartTile",
+                payload = any<Any>(),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        }
+    }
+
+    @Test
+    fun dispatchTileStart_throwsIllegalStateWhenPlanIdMissing() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.readTile("t-123") } returns app.tastile.android.data.api.TileDetailView(
+            id = "t-123",
+            kind = V1NumericConstants.TileKind.PLACEMENT,
+            ownerId = "user-1",
+            revision = 1L,
+            title = "Walk dog",
+            planId = null
+        )
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        try {
+            dispatcher.dispatchTileStart("t-123")
+            throw AssertionError("expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            assertTrue(e.message!!.contains("plan_id"))
+        }
+    }
+
+    @Test
+    fun dispatchTileStart_returnsNullOnV1Error_network() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.readTile("t-123") } throws V1Error.Network(IOException("boom"))
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        val ack = dispatcher.dispatchTileStart("t-123")
+        assertNull(ack)
+    }
+
+    // --- Step 5: tile.pause ---------------------------------------------
+
+    @Test
+    fun dispatchTilePause_throwsWhenNoActiveExecution() = runTest {
+        val apiClient = newApiClient()
+        // listPlacements returns empty — findActiveExecutionIdForTile returns null.
+        coEvery { apiClient.listPlacements() } returns emptyList()
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        try {
+            dispatcher.dispatchTilePause("t-123")
+            throw AssertionError("expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            assertTrue(e.message!!.contains("no active execution"))
+        }
+    }
+
+    @Test
+    fun dispatchTilePause_returnsNullOnV1Error_network() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.listPlacements() } throws V1Error.Network(IOException("boom"))
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        // Step 5: the lookup helper swallows network errors via runCatching
+        // and returns null. The throw is only raised when the helper itself
+        // concludes "no execution". So this test asserts the network path.
+        val ack = dispatcher.dispatchTilePause("t-123")
+        assertNull(ack)
+    }
+
+    // --- Step 5: tile.continue ------------------------------------------
+
+    @Test
+    fun dispatchTileContinue_throwsWhenNoActiveExecution() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.listPlacements() } returns emptyList()
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        try {
+            dispatcher.dispatchTileContinue("t-123")
+            throw AssertionError("expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            assertTrue(e.message!!.contains("no active execution"))
+        }
+    }
+
+    // --- Step 5: tile.reschedule ----------------------------------------
+
+    @Test
+    fun dispatchTileReschedule_throwsWhenNoPlacement() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.listPlacements() } returns emptyList()
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        try {
+            dispatcher.dispatchTileReschedule("t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z")
+            throw AssertionError("expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            assertTrue(e.message!!.contains("no placement"))
+        }
+    }
+
+    @Test
+    fun dispatchTileReschedule_findsPlacementAndPostsAppendChanges() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.listPlacements() } returns listOf(
+            app.tastile.android.data.api.V1PlacementListItem(
+                placementId = "pl-1",
+                tileId = "t-123",
+                planId = "p-1",
+                title = "Walk dog"
+            )
+        )
+        coEvery {
+            apiClient.postCommand(
+                path = "/v1/placements/pl-1/changes",
+                commandKind = "AppendChanges",
+                payload = any<Any>(),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        } returns okResponse("t-123")
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        val ack = dispatcher.dispatchTileReschedule(
+            "t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z"
+        )
+
+        assertNotNull(ack)
+        coVerify(exactly = 1) { apiClient.listPlacements() }
+        coVerify(exactly = 1) {
+            apiClient.postCommand(
+                path = "/v1/placements/pl-1/changes",
+                commandKind = "AppendChanges",
+                payload = any<Any>(),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        }
+    }
+
+    // --- Step 5: prompt.request -----------------------------------------
+
+    @Test
+    fun dispatchPromptRequest_postsToV1PromptsEndpointAndReturnsAckWithPromptId() = runTest {
+        val apiClient = newApiClient()
+        coEvery {
+            apiClient.postRawJson(
+                path = "/v1/prompts",
+                body = any(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        } returns buildJsonObject { put("id", JsonPrimitive("pr-7")) }
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        val ack = dispatcher.dispatchPromptRequest("t-123")
+
+        assertNotNull(ack)
+        assertTrue(ack!!.accepted)
+        assertEquals("pr-7", ack.metadata?.get("promptId")?.jsonPrimitive?.contentOrNull)
+        coVerify(exactly = 1) {
+            apiClient.postRawJson(
+                path = "/v1/prompts",
+                body = any(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        }
+    }
+
+    @Test
+    fun dispatchPromptRequest_returnsNullOnV1Error_auth() = runTest {
+        val apiClient = newApiClient()
+        coEvery {
+            apiClient.postRawJson(
+                path = "/v1/prompts",
+                body = any(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        } throws V1Error.Auth()
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        val ack = dispatcher.dispatchPromptRequest("t-123")
+        assertNull(ack)
+    }
+
+    // --- Step 5: prompt.respond_startup_recovery -----------------------
+
+    @Test
+    fun dispatchStartupRecoveryPrompt_passesBodyVerbatim() = runTest {
+        val apiClient = newApiClient()
+        val bodySlot = slot<JsonObject>()
+        coEvery {
+            apiClient.postRawJson(
+                path = "/v1/prompts/startup-recovery",
+                body = capture(bodySlot),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        } returns buildJsonObject { put("accepted", JsonPrimitive(true)) }
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        val ack = dispatcher.dispatchStartupRecoveryPrompt(
+            promptId = "pr-7",
+            tileId = "t-123",
+            actionId = "retry",
+            stopAtIso = "2026-07-01T11:00:00Z"
+        )
+
+        assertNotNull(ack)
+        assertTrue(ack!!.accepted)
+        val captured = bodySlot.captured
+        assertEquals("pr-7", captured["prompt_id"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("t-123", captured["tile_id"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("retry", captured["action_id"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("2026-07-01T11:00:00Z", captured["stop_at"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun dispatchStartupRecoveryPrompt_omitsStopAtWhenBlank() = runTest {
+        val apiClient = newApiClient()
+        val bodySlot = slot<JsonObject>()
+        coEvery {
+            apiClient.postRawJson(
+                path = "/v1/prompts/startup-recovery",
+                body = capture(bodySlot),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        } returns buildJsonObject { put("accepted", JsonPrimitive(true)) }
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        dispatcher.dispatchStartupRecoveryPrompt(
+            promptId = "pr-7",
+            tileId = "t-123",
+            actionId = "retry",
+            stopAtIso = null
+        )
+
+        val captured = bodySlot.captured
+        assertEquals("pr-7", captured["prompt_id"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("retry", captured["action_id"]?.jsonPrimitive?.contentOrNull)
+        // stop_at is absent when stopAtIso is null/blank
+        assertEquals(null, captured["stop_at"])
+    }
+
+    @Test
+    fun dispatchStartupRecoveryPrompt_returnsNullOnV1Error_network() = runTest {
+        val apiClient = newApiClient()
+        coEvery {
+            apiClient.postRawJson(
+                path = "/v1/prompts/startup-recovery",
+                body = any(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        } throws V1Error.Network(IOException("boom"))
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        val ack = dispatcher.dispatchStartupRecoveryPrompt(
+            promptId = "pr-7", tileId = "t-123", actionId = "retry", stopAtIso = null
+        )
+        assertNull(ack)
     }
 }

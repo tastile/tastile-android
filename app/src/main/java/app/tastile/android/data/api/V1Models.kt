@@ -110,3 +110,53 @@ data class RuntimePathView(
 data class V1ListRuntimePathsResponse(
     val paths: List<RuntimePathView> = emptyList()
 )
+
+// --- Step 5 lookup models -----------------------------------------------
+//
+// The dispatcher uses these to translate v0 `tile.start / pause / continue /
+// reschedule` into v1 IDs.  Each is a minimal projection of the matching
+// server response; fields we don't read are dropped so the wire decoder can
+// stay terse.
+//
+// Wire shape notes (from `crates/v1/api/src/handlers/read.rs`):
+//   - `GET /v1/tiles/{id}` (`read_tile`) returns a *flat* TileView with
+//     `title`, `description`, `color`, `icon`, `plan_id`, `archived_at` at
+//     the top level. NOT the nested `content`/`visual` shape that the
+//     legacy `TileView` (used by listTiles) pretends the server sends.
+//   - `GET /v1/placements` (`list_placements`) returns `PlacementListItem`.
+//   - `GET /v1/executions/{id}` (`read_execution`) returns `ExecutionView`.
+
+@Serializable
+data class TileDetailView(
+    val id: String,
+    val kind: Byte,
+    @SerialName("owner_id") val ownerId: String,
+    val revision: Long,
+    val title: String,
+    val description: String? = null,
+    val color: String? = null,
+    val icon: String? = null,
+    @SerialName("external_id") val externalId: String? = null,
+    @SerialName("plan_id") val planId: String? = null,
+    @SerialName("archived_at") val archivedAt: String? = null
+)
+
+@Serializable
+data class V1PlacementListItem(
+    @SerialName("placement_id") val placementId: String,
+    @SerialName("tile_id") val tileId: String,
+    @SerialName("plan_id") val planId: String? = null,
+    val title: String = "",
+    @SerialName("span_start") val spanStart: String? = null,
+    @SerialName("span_end") val spanEnd: String? = null
+)
+
+@Serializable
+data class V1ExecutionView(
+    val id: String,
+    @SerialName("tile_id") val tileId: String,
+    @SerialName("owner_id") val ownerId: String,
+    val revision: Long,
+    val state: Byte,
+    @SerialName("placement_id") val placementId: String? = null
+)

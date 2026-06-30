@@ -1,6 +1,5 @@
 package app.tastile.android.data.repository
 
-import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.data.api.TileContentView
 import app.tastile.android.data.api.TileVisualView
 import app.tastile.android.data.api.V1ApiClient
@@ -8,6 +7,7 @@ import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.V1ListTilesResponse
 import app.tastile.android.data.api.V1NumericConstants
 import app.tastile.android.data.api.TileView
+import app.tastile.android.data.command.V1CommandDispatcher
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import io.mockk.coEvery
@@ -20,6 +20,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TileRepositoryV1ReadTest {
+
+    private fun newRepository(
+        apiClient: V1ApiClient,
+        userId: String = "user-1",
+        idToken: String? = "token-abc"
+    ): TileRepository = TileRepository(
+        executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
+        eventRepository = mockk<EventRepository>(relaxed = true),
+        currentUserProvider = mockk<CurrentUserProvider> {
+            every { currentUserId() } returns userId
+            every { currentIdToken() } returns idToken
+        },
+        v1ApiClient = apiClient,
+        v1CommandDispatcher = mockk<V1CommandDispatcher>(relaxed = true)
+    )
 
     @Test
     fun getTiles_callsV1ApiClientAndMapsExecutionKindToStarted() = runTest {
@@ -44,17 +59,7 @@ class TileRepositoryV1ReadTest {
                 )
             )
         )
-        val repository = TileRepository(
-            coreRuntimeService = mockk<CoreRuntimeService>(relaxed = true),
-            executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
-            eventRepository = mockk<EventRepository>(relaxed = true),
-            currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentUserId() } returns "user-1"
-                every { currentIdToken() } returns "token-abc"
-            },
-            v1ApiClient = apiClient,
-            v1CommandDispatcher = mockk(relaxed = true)
-        )
+        val repository = newRepository(apiClient)
 
         val tiles = repository.getTiles(userId = "user-1")
 
@@ -72,17 +77,7 @@ class TileRepositoryV1ReadTest {
     fun getTiles_returnsEmptyWhenV1Throws_authError() = runTest {
         val apiClient = mockk<V1ApiClient>()
         coEvery { apiClient.listTiles() } throws V1Error.Auth()
-        val repository = TileRepository(
-            coreRuntimeService = mockk<CoreRuntimeService>(relaxed = true),
-            executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
-            eventRepository = mockk<EventRepository>(relaxed = true),
-            currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentUserId() } returns "user-1"
-                every { currentIdToken() } returns "token-abc"
-            },
-            v1ApiClient = apiClient,
-            v1CommandDispatcher = mockk(relaxed = true)
-        )
+        val repository = newRepository(apiClient)
 
         val tiles = repository.getTiles(userId = "user-1")
 
@@ -95,17 +90,7 @@ class TileRepositoryV1ReadTest {
     fun getTiles_returnsEmptyWhenV1Throws_networkError() = runTest {
         val apiClient = mockk<V1ApiClient>()
         coEvery { apiClient.listTiles() } throws V1Error.Network(RuntimeException("boom"))
-        val repository = TileRepository(
-            coreRuntimeService = mockk<CoreRuntimeService>(relaxed = true),
-            executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
-            eventRepository = mockk<EventRepository>(relaxed = true),
-            currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentUserId() } returns "user-1"
-                every { currentIdToken() } returns "token-abc"
-            },
-            v1ApiClient = apiClient,
-            v1CommandDispatcher = mockk(relaxed = true)
-        )
+        val repository = newRepository(apiClient)
 
         val tiles = repository.getTiles(userId = "user-1")
 
@@ -117,17 +102,7 @@ class TileRepositoryV1ReadTest {
     @Test
     fun getTiles_returnsEmptyWhenIdTokenMissing_andDoesNotCallV1() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
-        val repository = TileRepository(
-            coreRuntimeService = mockk<CoreRuntimeService>(relaxed = true),
-            executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
-            eventRepository = mockk<EventRepository>(relaxed = true),
-            currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentUserId() } returns "user-1"
-                every { currentIdToken() } returns null
-            },
-            v1ApiClient = apiClient,
-            v1CommandDispatcher = mockk(relaxed = true)
-        )
+        val repository = newRepository(apiClient, idToken = null)
 
         val tiles = repository.getTiles(userId = "user-1")
 

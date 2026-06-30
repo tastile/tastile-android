@@ -1,8 +1,6 @@
 package app.tastile.android.data.repository
 
-import app.tastile.android.core.CoreBridgeError
-import app.tastile.android.core.CoreCommandRequest
-import app.tastile.android.core.CoreRuntimeService
+import app.tastile.android.core.CoreCommandAck
 import app.tastile.android.core.CoreSnapshot
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.CoreTileSnapshot
@@ -31,30 +29,15 @@ import javax.inject.Singleton
 
 @Singleton
 class TileRepository @Inject constructor(
-    private val coreRuntimeService: CoreRuntimeService,
     private val executionNotificationCoordinator: ExecutionNotificationCoordinator,
     private val eventRepository: EventRepository,
     private val currentUserProvider: CurrentUserProvider,
     private val v1ApiClient: V1ApiClient,
     private val v1CommandDispatcher: V1CommandDispatcher
 ) : PromptTileRepository, MemoTileRepository {
-    companion object {
-        private const val COMMAND_TILE_CREATE = "tile.create"
-        private const val COMMAND_TILE_START = "tile.start"
-        private const val COMMAND_TILE_COMPLETE = "tile.complete"
-        private const val COMMAND_TILE_DELETE = "tile.delete"
-        private const val COMMAND_TILE_PAUSE = "tile.pause"
-        private const val COMMAND_TILE_CONTINUE = "tile.continue"
-        private const val COMMAND_TILE_RESCHEDULE = "tile.reschedule"
-        private const val COMMAND_TILE_DEFER = "tile.defer"
-        private const val COMMAND_TILE_EXTEND = "tile.extend"
-        private const val COMMAND_MEMO_ATTACH = "memo.attach"
-        private const val COMMAND_BREAK_START = "break.start"
-        private const val COMMAND_BREAK_END = "break.end"
-        private const val COMMAND_TILE_UPDATE = "tile.update"
-        private const val COMMAND_PROMPT_REQUEST = "prompt.request"
-        private const val COMMAND_PROMPT_RESPOND_STARTUP_RECOVERY = "prompt.respond_startup_recovery"
-    }
+    // Macro Step 5: every command now routes to v1 through
+    // [v1CommandDispatcher].  No more v0 command-name strings, no more
+    // CoreRuntimeService.applyCommand / currentSnapshot fallbacks.
 
     @Volatile
     private var latestReadDiagnostics: String = "source=unknown"
@@ -309,13 +292,10 @@ class TileRepository @Inject constructor(
         val snapshotBefore = currentSnapshotOrNull()
         val existingIds = snapshotBefore?.tiles?.mapTo(mutableSetOf()) { it.id } ?: mutableSetOf()
 
-        val ack = tryApplyCoreCommand(COMMAND_TILE_CREATE, payload)
+        val ack = v1CommandDispatcher.dispatchTileCreate(payload, userId)
         if (ack != null) {
             persistEmittedEvents(userId, ack)
             val generatedId = ack.generatedTileId()
-            // Macro Step 4: when v1 dispatch succeeded, `tryApplyCoreCommand`
-            // already refreshed `latestCloudTiles` from v1, so prefer that for
-            // lookup. Fall back to the v0 snapshot only when v0 was used.
             val fromCloud = latestCloudTiles.firstOrNull { tile ->
                 generatedId?.let { tile.id == it } == true ||
                     (generatedId == null && tile.id !in existingIds)
@@ -329,10 +309,6 @@ class TileRepository @Inject constructor(
                     snapshotAfter?.tiles?.firstOrNull { it.id !in existingIds }
             }
             createdTile?.let { return it.toTile() }
-            // v1 path: cloud refresh hasn't surfaced the new tile yet but the
-            // dispatcher already returned the generated id in metadata.
-            // Synthesize the minimal Tile we have so callers don't see an
-            // IllegalStateException spuriously. The next v1 read will refresh.
             if (generatedId != null && ack.accepted) {
                 return Tile(
                     id = generatedId,
@@ -348,16 +324,14 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun startTile(tileId: String): Tile {
-        val ack = tryApplyCoreCommand(
-                COMMAND_TILE_START,
-                buildJsonObject { put("tile_id", JsonPrimitive(tileId)) }
-            )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-            findSnapshotTile(tileId)?.let { return it }
-        }
-
-        throw IllegalStateException("Cloud command rejected: start tile")
+        // Step 5: tile.start now requires plan_id from v1. The dispatcher
+        // throws IllegalStateException with a clear message if the backend
+        // hasn't attached a plan to the tile. We propagate the throw.
+        val ack = v1CommandDispatcher.dispatchTileStart(tileId)
+            ?: throw IllegalStateException("Cloud command rejected: start tile")
+        refreshCloudCacheAfterCommand(ack)
+        return findSnapshotTile(tileId) ?: readCloudTileById(tileId)
+            ?: throw IllegalStateException("start tile: cloud has no tile $tileId after dispatch")
     }
 
     override suspend fun completeTile(tileId: String): Tile {
@@ -370,55 +344,32 @@ class TileRepository @Inject constructor(
         nextTileId: String? = null,
         scope: String? = null
     ): Tile? {
-        val effectiveTileId = tileId
-            ?: currentSnapshotOrNull()?.activeTileId
-        val ack = tryApplyCoreCommand(
-            COMMAND_TILE_COMPLETE,
-            buildJsonObject {
-                if (!effectiveTileId.isNullOrBlank()) put("tile_id", JsonPrimitive(effectiveTileId))
-                if (!nextTileId.isNullOrBlank()) put("next_tile_id", JsonPrimitive(nextTileId))
-                if (!scope.isNullOrBlank()) put("scope", JsonPrimitive(scope))
-            }
-        )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-            if (!effectiveTileId.isNullOrBlank()) {
-                findSnapshotTile(effectiveTileId)?.let { return it }
-            }
-            return null
+        val effectiveTileId = tileId ?: currentSnapshotOrNull()?.activeTileId
+        val ack = v1CommandDispatcher.dispatchTileComplete(
+            effectiveTileId = effectiveTileId,
+            nextTileId = nextTileId,
+            scope = scope
+        ) ?: run {
+            if (effectiveTileId.isNullOrBlank()) return null
+            throw IllegalStateException("Cloud command rejected: complete tile")
         }
-
-        if (effectiveTileId.isNullOrBlank()) {
-            return null
+        refreshCloudCacheAfterCommand(ack)
+        if (!effectiveTileId.isNullOrBlank()) {
+            findSnapshotTile(effectiveTileId)?.let { return it }
         }
-
-        throw IllegalStateException("Cloud command rejected: complete tile")
+        return null
     }
 
     suspend fun deleteTile(tileId: String) {
-        val ack = tryApplyCoreCommand(
-                COMMAND_TILE_DELETE,
-                buildJsonObject { put("tile_id", JsonPrimitive(tileId)) }
-            )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-            return
-        }
-
-        throw IllegalStateException("Cloud command rejected: delete tile")
+        val ack = v1CommandDispatcher.dispatchTileDelete(tileId)
+            ?: throw IllegalStateException("Cloud command rejected: delete tile")
+        refreshCloudCacheAfterCommand(ack)
     }
 
     override suspend fun pauseTile(tileId: String) {
-        val ack = tryApplyCoreCommand(
-                COMMAND_TILE_PAUSE,
-                buildJsonObject { put("tile_id", JsonPrimitive(tileId)) }
-            )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-            return
-        }
-
-        throw IllegalStateException("Cloud command rejected: pause tile")
+        val ack = v1CommandDispatcher.dispatchTilePause(tileId)
+            ?: throw IllegalStateException("Cloud command rejected: pause tile")
+        refreshCloudCacheAfterCommand(ack)
     }
 
     override suspend fun getActiveStartedTile(userId: String): Tile? {
@@ -436,82 +387,60 @@ class TileRepository @Inject constructor(
     }
 
     override suspend fun continueTile(tileId: String) {
-        val ack = tryApplyCoreCommand(
-                COMMAND_TILE_CONTINUE,
-                buildJsonObject { put("tile_id", JsonPrimitive(tileId)) }
-            )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-            return
-        }
-
-        throw IllegalStateException("Cloud command rejected: continue tile")
+        val ack = v1CommandDispatcher.dispatchTileContinue(tileId)
+            ?: throw IllegalStateException("Cloud command rejected: continue tile")
+        refreshCloudCacheAfterCommand(ack)
     }
 
     suspend fun deferTile(tileId: String, reason: String? = null, minutes: Int? = null) {
-        val ack = tryApplyCoreCommand(
-            COMMAND_TILE_DEFER,
-            buildJsonObject {
-                put("tile_id", JsonPrimitive(tileId))
-                if (!reason.isNullOrBlank()) put("reason", JsonPrimitive(reason))
-                if (minutes != null) put("minutes", JsonPrimitive(minutes))
-            }
-        )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-            return
+        val ack = v1CommandDispatcher.dispatchTileDefer(
+            tileId = tileId,
+            reason = reason,
+            minutes = minutes
+        ) ?: run {
+            // v0 used to fall through to pauseTile on defer failure; with v1
+            // we just throw — the UI surfaces the failure.
+            throw IllegalStateException("Cloud command rejected: defer tile")
         }
-        pauseTile(tileId)
+        refreshCloudCacheAfterCommand(ack)
     }
 
     suspend fun startBreak(breakMin: Int, insertionMode: String? = null) {
-        val ack = tryApplyCoreCommand(
-            COMMAND_BREAK_START,
-            buildJsonObject {
-                put("break_min", JsonPrimitive(breakMin))
-                if (!insertionMode.isNullOrBlank()) put("insertion_mode", JsonPrimitive(insertionMode))
-            }
+        // v1 has no break endpoint. Per v1/10 §10 ("breaks are not special"),
+        // breaks are Flow+Window constructs in v1. The UI still calls this,
+        // so we throw a clear UnsupportedOperationException.
+        throw UnsupportedOperationException(
+            "break.start is not supported in v1 — breaks are Flow + Window constructs. " +
+                "Use the v1 Flow + Window commands instead."
         )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-        }
     }
 
     suspend fun endBreak() {
-        val ack = tryApplyCoreCommand(COMMAND_BREAK_END, buildJsonObject { })
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-        }
+        throw UnsupportedOperationException(
+            "break.end is not supported in v1 — breaks are Flow + Window constructs. " +
+                "Use the v1 Flow + Window commands instead."
+        )
     }
 
     suspend fun extendTile(extendMin: Int) {
-        val ack = tryApplyCoreCommand(
-            COMMAND_TILE_EXTEND,
-            buildJsonObject { put("delta_min", JsonPrimitive(extendMin)) }
+        // v0 carried no tile_id for extend, so v1's /v1/tiles/{id}/extend-phase
+        // cannot be addressed. We can't proceed without a tile_id. Throw a
+        // clear error — the UI's extend button must be re-wired to capture
+        // the active tile id before calling this.
+        throw UnsupportedOperationException(
+            "tile.extend requires an active tile_id; v0 callers did not pass one. " +
+                "Wire the UI's extend action to pass the currently active tile id."
         )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-        }
     }
 
     suspend fun updateTile(tileId: String, payload: JsonObject) {
-        val ack = tryApplyCoreCommand(
-            COMMAND_TILE_UPDATE,
-            buildJsonObject {
-                put("tile_id", JsonPrimitive(tileId))
-                payload.forEach { (key, value) -> put(key, value) }
-            }
-        )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-        }
+        val ack = v1CommandDispatcher.dispatchTileUpdate(tileId, payload)
+            ?: throw IllegalStateException("Cloud command rejected: update tile")
+        refreshCloudCacheAfterCommand(ack)
     }
 
     override suspend fun requestPrompt(tileId: String): Boolean {
-        val ack = tryApplyCoreCommand(
-            COMMAND_PROMPT_REQUEST,
-            buildJsonObject { put("tile_id", JsonPrimitive(tileId)) }
-        ) ?: return false
+        val ack = v1CommandDispatcher.dispatchPromptRequest(tileId) ?: return false
         persistEmittedEvents(currentUserProvider.currentUserId(), ack)
         return true
     }
@@ -546,16 +475,15 @@ class TileRepository @Inject constructor(
         tileId: String,
         actionId: String,
         stopAtIso: String? = null
-    ): app.tastile.android.core.CoreCommandAck? {
-        return tryApplyCoreCommand(
-            COMMAND_PROMPT_RESPOND_STARTUP_RECOVERY,
-            buildJsonObject {
-                put("prompt_id", JsonPrimitive(promptId))
-                put("tile_id", JsonPrimitive(tileId))
-                put("action_id", JsonPrimitive(actionId))
-                if (!stopAtIso.isNullOrBlank()) put("stop_at", JsonPrimitive(stopAtIso))
-            }
-        )
+    ): CoreCommandAck? {
+        val ack = v1CommandDispatcher.dispatchStartupRecoveryPrompt(
+            promptId = promptId,
+            tileId = tileId,
+            actionId = actionId,
+            stopAtIso = stopAtIso
+        ) ?: return null
+        persistEmittedEvents(currentUserProvider.currentUserId(), ack)
+        return ack
     }
 
     suspend fun getTimeline(): List<CoreTimelineItem> {
@@ -591,18 +519,12 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun rescheduleTile(tileId: String, startAtIso: String, endAtIso: String) {
-        val ack = tryApplyCoreCommand(
-            COMMAND_TILE_RESCHEDULE,
-            buildJsonObject {
-                put("tile_id", JsonPrimitive(tileId))
-                put("start_at", JsonPrimitive(startAtIso))
-                put("end_at", JsonPrimitive(endAtIso))
-            }
-        )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-            return
-        }
+        val ack = v1CommandDispatcher.dispatchTileReschedule(
+            tileId = tileId,
+            startAt = startAtIso,
+            endAt = endAtIso
+        ) ?: throw IllegalStateException("Cloud command rejected: reschedule tile")
+        refreshCloudCacheAfterCommand(ack)
     }
 
     override suspend fun getRecentTiles(userId: String, limit: Int): List<Tile> {
@@ -621,32 +543,19 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun attachMemo(tileId: String?, text: String, memoKind: String? = null) {
-        val ack = tryApplyCoreCommand(
-            COMMAND_MEMO_ATTACH,
-            buildJsonObject {
-                if (!tileId.isNullOrBlank()) put("tile_id", JsonPrimitive(tileId))
-                put("text", JsonPrimitive(text))
-                if (!memoKind.isNullOrBlank()) put("memo_kind", JsonPrimitive(memoKind))
-            }
-        )
-        if (ack != null) {
-            persistEmittedEvents(currentUserProvider.currentUserId(), ack)
-            return
+        val ack = v1CommandDispatcher.dispatchMemoAttach(
+            tileId = tileId,
+            body = text
+        ) ?: run {
+            if (tileId.isNullOrBlank()) return
+            throw IllegalStateException("Cloud command rejected: attach memo")
         }
-
-        if (tileId.isNullOrBlank()) {
-            return
-        }
-
-        throw IllegalStateException("Cloud command rejected: attach memo")
+        refreshCloudCacheAfterCommand(ack)
     }
 
     private fun projectedSnapshotTiles(): List<Tile>? {
-        val snapshot = currentSnapshotOrNull() ?: return null
-        if (snapshot.tiles.isEmpty()) return null
-        return snapshot.tiles.map {
-            it.toTile(activeTileId = snapshot.activeTileId, phaseStartedAt = snapshot.phaseStartedAt)
-        }
+        // Macro Step 5: no v0 snapshot anymore — v1 read is the only source.
+        return null
     }
 
     private fun canUseSnapshotForUser(userId: String): Boolean {
@@ -655,79 +564,35 @@ class TileRepository @Inject constructor(
     }
 
     private fun findSnapshotTile(tileId: String): Tile? {
-        val snapshot = currentSnapshotOrNull() ?: return null
-        return snapshot.tiles.firstOrNull { it.id == tileId }
-            ?.toTile(activeTileId = snapshot.activeTileId, phaseStartedAt = snapshot.phaseStartedAt)
+        // Macro Step 5: no v0 snapshot to search. Always null; callers fall
+        // through to the v1 read path.
+        return null
     }
 
     private fun currentSnapshotOrNull(): CoreSnapshot? {
-        return try {
-            coreRuntimeService.currentSnapshot()
-        } catch (_: CoreBridgeError) {
-            null
-        }
+        // Macro Step 5: the v0 CoreRuntimeService is no longer injected into
+        // TileRepository. Snapshot-backed UI surfaces (getActiveTile,
+        // getExecution, getExecutionView, getTilesInProgress) degrade to
+        // v1-only reads. A future rewrite of the mobile UI will replace these
+        // surfaces with v1 Execution / Timeline views.
+        return null
     }
 
     fun latestReadDiagnostics(): String = latestReadDiagnostics
 
-    private suspend fun tryApplyCoreCommand(type: String, payload: kotlinx.serialization.json.JsonObject): app.tastile.android.core.CoreCommandAck? {
-        val userId = currentUserProvider.currentUserId() ?: return null
-        if (userId.isBlank()) return null
+    private suspend fun refreshCloudCacheAfterCommand(@Suppress("UNUSED_PARAMETER") ack: CoreCommandAck) {
+        // After a v1 mutation, re-read the cloud tile list so subsequent
+        // getTiles() / getTileById() calls see the new state without an
+        // explicit refresh.
+        latestCloudTiles = readCloudTiles().orEmpty()
+        executionNotificationCoordinator.syncOnce()
+    }
 
-        // v1 first for the 7 commands Macro Step 4 migrated. The dispatcher returns
-        // null on V1Error/Exception or on inputs that don't carry enough info, in
-        // which case we fall through to the v0 local runtime below. tile.start,
-        // tile.pause/continue, tile.reschedule, break.start/end, prompt.request,
-        // prompt.respond_startup_recovery are NOT migrated and fall straight through
-        // to v0 (they are removed in Macro Step 5).
-        val v1Ack: app.tastile.android.core.CoreCommandAck? = when (type) {
-            COMMAND_TILE_CREATE -> v1CommandDispatcher.dispatchTileCreate(payload, userId)
-            COMMAND_TILE_DELETE -> payload["tile_id"]?.jsonPrimitive?.contentOrNull
-                ?.let { v1CommandDispatcher.dispatchTileDelete(it) }
-            COMMAND_TILE_UPDATE -> payload["tile_id"]?.jsonPrimitive?.contentOrNull
-                ?.let { v1CommandDispatcher.dispatchTileUpdate(it, payload) }
-            COMMAND_MEMO_ATTACH -> v1CommandDispatcher.dispatchMemoAttach(
-                tileId = payload["tile_id"]?.jsonPrimitive?.contentOrNull,
-                body = payload["text"]?.jsonPrimitive?.contentOrNull
-            )
-            COMMAND_TILE_COMPLETE -> v1CommandDispatcher.dispatchTileComplete(
-                effectiveTileId = payload["tile_id"]?.jsonPrimitive?.contentOrNull,
-                nextTileId = payload["next_tile_id"]?.jsonPrimitive?.contentOrNull,
-                scope = payload["scope"]?.jsonPrimitive?.contentOrNull
-            )
-            COMMAND_TILE_DEFER -> v1CommandDispatcher.dispatchTileDefer(
-                tileId = payload["tile_id"]?.jsonPrimitive?.contentOrNull ?: return null,
-                reason = payload["reason"]?.jsonPrimitive?.contentOrNull,
-                minutes = payload["minutes"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
-            )
-            COMMAND_TILE_EXTEND -> {
-                // v0 carried no tile_id for extend — see V1CommandDispatcher.dispatchTileExtend.
-                // We still poll the dispatcher for visibility (logs the fallback) but
-                // we expect null and rely on v0 below.
-                val minutes = payload["delta_min"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
-                    ?: return null
-                v1CommandDispatcher.dispatchTileExtend(minutes)
-            }
-            else -> null
-        }
-        if (v1Ack != null && v1Ack.accepted) {
-            // Refresh the local cloud-tile cache so reads reflect the v1 mutation
-            // without re-querying v1 separately. Notifications are still drained
-            // because the v1 side produced new state-events.
+    private suspend fun readCloudTileById(tileId: String): Tile? {
+        if (latestCloudTiles.isEmpty()) {
             latestCloudTiles = readCloudTiles().orEmpty()
-            executionNotificationCoordinator.syncOnce()
-            return v1Ack
         }
-
-        // v0 fallback — preserved for non-migrated commands and v1 fallback path.
-        return try {
-            val ack = coreRuntimeService.applyCommand(CoreCommandRequest(type = type, payload = payload))
-            if (!ack.accepted) return null
-            executionNotificationCoordinator.syncOnce()
-            ack
-        } catch (_: CoreBridgeError) {
-            null
-        }
+        return latestCloudTiles.firstOrNull { it.id == tileId }
     }
 
     private suspend fun persistEmittedEvents(userId: String?, ack: app.tastile.android.core.CoreCommandAck) {
