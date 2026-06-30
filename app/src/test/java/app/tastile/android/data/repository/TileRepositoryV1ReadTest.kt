@@ -52,7 +52,8 @@ class TileRepositoryV1ReadTest {
                 every { currentUserId() } returns "user-1"
                 every { currentIdToken() } returns "token-abc"
             },
-            v1ApiClient = apiClient
+            v1ApiClient = apiClient,
+            v1CommandDispatcher = mockk(relaxed = true)
         )
 
         val tiles = repository.getTiles(userId = "user-1")
@@ -79,7 +80,8 @@ class TileRepositoryV1ReadTest {
                 every { currentUserId() } returns "user-1"
                 every { currentIdToken() } returns "token-abc"
             },
-            v1ApiClient = apiClient
+            v1ApiClient = apiClient,
+            v1CommandDispatcher = mockk(relaxed = true)
         )
 
         val tiles = repository.getTiles(userId = "user-1")
@@ -101,7 +103,8 @@ class TileRepositoryV1ReadTest {
                 every { currentUserId() } returns "user-1"
                 every { currentIdToken() } returns "token-abc"
             },
-            v1ApiClient = apiClient
+            v1ApiClient = apiClient,
+            v1CommandDispatcher = mockk(relaxed = true)
         )
 
         val tiles = repository.getTiles(userId = "user-1")
@@ -122,7 +125,8 @@ class TileRepositoryV1ReadTest {
                 every { currentUserId() } returns "user-1"
                 every { currentIdToken() } returns null
             },
-            v1ApiClient = apiClient
+            v1ApiClient = apiClient,
+            v1CommandDispatcher = mockk(relaxed = true)
         )
 
         val tiles = repository.getTiles(userId = "user-1")

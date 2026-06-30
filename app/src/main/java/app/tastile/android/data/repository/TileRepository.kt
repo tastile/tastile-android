@@ -9,6 +9,7 @@ import app.tastile.android.core.CoreTileSnapshot
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.toTiles
+import app.tastile.android.data.command.V1CommandDispatcher
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
@@ -34,7 +35,8 @@ class TileRepository @Inject constructor(
     private val executionNotificationCoordinator: ExecutionNotificationCoordinator,
     private val eventRepository: EventRepository,
     private val currentUserProvider: CurrentUserProvider,
-    private val v1ApiClient: V1ApiClient
+    private val v1ApiClient: V1ApiClient,
+    private val v1CommandDispatcher: V1CommandDispatcher
 ) : PromptTileRepository, MemoTileRepository {
     companion object {
         private const val COMMAND_TILE_CREATE = "tile.create"
@@ -310,8 +312,16 @@ class TileRepository @Inject constructor(
         val ack = tryApplyCoreCommand(COMMAND_TILE_CREATE, payload)
         if (ack != null) {
             persistEmittedEvents(userId, ack)
-            val snapshotAfter = currentSnapshotOrNull()
             val generatedId = ack.generatedTileId()
+            // Macro Step 4: when v1 dispatch succeeded, `tryApplyCoreCommand`
+            // already refreshed `latestCloudTiles` from v1, so prefer that for
+            // lookup. Fall back to the v0 snapshot only when v0 was used.
+            val fromCloud = latestCloudTiles.firstOrNull { tile ->
+                generatedId?.let { tile.id == it } == true ||
+                    (generatedId == null && tile.id !in existingIds)
+            }
+            if (fromCloud != null) return fromCloud
+            val snapshotAfter = currentSnapshotOrNull()
             val createdTile = when {
                 generatedId != null ->
                     snapshotAfter?.tiles?.firstOrNull { it.id == generatedId }
@@ -319,6 +329,19 @@ class TileRepository @Inject constructor(
                     snapshotAfter?.tiles?.firstOrNull { it.id !in existingIds }
             }
             createdTile?.let { return it.toTile() }
+            // v1 path: cloud refresh hasn't surfaced the new tile yet but the
+            // dispatcher already returned the generated id in metadata.
+            // Synthesize the minimal Tile we have so callers don't see an
+            // IllegalStateException spuriously. The next v1 read will refresh.
+            if (generatedId != null && ack.accepted) {
+                return Tile(
+                    id = generatedId,
+                    localTileId = generatedId,
+                    userId = userId,
+                    title = trimmedTitle,
+                    lifecycle = TileLifecycle.READY.value
+                )
+            }
         }
 
         throw IllegalStateException("Cloud command rejected: create tile")
@@ -647,8 +670,56 @@ class TileRepository @Inject constructor(
 
     fun latestReadDiagnostics(): String = latestReadDiagnostics
 
-    private fun tryApplyCoreCommand(type: String, payload: kotlinx.serialization.json.JsonObject): app.tastile.android.core.CoreCommandAck? {
-        if (currentUserProvider.currentUserId().isNullOrBlank()) return null
+    private suspend fun tryApplyCoreCommand(type: String, payload: kotlinx.serialization.json.JsonObject): app.tastile.android.core.CoreCommandAck? {
+        val userId = currentUserProvider.currentUserId() ?: return null
+        if (userId.isBlank()) return null
+
+        // v1 first for the 7 commands Macro Step 4 migrated. The dispatcher returns
+        // null on V1Error/Exception or on inputs that don't carry enough info, in
+        // which case we fall through to the v0 local runtime below. tile.start,
+        // tile.pause/continue, tile.reschedule, break.start/end, prompt.request,
+        // prompt.respond_startup_recovery are NOT migrated and fall straight through
+        // to v0 (they are removed in Macro Step 5).
+        val v1Ack: app.tastile.android.core.CoreCommandAck? = when (type) {
+            COMMAND_TILE_CREATE -> v1CommandDispatcher.dispatchTileCreate(payload, userId)
+            COMMAND_TILE_DELETE -> payload["tile_id"]?.jsonPrimitive?.contentOrNull
+                ?.let { v1CommandDispatcher.dispatchTileDelete(it) }
+            COMMAND_TILE_UPDATE -> payload["tile_id"]?.jsonPrimitive?.contentOrNull
+                ?.let { v1CommandDispatcher.dispatchTileUpdate(it, payload) }
+            COMMAND_MEMO_ATTACH -> v1CommandDispatcher.dispatchMemoAttach(
+                tileId = payload["tile_id"]?.jsonPrimitive?.contentOrNull,
+                body = payload["text"]?.jsonPrimitive?.contentOrNull
+            )
+            COMMAND_TILE_COMPLETE -> v1CommandDispatcher.dispatchTileComplete(
+                effectiveTileId = payload["tile_id"]?.jsonPrimitive?.contentOrNull,
+                nextTileId = payload["next_tile_id"]?.jsonPrimitive?.contentOrNull,
+                scope = payload["scope"]?.jsonPrimitive?.contentOrNull
+            )
+            COMMAND_TILE_DEFER -> v1CommandDispatcher.dispatchTileDefer(
+                tileId = payload["tile_id"]?.jsonPrimitive?.contentOrNull ?: return null,
+                reason = payload["reason"]?.jsonPrimitive?.contentOrNull,
+                minutes = payload["minutes"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+            )
+            COMMAND_TILE_EXTEND -> {
+                // v0 carried no tile_id for extend — see V1CommandDispatcher.dispatchTileExtend.
+                // We still poll the dispatcher for visibility (logs the fallback) but
+                // we expect null and rely on v0 below.
+                val minutes = payload["delta_min"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+                    ?: return null
+                v1CommandDispatcher.dispatchTileExtend(minutes)
+            }
+            else -> null
+        }
+        if (v1Ack != null && v1Ack.accepted) {
+            // Refresh the local cloud-tile cache so reads reflect the v1 mutation
+            // without re-querying v1 separately. Notifications are still drained
+            // because the v1 side produced new state-events.
+            latestCloudTiles = readCloudTiles().orEmpty()
+            executionNotificationCoordinator.syncOnce()
+            return v1Ack
+        }
+
+        // v0 fallback — preserved for non-migrated commands and v1 fallback path.
         return try {
             val ack = coreRuntimeService.applyCommand(CoreCommandRequest(type = type, payload = payload))
             if (!ack.accepted) return null

@@ -2,6 +2,7 @@ package app.tastile.android.data.di
 
 import app.tastile.android.data.api.AuthTokenProvider
 import app.tastile.android.data.api.V1ApiClient
+import app.tastile.android.data.command.V1CommandDispatcher
 import app.tastile.android.data.repository.CurrentUserProvider
 import dagger.Module
 import dagger.Provides
@@ -21,4 +22,9 @@ object ApiModule {
     @Singleton
     fun provideV1ApiClient(tokenProvider: AuthTokenProvider): V1ApiClient =
         V1ApiClient(tokenProvider)
+
+    @Provides
+    @Singleton
+    fun provideV1CommandDispatcher(v1ApiClient: V1ApiClient): V1CommandDispatcher =
+        V1CommandDispatcher(v1ApiClient)
 }
