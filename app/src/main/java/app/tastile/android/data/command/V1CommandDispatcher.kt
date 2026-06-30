@@ -29,16 +29,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Routes v0 freeform `TileRepository.tryApplyCoreCommand(...)` callers to typed
- * v1 command endpoints. For each v0 command type whose payload carries enough
- * information to construct a v1 payload, this dispatcher:
- *
- *   1. Builds the v1 typed payload from the v0 `JsonObject`.
- *   2. Posts via `V1ApiClient.postCommand` (or `deleteCommand` for archive).
- *   3. Maps the v1 [CommandResponse] back to the v0 [CoreCommandAck] shape that
- *      `TileRepository` already understands. The dispatcher returns `null` on
- *      any v1 error so callers can fall through to the v0 local runtime for
- *      non-migrated command types.
+ * Typed v1 command dispatcher. Each method builds the v1 typed payload,
+ * posts via `V1ApiClient.postCommand` (or `deleteCommand` for archive),
+ * and maps the v1 [CommandResponse] back to the v0 [CoreCommandAck] shape
+ * that `TileRepository` already understands. The dispatcher returns `null`
+ * on v1 errors so callers can surface a clear failure rather than silently
+ * dropping the request. The v0 `tryApplyCoreCommand` / v0 local runtime
+ * fallback path was removed in Step 5.
  *
  * Field-mapping conventions (documented so future changes don't have to guess):
  *   - tile.create: v0 `title` → v1 `title`. v0 had no `kind`, so we default
@@ -50,9 +47,9 @@ import javax.inject.Singleton
  *   - tile.defer: v0 `minutes` → `deferred_until = now + minutes`. State=1 (deferred).
  *   - tile.complete: state=2, `completed_at = now`. The server is allowed to
  *     overwrite this if domain invariants demand a different timestamp.
- *   - tile.extend: NOT routed to v1 — the v0 payload carried no `tile_id`, so
- *     we can't address `/v1/tiles/{id}/extend-phase`. Step 4 returns null and
- *     callers fall through to v0 (`coreRuntimeService.applyCommand`).
+ *   - tile.extend: callers in [TileRepository.extendTile] throw
+ *     `UnsupportedOperationException` directly. The dispatcher entry is kept
+ *     for symmetry but is never invoked from production code today.
  *   - memo.attach: v0 `text` → v1 `body`.
  */
 @Singleton
