@@ -31,6 +31,11 @@ jobs:
           java-version: 17
           distribution: temurin
 
+      - name: Set up Android SDK (NDK 30.0.14904198)
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: 30.0.14904198
+
       - name: Resolve version
         id: version
         run: |

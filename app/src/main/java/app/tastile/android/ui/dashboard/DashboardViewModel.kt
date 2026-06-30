@@ -38,6 +38,8 @@ import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 
+enum class TimelineScale { Day, Week, Month }
+
 data class CreateTileDraft(
     val title: String,
     val nextAction: String? = null,
@@ -124,6 +126,18 @@ class DashboardViewModel @Inject constructor(
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
     private val _googleCalendarIntegration = MutableStateFlow<GoogleCalendarIntegrationSettings?>(null)
     val googleCalendarIntegration: StateFlow<GoogleCalendarIntegrationSettings?> = _googleCalendarIntegration.asStateFlow()
+
+    private val _selectedDay = MutableStateFlow(java.time.LocalDate.now())
+    val selectedDay: StateFlow<java.time.LocalDate> = _selectedDay.asStateFlow()
+    fun setSelectedDay(day: java.time.LocalDate) {
+        _selectedDay.value = day
+    }
+
+    private val _scale = MutableStateFlow(TimelineScale.Day)
+    val scale: StateFlow<TimelineScale> = _scale.asStateFlow()
+    fun setScale(scale: TimelineScale) {
+        _scale.value = scale
+    }
 
     val integrations: StateFlow<List<Integration>> = googleCalendarIntegration
         .map { gc ->

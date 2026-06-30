@@ -32,6 +32,13 @@ object TastileColors {
     val DarkPrimary = Color(0xFFFFFFFF)
     val DarkOnPrimary = Color(0xFF000000)
     val DarkOutline = Color(0xFF262626)
+
+    /** Primary brand accent — taken from the T mark in tastile-brands/svg/logos/logo-dark.svg. */
+    val BrandAccent = Color(0xFF2563EB)
+    val BrandAccentOn = Color(0xFFFFFFFF)
+    /** Soft brand tint used for hover/focus surfaces. */
+    val BrandTintDark = Color(0xFF1E3A8A)
+    val BrandTintLight = Color(0xFFDBEAFE)
 }
 
 val ProPlanColor = Color(0xFFFFD700)

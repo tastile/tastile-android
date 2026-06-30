@@ -24,13 +24,14 @@ fun OverlayLayer(
     overlay: OverlayViewModel = hiltViewModel(),
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
     notificationsViewModel: NotificationsViewModel = hiltViewModel(),
+    onNavigate: (String) -> Unit = {},
 ) {
     QuickCreateSheetMobile(overlay = overlay, dashboardViewModel = dashboardViewModel)
     TileEditSheet(overlay = overlay, viewModel = dashboardViewModel)
     SearchOverlaySheet(overlay = overlay)
     NotificationsSheet(overlay = overlay, repository = notificationsViewModel.repository)
     AccountMenuSheet(viewModel = dashboardViewModel, overlay = overlay)
-    SidePanelSheet(overlay = overlay)
+    SidePanelSheet(overlay = overlay, onNavigate = onNavigate)
 }
 
 /**

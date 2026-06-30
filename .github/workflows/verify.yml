@@ -26,6 +26,11 @@ jobs:
           java-version: "21"
           cache: gradle
 
+      - name: Set up Android SDK (NDK 30.0.14904198)
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: 30.0.14904198
+
       - name: Ensure Gradle wrapper is executable
         run: chmod +x ./gradlew
 
