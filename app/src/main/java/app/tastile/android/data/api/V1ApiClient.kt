@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -28,27 +29,31 @@ class V1ApiClient @Inject constructor(
         BuildConfig.TASTILE_CORE_URL.trim().trimEnd('/')
 
     private suspend inline fun <reified T> get(path: String): T = withContext(Dispatchers.IO) {
-        val token = tokenProvider()
-        if (token.isNullOrBlank()) throw V1Error.Auth()
-        val url = URL("${baseUrl()}$path")
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            doInput = true
-            setRequestProperty("Authorization", "Bearer $token")
-            setRequestProperty("Accept", "application/json")
-            connectTimeout = 15_000
-            readTimeout = 15_000
+        try {
+            val token = tokenProvider()
+            if (token.isNullOrBlank()) throw V1Error.Auth()
+            val url = URL("${baseUrl()}$path")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                doInput = true
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000
+                readTimeout = 15_000
+            }
+            val status = connection.responseCode
+            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                ?.bufferedReader()?.use { it.readText() }
+                .orEmpty()
+            if (status !in 200..299) {
+                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
+                if (err != null) throw V1Error.fromApiBody(err)
+                throw V1Error.Unknown(status, body.take(200))
+            }
+            json.decodeFromString<T>(body)
+        } catch (e: IOException) {
+            throw V1Error.Network(e)
         }
-        val status = connection.responseCode
-        val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-            ?.bufferedReader()?.use { it.readText() }
-            .orEmpty()
-        if (status !in 200..299) {
-            val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-            if (err != null) throw V1Error.fromApiBody(err)
-            throw V1Error.Unknown(status, body.take(200))
-        }
-        json.decodeFromString<T>(body)
     }
 
     suspend fun listTiles(): V1ListTilesResponse =
@@ -71,38 +76,42 @@ class V1ApiClient @Inject constructor(
         responseSerializer: KSerializer<Resp>,
         expectedRevision: Long? = null
     ): Resp = withContext(Dispatchers.IO) {
-        val token = tokenProvider()
-        if (token.isNullOrBlank()) throw V1Error.Auth()
-        val envelope = buildJsonObject {
-            put("expectedRevision", expectedRevision?.let { JsonPrimitive(it) } ?: JsonNull)
-            put("idempotencyKey", V1Idempotency.generate())
-            put("occurredAt", Instant.now().toString())
-            put("payload", buildJsonObject {
-                put("kind", commandKind)
-                put("value", json.encodeToJsonElement(payloadSerializer, payload))
-            })
+        try {
+            val token = tokenProvider()
+            if (token.isNullOrBlank()) throw V1Error.Auth()
+            val envelope = buildJsonObject {
+                put("expectedRevision", expectedRevision?.let { JsonPrimitive(it) } ?: JsonNull)
+                put("idempotencyKey", V1Idempotency.generate())
+                put("occurredAt", Instant.now().toString())
+                put("payload", buildJsonObject {
+                    put("kind", commandKind)
+                    put("value", json.encodeToJsonElement(payloadSerializer, payload))
+                })
+            }
+            val url = URL("${baseUrl()}$path")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                doInput = true
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000
+                readTimeout = 15_000
+            }
+            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+            val status = connection.responseCode
+            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                ?.bufferedReader()?.use { it.readText() }
+                .orEmpty()
+            if (status !in 200..299) {
+                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
+                if (err != null) throw V1Error.fromApiBody(err)
+                throw V1Error.Unknown(status, body.take(200))
+            }
+            json.decodeFromString(responseSerializer, body)
+        } catch (e: IOException) {
+            throw V1Error.Network(e)
         }
-        val url = URL("${baseUrl()}$path")
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            doOutput = true
-            doInput = true
-            setRequestProperty("Authorization", "Bearer $token")
-            setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Accept", "application/json")
-            connectTimeout = 15_000
-            readTimeout = 15_000
-        }
-        connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-        val status = connection.responseCode
-        val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-            ?.bufferedReader()?.use { it.readText() }
-            .orEmpty()
-        if (status !in 200..299) {
-            val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-            if (err != null) throw V1Error.fromApiBody(err)
-            throw V1Error.Unknown(status, body.take(200))
-        }
-        json.decodeFromString(responseSerializer, body)
     }
 }

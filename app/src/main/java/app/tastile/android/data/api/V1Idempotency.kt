@@ -20,8 +20,8 @@ object V1Idempotency {
         bytes[3] = (tsHigh and 0xFF).toByte()
         bytes[4] = ((tsLow ushr 24) and 0xFF).toByte()
         bytes[5] = ((tsLow ushr 16) and 0xFF).toByte()
-        // version 7 in high 4 bits of byte 6
-        bytes[6] = (0x70 or ((tsLow ushr 8) and 0x0F)).toByte()
+        // version 7 in high 4 bits of byte 6; low nibble is rand_a (RFC 9562 §5.7)
+        bytes[6] = (0x70 or (random.nextInt() and 0x0F)).toByte()
         bytes[7] = (tsLow and 0xFF).toByte()
         // variant 10xx in high 2 bits of byte 8
         bytes[8] = (0x80 or (random.nextInt() and 0x3F)).toByte()
