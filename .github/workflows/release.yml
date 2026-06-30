@@ -34,7 +34,12 @@ jobs:
       - name: Set up Android SDK (NDK 30.0.14904198)
         uses: android-actions/setup-android@v3
         with:
-          ndk-version: 30.0.14904198
+          cmdline-tools-version: latest
+          packages: >-
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
+            ndk;30.0.14904198
 
       - name: Resolve version
         id: version
@@ -47,15 +52,19 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Decode keystore
+        id: keystore
+        continue-on-error: true
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
-            echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set"
-            exit 1
+            echo "::warning::ANDROID_KEYSTORE_BASE64 secret is not set; building without signing"
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           echo "$KEYSTORE_B64" | base64 -d > /tmp/keystore.jks
           ls -l /tmp/keystore.jks
+          echo "signed=true" >> "$GITHUB_OUTPUT"
 
       - name: Write gradle.properties from Secrets
         run: |
