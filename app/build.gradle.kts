@@ -45,7 +45,7 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         minSdk = 26
         targetSdk = 35
         versionCode = 23
-        versionName = "0.2.14"
+        versionName = "0.2.15"
 
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
         buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: "2b9fkkb4u5di8veelnmjkmnldj"}\"")
