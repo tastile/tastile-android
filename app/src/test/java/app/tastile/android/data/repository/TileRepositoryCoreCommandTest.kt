@@ -36,7 +36,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         val tile = repository.startTile("tile-123")
@@ -66,7 +67,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         val active = repository.getActiveStartedTile("user-1")
@@ -86,7 +88,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         val active = repository.getActiveStartedTile("user-1")
@@ -105,7 +108,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         repository.continueTile("tile-continue")
@@ -123,7 +127,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         repository.deferTile("tile-1", reason = "meeting", minutes = 15)
@@ -143,7 +148,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         repository.startBreak(breakMin = 10, insertionMode = "after_current")
@@ -162,7 +168,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         repository.endBreak()
@@ -179,7 +186,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         repository.extendTile(extendMin = 20)
@@ -197,7 +205,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         repository.completeTile(tileId = "tile-1", nextTileId = "tile-2", scope = "phase")
@@ -217,7 +226,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         repository.attachMemo(tileId = null, text = "memo text", memoKind = "reflection")
@@ -255,7 +265,8 @@ class TileRepositoryCoreCommandTest {
             eventRepository = mockk<EventRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentUserId() } returns "user-1"
-            }
+            },
+            v1ApiClient = mockk(relaxed = true)
         )
 
         val tile = repository.createTile("user-1", "Inbox")
