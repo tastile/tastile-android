@@ -1,14 +1,15 @@
 package app.tastile.android.data.repository
 
 import app.tastile.android.BuildConfig
+import app.tastile.android.data.api.V1ApiClient
+import app.tastile.android.data.api.V1Error
+import app.tastile.android.data.api.V1TimelineResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -24,6 +25,7 @@ import java.net.SocketTimeoutException
 import java.net.URL
 import java.net.URLEncoder
 import java.net.UnknownHostException
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -119,12 +121,22 @@ data class OAuthExchangeResponse(
 
 @Singleton
 class IntegrationRepository @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val currentUserProvider: CurrentUserProvider,
+    private val v1ApiClient: V1ApiClient
 ) {
+    private companion object {
+        private const val STREAM_POLL_INTERVAL_MS = 30_000L
+    }
+
     private val json = Json { ignoreUnknownKeys = true }
     private val daemonBaseUrls = defaultDaemonBaseUrls()
     @Volatile
     private var lastSuccessfulBaseUrl: String? = null
+    @Volatile
+    private var latestReadDiagnostics: String = "source=unknown"
+
+    fun latestReadDiagnostics(): String = latestReadDiagnostics
 
     suspend fun getSettings(): IntegrationSettingsResponse {
         val (status, responseText) = executeDaemonRequest(path = "/auth/integrations/settings", method = "GET")
@@ -273,26 +285,47 @@ class IntegrationRepository @Inject constructor(
     }
 
     suspend fun getRuntimePaths(): RuntimePathsResponse {
-        val (status, responseText) = executeDaemonRequest(
-            path = "/read/runtime-paths",
-            method = "GET",
-            requiresAuth = false
-        )
-        if (status == 404) {
-            return RuntimePathsResponse(
-                profileName = "cloud",
-                appDataDir = "",
-                dbPath = "",
-                sessionPath = "",
-                daemonStartupLogPath = "",
-                daemonExecutablePath = ""
+        val token = currentUserProvider.currentIdToken()
+        if (token.isNullOrBlank()) {
+            latestReadDiagnostics = "source=v1_skipped reason=no_token count=0 user_match=true"
+            return emptyRuntimePathsResponse()
+        }
+        return try {
+            val response = v1ApiClient.listRuntimePaths()
+            val first = response.paths.firstOrNull()
+            if (first == null) {
+                latestReadDiagnostics = "source=v1 count=0 user_match=true"
+                return emptyRuntimePathsResponse()
+            }
+            latestReadDiagnostics = "source=v1 count=${response.paths.size} user_match=true"
+            RuntimePathsResponse(
+                profileName = first.profileName,
+                appDataDir = first.appDataDir,
+                dbPath = first.dbPath,
+                sessionPath = first.sessionPath,
+                daemonStartupLogPath = first.daemonStartupLogPath,
+                daemonExecutablePath = first.daemonExecutablePath
             )
+        } catch (e: V1Error) {
+            android.util.Log.w("IntegrationRepository", "v1 listRuntimePaths failed: ${e.message}", e)
+            latestReadDiagnostics = "source=v1_unavailable count=0 user_match=true"
+            emptyRuntimePathsResponse()
+        } catch (e: Exception) {
+            android.util.Log.w("IntegrationRepository", "v1 listRuntimePaths failed: ${e.message}", e)
+            latestReadDiagnostics = "source=v1_unavailable count=0 user_match=true"
+            emptyRuntimePathsResponse()
         }
-        if (status !in 200..299) {
-            throw IllegalStateException("Failed to load runtime paths: HTTP $status $responseText")
-        }
-        return json.decodeFromString(responseText)
     }
+
+    private fun emptyRuntimePathsResponse(): RuntimePathsResponse =
+        RuntimePathsResponse(
+            profileName = "cloud",
+            appDataDir = "",
+            dbPath = "",
+            sessionPath = "",
+            daemonStartupLogPath = "",
+            daemonExecutablePath = ""
+        )
 
     suspend fun getTileQuota(): TileQuotaResponse {
         val (status, responseText) = executeDaemonRequest(path = "/auth/tile-quota", method = "GET")
@@ -398,36 +431,33 @@ class IntegrationRepository @Inject constructor(
         return runCatching { json.parseToJsonElement(responseText) }.getOrNull()
     }
 
-    fun streamStateEvents(): Flow<String> = callbackFlow {
-        val accessToken = authRepository.currentIdToken()
-            ?: throw IllegalStateException("Not authenticated")
-        var streamReader: java.io.BufferedReader? = null
-        var connection: HttpURLConnection? = null
-        val readingJob = launch(Dispatchers.IO) {
-            try {
-                val streamConnection = openStateStreamConnection(accessToken)
-                connection = streamConnection.first
-                streamReader = streamConnection.second
-                while (isActive) {
-                    val line = streamReader?.readLine() ?: break
-                    if (!line.startsWith("data:", ignoreCase = true)) continue
-                    val payload = line.removePrefix("data:").trim()
-                    if (payload.isNotEmpty()) {
-                        trySend(payload)
-                    }
-                }
-            } catch (_: Exception) {
-            } finally {
-                runCatching { streamReader?.close() }
-                connection?.disconnect()
-                channel.close()
+    // NOTE: Contract change — v1 has no SSE. This used to be an SSE consumer over
+    // `/read/events/state` emitting JSON lines per state event. v1 is pull-only,
+    // so we poll `GET /v1/timeline?start=&end=` on a 30s cadence and emit the
+    // JSON-encoded `V1TimelineResponse` once per cycle. Consumers of
+    // `Flow<String>` should treat each emission as a timeline snapshot.
+    fun streamStateEvents(): Flow<String> = flow {
+        val now = Instant.now()
+        val start = now.minusSeconds(24L * 60L * 60L)
+        val end = now.plusSeconds(24L * 60L * 60L)
+        while (true) {
+            val payload = runCatching {
+                val response = v1ApiClient.getTimeline(start = start, end = end)
+                latestReadDiagnostics = "source=v1 timeline_count=${response.items.size} user_match=true"
+                json.encodeToString(V1TimelineResponse.serializer(), response)
+            }.getOrElse { e ->
+                android.util.Log.w(
+                    "IntegrationRepository",
+                    "v1 getTimeline failed: ${e.message}",
+                    e
+                )
+                latestReadDiagnostics = "source=v1_unavailable timeline_count=0 user_match=true"
+                null
             }
-        }
-
-        awaitClose {
-            readingJob.cancel()
-            runCatching { streamReader?.close() }
-            connection?.disconnect()
+            if (payload != null) {
+                emit(payload)
+            }
+            delay(STREAM_POLL_INTERVAL_MS)
         }
     }
 
@@ -487,32 +517,6 @@ class IntegrationRepository @Inject constructor(
 
     private fun daemonBaseCandidates(): List<String> {
         return listOfNotNull(lastSuccessfulBaseUrl, *daemonBaseUrls.toTypedArray()).distinct()
-    }
-
-    private fun openStateStreamConnection(
-        accessToken: String
-    ): Pair<HttpURLConnection, java.io.BufferedReader> {
-        return runWithDaemonFallback(daemonBaseCandidates()) { baseUrl ->
-            val endpoint = URL("$baseUrl/read/events/state")
-            val connection = (endpoint.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                doInput = true
-                setRequestProperty("Accept", "text/event-stream")
-                setRequestProperty("Authorization", "Bearer $accessToken")
-                connectTimeout = 15_000
-                readTimeout = 0
-            }
-            val status = connection.responseCode
-            if (status !in 200..299) {
-                connection.disconnect()
-                throw IllegalStateException("Failed to open state event stream: HTTP $status")
-            }
-            val reader = connection.inputStream.bufferedReader()
-            if (status in 200..299) {
-                lastSuccessfulBaseUrl = baseUrl
-            }
-            connection to reader
-        }
     }
 
     fun lastSuccessfulDaemonBaseUrl(): String? = lastSuccessfulBaseUrl
