@@ -63,8 +63,8 @@ class TileRepositoryV1ReadTest {
         assertEquals(TileLifecycle.STARTED.value, execTile?.lifecycle)
         val placeTile = tiles.firstOrNull { it.id == "t-place" }
         assertEquals(TileLifecycle.READY.value, placeTile?.lifecycle)
-        // getTiles(userId) overwrites the internal "source=v1" diagnostic with "source=cloud".
-        assertTrue(repository.latestReadDiagnostics().startsWith("source=cloud "))
+        // getTiles(userId) preserves the v1 diagnostic on success.
+        assertTrue(repository.latestReadDiagnostics().startsWith("source=v1 "))
     }
 
     @Test
@@ -85,8 +85,8 @@ class TileRepositoryV1ReadTest {
         val tiles = repository.getTiles(userId = "user-1")
 
         assertTrue(tiles.isEmpty())
-        // readCloudTiles failed -> falls through to snapshot which is empty -> "source=cloud_unavailable".
-        assertTrue(repository.latestReadDiagnostics().startsWith("source=cloud_unavailable "))
+        // readCloudTiles failed -> v1_unavailable diagnostic is preserved (no snapshot fallback).
+        assertTrue(repository.latestReadDiagnostics().startsWith("source=v1_unavailable "))
     }
 
     @Test
@@ -107,7 +107,8 @@ class TileRepositoryV1ReadTest {
         val tiles = repository.getTiles(userId = "user-1")
 
         assertTrue(tiles.isEmpty())
-        assertTrue(repository.latestReadDiagnostics().startsWith("source=cloud_unavailable "))
+        // Network error -> v1_unavailable diagnostic is preserved (no snapshot fallback).
+        assertTrue(repository.latestReadDiagnostics().startsWith("source=v1_unavailable "))
     }
 
     @Test

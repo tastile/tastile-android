@@ -61,7 +61,7 @@ class TileRepository @Inject constructor(
 
     suspend fun getTiles(userId: String): List<Tile> {
         readCloudTiles()?.let { tiles ->
-            latestReadDiagnostics = "source=cloud count=${tiles.size} user_match=true"
+            // readCloudTiles() already set "source=v1 ..." on success — preserve it.
             latestCloudTiles = tiles
             return tiles
         }
@@ -79,7 +79,12 @@ class TileRepository @Inject constructor(
             }
         }
 
-        latestReadDiagnostics = "source=cloud_unavailable count=0 user_match=${canUseSnapshotForUser(userId)}"
+        // Neither v1 nor snapshot could answer.
+        // Preserve the "source=v1_unavailable" diagnostic set by readCloudTiles() if v1 failed;
+        // otherwise emit a baseline cloud_unavailable entry.
+        if (!latestReadDiagnostics.startsWith("source=v1_unavailable")) {
+            latestReadDiagnostics = "source=cloud_unavailable count=0 user_match=${canUseSnapshotForUser(userId)}"
+        }
         latestCloudTiles = emptyList()
         return emptyList()
     }
@@ -91,10 +96,12 @@ class TileRepository @Inject constructor(
             val v1Tiles = v1ApiClient.listTiles().toTiles(userId = currentUserProvider.currentUserId().orEmpty())
             latestReadDiagnostics = "source=v1 count=${v1Tiles.size} user_match=true"
             v1Tiles
-        } catch (_: V1Error) {
+        } catch (e: V1Error) {
+            android.util.Log.w("TileRepository", "v1 listTiles failed: ${e.message}", e)
             latestReadDiagnostics = "source=v1_unavailable count=0 user_match=true"
             null
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.w("TileRepository", "v1 listTiles failed: ${e.message}", e)
             latestReadDiagnostics = "source=v1_unavailable count=0 user_match=true"
             null
         }

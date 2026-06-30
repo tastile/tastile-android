@@ -92,6 +92,7 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        unitTests.isReturnDefaultValues = true
     }
 }
 
