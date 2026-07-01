@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.IOException
@@ -18,7 +19,7 @@ import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
-typealias AuthTokenProvider = () -> String?
+typealias AuthTokenProvider = suspend () -> String?
 
 @Singleton
 class V1ApiClient @Inject constructor(
@@ -200,6 +201,53 @@ class V1ApiClient @Inject constructor(
                 throw V1Error.Unknown(status, body.take(200))
             }
             json.decodeFromString(responseSerializer, body)
+        } catch (e: IOException) {
+            throw V1Error.Network(e)
+        }
+    }
+
+    /**
+     * Bootstrap call against `POST /v1/api-tokens`, used by `ApiTokenManager`
+     * to mint the Tastile API token. Unlike the rest of [V1ApiClient], this
+     * method takes an explicit `bootstrapToken` because, by definition, the
+     * Tastile API token does not exist yet. The caller must supply the user's
+     * Cognito `id_token` as the bearer — see PROJECT-TRUTH.md ("Authentication")
+     * and `docs/agent-handoff/DEEP-REVIEW-NOTES.md` for the two-auth model.
+     */
+    suspend fun mintApiToken(
+        bootstrapToken: String,
+        request: V1ApiTokenCreateRequest
+    ): V1ApiTokenCreateResponse = withContext(Dispatchers.IO) {
+        try {
+            val body = buildJsonObject {
+                put("label", request.label?.let { JsonPrimitive(it) } ?: JsonNull)
+                put("scopes", buildJsonArray {
+                    request.scopes.forEach { add(JsonPrimitive(it)) }
+                })
+            }
+            val url = URL("${baseUrl()}/v1/api-tokens")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                doInput = true
+                setRequestProperty("Authorization", "Bearer $bootstrapToken")
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Accept", "application/json")
+                setRequestProperty("Idempotency-Key", V1Idempotency.generate())
+                connectTimeout = 15_000
+                readTimeout = 15_000
+            }
+            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            val status = connection.responseCode
+            val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                ?.bufferedReader()?.use { it.readText() }
+                .orEmpty()
+            if (status !in 200..299) {
+                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(responseBody) }.getOrNull()
+                if (err != null) throw V1Error.fromApiBody(err)
+                throw V1Error.Unknown(status, responseBody.take(200))
+            }
+            json.decodeFromString<V1ApiTokenCreateResponse>(responseBody)
         } catch (e: IOException) {
             throw V1Error.Network(e)
         }

@@ -8,7 +8,8 @@ object CognitoAuthStartUrlBuilder {
         redirectUri: String,
         codeChallenge: String,
         state: String,
-        identityProvider: String? = null
+        identityProvider: String? = null,
+        platform: String? = null
     ): String {
         val base = webAuthBaseUrl.trim().trimEnd('/')
         val params = linkedMapOf(
@@ -16,6 +17,9 @@ object CognitoAuthStartUrlBuilder {
             "state" to state,
             "code_challenge" to codeChallenge
         )
+        if (!platform.isNullOrBlank()) {
+            params["platform"] = platform
+        }
 
         return if (identityProvider.isNullOrBlank()) {
             "$base/login?${encodeParams(params)}"

@@ -18,6 +18,7 @@ val cognitoHostedUiDomain = providers.gradleProperty("COGNITO_HOSTED_UI_DOMAIN")
 val cognitoRedirectUri = providers.gradleProperty("COGNITO_REDIRECT_URI")
 val cognitoWebAuthBaseUrl = providers.gradleProperty("COGNITO_WEB_AUTH_BASE_URL")
 val tastileCoreUrl = providers.gradleProperty("TASTILE_CORE_URL")
+val tastileWebBridgeSecret = providers.gradleProperty("TASTILE_WEB_BRIDGE_SECRET")
 val hasReleaseSigning =
     releaseStoreFile.isPresent &&
         releaseStorePassword.isPresent &&
@@ -51,9 +52,10 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: "3f14cs42nkc0v3qf6k57gthlfe"}\"")
         buildConfigField("String", "COGNITO_REGION", "\"${cognitoRegion.orNull ?: "ap-northeast-1"}\"")
         buildConfigField("String", "COGNITO_HOSTED_UI_DOMAIN", "\"${cognitoHostedUiDomain.orNull ?: "tastile-v1-app"}\"")
-        buildConfigField("String", "COGNITO_REDIRECT_URI", "\"${cognitoRedirectUri.orNull ?: "https://app.tastile.app/auth/callback"}\"")
+        buildConfigField("String", "COGNITO_REDIRECT_URI", "\"${cognitoRedirectUri.orNull ?: "tastile://auth/callback"}\"")
         buildConfigField("String", "COGNITO_WEB_AUTH_BASE_URL", "\"${cognitoWebAuthBaseUrl.orNull ?: "https://app.tastile.app"}\"")
         buildConfigField("String", "TASTILE_CORE_URL", "\"${tastileCoreUrl.orNull ?: "https://api.tastile.app"}\"")
+        buildConfigField("String", "TASTILE_WEB_BRIDGE_SECRET", "\"${tastileWebBridgeSecret.orNull ?: ""}\"")
     }
 
     buildTypes {
@@ -166,6 +168,7 @@ dependencies {
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.security:security-crypto:1.1.0")
 
     // Credential Manager / Google Identity
     implementation("androidx.credentials:credentials:1.6.0")

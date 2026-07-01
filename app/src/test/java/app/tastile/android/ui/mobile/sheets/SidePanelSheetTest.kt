@@ -21,26 +21,24 @@ class SidePanelSheetTest {
     val rule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun `SidePanelSheet renders section title and toggle group for Calendar`() {
+    fun `SidePanelSheet renders section navigation for Calendar section`() {
         val overlay = OverlayViewModel()
-        rule.setContent { SidePanelSheet(overlay = overlay) }
+        rule.setContent { SidePanelSheet(overlay = overlay, onNavigate = {}) }
         rule.runOnUiThread { overlay.show(Overlay.SidePanel(SidePanelSection.Calendar)) }
         rule.waitForIdle()
 
-        rule.onNodeWithText("Calendar").assertIsDisplayed()
-        // "Day" is the default selection; active label uses primary color +
-        // titleSmall style (no brackets), so plain "Day" matches exactly.
-        rule.onNodeWithText("Day").assertIsDisplayed()
-        rule.onNodeWithText("Week").assertIsDisplayed()
-        rule.onNodeWithText("Month").assertIsDisplayed()
+        rule.onNodeWithText("Sections").assertIsDisplayed()
+        rule.onNodeWithText("Timeline").assertIsDisplayed()
+        rule.onNodeWithText("Tasks").assertIsDisplayed()
+        rule.onNodeWithText("Projects").assertIsDisplayed()
     }
 
     @Test
     fun `SidePanelSheet does not render content when overlay is Hidden`() {
         val overlay = OverlayViewModel() // starts Hidden
-        rule.setContent { SidePanelSheet(overlay = overlay) }
+        rule.setContent { SidePanelSheet(overlay = overlay, onNavigate = {}) }
 
-        rule.onNodeWithText("Calendar").assertDoesNotExist()
-        rule.onNodeWithText("Day").assertDoesNotExist()
+        rule.onNodeWithText("Sections").assertDoesNotExist()
+        rule.onNodeWithText("Timeline").assertDoesNotExist()
     }
 }

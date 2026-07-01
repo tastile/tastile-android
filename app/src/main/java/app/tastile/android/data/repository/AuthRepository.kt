@@ -38,9 +38,9 @@ class AuthRepository @Inject constructor(
         private const val TAG = "AuthRepository"
     }
 
-    private val oauthRedirectUrl = "tastile://auth/callback"
+    private val oauthRedirectUrl = BuildConfig.COGNITO_REDIRECT_URI
     private val json = Json { ignoreUnknownKeys = true }
-    private val prefs = context.getSharedPreferences("tastile_cognito_auth", Context.MODE_PRIVATE)
+    private val prefs = EncryptedTokenStorage.cognitoPrefs(context)
     private val _authState = MutableStateFlow(loadStoredAuthState())
     val currentSession: Any? get() = null
     override val authState: StateFlow<TastileAuthState> = _authState.asStateFlow()
@@ -53,11 +53,11 @@ class AuthRepository @Inject constructor(
             ?: refreshCognitoSessionOrNull()?.idToken
 
     override suspend fun signInWithCognito(context: Context) {
-        startCognitoHostedUi(context)
+        startCognitoHostedUi(context, platform = "android")
     }
 
     override suspend fun signInWithGoogle(context: Context) {
-        startCognitoHostedUi(context, identityProvider = "Google")
+        startCognitoHostedUi(context, identityProvider = "Google", platform = "android")
     }
 
     override suspend fun signOut() {
@@ -115,7 +115,7 @@ class AuthRepository @Inject constructor(
             .toMap()
     }
 
-    private fun startCognitoHostedUi(context: Context, identityProvider: String? = null) {
+    private fun startCognitoHostedUi(context: Context, identityProvider: String? = null, platform: String? = null) {
         val redirectUri = BuildConfig.COGNITO_REDIRECT_URI
         val webAuthBaseUrl = BuildConfig.COGNITO_WEB_AUTH_BASE_URL
         if (BuildConfig.COGNITO_CLIENT_ID.isBlank() ||
@@ -140,7 +140,8 @@ class AuthRepository @Inject constructor(
             redirectUri = redirectUri,
             codeChallenge = challenge,
             state = state,
-            identityProvider = identityProvider
+            identityProvider = identityProvider,
+            platform = platform
         ).toUri()
 
         context.startActivity(

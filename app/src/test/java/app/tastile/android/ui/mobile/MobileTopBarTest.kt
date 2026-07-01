@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.R
+import app.tastile.android.ui.dashboard.TimelineScale
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,23 +23,22 @@ class MobileTopBarTest {
     val rule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun `top bar renders menu, search, notifications, avatar with role Button`() {
+    fun `top bar renders menu, scale, notifications, avatar controls`() {
         var menu: String = ""
-        var search: String = ""
         var notifications: String = ""
         var avatar: String = ""
 
         rule.setContent {
             val context = LocalContext.current
             menu = context.getString(R.string.mobile_top_menu)
-            search = context.getString(R.string.mobile_top_search)
             notifications = context.getString(R.string.mobile_top_notifications)
             avatar = context.getString(R.string.mobile_top_avatar)
 
             MobileTopBar(
                 title = "Execute",
+                scale = TimelineScale.Day,
+                onScaleChange = {},
                 onMenu = {},
-                onSearch = {},
                 onNotifications = {},
                 onAvatar = {},
             )
@@ -47,9 +47,8 @@ class MobileTopBarTest {
         rule.onNodeWithContentDescription(menu)
             .assertIsDisplayed()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
-        rule.onNodeWithContentDescription(search)
+        rule.onNodeWithContentDescription("Scale: Day")
             .assertIsDisplayed()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
         rule.onNodeWithContentDescription(notifications)
             .assertIsDisplayed()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
