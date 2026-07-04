@@ -10,6 +10,7 @@ import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.IntegrationRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.UserSettingsRepository
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -17,6 +18,7 @@ import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,6 +36,15 @@ class TileEditSheetTest {
         val userSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepo = mockk<IntegrationRepository>(relaxed = true)
         every { userSettingsRepo.getLocale() } returns AppLocale.EN
+        every { authRepo.authState } returns MutableStateFlow(
+            TastileAuthState.Authenticated(
+                userId = "user-1",
+                email = "test@example.com",
+                idToken = "id-token",
+                accessToken = "access-token",
+                refreshToken = null
+            )
+        )
         return DashboardViewModel(
             authRepository = authRepo,
             profileRepository = profileRepo,

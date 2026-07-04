@@ -50,6 +50,7 @@ class SearchOverlaySheetTest {
             overlay.show(Overlay.Search)
         }
         rule.waitForIdle()
+        rule.waitForIdle()
 
         // Sanity: "Start tile" is visible before any filtering
         rule.onNodeWithText("Start tile").assertIsDisplayed()
