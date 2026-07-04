@@ -2,8 +2,8 @@ package app.tastile.android.ui.mobile
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,10 +56,10 @@ fun MobileScaffold(
         java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.getDefault())
     }
     val title = when (currentRoute) {
-        "execute" -> "Execute"
-        "tiles" -> "Tiles"
-        "integrations" -> "Integrations"
-        "settings" -> "Settings"
+        "execute" -> "Tasks"
+        "tiles" -> "Projects"
+        "integrations" -> "References"
+        "settings" -> "Preferences"
         else -> when (scale) {
             TimelineScale.Day -> selectedDay.format(dayFormatter)
             TimelineScale.Week -> "${weekStart.format(weekShortFormatter)} – ${weekEnd.format(weekShortFormatter)}"
@@ -73,17 +73,21 @@ fun MobileScaffold(
                 title = title,
                 scale = scale,
                 onScaleChange = { dashboardViewModel.setScale(it) },
-                onMenu = { overlayViewModel.show(Overlay.SidePanel(SidePanelSection.Calendar)) },
+                onMenu = { overlayViewModel.show(Overlay.SidePanel(sectionForRoute(currentRoute))) },
                 onNotifications = { overlayViewModel.show(Overlay.Notifications) },
                 onAvatar = { overlayViewModel.show(Overlay.AccountMenu) },
                 avatarUrl = avatarUrl,
                 avatarFallback = profile?.displayName?.firstOrNull()?.toString()
                     ?: email.firstOrNull()?.toString()
                     ?: "U",
+                showScale = currentRoute == "timeline",
             )
         },
+        // Edge-to-edge: main content fills the whole screen so the transparent
+        // top-bar gradient can show the timeline peeking through.
+        contentWindowInsets = WindowInsets(0),
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 navController = navController,
                 startDestination = START,
@@ -111,4 +115,12 @@ fun MobileScaffold(
             }
         }
     }
+}
+
+private fun sectionForRoute(route: String): SidePanelSection = when (route) {
+    "execute" -> SidePanelSection.Schedule
+    "tiles" -> SidePanelSection.Projects
+    "integrations" -> SidePanelSection.References
+    "settings" -> SidePanelSection.Preferences
+    else -> SidePanelSection.Calendar
 }

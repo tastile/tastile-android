@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,6 +37,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
 import javax.inject.Inject
 
 enum class TimelineScale { Day, Week, Month }
@@ -124,6 +128,11 @@ class DashboardViewModel @Inject constructor(
 
     private val _timeline = MutableStateFlow<List<CoreTimelineItem>>(emptyList())
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
+
+    private val _timelineRange = MutableStateFlow(
+        computeTimelineRange(LocalDate.now(), TimelineScale.Day)
+    )
+    val timelineRange: StateFlow<Pair<Instant, Instant>> = _timelineRange.asStateFlow()
     private val _googleCalendarIntegration = MutableStateFlow<GoogleCalendarIntegrationSettings?>(null)
     val googleCalendarIntegration: StateFlow<GoogleCalendarIntegrationSettings?> = _googleCalendarIntegration.asStateFlow()
 
@@ -160,7 +169,33 @@ class DashboardViewModel @Inject constructor(
     val calendarSyncPlanPreview: StateFlow<CalendarSyncPlanPreviewResponse?> = _calendarSyncPlanPreview.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            combine(_selectedDay, _scale) { d, s -> computeTimelineRange(d, s) }
+                .distinctUntilChanged()
+                .collect { range ->
+                    _timelineRange.value = range
+                    refreshTimeline()
+                }
+        }
+        viewModelScope.launch {
+            authRepository.authState.collect { state ->
+                if (state is TastileAuthState.Authenticated) {
+                    refreshTimeline()
+                }
+            }
+        }
         refreshAll()
+    }
+
+    private fun refreshTimeline() {
+        val (start, end) = _timelineRange.value
+        viewModelScope.launch {
+            try {
+                _timeline.value = tileRepository.getTimeline(start, end)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to load timeline"
+            }
+        }
     }
 
     fun refreshAll() {
@@ -177,7 +212,8 @@ class DashboardViewModel @Inject constructor(
                     _tiles.value = tileRepository.getTiles(userId)
                     _profile.value = profileRepository.getProfile(userId)
                     _avatarUrl.value = metadataAvatar ?: _profile.value?.avatarUrl
-                    _timeline.value = tileRepository.getTimeline()
+                    val (tlStart, tlEnd) = _timelineRange.value
+                    _timeline.value = tileRepository.getTimeline(tlStart, tlEnd)
                     _googleCalendarIntegration.value = integrationRepository.getSettings().googleCalendar
                     runCatching {
                         integrationRepository.getCalendarMonthProjection()
@@ -661,6 +697,26 @@ private fun parseIsoOrNull(value: String?): Instant? {
         Instant.parse(value)
     } catch (_: Exception) {
         null
+    }
+}
+
+internal fun computeTimelineRange(day: LocalDate, scale: TimelineScale): Pair<Instant, Instant> {
+    val zone = ZoneId.systemDefault()
+    return when (scale) {
+        TimelineScale.Day -> {
+            val start = day.atStartOfDay(zone).toInstant()
+            start to start.plusSeconds(24L * 3600L)
+        }
+        TimelineScale.Week -> {
+            val monday = day.minusDays((day.dayOfWeek.value - 1).toLong())
+            val start = monday.atStartOfDay(zone).toInstant()
+            start to start.plusSeconds(7L * 24L * 3600L)
+        }
+        TimelineScale.Month -> {
+            val ym = YearMonth.from(day)
+            val start = ym.atDay(1).atStartOfDay(zone).toInstant()
+            start to ym.atEndOfMonth().plusDays(1).atStartOfDay(zone).toInstant()
+        }
     }
 }
 

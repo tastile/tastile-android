@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -31,14 +31,13 @@ fun SearchOverlaySheet(overlay: OverlayViewModel) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         var query by remember { mutableStateOf("") }
 
-        ModalBottomSheet(
-            onDismissRequest = { overlay.dismiss() },
+        PanelSheet(
+            title = "Search",
             sheetState = sheetState,
+            onDismiss = { overlay.dismiss() },
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedTextField(
@@ -55,10 +54,10 @@ fun SearchOverlaySheet(overlay: OverlayViewModel) {
                 matches.take(8).forEach { entry ->
                     Text(
                         text = entry.label,
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                // Task 17 wires this to actual command execution.
                                 overlay.dismiss()
                             }
                             .padding(vertical = 6.dp),

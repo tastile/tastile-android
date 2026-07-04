@@ -4,21 +4,25 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -26,34 +30,45 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
 import app.tastile.android.ui.designsystem.AppLoading
 import app.tastile.android.ui.designsystem.AppTheme
-import kotlinx.coroutines.launch
+import app.tastile.android.ui.mobile.Overlay
+import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.designsystem.MobileTokens
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -63,34 +78,20 @@ import java.util.Locale
 
 private val TIME_GUTTER_WIDTH = 48.dp
 private val MIN_EVENT_HEIGHT_DP = 22.dp
-private val PX_PER_MIN = 1.8f      // body-row height: 24h × 60 × 1.8 = 2592dp
 private val WEEK_HEADER_HEIGHT = 52.dp
 private const val PAGER_CENTER = 365
 private const val PAGER_TOTAL = 731
-private const val ZOOM_MIN = 1f     // base = 24h fit on screen; max = 6x for detail
-private const val ZOOM_MAX = 6f
+private const val INITIAL_ZOOM = 1.5f  // day is 1.5× screen → always scrollable
+private const val ZOOM_MIN = 1f        // floor: 24h fit on screen
+private const val ZOOM_MAX = 6f        // ceiling: ~4h fit on screen for detail
 
-private val sampleTimeline: List<CoreTimelineItem> = run {
-    val zone = ZoneId.systemDefault()
-    val today = LocalDate.now()
-    fun at(hour: Int, minute: Int): String =
-        today.atTime(hour, minute).atZone(zone).toInstant().toString()
-    listOf(
-        // Lane split proof: 9:00-10:30 work + 10:00-10:30 email triage overlap
-        CoreTimelineItem("demo-1", "t1", "Deep work: design system audit", "work", "done", at(9, 0), at(10, 30)),
-        CoreTimelineItem("demo-2", "t2", "Email triage", "work", "done", at(10, 0), at(10, 30)),
-        // Sequential after deep work
-        CoreTimelineItem("demo-3", "t3", "Short break", "break", "done", at(10, 30), at(10, 45)),
-        CoreTimelineItem("demo-4", "t4", "Review pull requests", "work", "done", at(10, 45), at(12, 0)),
-        CoreTimelineItem("demo-5", "t5", "Lunch", "fixed", "active", at(12, 0), at(13, 0)),
-        // 13:00-14:30 spec + 13:30-14:00 pair review overlap
-        CoreTimelineItem("demo-6", "t6", "Write command-event spec", "work", "active", at(13, 0), at(14, 30)),
-        CoreTimelineItem("demo-7", "t7", "Pair review: catch-up", "work", "pending", at(13, 30), at(14, 0)),
-        CoreTimelineItem("demo-8", "t8", "Team standup", "fixed", "pending", at(15, 0), at(15, 15)),
-        CoreTimelineItem("demo-9", "t9", "Flow block: backlog grooming", "work", "pending", at(15, 30), at(17, 0)),
-        CoreTimelineItem("demo-10", "t10", "Wind-down break", "break", "pending", at(17, 0), at(17, 15)),
-    )
-}
+// Total top-bar height the table-control rows must clear:
+//   status bar + 56dp content (MobileTokens.topBarHeight).
+// MobileScaffold sets contentWindowInsets = WindowInsets(0) and ignores innerPadding,
+// so consumers must pad themselves if they want to sit below the top bar.
+@Composable
+private fun topBarTotalHeight(): Dp =
+    WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + MobileTokens.topBarHeight
 
 private data class PlacedBlock(
     val id: String,
@@ -104,7 +105,10 @@ private data class PlacedBlock(
 )
 
 @Composable
-fun TimelineScreen(viewModel: DashboardViewModel) {
+fun TimelineScreen(
+    viewModel: DashboardViewModel,
+    overlay: OverlayViewModel = hiltViewModel(),
+) {
     val timeline by viewModel.timeline.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val selectedDay by viewModel.selectedDay.collectAsStateWithLifecycle()
@@ -114,13 +118,19 @@ fun TimelineScreen(viewModel: DashboardViewModel) {
     val zone = remember { ZoneId.systemDefault() }
 
     val activeTimeline = remember(timeline) {
-        if (timeline.isNotEmpty()) timeline else sampleTimeline
+        timeline
     }
 
     val onOpenDay: (LocalDate) -> Unit = { day ->
         viewModel.setSelectedDay(day)
         viewModel.setScale(TimelineScale.Day)
     }
+
+    // Per-scale zoom, hoisted above the HorizontalPager so swiping between
+    // days / weeks doesn't reset it. Resets on scale change (Day/Week/Month)
+    // because the gesture math is scale-specific.
+    var dayZoom by remember { mutableFloatStateOf(INITIAL_ZOOM) }
+    var weekZoom by remember { mutableFloatStateOf(INITIAL_ZOOM) }
 
     // One pagerState shared across scales; each scale interprets page offset as
     // days / weeks / months from PAGER_CENTER. Snapping to center on scale change
@@ -168,6 +178,8 @@ fun TimelineScreen(viewModel: DashboardViewModel) {
                     DayGrid(
                         blocks = pageBlocks,
                         day = pageDay,
+                        zoom = dayZoom,
+                        onZoomChange = { dayZoom = it },
                     )
                 }
             }
@@ -184,6 +196,8 @@ fun TimelineScreen(viewModel: DashboardViewModel) {
                         weekStart = pageWeekStart,
                         zone = zone,
                         onOpenDay = onOpenDay,
+                        zoom = weekZoom,
+                        onZoomChange = { weekZoom = it },
                     )
                 }
             }
@@ -205,6 +219,27 @@ fun TimelineScreen(viewModel: DashboardViewModel) {
             }
             else -> EmptyState(scale)
         }
+
+        // Quick-create FAB: bottom-right round + button. Sits on top of every
+        // scale (Day / Week / Month) so the entry point is always discoverable
+        // regardless of which view the user is on. `navigationBarsPadding` keeps
+        // it clear of the system gesture bar on Android 15.
+        FloatingActionButton(
+            onClick = { overlay.show(Overlay.QuickCreate) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 16.dp, bottom = 16.dp),
+            containerColor = AppTheme.colors.primary,
+            contentColor = AppTheme.colors.onPrimary,
+            shape = CircleShape,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = "Create",
+                modifier = Modifier.size(MobileTokens.iconVisualSize),
+            )
+        }
     }
 }
 
@@ -212,10 +247,23 @@ fun TimelineScreen(viewModel: DashboardViewModel) {
 private fun DayGrid(
     blocks: List<PlacedBlock>,
     day: LocalDate,
+    zoom: Float,
+    onZoomChange: (Float) -> Unit,
 ) {
-    var zoom by remember { mutableFloatStateOf(1f) }
     val scrollState = rememberScrollState()
-    val scope = rememberCoroutineScope()
+    val latestZoom by rememberUpdatedState(zoom)
+    var pendingZoomScroll by remember { mutableStateOf<Int?>(null) }
+    var pinchZoom by remember { mutableStateOf<Float?>(null) }
+    var pinchTranslationY by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(zoom, pendingZoomScroll) {
+        pendingZoomScroll?.let { target ->
+            withFrameNanos { }
+            scrollState.scrollTo(target)
+            pendingZoomScroll = null
+            pinchZoom = null
+            pinchTranslationY = 0f
+        }
+    }
 
     // Day view always spans the full 24 hours so that (a) the user can scroll through the
     // entire day, (b) the min zoom (pxPerMin = availableHeight / 1440) shows the whole
@@ -229,158 +277,225 @@ private fun DayGrid(
     val totalMinutes = 24 * 60 + SCROLL_BUFFER_MIN * 2
 
     val isToday = day == LocalDate.now()
-    val nowMin = remember(isToday) {
-        if (isToday) LocalTime.now().hour * 60 + LocalTime.now().minute else -1
-    }
+    val nowMin = if (isToday) LocalTime.now().hour * 60 + LocalTime.now().minute else -1
     val showNowLine = nowMin in (startHour * 60)..(endHour * 60)
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        // Gesture math (scrollState.value, pointer position.y) is in pixels,
+        // so capture density here and convert inside the pinch handler.
+        // Drawing layers treat pxPerMin as dp/min and multiply by density
+        // inside their own DrawScope, so that path stays untouched.
+        val density = LocalDensity.current.density
         val availableHeightPx: Float = maxHeight.value
         val pxPerMinBase: Float = availableHeightPx / totalMinutes
-        // Minimum: 24h fit on screen. We clamp pxPerMin to this floor regardless of
-        // zoom, so the cells can never become smaller than the "day on one screen" size.
+        // Floor: 24h fit on screen. pxPerMin never drops below this.
         val minPxPerMin: Float = pxPerMinBase
         val outlineColor = AppTheme.colors.outlineVariant
         val nowLineColor = Color(0xFFEF5350)
 
-        Box(
+        val effectiveZoom = pinchZoom ?: zoom
+        val pxPerMin: Float = (pxPerMinBase * effectiveZoom).coerceAtLeast(minPxPerMin)
+        val totalHeight: Dp = (pxPerMin * totalMinutes).dp
+        val pxPerHour: Dp = (pxPerMin * 60).dp
+
+        // Single scrollable container. The gutter, grid, blocks, and now-line
+        // are siblings inside one Row, so they translate as one body — no
+        // drift between guide lines, hour labels, and tiles.
+        //
+        // Gesture split:
+        //  • 1-finger vertical drag  → verticalScroll claims, scrolls the day
+        //  • 1-finger horizontal drag → falls through to parent HorizontalPager
+        //    (page change)
+        //  • 2-finger pinch          → pointerInput below claims, anchored on
+        //    the pinch centroid
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
-                    // detectTransformGestures uses touch-slop to defer consumption: a
-                    // 1-finger drag is allowed to fall through to the child
-                    // verticalScrolls, and only 2-finger pinches are claimed by this
-                    // handler. The callback fires for both pan (1-finger drag = scroll)
-                    // and zoom (2-finger pinch) with the gesture's centroid, so we can
-                    // anchor the pinch to keep the time under the fingers pinned.
-                    detectTransformGestures(panZoomLock = false) { centroid, pan, gestureZoom, _ ->
-                        if (gestureZoom != 1f) {
-                            val oldZoom = zoom
-                            val newZoom = (zoom * gestureZoom).coerceIn(ZOOM_MIN, ZOOM_MAX)
-                            if (newZoom != oldZoom) {
-                                val pxPerMinOld = (pxPerMinBase * oldZoom).coerceAtLeast(minPxPerMin)
-                                val pxPerMinNew = (pxPerMinBase * newZoom).coerceAtLeast(minPxPerMin)
-                                val maxScroll = (pxPerMinNew * totalMinutes - availableHeightPx).coerceAtLeast(0f)
-                                val minutesAtCentroid = (scrollState.value + centroid.y) / pxPerMinOld
-                                val newScroll = (minutesAtCentroid * pxPerMinNew - centroid.y)
-                                    .coerceIn(0f, maxScroll)
-                                zoom = newZoom
-                                scope.launch { scrollState.scrollTo(newScroll.toInt()) }
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        // Lock the anchor on the first stable 2-finger frame so
+                        // (initialDistance, initialZoom, initialCentroidY) stays
+                        // the reference for the whole gesture. With a per-frame
+                        // centroid, the axis drifts as fingers move and the
+                        // zoom feels unstable; an anchored axis is what the user
+                        // expects when they pinch.
+                        var initialDistance = 0f
+                        var initialZoom = 0f
+                        var initialScroll = 0
+                        var initialCentroidY = 0f
+                        var finalZoom = latestZoom
+                        var finalScroll: Int? = null
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val pressed = event.changes.filter { it.pressed }
+                            if (pressed.size >= 2) {
+                                val first = pressed[0]
+                                val second = pressed[1]
+
+                                // Always consume 2-finger events so verticalScroll
+                                // and HorizontalPager don't fight the pinch.
+                                event.changes.forEach { it.consume() }
+
+                                // Skip the frame where a fresh finger just landed;
+                                // its previousPosition is its initial touch point
+                                // and any ratio computed against it is bogus.
+                                val firstNew = first.changedToDown()
+                                val secondNew = second.changedToDown()
+                                if (firstNew || secondNew) continue
+
+                                val currentDistance = (first.position - second.position).getDistance()
+                                if (currentDistance <= 0f) continue
+
+                                if (initialDistance == 0f) {
+                                    // Anchor frame — capture the triplet.
+                                    initialDistance = currentDistance
+                                    initialZoom = latestZoom
+                                    initialScroll = scrollState.value
+                                    initialCentroidY = (first.position.y + second.position.y) / 2f
+                                    finalZoom = initialZoom
+                                    finalScroll = initialScroll
+                                    pinchZoom = initialZoom
+                                    pinchTranslationY = 0f
+                                } else {
+                                    // Compute new zoom from the absolute anchor.
+                                    val rawFactor = currentDistance / initialDistance
+                                    val newZoom = (initialZoom * rawFactor).coerceIn(ZOOM_MIN, ZOOM_MAX)
+                                    val targetScroll = anchoredZoomScrollTarget(
+                                        currentScrollPx = initialScroll,
+                                        anchorYpx = initialCentroidY,
+                                        oldPxPerMin = (pxPerMinBase * initialZoom).coerceAtLeast(minPxPerMin) * density,
+                                        newPxPerMin = (pxPerMinBase * newZoom).coerceAtLeast(minPxPerMin) * density,
+                                        totalMinutes = totalMinutes,
+                                        viewportPx = availableHeightPx * density,
+                                    )
+                                    finalZoom = newZoom
+                                    finalScroll = targetScroll
+                                    pinchZoom = newZoom
+                                    pinchTranslationY = (initialScroll - targetScroll).toFloat()
+                                }
+                            } else {
+                                // A finger lifted — invalidate the anchor so the
+                                // next 2-finger touch can establish a fresh one.
+                                initialDistance = 0f
                             }
-                        }
-                        if (pan.y != 0f) {
-                            scope.launch { scrollState.scrollBy(-pan.y) }
+                        } while (event.changes.any { it.pressed })
+
+                        finalScroll?.let { targetScroll ->
+                            pendingZoomScroll = targetScroll
+                            onZoomChange(finalZoom)
+                        } ?: run {
+                            pinchZoom = null
+                            pinchTranslationY = 0f
                         }
                     }
-                },
+                }
+                .verticalScroll(scrollState),
         ) {
-            val pxPerMin: Float = (pxPerMinBase * zoom).coerceAtLeast(minPxPerMin)
-            val totalHeight: Dp = (pxPerMin * totalMinutes).dp
-
-            Row(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(totalHeight)
+                    .graphicsLayer {
+                        translationY = pinchTranslationY
+                    },
+            ) {
                 Column(
                     modifier = Modifier
                         .width(TIME_GUTTER_WIDTH)
-                        .fillMaxHeight()
-                        .verticalScroll(scrollState),
+                        .height(totalHeight),
                 ) {
-                    TimeGutterContent(startHour, endHour, pxPerHour = (pxPerMin * 60).dp, totalHeight = totalHeight)
+                    TimeGutterContent(startHour, endHour, pxPerHour, totalHeight)
                 }
 
                 BoxWithConstraints(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight(),
+                        .height(totalHeight),
                 ) {
                     val canvasWidth = maxWidth
-
-                    // Layer 1: hour grid lines (background). Wrapped in a verticalScroll
-                    // that shares scrollState with the gutter and blocks so the lines
-                    // translate together — without this the labels/blocks scroll but the
-                    // grid lines stay fixed, causing visible drift on every scroll step.
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(totalHeight)
-                            .verticalScroll(scrollState),
-                    ) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val hours = totalMinutes / 60
-                            // pxPerMin is in dp/min; Canvas draws in raw pixels, so multiply
-                            // by device density to land each grid line at the same Y as the
-                            // labels (which use .toPx() on a Dp value) and the blocks (which
-                            // use Modifier.offset(y = Dp)).
-                            val pxPerMinPx = pxPerMin * density
-                            for (h in 0..hours) {
-                                val y = h * pxPerMinPx * 60
-                                drawLine(
-                                    color = outlineColor,
-                                    start = Offset(0f, y),
-                                    end = Offset(size.width, y),
-                                    strokeWidth = 1f,
-                                )
-                            }
-                        }
-                    }
-
-                    // Layer 2: event blocks (renders empty when blocks.isEmpty())
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(totalHeight)
-                            .verticalScroll(scrollState),
-                    ) {
-                        Box(modifier = Modifier.fillMaxWidth().height(totalHeight)) {
-                            blocks.forEach { b ->
-                                val topDp: Dp = ((b.startMinutes - startHour * 60) * pxPerMin).dp
-                                val heightDp: Dp = ((b.endMinutes - b.startMinutes) * pxPerMin)
-                                    .coerceAtLeast(MIN_EVENT_HEIGHT_DP.value)
-                                    .dp
-                                val laneWidth = canvasWidth / b.laneCount.coerceAtLeast(1)
-                                val laneX = laneWidth * b.laneIndex
-
-                                Box(
-                                    modifier = Modifier
-                                        .offset(x = laneX, y = topDp)
-                                        .width(laneWidth)
-                                        .height(heightDp)
-                                        .padding(horizontal = 2.dp),
-                                ) {
-                                    EventChip(b)
-                                }
-                            }
-                        }
-                    }
-
-                    // Layer 3: now-line (drawn ON TOP of tiles)
-                    if (showNowLine) {
-                        val elapsed = nowMin - startHour * 60
-                        val nowY: Dp = (elapsed * pxPerMin).dp
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(totalHeight)
-                                .verticalScroll(scrollState),
-                        ) {
-                            Box(modifier = Modifier.fillMaxWidth().height(totalHeight)) {
-                                Box(
-                                    modifier = Modifier
-                                        .offset(x = 8.dp, y = nowY - 5.dp)
-                                        .size(10.dp)
-                                        .background(nowLineColor, CircleShape),
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .offset(y = nowY - 1.dp)
-                                        .fillMaxWidth()
-                                        .height(2.dp)
-                                        .background(nowLineColor),
-                                )
-                            }
-                        }
-                    }
+                    DayContentLayer(
+                        blocks = blocks,
+                        startHour = startHour,
+                        pxPerMin = pxPerMin,
+                        outlineColor = outlineColor,
+                        nowLineColor = nowLineColor,
+                        showNowLine = showNowLine,
+                        nowMin = nowMin,
+                        canvasWidth = canvasWidth,
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DayContentLayer(
+    blocks: List<PlacedBlock>,
+    startHour: Int,
+    pxPerMin: Float,
+    outlineColor: Color,
+    nowLineColor: Color,
+    showNowLine: Boolean,
+    nowMin: Int,
+    canvasWidth: Dp,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Layer 1: hour grid lines (background). pxPerMin is in dp/min; the
+        // Canvas DrawScope uses raw pixels, so multiply by density. This
+        // matches the gutter's drawText and the block Modifier.offset so
+        // every hour line lands at the same y on screen.
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val hours = 24
+            val pxPerMinPx = pxPerMin * density
+            for (h in 0..hours) {
+                val y = h * pxPerMinPx * 60
+                drawLine(
+                    color = outlineColor,
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1f,
+                )
+            }
+        }
+
+        // Layer 2: event blocks
+        blocks.forEach { b ->
+            val topDp: Dp = ((b.startMinutes - startHour * 60) * pxPerMin).dp
+            val heightDp: Dp = ((b.endMinutes - b.startMinutes) * pxPerMin)
+                .coerceAtLeast(MIN_EVENT_HEIGHT_DP.value).dp
+            val laneWidth = canvasWidth / b.laneCount.coerceAtLeast(1)
+            val laneX = laneWidth * b.laneIndex
+            Box(
+                modifier = Modifier
+                    .offset(x = laneX, y = topDp)
+                    .width(laneWidth)
+                    .height(heightDp)
+                    .padding(horizontal = 2.dp),
+            ) {
+                EventChip(b)
+            }
+        }
+
+        // Layer 3: now-line (drawn ON TOP of tiles)
+        if (showNowLine) {
+            val elapsed = nowMin - startHour * 60
+            val nowY: Dp = (elapsed * pxPerMin).dp
+            Box(
+                modifier = Modifier
+                    .offset(x = 8.dp, y = nowY - 5.dp)
+                    .size(10.dp)
+                    .background(nowLineColor, CircleShape),
+            )
+            Box(
+                modifier = Modifier
+                    .offset(y = nowY - 1.dp)
+                    .fillMaxWidth()
+                    .height(2.dp)
+                    .background(nowLineColor),
+            )
         }
     }
 }
@@ -478,12 +593,16 @@ private fun WeekView(
     weekStart: LocalDate,
     zone: ZoneId,
     onOpenDay: (LocalDate) -> Unit,
+    zoom: Float,
+    onZoomChange: (Float) -> Unit,
 ) {
     val today = remember { LocalDate.now() }
     val eeeFormatter = remember { DateTimeFormatter.ofPattern("EEE", Locale.getDefault()) }
     val endHourGlobal = 24
-    val totalMinutesGlobal = endHourGlobal * 60
-    val bodyHeightDp: Dp = (totalMinutesGlobal * PX_PER_MIN).dp
+    // 15 min of empty buffer above and below the labeled 0–24 range so the
+    // body has a small scroll cushion at the min-zoom floor (mirrors DayGrid).
+    val SCROLL_BUFFER_MIN = 15
+    val totalMinutesGlobal = endHourGlobal * 60 + SCROLL_BUFFER_MIN * 2
 
     // Pre-compute per-day blocks at the same composition level so all columns share one body row.
     val blocksByDay: List<List<PlacedBlock>> = remember(items, weekStart) {
@@ -493,14 +612,32 @@ private fun WeekView(
     }
 
     val scrollState = rememberScrollState()
+    val latestZoom by rememberUpdatedState(zoom)
+    var pendingZoomScroll by remember { mutableStateOf<Int?>(null) }
+    var pinchZoom by remember { mutableStateOf<Float?>(null) }
+    var pinchTranslationY by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(zoom, pendingZoomScroll) {
+        pendingZoomScroll?.let { target ->
+            withFrameNanos { }
+            scrollState.scrollTo(target)
+            pendingZoomScroll = null
+            pinchZoom = null
+            pinchTranslationY = 0f
+        }
+    }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Day header row (above the scrollable body)
+    // Top-padding clears the status bar + top bar so the day-of-week row hooks
+    // under the header rather than disappearing behind it. The scrolling body
+    // still occupies the column weight(1f), so anything that scrolls upward can
+    // visually slide under the top bar's transparent lower half.
+    Column(modifier = Modifier.fillMaxSize().padding(top = topBarTotalHeight())) {
+        // Day header row — sits ABOVE the scrollable body, so it stays pinned
+        // directly under the app's top bar regardless of vertical scroll.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(WEEK_HEADER_HEIGHT)
-                .background(AppTheme.colors.background.copy(alpha = 0.97f)),
+                .background(AppTheme.colors.background),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Spacer(modifier = Modifier.width(TIME_GUTTER_WIDTH))
@@ -532,54 +669,159 @@ private fun WeekView(
         }
         HorizontalDivider(color = AppTheme.colors.outlineVariant)
 
-        // Body row: shared vertical scroll across time gutter + 7 day columns.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(scrollState),
-        ) {
-            // Time gutter (scrolls with body)
-            Column(
+        // Body: zoomable + vertically scrollable. Gesture split mirrors DayGrid:
+        //  • 1-finger vertical drag  → verticalScroll claims
+        //  • 1-finger horizontal drag → falls through to parent HorizontalPager
+        //  • 2-finger pinch          → pointerInput below claims, anchored on
+        //    the pinch centroid so the time under the fingers stays put
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            // Gesture math runs in pixels (scrollState.value, position.y);
+            // capture density so the pinch handler can convert. Drawing
+            // layers treat pxPerMin as dp/min and convert inside DrawScope.
+            val density = LocalDensity.current.density
+            val availableHeightPx: Float = maxHeight.value
+            val pxPerMinBase: Float = availableHeightPx / totalMinutesGlobal
+            val minPxPerMin: Float = pxPerMinBase
+            val effectiveZoom = pinchZoom ?: zoom
+            val pxPerMin: Float = (pxPerMinBase * effectiveZoom).coerceAtLeast(minPxPerMin)
+            val totalHeight: Dp = (pxPerMin * totalMinutesGlobal).dp
+            val pxPerHour: Dp = (pxPerMin * 60).dp
+
+            Row(
                 modifier = Modifier
-                    .width(TIME_GUTTER_WIDTH)
-                    .height(bodyHeightDp),
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .graphicsLayer {
+                        translationY = pinchTranslationY
+                    }
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            // Same locked-anchor pattern as DayGrid: capture
+                            // (initialDistance, initialZoom, initialCentroidY)
+                            // on the first stable 2-finger frame so the axis
+                            // stays put while fingers move.
+                            var initialDistance = 0f
+                            var initialZoom = 0f
+                            var initialScroll = 0
+                            var initialCentroidY = 0f
+                            var finalZoom = latestZoom
+                            var finalScroll: Int? = null
+
+                            do {
+                                val event = awaitPointerEvent()
+                                val pressed = event.changes.filter { it.pressed }
+                                if (pressed.size >= 2) {
+                                    val first = pressed[0]
+                                    val second = pressed[1]
+
+                                    event.changes.forEach { it.consume() }
+
+                                    val firstNew = first.changedToDown()
+                                    val secondNew = second.changedToDown()
+                                    if (firstNew || secondNew) continue
+
+                                    val currentDistance = (first.position - second.position).getDistance()
+                                    if (currentDistance <= 0f) continue
+
+                                    if (initialDistance == 0f) {
+                                        initialDistance = currentDistance
+                                        initialZoom = latestZoom
+                                        initialScroll = scrollState.value
+                                        initialCentroidY = (first.position.y + second.position.y) / 2f
+                                        finalZoom = initialZoom
+                                        finalScroll = initialScroll
+                                        pinchZoom = initialZoom
+                                        pinchTranslationY = 0f
+                                    } else {
+                                        val rawFactor = currentDistance / initialDistance
+                                        val newZoom = (initialZoom * rawFactor).coerceIn(ZOOM_MIN, ZOOM_MAX)
+                                        val targetScroll = anchoredZoomScrollTarget(
+                                            currentScrollPx = initialScroll,
+                                            anchorYpx = initialCentroidY,
+                                            oldPxPerMin = (pxPerMinBase * initialZoom).coerceAtLeast(minPxPerMin) * density,
+                                            newPxPerMin = (pxPerMinBase * newZoom).coerceAtLeast(minPxPerMin) * density,
+                                            totalMinutes = totalMinutesGlobal,
+                                            viewportPx = availableHeightPx * density,
+                                        )
+                                        finalZoom = newZoom
+                                        finalScroll = targetScroll
+                                        pinchZoom = newZoom
+                                        pinchTranslationY = (initialScroll - targetScroll).toFloat()
+                                    }
+                                } else {
+                                    initialDistance = 0f
+                                }
+                            } while (event.changes.any { it.pressed })
+
+                            finalScroll?.let { targetScroll ->
+                                pendingZoomScroll = targetScroll
+                                onZoomChange(finalZoom)
+                            } ?: run {
+                                pinchZoom = null
+                                pinchTranslationY = 0f
+                            }
+                        }
+                    },
             ) {
-                WeekTimeGutter(endHour = endHourGlobal)
-            }
-            // 7 day columns
-            for (offset in 0L until 7L) {
-                val day = weekStart.plusDays(offset)
-                val blocks = blocksByDay[offset.toInt()]
-                WeekDayColumn(
-                    blocks = blocks,
+                // Time gutter (scrolls with body)
+                Column(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(bodyHeightDp),
-                    isToday = day == today,
-                    onOpenDay = { onOpenDay(day) },
-                )
+                        .width(TIME_GUTTER_WIDTH)
+                        .height(totalHeight),
+                ) {
+                    WeekTimeGutter(
+                        endHour = endHourGlobal,
+                        pxPerHour = pxPerHour,
+                        totalHeight = totalHeight,
+                    )
+                }
+                // 7 day columns
+                for (offset in 0L until 7L) {
+                    val day = weekStart.plusDays(offset)
+                    val blocks = blocksByDay[offset.toInt()]
+                    WeekDayColumn(
+                        blocks = blocks,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(totalHeight),
+                        isToday = day == today,
+                        onOpenDay = { onOpenDay(day) },
+                        pxPerMin = pxPerMin,
+                        endHour = endHourGlobal,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun WeekTimeGutter(endHour: Int) {
-    val pxPerHourDp: Dp = (60f * PX_PER_MIN).dp
-    Column(modifier = Modifier.fillMaxHeight()) {
+private fun WeekTimeGutter(endHour: Int, pxPerHour: Dp, totalHeight: Dp) {
+    // Canvas with pxPerHour.toPx() so the label y positions are pixel-aligned
+    // with the grid-line y positions drawn in WeekDayColumn.
+    val textMeasurer = rememberTextMeasurer()
+    val labelStyle = AppTheme.typography.labelSmall.copy(color = AppTheme.colors.onSurfaceVariant)
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(totalHeight),
+    ) {
+        val pxPerHourPx = pxPerHour.toPx()
+        val padRight = 6.dp.toPx()
         for (h in 0..endHour) {
-            Box(
-                modifier = Modifier.height(pxPerHourDp).fillMaxWidth(),
-                contentAlignment = Alignment.TopEnd,
-            ) {
-                Text(
-                    text = "%02d".format(h),
-                    style = AppTheme.typography.labelSmall,
-                    color = AppTheme.colors.onSurfaceVariant,
-                    modifier = Modifier.padding(end = 6.dp, top = 2.dp),
-                )
-            }
+            val yLine = h * pxPerHourPx
+            val label = "%02d".format(h)
+            val measured = textMeasurer.measure(label, labelStyle)
+            drawText(
+                textMeasurer = textMeasurer,
+                text = label,
+                topLeft = Offset(
+                    x = size.width - measured.size.width - padRight,
+                    y = yLine - measured.size.height / 2f,
+                ),
+                style = labelStyle,
+            )
         }
     }
 }
@@ -590,10 +832,10 @@ private fun WeekDayColumn(
     modifier: Modifier = Modifier,
     isToday: Boolean,
     onOpenDay: () -> Unit,
+    pxPerMin: Float,
+    endHour: Int,
 ) {
     val outlineColor = AppTheme.colors.outlineVariant
-    val pxPerHour = 60f * PX_PER_MIN
-    val endHour = 24
     val nowLineColor = Color(0xFFEF5350)
     val nowMin = remember(isToday) {
         if (isToday) LocalTime.now().hour * 60 + LocalTime.now().minute else -1
@@ -604,10 +846,13 @@ private fun WeekDayColumn(
             .border(width = 0.5.dp, color = AppTheme.colors.outlineVariant)
             .clickable { onOpenDay() },
     ) {
-        // Hour grid lines
+        // Hour grid lines. pxPerMin is in dp; Canvas DrawScope is in pixels,
+        // so multiply by density to keep the lines at the same y as the
+        // block Modifier.offset values.
         Canvas(modifier = Modifier.fillMaxSize()) {
+            val pxPerMinPx = pxPerMin * density
             for (h in 0..endHour) {
-                val y = h * pxPerHour
+                val y = h * pxPerMinPx * 60
                 drawLine(
                     color = outlineColor,
                     start = Offset(0f, y),
@@ -616,10 +861,10 @@ private fun WeekDayColumn(
                 )
             }
         }
-        // Event blocks
+        // Event blocks (top + height in dp, matches Canvas pixels at this density)
         blocks.forEach { b ->
-            val topDp: Dp = (b.startMinutes * PX_PER_MIN).dp
-            val heightDp: Dp = ((b.endMinutes - b.startMinutes) * PX_PER_MIN)
+            val topDp: Dp = (b.startMinutes * pxPerMin).dp
+            val heightDp: Dp = ((b.endMinutes - b.startMinutes) * pxPerMin)
                 .coerceAtLeast(MIN_EVENT_HEIGHT_DP.value).dp
             // Full-width (no lane split on mobile; single column per day)
             Box(
@@ -634,7 +879,7 @@ private fun WeekDayColumn(
         }
         // Now-line (drawn last = on top)
         if (isToday && nowMin in 0..(endHour * 60)) {
-            val nowY: Dp = (nowMin * PX_PER_MIN).dp
+            val nowY: Dp = (nowMin * pxPerMin).dp
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -676,7 +921,9 @@ private fun MonthView(
     val gridStart = monthStart.minusDays((monthStart.dayOfWeek.value - 1).toLong())
     val today = LocalDate.now()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    // Top padding puts the day-of-week header row below the top bar
+    // (see WeekView's equivalent comment for details).
+    Column(modifier = Modifier.fillMaxSize().padding(top = topBarTotalHeight())) {
         // Day-of-week header row
         Row(
             modifier = Modifier
@@ -777,6 +1024,22 @@ private fun EmptyState(scale: TimelineScale) {
             color = AppTheme.colors.onSurfaceVariant,
         )
     }
+}
+
+internal fun anchoredZoomScrollTarget(
+    currentScrollPx: Int,
+    anchorYpx: Float,
+    oldPxPerMin: Float,
+    newPxPerMin: Float,
+    totalMinutes: Int,
+    viewportPx: Float,
+): Int {
+    if (oldPxPerMin <= 0f || newPxPerMin <= 0f) return currentScrollPx
+    val minutesAtAnchor = (currentScrollPx + anchorYpx) / oldPxPerMin
+    val maxScroll = (newPxPerMin * totalMinutes - viewportPx).coerceAtLeast(0f)
+    return (minutesAtAnchor * newPxPerMin - anchorYpx)
+        .coerceIn(0f, maxScroll)
+        .toInt()
 }
 
 private fun toDayBlocks(items: List<CoreTimelineItem>, day: LocalDate, zone: ZoneId): List<PlacedBlock> {

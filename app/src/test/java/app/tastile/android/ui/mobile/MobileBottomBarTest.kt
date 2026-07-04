@@ -23,18 +23,18 @@ class MobileBottomBarTest {
 
     @Test
     fun `bottom bar renders 5 slots with role Button`() {
+        var timeline: String = ""
         var execute: String = ""
         var tiles: String = ""
         var quickCreate: String = ""
-        var integrations: String = ""
         var settings: String = ""
 
         rule.setContent {
             val context = LocalContext.current
+            timeline = context.getString(R.string.mobile_bottom_timeline)
             execute = context.getString(R.string.mobile_bottom_execute)
             tiles = context.getString(R.string.mobile_bottom_tiles)
             quickCreate = context.getString(R.string.mobile_bottom_quick_create)
-            integrations = context.getString(R.string.mobile_bottom_integrations)
             settings = context.getString(R.string.mobile_bottom_settings)
 
             MobileBottomBar(
@@ -44,6 +44,9 @@ class MobileBottomBarTest {
             )
         }
 
+        rule.onNodeWithContentDescription(timeline)
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
         rule.onNodeWithContentDescription(execute)
             .assertIsDisplayed()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
@@ -51,9 +54,6 @@ class MobileBottomBarTest {
             .assertIsDisplayed()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
         rule.onNodeWithContentDescription(quickCreate)
-            .assertIsDisplayed()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
-        rule.onNodeWithContentDescription(integrations)
             .assertIsDisplayed()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
         rule.onNodeWithContentDescription(settings)

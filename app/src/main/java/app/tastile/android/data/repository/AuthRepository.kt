@@ -3,11 +3,13 @@ package app.tastile.android.data.repository
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import app.tastile.android.BuildConfig
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +34,8 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val apiTokenManager: Lazy<ApiTokenManager>,
 ) : CurrentUserProvider, AuthRepositoryContract {
     private companion object {
         private const val TAG = "AuthRepository"
@@ -61,6 +64,7 @@ class AuthRepository @Inject constructor(
     }
 
     override suspend fun signOut() {
+        apiTokenManager.get().signOut()
         prefs.edit { clear() }
         _authState.value = TastileAuthState.Unauthenticated
     }
@@ -275,13 +279,38 @@ class AuthRepository @Inject constructor(
             authenticated
         } catch (e: Exception) {
             Log.e(TAG, "Cognito refresh failed", e)
-            prefs.edit { clear() }
-            _authState.value = TastileAuthState.Unauthenticated
+            val rejectedByCognito = e is IllegalStateException &&
+                e.message?.let { msg ->
+                    val httpMatch = Regex("HTTP (\\d{3})").find(msg)
+                    val code = httpMatch?.groupValues?.getOrNull(1)?.toIntOrNull()
+                    code != null && code in 400..499
+                } == true
+            if (rejectedByCognito) {
+                prefs.edit { clear() }
+                _authState.value = TastileAuthState.Unauthenticated
+            }
             null
         }
     }
 
     private fun refreshCognitoToken(refreshToken: String): CognitoTokenSession {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            var result: CognitoTokenSession? = null
+            var error: Throwable? = null
+            Thread {
+                try {
+                    result = refreshCognitoTokenBlocking(refreshToken)
+                } catch (t: Throwable) {
+                    error = t
+                }
+            }.apply { start(); join() }
+            error?.let { throw it }
+            return result!!
+        }
+        return refreshCognitoTokenBlocking(refreshToken)
+    }
+
+    private fun refreshCognitoTokenBlocking(refreshToken: String): CognitoTokenSession {
         val region = BuildConfig.COGNITO_REGION
         val domain = BuildConfig.COGNITO_HOSTED_UI_DOMAIN
         val endpoint = URL("https://$domain.auth.$region.amazoncognito.com/oauth2/token")

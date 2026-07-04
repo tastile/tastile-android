@@ -96,7 +96,16 @@ class AccountViewModel @Inject constructor(
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to sign out"
                 e.printStackTrace()
+            }
         }
+    }
+
+    fun isProUser(): Boolean {
+        return _profile.value?.plan == Plan.PRO.value
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }
 
@@ -114,13 +123,4 @@ private fun Any?.readNestedString(vararg propertyNames: String): String? {
             ?.invoke(current)
     }
     return current as? String
-}
-
-    fun isProUser(): Boolean {
-        return _profile.value?.plan == Plan.PRO.value
-    }
-
-    fun clearError() {
-        _error.value = null
-    }
 }

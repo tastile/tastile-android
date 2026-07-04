@@ -4,6 +4,7 @@ import app.tastile.android.core.CoreCommandAck
 import app.tastile.android.core.CoreSnapshot
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.CoreTileSnapshot
+import app.tastile.android.data.api.TimelineItem
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.toTiles
@@ -249,7 +250,10 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun getTodayTimelineView(): TimelineTodayResponse {
-        val timeline = getTimeline()
+        val zone = ZoneId.systemDefault()
+        val today = java.time.LocalDate.now().atStartOfDay(zone).toInstant()
+        val tomorrow = today.plusSeconds(24L * 60L * 60L)
+        val timeline = getTimeline(today, tomorrow)
         return TimelineTodayResponse(
             items = timeline.map { item ->
                 val durationMin = if (!item.endAt.isNullOrBlank()) {
@@ -486,25 +490,15 @@ class TileRepository @Inject constructor(
         return ack
     }
 
-    suspend fun getTimeline(): List<CoreTimelineItem> {
-        val snapshotTimeline = currentSnapshotOrNull()?.timeline.orEmpty()
-        if (snapshotTimeline.isNotEmpty()) {
-            val now = Instant.now()
-            val normalized = normalizeCoreTimeline(snapshotTimeline, now, ZoneId.systemDefault())
-            val syntheticBreaks = snapshotTimeline.count { it.tileId?.startsWith("synthetic:break:") == true }
-            if (shouldUseCoreTimeline(snapshotTimeline, normalized)) {
+    suspend fun getTimeline(start: Instant, end: Instant): List<CoreTimelineItem> {
+        readCloudTimeline(start, end)?.let { v1Items ->
+            if (v1Items.isNotEmpty()) {
                 latestReadDiagnostics = buildString {
                     append(latestReadDiagnostics)
-                    append(" timeline_source=core")
-                    append(" timeline_count=${normalized.size}")
+                    append(" timeline_source=v1")
+                    append(" timeline_count=${v1Items.size}")
                 }
-                return normalized
-            }
-            latestReadDiagnostics = buildString {
-                append(latestReadDiagnostics)
-                append(" timeline_source=cloud_fallback")
-                append(" core_timeline_count=${snapshotTimeline.size}")
-                append(" core_synthetic_breaks=$syntheticBreaks")
+                return v1Items
             }
         }
         if (latestCloudTiles.isEmpty()) {
@@ -513,9 +507,69 @@ class TileRepository @Inject constructor(
         val fallback = buildTimelineFromTiles(latestCloudTiles, Instant.now())
         latestReadDiagnostics = buildString {
             append(latestReadDiagnostics)
+            append(" timeline_source=cloud_fallback")
             append(" fallback_timeline_count=${fallback.size}")
         }
         return fallback
+    }
+
+    private suspend fun readCloudTimeline(start: Instant, end: Instant): List<CoreTimelineItem>? {
+        val token = currentUserProvider.currentIdToken()
+        if (token.isNullOrBlank()) return null
+        return try {
+            val response = v1ApiClient.getTimeline(start, end)
+            val mapped = response.items.mapNotNull { it.toCoreTimelineItem(start, end) }
+            android.util.Log.d("TileRepository", "v1 timeline: ${response.items.size} items, mapped=${mapped.size}")
+            mapped
+        } catch (e: V1Error) {
+            android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)
+            latestReadDiagnostics = buildString {
+                append(latestReadDiagnostics)
+                append(" timeline_source=v1_unavailable")
+            }
+            null
+        } catch (e: Exception) {
+            android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)
+            latestReadDiagnostics = buildString {
+                append(latestReadDiagnostics)
+                append(" timeline_source=v1_unavailable")
+            }
+            null
+        }
+    }
+
+    private fun TimelineItem.toCoreTimelineItem(rangeStart: Instant, rangeEnd: Instant): CoreTimelineItem? {
+        val startInstant = parseIsoInstant(span.startAt) ?: return null
+        val endInstant = parseIsoInstant(span.endAt ?: span.startAt)
+        if (startInstant.isBefore(rangeStart) || !startInstant.isBefore(rangeEnd)) return null
+        return CoreTimelineItem(
+            id = placementId,
+            tileId = null,
+            title = content.title.ifBlank { "Untitled" },
+            type = role.toRoleName(),
+            status = resolution.state.toStatusName(),
+            startAt = startInstant.toString(),
+            endAt = endInstant?.toString() ?: startInstant.plusSeconds(60).toString(),
+        )
+    }
+
+    private fun Byte.toRoleName(): String = when (toInt()) {
+        // Match tastile-web constants where reasonable; default covers unknown values.
+        'w'.code, 0 -> "work"
+        'b'.code, 1 -> "break"
+        'l'.code, 2 -> "label"
+        'f'.code, 3 -> "fixed"
+        's'.code, 4 -> "scheduled"
+        else -> "work"
+    }
+
+    private fun Byte.toStatusName(): String = when (toInt()) {
+        'p'.code, 0 -> "scheduled"
+        'a'.code, 1 -> "active"
+        's'.code, 2 -> "started"
+        'd'.code, 3 -> "done"
+        'c'.code, 4 -> "completed"
+        else -> "scheduled"
     }
 
     suspend fun rescheduleTile(tileId: String, startAtIso: String, endAtIso: String) {

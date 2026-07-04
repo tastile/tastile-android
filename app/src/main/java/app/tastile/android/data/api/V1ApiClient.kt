@@ -8,7 +8,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.IOException
@@ -217,20 +216,53 @@ class V1ApiClient @Inject constructor(
     suspend fun mintApiToken(
         bootstrapToken: String,
         request: V1ApiTokenCreateRequest
+    ): V1ApiTokenCreateResponse = mintApiTokenInternal(
+        authorization = "Bearer $bootstrapToken",
+        request = request,
+    )
+
+    /**
+     * Server-to-server "bridge" bootstrap. The v1 daemon accepts mint requests
+     * from the web client (which already holds the per-user cookie session) by
+     * trusting a shared secret plus the user's `sub`. This is the same path
+     * `tastile-web/src/lib/account/api-token-session.ts` uses via its Next.js
+     * API route, invoked here directly because the Android client has the
+     * Cognito `sub` available from its own sign-in.
+     *
+     * Returns `null` if the server hasn't been configured with
+     * `TASTILE_WEB_BRIDGE_SECRET` (the headers are then ignored).
+     */
+    suspend fun mintApiTokenViaBridge(
+        bridgeSecret: String,
+        userSub: String,
+        request: V1ApiTokenCreateRequest
+    ): V1ApiTokenCreateResponse = mintApiTokenInternal(
+        authorization = null,
+        request = request,
+        extraHeaders = mapOf(
+            "x-tastile-web-bridge-secret" to bridgeSecret,
+            "x-tastile-web-session-user" to userSub,
+        ),
+    )
+
+    private suspend fun mintApiTokenInternal(
+        authorization: String?,
+        request: V1ApiTokenCreateRequest,
+        extraHeaders: Map<String, String> = emptyMap(),
     ): V1ApiTokenCreateResponse = withContext(Dispatchers.IO) {
         try {
             val body = buildJsonObject {
                 put("label", request.label?.let { JsonPrimitive(it) } ?: JsonNull)
-                put("scopes", buildJsonArray {
-                    request.scopes.forEach { add(JsonPrimitive(it)) }
-                })
             }
             val url = URL("${baseUrl()}/v1/api-tokens")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
                 doInput = true
-                setRequestProperty("Authorization", "Bearer $bootstrapToken")
+                if (authorization != null) {
+                    setRequestProperty("Authorization", authorization)
+                }
+                extraHeaders.forEach { (k, v) -> setRequestProperty(k, v) }
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Accept", "application/json")
                 setRequestProperty("Idempotency-Key", V1Idempotency.generate())

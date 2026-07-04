@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Extension
-import androidx.compose.material.icons.outlined.FlashOn
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -32,16 +32,16 @@ fun MobileBottomBar(
 ) {
     NavigationBar(modifier = modifier) {
         BottomSlot(
-            icon = Icons.Outlined.FlashOn,
+            icon = Icons.Outlined.CalendarMonth,
+            descriptionRes = R.string.mobile_bottom_timeline,
+            selected = currentRoute == "timeline",
+            onClick = { onSelect("timeline") },
+        )
+        BottomSlot(
+            icon = Icons.Outlined.AccountCircle,
             descriptionRes = R.string.mobile_bottom_execute,
             selected = currentRoute == "execute",
             onClick = { onSelect("execute") },
-        )
-        BottomSlot(
-            icon = Icons.Outlined.Tune,
-            descriptionRes = R.string.mobile_bottom_tiles,
-            selected = currentRoute == "tiles",
-            onClick = { onSelect("tiles") },
         )
         BottomActionSlot(
             icon = Icons.Outlined.Add,
@@ -49,10 +49,10 @@ fun MobileBottomBar(
             onClick = onQuickCreate,
         )
         BottomSlot(
-            icon = Icons.Outlined.Extension,
-            descriptionRes = R.string.mobile_bottom_integrations,
-            selected = currentRoute == "integrations",
-            onClick = { onSelect("integrations") },
+            icon = Icons.Outlined.Folder,
+            descriptionRes = R.string.mobile_bottom_tiles,
+            selected = currentRoute == "tiles",
+            onClick = { onSelect("tiles") },
         )
         BottomSlot(
             icon = Icons.Outlined.Settings,

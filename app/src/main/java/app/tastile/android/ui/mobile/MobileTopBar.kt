@@ -34,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -58,12 +60,23 @@ fun MobileTopBar(
     modifier: Modifier = Modifier,
     avatarUrl: String? = null,
     avatarFallback: String = "U",
+    showScale: Boolean = true,
 ) {
+    val background = MaterialTheme.colorScheme.background
     Row(
         modifier = modifier
             .fillMaxWidth()
-            // Semi-transparent so content behind shows through as the view scrolls under it.
-            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.65f))
+            // Smooth linear fade: the notch band is ~80% opaque so the menu
+            // / title / icons remain readable, and the bar eases to fully
+            // transparent at its bottom edge. No kink at a hold-point so the
+            // gradient reads as one continuous surface, not two stacked bands.
+            .background(
+                Brush.verticalGradient(
+                    0f to background.copy(alpha = 1.0f),
+                    0.50f to background.copy(alpha = 0.70f),
+                    1f to Color.Transparent,
+                ),
+            )
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -80,8 +93,10 @@ fun MobileTopBar(
             modifier = Modifier.padding(start = 4.dp),
         )
         Box(modifier = Modifier.weight(1f))
-        ScaleDropdown(scale = scale, onScaleChange = onScaleChange)
-        Spacer(Modifier.width(4.dp))
+        if (showScale) {
+            ScaleDropdown(scale = scale, onScaleChange = onScaleChange)
+            Spacer(Modifier.width(4.dp))
+        }
         TopBarAction(
             icon = Icons.Outlined.NotificationsNone,
             descriptionRes = R.string.mobile_top_notifications,

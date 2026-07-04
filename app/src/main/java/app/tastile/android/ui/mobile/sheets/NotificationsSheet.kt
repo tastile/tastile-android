@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -31,21 +30,31 @@ fun NotificationsSheet(
 
     if (current is Overlay.Notifications) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { overlay.dismiss() },
+        PanelSheet(
+            title = "Notifications",
             sheetState = sheetState,
+            onDismiss = { overlay.dismiss() },
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 if (items.isEmpty()) {
-                    Text("No notifications", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "No notifications",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        items.forEach { Text(it.label) }
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        items.forEach {
+                            Text(it.label, style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
             }

@@ -1,7 +1,6 @@
 package app.tastile.android.ui.mobile.sheets
 
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,9 +21,10 @@ fun QuickCreateSheetMobile(
 
     if (current is Overlay.QuickCreate) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { overlay.dismiss() },
+        PanelSheet(
+            title = "Quick Create",
             sheetState = sheetState,
+            onDismiss = { overlay.dismiss() },
         ) {
             QuickCreateSheet(
                 viewModel = dashboardViewModel,

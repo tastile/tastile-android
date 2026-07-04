@@ -31,7 +31,11 @@ fun OverlayLayer(
     SearchOverlaySheet(overlay = overlay)
     NotificationsSheet(overlay = overlay, repository = notificationsViewModel.repository)
     AccountMenuSheet(viewModel = dashboardViewModel, overlay = overlay)
-    SidePanelSheet(overlay = overlay, onNavigate = onNavigate)
+    SidePanelSheet(
+        overlay = overlay,
+        dashboardViewModel = dashboardViewModel,
+        onNavigate = onNavigate,
+    )
 }
 
 /**

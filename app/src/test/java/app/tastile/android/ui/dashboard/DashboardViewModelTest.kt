@@ -58,7 +58,7 @@ class DashboardViewModelTest {
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline() } returns emptyList()
+        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.requestPrompt(any()) } returns true
         coEvery { integrationRepository.getSettings() } returns IntegrationSettingsResponse(
@@ -83,7 +83,7 @@ class DashboardViewModelTest {
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline() } returns emptyList()
+        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.startBreak(any(), any()) } returns Unit
         coEvery { tileRepository.extendTile(any()) } returns Unit
@@ -112,7 +112,7 @@ class DashboardViewModelTest {
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline() } returns emptyList()
+        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.rescheduleTile(any(), any(), any()) } returns Unit
         coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
@@ -153,7 +153,7 @@ class DashboardViewModelTest {
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline() } returns emptyList()
+        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
         coEvery { integrationRepository.getSyncStatus() } returns SyncStatusResponse(
@@ -229,7 +229,7 @@ class DashboardViewModelTest {
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline() } returns emptyList()
+        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
         coEvery { integrationRepository.triggerTick() } returns Unit
@@ -257,7 +257,7 @@ class DashboardViewModelTest {
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline() } returns emptyList()
+        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
         coEvery { integrationRepository.getSyncStatus() } returns SyncStatusResponse(

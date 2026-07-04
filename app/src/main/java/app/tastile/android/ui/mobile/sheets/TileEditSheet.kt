@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -30,24 +29,22 @@ fun TileEditSheet(
 
     if (current is Overlay.TileEdit) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = {
+        PanelSheet(
+            title = tile?.title ?: "Tile",
+            sheetState = sheetState,
+            onDismiss = {
                 viewModel.clearSelectedTile()
                 overlay.dismiss()
             },
-            sheetState = sheetState,
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
-                    text = tile?.title ?: "Loading…",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = tile?.lifecycle ?: "",
+                    text = tile?.lifecycle ?: "—",
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

@@ -1,17 +1,10 @@
 package app.tastile.android.notifications
 
-import android.Manifest
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
-import app.tastile.android.MainActivity
-import app.tastile.android.R
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.data.repository.AppLocale
@@ -42,33 +35,14 @@ class ExecutionAlarmReceiver : BroadcastReceiver() {
                 if (alarmId.isBlank()) return@launch
                 if (!scheduler.isAlarmStillRelevant(alarmId)) return@launch
 
-                if (canPostNotifications(context)) {
-                    ExecutionNotificationChannels.ensure(context)
-                    val type = intent.getStringExtra(ExecutionAlarmScheduler.EXTRA_TRIGGER_TYPE)
-                        ?.let { rawType -> enumValues<AlarmTriggerType>().firstOrNull { it.name == rawType } }
-                        ?: AlarmTriggerType.PROMPT
-                    val tileTitle = intent.getStringExtra(ExecutionAlarmScheduler.EXTRA_TILE_TITLE).orEmpty()
-                    val locale = userSettingsRepository.getLocale()
-                    val content = snapshotPromptContent(locale)
-                        ?: alarmContent(type, tileTitle, locale)
-                    try {
-                        NotificationManagerCompat.from(context).notify(
-                            alarmId.hashCode(),
-                            NotificationCompat.Builder(context, ExecutionNotificationChannels.ALERTS)
-                                .setSmallIcon(R.drawable.ic_notification_tastile)
-                                .setContentTitle(content.first)
-                                .setContentText(content.second)
-                                .setStyle(NotificationCompat.BigTextStyle().bigText(content.second))
-                                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                .setCategory(NotificationCompat.CATEGORY_ALARM)
-                                .setAutoCancel(true)
-                                .setContentIntent(ExecutionNotificationIntents.openApp(context))
-                                .build()
-                        )
-                    } catch (_: SecurityException) {
-                        return@launch
-                    }
-                }
+                val type = intent.getStringExtra(ExecutionAlarmScheduler.EXTRA_TRIGGER_TYPE)
+                    ?.let { rawType -> enumValues<AlarmTriggerType>().firstOrNull { it.name == rawType } }
+                    ?: AlarmTriggerType.PROMPT
+                val tileTitle = intent.getStringExtra(ExecutionAlarmScheduler.EXTRA_TILE_TITLE).orEmpty()
+                val locale = userSettingsRepository.getLocale()
+                val content = snapshotPromptContent(locale)
+                    ?: alarmContent(type, tileTitle, locale)
+                ExecutionNotificationIntents.startAlarmActivity(context, content.first, content.second, alarmId.hashCode())
                 scheduler.rescheduleFromCurrentState()
             } finally {
                 pendingResult.finish()
@@ -119,19 +93,26 @@ class ExecutionAlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun canPostNotifications(context: Context): Boolean {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-    }
 }
 
 private object ExecutionNotificationIntents {
-    fun openApp(context: Context) = android.app.PendingIntent.getActivity(
+    fun openAlarm(context: Context, title: String, body: String, notificationId: Int) = PendingIntent.getActivity(
         context,
-        0,
-        Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        },
-        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        notificationId,
+        alarmActivityIntent(context, title, body, notificationId),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
+
+    fun startAlarmActivity(context: Context, title: String, body: String, notificationId: Int) {
+        runCatching { context.startActivity(alarmActivityIntent(context, title, body, notificationId)) }
+    }
+
+    private fun alarmActivityIntent(context: Context, title: String, body: String, notificationId: Int): Intent {
+        return Intent(context, ExecutionAlarmActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(ExecutionAlarmActivity.EXTRA_TITLE, title)
+            putExtra(ExecutionAlarmActivity.EXTRA_BODY, body)
+            putExtra(ExecutionAlarmActivity.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+    }
 }

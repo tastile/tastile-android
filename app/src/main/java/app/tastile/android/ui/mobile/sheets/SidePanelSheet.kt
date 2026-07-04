@@ -1,16 +1,18 @@
 package app.tastile.android.ui.mobile.sheets
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Bookmark
@@ -18,26 +20,26 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.SidePanelSection
+import kotlinx.coroutines.launch
 
 private data class TabSpec(
     val section: SidePanelSection,
@@ -55,94 +57,140 @@ private val tabs = listOf(
 )
 
 /**
- * Bottom-anchored navigation drawer. The panel is intentionally content-less
- * below the tab list — Timeline, Tasks, and Projects all live on the main
- * screen, so the panel's job is to switch to a different destination, not to
- * re-render the same data in miniature.
+ * Bottom-anchored navigation drawer with a 2-page HorizontalPager mirroring
+ * the web SideToolPanel. Page 0 lists the section tabs; tapping a tab slides
+ * to page 1, which renders that section's content. A "Open …" CTA at the
+ * bottom of page 1 commits to the navigation. Going back is via swipe
+ * (right-to-left on page 1) — there is no back button. The header title
+ * switches with the current page.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SidePanelSheet(
     overlay: OverlayViewModel,
+    dashboardViewModel: DashboardViewModel,
     onNavigate: (String) -> Unit,
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
     val section = (current as? Overlay.SidePanel)?.section ?: return
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var selectedIndex by remember(section) {
-        mutableStateOf(tabs.indexOfFirst { it.section == section }.coerceAtLeast(0))
+    val initialIndex = tabs.indexOfFirst { it.section == section }.coerceAtLeast(0)
+    var selectedIndex by remember(section) { mutableStateOf(initialIndex) }
+    val pagerState = rememberPagerState(initialPage = 0) { 2 }
+    val scope = rememberCoroutineScope()
+
+    val titleText = if (pagerState.currentPage == 0) {
+        "Navigation"
+    } else {
+        tabs[selectedIndex].label
     }
 
-    ModalBottomSheet(
-        onDismissRequest = { overlay.dismiss() },
+    PanelSheet(
+        title = titleText,
         sheetState = sheetState,
+        onDismiss = { overlay.dismiss() },
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-        ) {
-            Text(
-                text = "Sections",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
-            )
-            tabs.forEachIndexed { index, spec ->
-                SidePanelTab(
-                    label = spec.label,
-                    icon = spec.icon,
-                    selected = selectedIndex == index,
-                    onClick = {
-                        selectedIndex = index
-                        onNavigate(spec.route)
-                        overlay.dismiss()
-                    },
-                )
+        Column(modifier = Modifier.fillMaxSize()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                userScrollEnabled = true,
+            ) { page ->
+                when (page) {
+                    0 -> TabsPage(
+                        selectedIndex = selectedIndex,
+                        onSelect = { index ->
+                            selectedIndex = index
+                            scope.launch { pagerState.animateScrollToPage(1) }
+                        },
+                    )
+                    else -> SectionPage(
+                        spec = tabs[selectedIndex],
+                        dashboardViewModel = dashboardViewModel,
+                        onOpen = {
+                            onNavigate(tabs[selectedIndex].route)
+                            overlay.dismiss()
+                        },
+                    )
+                }
             }
+            PagerDots(
+                currentPage = pagerState.currentPage,
+                pageCount = 2,
+            )
         }
     }
 }
 
 @Composable
-private fun SidePanelTab(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit,
+private fun TabsPage(
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
 ) {
-    val bg = if (selected) MaterialTheme.colorScheme.surfaceVariant
-             else MaterialTheme.colorScheme.background
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        tabs.forEachIndexed { index, spec ->
+            PanelRow(
+                label = spec.label,
+                icon = spec.icon,
+                selected = selectedIndex == index,
+                role = Role.Tab,
+                onClick = { onSelect(index) },
+            )
+        }
+        Spacer(modifier = Modifier.fillMaxSize())
+    }
+}
+
+@Composable
+private fun SectionPage(
+    spec: TabSpec,
+    dashboardViewModel: DashboardViewModel,
+    onOpen: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        SectionPanelContent(
+            section = spec.section,
+            dashboardViewModel = dashboardViewModel,
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        PanelRow(
+            label = "Open ${spec.label}",
+            icon = spec.icon,
+            selected = true,
+            role = Role.Button,
+            onClick = onOpen,
+        )
+    }
+}
+
+@Composable
+private fun PagerDots(
+    currentPage: Int,
+    pageCount: Int,
+) {
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(bg)
-            .clickable(role = Role.Tab, onClick = onClick)
-            .heightIn(min = 52.dp)
-            .padding(horizontal = 16.dp),
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .width(3.dp)
-                .height(20.dp)
-                .background(
-                    if (selected) MaterialTheme.colorScheme.onSurface
-                    else MaterialTheme.colorScheme.background,
-                ),
-        )
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.height(20.dp),
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        repeat(pageCount) { i ->
+            val isCurrent = i == currentPage
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .size(if (isCurrent) 10.dp else 6.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isCurrent) colors.onSurface
+                        else colors.onSurfaceVariant.copy(alpha = 0.30f),
+                    ),
+            )
+        }
     }
 }

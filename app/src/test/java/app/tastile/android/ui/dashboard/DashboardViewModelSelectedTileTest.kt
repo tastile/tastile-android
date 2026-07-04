@@ -6,6 +6,7 @@ import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.IntegrationRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.UserSettingsRepository
@@ -14,6 +15,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -47,10 +49,11 @@ class DashboardViewModelSelectedTileTest {
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
         every { authRepository.currentSession } returns null
+        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline() } returns emptyList()
+        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
         return DashboardViewModel(
             authRepository,
