@@ -35,7 +35,6 @@ fun OverlayLayer(
     IntegrationConfigSheet(overlay = overlay, dashboardViewModel = dashboardViewModel)
     SidePanelSheet(
         overlay = overlay,
-        dashboardViewModel = dashboardViewModel,
         onNavigate = onNavigate,
     )
 }
