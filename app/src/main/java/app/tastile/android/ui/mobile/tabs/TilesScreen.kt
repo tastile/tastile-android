@@ -33,6 +33,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
+import app.tastile.android.data.model.dueAtDate
+import app.tastile.android.data.model.isRecurring
+import app.tastile.android.data.model.projectLabel
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.designsystem.AppLoading
 import app.tastile.android.ui.designsystem.AppTheme
@@ -142,12 +145,9 @@ private fun TileRow(tile: Tile, onClick: () -> Unit) {
         TileLifecycle.ARCHIVED -> "·"
     }
     val stateLabel = lifecycle.name.lowercase()
-    val project = tile.annotationConditions?.get("project")?.toString()
-        ?.let { Regex("\"project:([^\"]+)\"").find(it)?.groupValues?.getOrNull(1) }
-    val dueAt = tile.temporalConditions?.get("due_at")?.toString()?.trim('"')
-        ?: tile.annotationConditions?.get("due_at")?.toString()?.trim('"')
-    val isRecurring = tile.annotationConditions?.containsKey("recurrence") == true ||
-                      tile.temporalConditions?.containsKey("recurrence") == true
+    val project = tile.projectLabel()
+    val dueAt = tile.dueAtDate()
+    val isRecurring = tile.isRecurring()
 
     Row(
         modifier = Modifier
@@ -166,7 +166,7 @@ private fun TileRow(tile: Tile, onClick: () -> Unit) {
                 if (!project.isNullOrBlank()) append(project)
                 if (!dueAt.isNullOrBlank()) {
                     if (isNotEmpty()) append(" · ")
-                    append(dueAt.take(10))
+                    append(dueAt)
                 }
                 if (isRecurring) {
                     if (isNotEmpty()) append(" · ")

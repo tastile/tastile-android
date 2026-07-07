@@ -7,7 +7,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.data.repository.AppLocale
@@ -269,7 +269,7 @@ private fun PrivacyDialog(onDismiss: () -> Unit) {
                     modifier = Modifier
                         .clickable(role = Role.Button) {
                             context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse("https://tastile.app/privacy"))
+                                Intent(Intent.ACTION_VIEW, "https://tastile.app/privacy".toUri())
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         }
@@ -301,7 +301,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                     modifier = Modifier
                         .clickable(role = Role.Button) {
                             context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rebuildup/tastile"))
+                                Intent(Intent.ACTION_VIEW, "https://github.com/rebuildup/tastile".toUri())
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         }
@@ -398,7 +398,7 @@ private fun openFullScreenIntentSettings(context: android.content.Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
     context.startActivity(
         Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
-            data = Uri.parse("package:${context.packageName}")
+            data = "package:${context.packageName}".toUri()
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
     )

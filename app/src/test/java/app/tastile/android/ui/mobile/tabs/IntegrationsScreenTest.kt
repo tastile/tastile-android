@@ -47,13 +47,13 @@ class IntegrationsScreenTest {
     }
 
     @Test
-    fun `available integration renders with empty glyph and connect action`() {
+    fun `available integration renders with empty glyph and chevron`() {
         val item = Integration(id = "slack", name = "Slack", connected = false)
         rule.setContent { IntegrationsScreen(viewModel = stubVm(listOf(item)), overlay = stubOverlay()) }
 
         rule.onAllNodesWithText("Slack", substring = true).onFirst().assertIsDisplayed()
         rule.onAllNodesWithText("○", substring = true).onFirst().assertIsDisplayed()
-        rule.onAllNodesWithText("Connect", substring = true).onFirst().assertIsDisplayed()
+        rule.onAllNodesWithText("›", substring = true).onFirst().assertIsDisplayed()
     }
 
     @Test

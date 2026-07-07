@@ -38,10 +38,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
 import app.tastile.android.ui.mobile.SidePanelSection
+import app.tastile.android.data.model.dueAtDate
+import app.tastile.android.data.model.isRecurring
+import app.tastile.android.data.model.projectLabel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -241,15 +245,11 @@ private fun ScalePicker(current: TimelineScale, onSelect: (TimelineScale) -> Uni
 @Composable
 private fun ScheduleSectionContent(viewModel: DashboardViewModel) {
     val tiles by viewModel.tiles.collectAsStateWithLifecycle()
-    val recurring = tiles.filter { tile ->
-        tile.annotationConditions?.containsKey("recurrence") == true ||
-        tile.temporalConditions?.containsKey("recurrence") == true
-    }
+    val recurring = tiles.filter { it.isRecurring() }
     val now = LocalDate.now()
     val upcoming = tiles.filter { tile ->
-        val dueStr = tile.temporalConditions?.get("due_at")?.toString()?.trim('"')
-            ?: tile.annotationConditions?.get("due_at")?.toString()?.trim('"')
-        dueStr?.take(10)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        tile.dueAtDate()
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
             ?.let { it in now..now.plusDays(7) } ?: false
     }
 
@@ -328,7 +328,7 @@ private fun ReferenceLink(label: String, url: String, context: Context) {
             .fillMaxWidth()
             .clickable(role = Role.Button) {
                 context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    Intent(Intent.ACTION_VIEW, url.toUri())
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 )
             }
@@ -439,14 +439,9 @@ private fun ProjectsSectionContent(viewModel: DashboardViewModel) {
     }
 }
 
-private fun extractProjects(tiles: List<app.tastile.android.data.model.Tile>): List<String> {
-    return tiles
-        .asSequence()
-        .mapNotNull { tile ->
-            val labels = tile.annotationConditions?.get("labels")?.toString().orEmpty()
-            Regex("\"project:([^\"]+)\"").find(labels)?.groupValues?.getOrNull(1)
-        }
+private fun extractProjects(tiles: List<app.tastile.android.data.model.Tile>): List<String> =
+    tiles.asSequence()
+        .mapNotNull { it.projectLabel() }
         .distinct()
         .sorted()
         .toList()
-}

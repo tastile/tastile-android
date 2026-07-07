@@ -47,7 +47,7 @@ fun IntegrationConfigSheet(
 
     PanelSheet(
         title = when (cfg.integrationId) {
-            "google" -> "Google Calendar"
+            "google_calendar" -> "Google Calendar"
             "outlook" -> "Outlook Calendar"
             "apple" -> "Apple Calendar"
             "slack" -> "Slack"
@@ -65,10 +65,10 @@ fun IntegrationConfigSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             when (cfg.integrationId) {
-                "google" -> {
+                "google_calendar" -> {
                     val google by dashboardViewModel.googleCalendarIntegration.collectAsStateWithLifecycle()
                     var selected by remember(google) {
-                        mutableStateOf(google?.syncMode ?: "sync_all")
+                        mutableStateOf(google?.syncMode ?: "push_only")
                     }
                     Text("Sync mode", style = MaterialTheme.typography.labelMedium)
                     googleCalendarOptions.forEach { opt ->

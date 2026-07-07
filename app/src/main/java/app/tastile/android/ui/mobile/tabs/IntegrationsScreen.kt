@@ -12,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -60,7 +59,7 @@ fun IntegrationsScreen(
 
     val connected = integrations.filter { it.connected }
     val scrollState = rememberScrollState()
-    var disconnectCandidate by remember { mutableStateOf(false) }
+    var disconnectCandidate by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -82,7 +81,7 @@ fun IntegrationsScreen(
             ConnectedRow(
                 integration = integration,
                 onSync = { viewModel.syncGoogleCalendarNow() },
-                onDisconnect = { disconnectCandidate = true },
+                onDisconnect = { disconnectCandidate = integration.id },
                 onTap = { overlay.show(Overlay.IntegrationConfig(integration.id)) },
             )
         }
@@ -91,25 +90,24 @@ fun IntegrationsScreen(
         availableStubs.forEach { stub ->
             AvailableRow(
                 name = stub.name,
-                onConnect = { viewModel.connectGoogleCalendar() },
                 onTap = { overlay.show(Overlay.IntegrationConfig(stub.id)) },
             )
         }
     }
 
-    if (disconnectCandidate) {
+    disconnectCandidate?.let { id ->
         AlertDialog(
-            onDismissRequest = { disconnectCandidate = false },
+            onDismissRequest = { disconnectCandidate = null },
             title = { Text("Disconnect Google Calendar?") },
             text = { Text("Existing synced events stay; new events won't sync.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.disconnectGoogleCalendar()
-                    disconnectCandidate = false
+                    disconnectCandidate = null
                 }) { Text("Disconnect") }
             },
             dismissButton = {
-                TextButton(onClick = { disconnectCandidate = false }) { Text("Cancel") }
+                TextButton(onClick = { disconnectCandidate = null }) { Text("Cancel") }
             },
         )
     }
@@ -158,7 +156,6 @@ private fun ConnectedRow(
 @Composable
 private fun AvailableRow(
     name: String,
-    onConnect: () -> Unit,
     onTap: () -> Unit,
 ) {
     Row(
@@ -172,6 +169,10 @@ private fun AvailableRow(
     ) {
         Text("○", style = MaterialTheme.typography.bodyMedium)
         Text(name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        OutlinedButton(onClick = onConnect) { Text("Connect") }
+        Text(
+            "›",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

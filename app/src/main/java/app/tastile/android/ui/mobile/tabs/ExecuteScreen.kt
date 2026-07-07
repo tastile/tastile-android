@@ -172,7 +172,12 @@ private fun TileActionRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
     ) {
-        Text("$glyph ${tile.title}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(glyph, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            tile.title,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
         Box {
             IconButton(onClick = { menuOpen = true }) {
                 Icon(Icons.Outlined.MoreVert, contentDescription = "More actions")
