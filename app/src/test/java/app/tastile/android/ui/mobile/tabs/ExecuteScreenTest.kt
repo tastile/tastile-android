@@ -13,6 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.mobile.OverlayViewModel
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,8 @@ class ExecuteScreenTest {
         return vm
     }
 
+    private fun stubOverlay(): OverlayViewModel = mockk<OverlayViewModel>(relaxed = true)
+
     @Test
     fun `renders active tile title when one exists`() {
         val active = Tile(
@@ -46,7 +49,7 @@ class ExecuteScreenTest {
         )
         val vm = stubVm(listOf(active))
 
-        rule.setContent { ExecuteScreen(viewModel = vm) }
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
         rule.onAllNodesWithText("Code review", substring = true, useUnmergedTree = true)
             .onFirst()
             .assertIsDisplayed()
@@ -56,7 +59,7 @@ class ExecuteScreenTest {
     fun `shows indeterminate progress while loading with no tiles`() {
         val vm = stubVm(tiles = emptyList(), loading = true)
 
-        rule.setContent { ExecuteScreen(viewModel = vm) }
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
         rule.onAllNodes(
             SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo.Indeterminate),
         )
@@ -73,7 +76,7 @@ class ExecuteScreenTest {
         )
         val vm = stubVm(listOf(ready))
 
-        rule.setContent { ExecuteScreen(viewModel = vm) }
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
         rule.onAllNodesWithText("▶").assertCountEquals(0)
     }
 }
