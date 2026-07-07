@@ -7,9 +7,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -23,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,50 +35,77 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.notifications.ExecutionAlarmActivity
 import app.tastile.android.data.repository.AppLocale
+import app.tastile.android.data.repository.ThemeMode
+import app.tastile.android.notifications.ExecutionAlarmActivity
 import app.tastile.android.notifications.ExecutionAlarmTestReceiver
 import app.tastile.android.notifications.ExecutionNotificationChannels
 import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.dashboard.components.LocalePickerDialog
+import app.tastile.android.ui.dashboard.components.ThemePickerDialog
+import app.tastile.android.ui.dashboard.components.TimeoutPickerDialog
 import app.tastile.android.ui.designsystem.AppTheme
-import app.tastile.android.ui.mobile.Overlay
-import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.SidePanelSection
 
 @Composable
 fun SettingsScreen(
     viewModel: DashboardViewModel,
-    overlay: OverlayViewModel = hiltViewModel(),
 ) {
     val locale by viewModel.locale.collectAsStateWithLifecycle()
-    val scrollState = rememberScrollState()
+    val theme by viewModel.themeMode.collectAsStateWithLifecycle()
+    val securityLockEnabled by viewModel.securityLockEnabled.collectAsStateWithLifecycle()
+    val timeoutMin by viewModel.securityLockTimeoutMinutes.collectAsStateWithLifecycle()
+
+    var showLocale by remember { mutableStateOf(false) }
+    var showTheme by remember { mutableStateOf(false) }
+    var showTimeout by remember { mutableStateOf(false) }
+    var showPrivacy by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
-    var notificationGranted by remember {
-        mutableStateOf(canPostNotifications(context))
-    }
+    var notificationGranted by remember { mutableStateOf(canPostNotifications(context)) }
     var notificationStatus by remember { mutableStateOf("") }
     var fullScreenGranted by remember { mutableStateOf(canUseFullScreenIntent(context)) }
+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        ActivityResultContracts.RequestPermission(),
     ) { granted ->
         notificationGranted = granted
-        notificationStatus = if (granted) "Notifications enabled" else "Notifications blocked"
+        notificationStatus = if (granted) "Notifications enabled" else "Notifications denied"
     }
 
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(horizontal = AppTheme.spacing.md, vertical = AppTheme.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
     ) {
-        SettingsRow(icon = "🌐", label = "Locale", value = localeLabel(locale), overlay = overlay)
-        SettingsRow(icon = "🎨", label = "Theme", value = "gray", overlay = overlay)
+        SettingsRow(
+            icon = "🌐",
+            label = "Locale",
+            value = localeLabel(locale),
+            onClick = { showLocale = true },
+        )
+        SettingsRow(
+            icon = "🎨",
+            label = "Theme",
+            value = themeLabel(theme),
+            onClick = { showTheme = true },
+        )
+        SecurityLockRow(
+            enabled = securityLockEnabled,
+            timeoutMinutes = timeoutMin,
+            onToggle = { viewModel.setSecurityLockEnabled(it) },
+            onTimeout = { showTimeout = true },
+        )
         NotificationSettingsSection(
             granted = notificationGranted,
             status = notificationStatus,
@@ -115,16 +142,177 @@ fun SettingsScreen(
                 } else {
                     notificationStatus = "Allow notifications before testing alarms"
                 }
-            }
+            },
         )
-        SettingsRow(icon = "🔒", label = "Privacy", value = "›", overlay = overlay)
-        SettingsRow(icon = "ℹ", label = "About", value = "›", overlay = overlay)
+        SettingsRow(
+            icon = "🔒",
+            label = "Privacy",
+            value = "›",
+            onClick = { showPrivacy = true },
+        )
+        SettingsRow(
+            icon = "ℹ",
+            label = "About",
+            value = "›",
+            onClick = { showAbout = true },
+        )
+    }
+
+    if (showLocale) {
+        LocalePickerDialog(
+            current = locale,
+            onPick = { viewModel.setLocale(it); showLocale = false },
+            onDismiss = { showLocale = false },
+        )
+    }
+    if (showTheme) {
+        ThemePickerDialog(
+            current = theme,
+            onPick = { viewModel.setThemeMode(it); showTheme = false },
+            onDismiss = { showTheme = false },
+        )
+    }
+    if (showTimeout) {
+        TimeoutPickerDialog(
+            currentMinutes = timeoutMin,
+            onPick = { viewModel.setSecurityLockTimeoutMinutes(it); showTimeout = false },
+            onDismiss = { showTimeout = false },
+        )
+    }
+    if (showPrivacy) {
+        PrivacyDialog(onDismiss = { showPrivacy = false })
+    }
+    if (showAbout) {
+        AboutDialog(onDismiss = { showAbout = false })
     }
 }
 
-private fun localeLabel(l: AppLocale): String = when (l) {
-    AppLocale.JA -> "ja"
-    AppLocale.EN -> "en"
+@Composable
+private fun SecurityLockRow(
+    enabled: Boolean,
+    timeoutMinutes: Int,
+    onToggle: (Boolean) -> Unit,
+    onTimeout: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppTheme.spacing.xs)
+            .semantics(mergeDescendants = true) { contentDescription = "Security lock" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+    ) {
+        Text("🔒", style = MaterialTheme.typography.bodyMedium)
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Security lock", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "Require biometric to open the app",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = enabled, onCheckedChange = onToggle)
+    }
+    if (enabled) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button, onClick = onTimeout)
+                .padding(start = 32.dp, top = 4.dp, bottom = 8.dp)
+                .semantics { contentDescription = "Lock timeout" },
+        ) {
+            Text(
+                "Timeout: $timeoutMinutes min  ›",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsRow(
+    icon: String,
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = AppTheme.spacing.sm)
+            .semantics(mergeDescendants = true) { contentDescription = "$label: $value" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+    ) {
+        Text(icon, style = MaterialTheme.typography.bodyMedium)
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun PrivacyDialog(onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Privacy") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("tastile stores your tiles and execution history on AWS (Cognito + RDS).")
+                Text(
+                    "View the full privacy policy:",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                val context = LocalContext.current
+                Row(
+                    modifier = Modifier
+                        .clickable(role = Role.Button) {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, "https://tastile.app/privacy".toUri())
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                        .padding(vertical = 4.dp),
+                ) {
+                    Text("tastile.app/privacy", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+}
+
+@Composable
+private fun AboutDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val version = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrDefault("unknown")
+    }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("About tastile") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Version: $version")
+                Row(
+                    modifier = Modifier
+                        .clickable(role = Role.Button) {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, "https://github.com/rebuildup/tastile".toUri())
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                        .padding(vertical = 4.dp),
+                ) {
+                    Text("github.com/rebuildup/tastile", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Close") } },
+    )
 }
 
 @Composable
@@ -154,7 +342,7 @@ private fun NotificationSettingsSection(
             Text("🔔 Notifications", style = MaterialTheme.typography.bodyMedium)
             Text(
                 if (granted && fullScreenGranted) "Alarm ready" else if (granted) "Limited" else "Blocked",
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
             )
         }
         Row(
@@ -185,27 +373,14 @@ private fun NotificationSettingsSection(
     }
 }
 
-@Composable
-private fun SettingsRow(
-    icon: String,
-    label: String,
-    value: String,
-    overlay: OverlayViewModel,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button) {
-                overlay.show(Overlay.SidePanel(SidePanelSection.Preferences))
-            }
-            .padding(vertical = AppTheme.spacing.sm)
-            .semantics(mergeDescendants = true) { contentDescription = "$label: $value" },
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("$icon $label", style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodySmall)
-    }
+private fun localeLabel(l: AppLocale): String = when (l) {
+    AppLocale.JA -> "日本語"
+    AppLocale.EN -> "English"
+}
+
+private fun themeLabel(t: ThemeMode): String = when (t) {
+    ThemeMode.LIGHT -> "Light"
+    ThemeMode.DARK -> "Dark"
 }
 
 private fun canPostNotifications(context: android.content.Context): Boolean {
@@ -223,7 +398,7 @@ private fun openFullScreenIntentSettings(context: android.content.Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
     context.startActivity(
         Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
-            data = Uri.parse("package:${context.packageName}")
+            data = "package:${context.packageName}".toUri()
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
     )

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import app.tastile.android.notifications.NotificationRepository
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.sheets.AccountMenuSheet
+import app.tastile.android.ui.mobile.sheets.IntegrationConfigSheet
 import app.tastile.android.ui.mobile.sheets.NotificationsSheet
 import app.tastile.android.ui.mobile.sheets.QuickCreateSheetMobile
 import app.tastile.android.ui.mobile.sheets.SearchOverlaySheet
@@ -31,6 +32,7 @@ fun OverlayLayer(
     SearchOverlaySheet(overlay = overlay)
     NotificationsSheet(overlay = overlay, repository = notificationsViewModel.repository)
     AccountMenuSheet(viewModel = dashboardViewModel, overlay = overlay)
+    IntegrationConfigSheet(overlay = overlay, dashboardViewModel = dashboardViewModel)
     SidePanelSheet(
         overlay = overlay,
         dashboardViewModel = dashboardViewModel,

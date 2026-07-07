@@ -14,7 +14,6 @@ import app.tastile.android.data.model.Integration
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.SidePanelSection
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -48,13 +47,13 @@ class IntegrationsScreenTest {
     }
 
     @Test
-    fun `available integration renders with empty glyph and plus action`() {
+    fun `available integration renders with empty glyph and chevron`() {
         val item = Integration(id = "slack", name = "Slack", connected = false)
         rule.setContent { IntegrationsScreen(viewModel = stubVm(listOf(item)), overlay = stubOverlay()) }
 
         rule.onAllNodesWithText("Slack", substring = true).onFirst().assertIsDisplayed()
         rule.onAllNodesWithText("○", substring = true).onFirst().assertIsDisplayed()
-        rule.onAllNodesWithText("+", substring = true).onFirst().assertIsDisplayed()
+        rule.onAllNodesWithText("›", substring = true).onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -86,13 +85,13 @@ class IntegrationsScreenTest {
     }
 
     @Test
-    fun `row tap opens preferences side panel overlay`() {
+    fun `row tap opens integration config overlay`() {
         val item = Integration(id = "google_calendar", name = "Calendar", connected = true)
         val overlay = mockk<OverlayViewModel>(relaxed = true)
 
         rule.setContent { IntegrationsScreen(viewModel = stubVm(listOf(item)), overlay = overlay) }
         rule.onAllNodesWithText("Calendar", substring = true).onFirst().performClick()
 
-        verify { overlay.show(Overlay.SidePanel(SidePanelSection.Preferences)) }
+        verify { overlay.show(Overlay.IntegrationConfig(integrationId = "google_calendar")) }
     }
 }

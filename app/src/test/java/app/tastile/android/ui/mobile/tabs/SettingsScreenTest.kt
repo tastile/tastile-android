@@ -8,13 +8,10 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.repository.AppLocale
+import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.mobile.Overlay
-import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.SidePanelSection
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
@@ -30,15 +27,16 @@ class SettingsScreenTest {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         every { vm.locale } returns MutableStateFlow(locale)
         every { vm.loading } returns MutableStateFlow(false)
+        every { vm.themeMode } returns MutableStateFlow(ThemeMode.DARK)
+        every { vm.securityLockEnabled } returns MutableStateFlow(false)
+        every { vm.securityLockTimeoutMinutes } returns MutableStateFlow(15)
         return vm
     }
-
-    private fun stubOverlay(): OverlayViewModel = mockk<OverlayViewModel>(relaxed = true)
 
     @Test
     fun `renders all 5 settings rows with icon and label`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm(), overlay = stubOverlay())
+            SettingsScreen(viewModel = stubVm())
         }
 
         rule.onAllNodesWithText("Locale", substring = true).onFirst().assertIsDisplayed()
@@ -51,19 +49,18 @@ class SettingsScreenTest {
     @Test
     fun `locale value reflects current AppLocale`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm(locale = AppLocale.JA), overlay = stubOverlay())
+            SettingsScreen(viewModel = stubVm(locale = AppLocale.JA))
         }
-        rule.onAllNodesWithText("ja", substring = true).onFirst().assertIsDisplayed()
+        rule.onAllNodesWithText("日本語", substring = true).onFirst().assertIsDisplayed()
     }
 
     @Test
-    fun `row tap opens preferences side panel overlay`() {
-        val overlay = stubOverlay()
+    fun `row tap opens locale picker dialog`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm(), overlay = overlay)
+            SettingsScreen(viewModel = stubVm())
         }
         rule.onAllNodesWithText("Locale", substring = true).onFirst().performClick()
 
-        verify { overlay.show(Overlay.SidePanel(SidePanelSection.Preferences)) }
+        rule.onAllNodesWithText("日本語", substring = true).onFirst().assertIsDisplayed()
     }
 }

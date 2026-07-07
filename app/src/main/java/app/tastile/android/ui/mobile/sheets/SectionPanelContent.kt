@@ -1,22 +1,23 @@
 package app.tastile.android.ui.mobile.sheets
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.EventRepeat
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,13 +31,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
 import app.tastile.android.ui.mobile.SidePanelSection
+import app.tastile.android.data.model.dueAtDate
+import app.tastile.android.data.model.isRecurring
+import app.tastile.android.data.model.projectLabel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -59,10 +68,10 @@ internal fun SectionPanelContent(
     ) {
         when (section) {
             SidePanelSection.Calendar -> TimelineSectionContent(dashboardViewModel)
-            SidePanelSection.Schedule -> ScheduleSectionContent()
+            SidePanelSection.Schedule -> ScheduleSectionContent(dashboardViewModel)
             SidePanelSection.Projects -> ProjectsSectionContent(dashboardViewModel)
             SidePanelSection.References -> ReferencesSectionContent()
-            SidePanelSection.Preferences -> PreferencesSectionContent()
+            SidePanelSection.Preferences -> PreferencesSectionContent(dashboardViewModel)
         }
     }
 }
@@ -231,77 +240,137 @@ private fun ScalePicker(current: TimelineScale, onSelect: (TimelineScale) -> Uni
 }
 
 // ─────────────────────────────────────────────
-// Schedule, References, Preferences (placeholders)
+// Schedule, References, Preferences (real data)
 // ─────────────────────────────────────────────
 @Composable
-private fun ScheduleSectionContent() {
+private fun ScheduleSectionContent(viewModel: DashboardViewModel) {
+    val tiles by viewModel.tiles.collectAsStateWithLifecycle()
+    val recurring = tiles.filter { it.isRecurring() }
+    val now = LocalDate.now()
+    val upcoming = tiles.filter { tile ->
+        tile.dueAtDate()
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            ?.let { it in now..now.plusDays(7) } ?: false
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ScheduleRow(icon = Icons.Outlined.EventRepeat, label = "Recurring Tiles")
-        ScheduleRow(icon = Icons.Outlined.Schedule, label = "Upcoming Deadlines")
-    }
-}
-
-@Composable
-private fun ScheduleRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            "Recurring",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (recurring.isEmpty()) {
+            Text("No recurring tiles", style = MaterialTheme.typography.bodySmall)
+        } else {
+            recurring.take(10).forEach { tile ->
+                Text(
+                    "↻ ${tile.title}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.selectTile(tile.id) }
+                        .padding(vertical = 4.dp)
+                        .semantics { contentDescription = "Recurring: ${tile.title}" },
+                )
+            }
+        }
+        Spacer(Modifier.size(12.dp))
+        Text(
+            "Upcoming (7 days)",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (upcoming.isEmpty()) {
+            Text("No upcoming deadlines", style = MaterialTheme.typography.bodySmall)
+        } else {
+            upcoming.take(10).forEach { tile ->
+                Text(
+                    tile.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.selectTile(tile.id) }
+                        .padding(vertical = 4.dp)
+                        .semantics { contentDescription = "Upcoming: ${tile.title}" },
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun ReferencesSectionContent() {
-    SectionPlaceholder(
-        title = "References",
-        description = "Saved memos and quick links.",
-    )
-}
-
-@Composable
-private fun PreferencesSectionContent() {
-    SectionPlaceholder(
-        title = "Preferences",
-        description = "Theme, locale, security lock.",
-    )
-}
-
-@Composable
-private fun SectionPlaceholder(title: String, description: String) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        ReferenceLink("Help", "https://tastile.app/help", context)
+        ReferenceLink("Changelog", "https://tastile.app/changelog", context)
+        ReferenceLink("GitHub", "https://github.com/rebuildup/tastile", context)
+        ReferenceLink("Send feedback", "https://github.com/rebuildup/tastile/issues", context)
+    }
+}
+
+@Composable
+private fun ReferenceLink(label: String, url: String, context: Context) {
+    Text(
+        "$label ›",
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button) {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, url.toUri())
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+            .padding(vertical = 8.dp)
+            .semantics { contentDescription = label },
+    )
+}
+
+@Composable
+private fun PreferencesSectionContent(viewModel: DashboardViewModel) {
+    val locale by viewModel.locale.collectAsStateWithLifecycle()
+    val theme by viewModel.themeMode.collectAsStateWithLifecycle()
+    val lock by viewModel.securityLockEnabled.collectAsStateWithLifecycle()
+    val timeout by viewModel.securityLockTimeoutMinutes.collectAsStateWithLifecycle()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        PreferenceSummaryRow(label = "Locale", value = locale.toString())
+        PreferenceSummaryRow(label = "Theme", value = theme.toString())
+        PreferenceSummaryRow(label = "Lock", value = if (lock) "On (${timeout}m)" else "Off")
         Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodyMedium,
+            "Open Settings tab to change.",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun PreferenceSummaryRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -370,14 +439,9 @@ private fun ProjectsSectionContent(viewModel: DashboardViewModel) {
     }
 }
 
-private fun extractProjects(tiles: List<app.tastile.android.data.model.Tile>): List<String> {
-    return tiles
-        .asSequence()
-        .mapNotNull { tile ->
-            val labels = tile.annotationConditions?.get("labels")?.toString().orEmpty()
-            Regex("\"project:([^\"]+)\"").find(labels)?.groupValues?.getOrNull(1)
-        }
+private fun extractProjects(tiles: List<app.tastile.android.data.model.Tile>): List<String> =
+    tiles.asSequence()
+        .mapNotNull { it.projectLabel() }
         .distinct()
         .sorted()
         .toList()
-}
