@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.sheets
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -319,7 +320,7 @@ private fun ReferencesSectionContent() {
 }
 
 @Composable
-private fun ReferenceLink(label: String, url: String, context: android.content.Context) {
+private fun ReferenceLink(label: String, url: String, context: Context) {
     Text(
         "$label ›",
         style = MaterialTheme.typography.bodyMedium,
