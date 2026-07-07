@@ -10,10 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -27,7 +33,15 @@ import app.tastile.android.ui.designsystem.AppLoading
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.SidePanelSection
+
+private data class IntegrationStub(val id: String, val name: String)
+
+private val availableStubs = listOf(
+    IntegrationStub("outlook", "Outlook Calendar"),
+    IntegrationStub("apple", "Apple Calendar"),
+    IntegrationStub("slack", "Slack"),
+    IntegrationStub("notion", "Notion"),
+)
 
 @Composable
 fun IntegrationsScreen(
@@ -44,8 +58,9 @@ fun IntegrationsScreen(
         return
     }
 
-    val (connected, available) = integrations.partition { it.connected }
+    val connected = integrations.filter { it.connected }
     val scrollState = rememberScrollState()
+    var disconnectCandidate by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -54,31 +69,109 @@ fun IntegrationsScreen(
             .padding(horizontal = AppTheme.spacing.md, vertical = AppTheme.spacing.sm),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
     ) {
-        connected.forEach { IntegrationRow(integration = it, glyph = "●", overlay = overlay) }
-        available.forEach { IntegrationRow(integration = it, glyph = "○", overlay = overlay) }
+        SectionLabel("Connected")
+        if (connected.isEmpty()) {
+            Text(
+                "No integrations connected",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = AppTheme.spacing.xs),
+            )
+        }
+        connected.forEach { integration ->
+            ConnectedRow(
+                integration = integration,
+                onSync = { viewModel.syncGoogleCalendarNow() },
+                onDisconnect = { disconnectCandidate = true },
+                onTap = { overlay.show(Overlay.IntegrationConfig(integration.id)) },
+            )
+        }
+
+        SectionLabel("Available")
+        availableStubs.forEach { stub ->
+            AvailableRow(
+                name = stub.name,
+                onConnect = { viewModel.connectGoogleCalendar() },
+                onTap = { overlay.show(Overlay.IntegrationConfig(stub.id)) },
+            )
+        }
+    }
+
+    if (disconnectCandidate) {
+        AlertDialog(
+            onDismissRequest = { disconnectCandidate = false },
+            title = { Text("Disconnect Google Calendar?") },
+            text = { Text("Existing synced events stay; new events won't sync.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.disconnectGoogleCalendar()
+                    disconnectCandidate = false
+                }) { Text("Disconnect") }
+            },
+            dismissButton = {
+                TextButton(onClick = { disconnectCandidate = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 
 @Composable
-private fun IntegrationRow(
+private fun SectionLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = AppTheme.spacing.sm),
+    )
+}
+
+@Composable
+private fun ConnectedRow(
     integration: Integration,
-    glyph: String,
-    overlay: OverlayViewModel,
+    onSync: () -> Unit,
+    onDisconnect: () -> Unit,
+    onTap: () -> Unit,
 ) {
-    val action = if (integration.connected) "⚙" else "+"
-    val status = if (integration.connected) "connected" else "available"
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(role = Role.Button) {
-                overlay.show(Overlay.SidePanel(SidePanelSection.Preferences))
-            }
+            .clickable(role = Role.Button, onClick = onTap)
             .padding(vertical = AppTheme.spacing.xs)
-            .semantics(mergeDescendants = true) { contentDescription = "${integration.name}: $status" },
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .semantics(mergeDescendants = true) { contentDescription = "${integration.name}: connected" },
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
     ) {
-        Text("$glyph ${integration.name}", style = MaterialTheme.typography.bodyMedium)
-        Text(action, style = MaterialTheme.typography.bodyMedium)
+        Text("●", style = MaterialTheme.typography.bodyMedium)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(integration.name, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "Connected",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = onSync) { Text("Sync now") }
+        TextButton(onClick = onDisconnect) { Text("Disconnect") }
+    }
+}
+
+@Composable
+private fun AvailableRow(
+    name: String,
+    onConnect: () -> Unit,
+    onTap: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onTap)
+            .padding(vertical = AppTheme.spacing.xs)
+            .semantics(mergeDescendants = true) { contentDescription = "$name: available" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+    ) {
+        Text("○", style = MaterialTheme.typography.bodyMedium)
+        Text(name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        OutlinedButton(onClick = onConnect) { Text("Connect") }
     }
 }
