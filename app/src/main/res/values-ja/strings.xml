@@ -1,4 +1,5 @@
 <resources>
+    <string name="mobile_bottom_timeline">タイムライン</string>
     <string name="mobile_bottom_execute">実行</string>
     <string name="mobile_bottom_tiles">タイル</string>
     <string name="mobile_bottom_quick_create">クイック作成</string>

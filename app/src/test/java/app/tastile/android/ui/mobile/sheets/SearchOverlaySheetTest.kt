@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import androidx.compose.ui.test.isEditable
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -57,7 +58,7 @@ class SearchOverlaySheetTest {
 
         // Type "break" - only "Start break" should match (no other label/operationId
         // contains "break" in the catalog).
-        rule.onNodeWithText("Search").performTextInput("break")
+        rule.onNode(isEditable()).performTextInput("break")
         rule.waitForIdle()
 
         rule.onNodeWithText("Start break").assertIsDisplayed()

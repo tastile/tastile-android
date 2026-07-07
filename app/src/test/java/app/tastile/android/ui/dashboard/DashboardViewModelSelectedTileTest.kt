@@ -21,6 +21,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.cancel
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -31,6 +33,7 @@ import org.junit.Test
 class DashboardViewModelSelectedTileTest {
 
     private val dispatcher = UnconfinedTestDispatcher()
+    private val viewModels = mutableListOf<DashboardViewModel>()
 
     @Before
     fun setUp() {
@@ -39,6 +42,8 @@ class DashboardViewModelSelectedTileTest {
 
     @After
     fun tearDown() {
+        viewModels.forEach { it.viewModelScope.cancel() }
+        viewModels.clear()
         Dispatchers.resetMain()
     }
 
@@ -61,7 +66,7 @@ class DashboardViewModelSelectedTileTest {
             tileRepository,
             userSettingsRepository,
             integrationRepository
-        )
+        ).also { viewModels.add(it) }
     }
 
     private fun tile(id: String, title: String) = Tile(

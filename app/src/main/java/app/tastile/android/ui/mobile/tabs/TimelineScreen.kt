@@ -59,7 +59,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -107,7 +106,7 @@ private data class PlacedBlock(
 @Composable
 fun TimelineScreen(
     viewModel: DashboardViewModel,
-    overlay: OverlayViewModel = hiltViewModel(),
+    overlay: OverlayViewModel,
 ) {
     val timeline by viewModel.timeline.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()

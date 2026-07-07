@@ -92,7 +92,7 @@ fun MobileScaffold(
                 navController = navController,
                 startDestination = START,
             ) {
-                composable("timeline") { TimelineScreen(viewModel = dashboardViewModel) }
+                composable("timeline") { TimelineScreen(viewModel = dashboardViewModel, overlay = overlayViewModel) }
                 composable("execute") { ExecuteScreen(viewModel = dashboardViewModel) }
                 composable("tiles") { TilesScreen(viewModel = dashboardViewModel) }
                 composable("integrations") { IntegrationsScreen(viewModel = dashboardViewModel) }

@@ -27,6 +27,9 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.cancel
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +39,14 @@ class TileEditSheetTest {
 
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
+
+    private val viewModels = mutableListOf<DashboardViewModel>()
+
+    @After
+    fun tearDown() {
+        viewModels.forEach { it.viewModelScope.cancel() }
+        viewModels.clear()
+    }
 
     private fun newDashboardViewModel(): DashboardViewModel {
         val authRepo = mockk<AuthRepository>(relaxed = true)
@@ -78,7 +89,7 @@ class TileEditSheetTest {
             tileRepository = tileRepo,
             userSettingsRepository = userSettingsRepo,
             integrationRepository = integrationRepo,
-        )
+        ).also { viewModels.add(it) }
     }
 
     @Test

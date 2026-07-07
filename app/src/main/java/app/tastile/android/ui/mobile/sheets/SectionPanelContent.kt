@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.EventRepeat
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -233,10 +235,37 @@ private fun ScalePicker(current: TimelineScale, onSelect: (TimelineScale) -> Uni
 // ─────────────────────────────────────────────
 @Composable
 private fun ScheduleSectionContent() {
-    SectionPlaceholder(
-        title = "Schedule",
-        description = "Today's tiles and break windows will appear here.",
-    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        ScheduleRow(icon = Icons.Outlined.EventRepeat, label = "Recurring Tiles")
+        ScheduleRow(icon = Icons.Outlined.Schedule, label = "Upcoming Deadlines")
+    }
+}
+
+@Composable
+private fun ScheduleRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
 }
 
 @Composable
