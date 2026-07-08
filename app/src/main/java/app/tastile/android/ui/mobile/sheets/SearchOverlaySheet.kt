@@ -37,7 +37,7 @@ fun SearchOverlaySheet(overlay: OverlayViewModel) {
             onDismiss = { overlay.dismiss() },
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedTextField(

@@ -45,8 +45,8 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         applicationId = "app.tastile.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 29
-        versionName = "0.2.20"
+        versionCode = 30
+        versionName = "0.2.22"
 
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
         buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: "3f14cs42nkc0v3qf6k57gthlfe"}\"")

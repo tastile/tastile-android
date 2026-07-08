@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.TileFilter
 import app.tastile.android.data.repository.TileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +39,7 @@ class NowViewModel @Inject constructor(
             try {
                 val userId = authRepository.currentUserId()
                 if (userId != null) {
-                    _tiles.value = tileRepository.getTiles(userId)
+                    _tiles.value = tileRepository.getTiles(TileFilter.DEFAULT).tiles
                 }
             } catch (e: Exception) {
                 _error.value = e.message

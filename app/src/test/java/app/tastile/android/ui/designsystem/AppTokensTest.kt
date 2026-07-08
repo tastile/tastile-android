@@ -8,8 +8,8 @@ class AppTokensTest {
 
     @Test
     fun flatDesignTokens_haveExpectedRadiiAndButtonHeight() {
-        assertEquals(6.dp, AppShape.panelRadius)
-        assertEquals(8.dp, AppShape.chipRadius)
+        assertEquals(6.dp, AppCorner.small)
+        assertEquals(8.dp, AppCorner.medium)
         assertEquals(48.dp, AppComponentSize.buttonMinHeight)
     }
 }

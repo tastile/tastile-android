@@ -38,7 +38,7 @@ fun TileEditSheet(
             },
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(

@@ -36,8 +36,14 @@ class TileRepository @Inject constructor(
     private val v1ApiClient: V1ApiClient,
     private val v1CommandDispatcher: V1CommandDispatcher
 ) : PromptTileRepository, MemoTileRepository {
-    // Macro Step 5: every command now routes to v1 through
-    // [v1CommandDispatcher].  No more v0 command-name strings, no more
+    // C3 (web→android parity sweep): the read path now goes through
+    // [getTiles] honoring the `GET /v1/tiles?view_mode=...&limit=...`
+    // query contract that `tastile-web/src/lib/hooks/use-tile-list.ts`
+    // uses. The two `next_actionable_*` fields on the wire response
+    // thread through `TilesResponse` to the dashboard.
+    //
+    // Every command still routes to v1 through [v1CommandDispatcher]
+    // (Macro Step 5). No more v0 command-name strings, no more
     // CoreRuntimeService.applyCommand / currentSnapshot fallbacks.
 
     @Volatile
@@ -45,99 +51,47 @@ class TileRepository @Inject constructor(
     @Volatile
     private var latestCloudTiles: List<Tile> = emptyList()
 
-    suspend fun getTiles(userId: String): List<Tile> {
-        readCloudTiles()?.let { tiles ->
-            // readCloudTiles() already set "source=v1 ..." on success — preserve it.
-            latestCloudTiles = tiles
-            return tiles
-        }
-
-        if (canUseSnapshotForUser(userId)) {
-            projectedSnapshotTiles()?.let {
-                val snapshot = currentSnapshotOrNull()
-                latestReadDiagnostics = buildString {
-                    append("source=core")
-                    append(" revision=${snapshot?.revision ?: 0}")
-                    append(" snapshot_tiles=${it.size}")
-                    append(" user_match=true")
-                }
-                return it
-            }
-        }
-
-        // Neither v1 nor snapshot could answer.
-        // Preserve the "source=v1_unavailable" diagnostic set by readCloudTiles() if v1 failed;
-        // otherwise emit a baseline cloud_unavailable entry.
-        if (!latestReadDiagnostics.startsWith("source=v1_unavailable")) {
-            latestReadDiagnostics = "source=cloud_unavailable count=0 user_match=${canUseSnapshotForUser(userId)}"
-        }
-        latestCloudTiles = emptyList()
-        return emptyList()
-    }
-
-    private suspend fun readCloudTiles(): List<Tile>? {
+    suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): TilesResponse {
         val token = currentUserProvider.currentIdToken()
-        if (token.isNullOrBlank()) return null
+        if (token.isNullOrBlank()) {
+            latestReadDiagnostics = "source=v1_skipped reason=no_token count=0 user_match=true"
+            return TilesResponse(emptyList(), null, null)
+        }
         return try {
-            val v1Tiles = v1ApiClient.listTiles().toTiles(userId = currentUserProvider.currentUserId().orEmpty())
-            latestReadDiagnostics = "source=v1 count=${v1Tiles.size} user_match=true"
-            v1Tiles
+            val userId = currentUserProvider.currentUserId().orEmpty()
+            val resp = v1ApiClient.getTiles(filter)
+            val tiles = resp.toTiles(userId = userId)
+            latestCloudTiles = tiles
+            latestReadDiagnostics = buildString {
+                append("source=v1")
+                append(" count=${tiles.size}")
+                append(" user_match=true")
+                if (!resp.nextActionableTileId.isNullOrBlank()) {
+                    append(" next_tile=${resp.nextActionableTileId}")
+                }
+                if (!resp.nextActionableStartAt.isNullOrBlank()) {
+                    append(" next_at=${resp.nextActionableStartAt}")
+                }
+            }
+            TilesResponse(tiles, resp.nextActionableTileId, resp.nextActionableStartAt)
         } catch (e: V1Error) {
-            android.util.Log.w("TileRepository", "v1 listTiles failed: ${e.message}", e)
+            android.util.Log.w("TileRepository", "v1 getTiles failed: ${e.message}", e)
             latestReadDiagnostics = "source=v1_unavailable count=0 user_match=true"
-            null
+            TilesResponse(emptyList(), null, null)
         } catch (e: Exception) {
-            android.util.Log.w("TileRepository", "v1 listTiles failed: ${e.message}", e)
+            android.util.Log.w("TileRepository", "v1 getTiles failed: ${e.message}", e)
             latestReadDiagnostics = "source=v1_unavailable count=0 user_match=true"
-            null
+            TilesResponse(emptyList(), null, null)
         }
-    }
-
-    suspend fun getTiles(): TilesResponse {
-        return getTiles(viewMode = "all", lifecycle = null, limit = null, search = null)
-    }
-
-    suspend fun getTiles(
-        viewMode: String,
-        lifecycle: String? = null,
-        limit: Int? = null,
-        search: String? = null
-    ): TilesResponse {
-        val userId = currentUserProvider.currentUserId().orEmpty()
-        val base = if (userId.isBlank()) {
-            currentSnapshotOrNull()?.tiles?.map { it.toTile() }.orEmpty()
-        } else {
-            getTiles(userId)
-        }
-        val filtered = base
-            .let { tiles ->
-                if (lifecycle.isNullOrBlank()) tiles
-                else tiles.filter { it.lifecycle.equals(lifecycle, ignoreCase = true) }
-            }
-            .let { tiles ->
-                if (search.isNullOrBlank()) tiles
-                else tiles.filter {
-                    it.title.contains(search, ignoreCase = true) ||
-                        (it.nextAction?.contains(search, ignoreCase = true) == true)
-                }
-            }
-            .let { tiles ->
-                if (viewMode.equals("in_progress", ignoreCase = true)) {
-                    tiles.filter { it.lifecycle.equals(TileLifecycle.STARTED.value, ignoreCase = true) }
-                } else {
-                    tiles
-                }
-            }
-            .let { tiles -> if (limit == null) tiles else tiles.take(limit) }
-        return TilesResponse(tiles = filtered)
     }
 
     suspend fun getTileById(tileId: String): Tile? {
-        findSnapshotTile(tileId)?.let { return it }
         val userId = currentUserProvider.currentUserId().orEmpty()
         if (userId.isBlank()) return null
         if (latestCloudTiles.isEmpty()) {
-            latestCloudTiles = readCloudTiles().orEmpty()
+            // Refresh the cache against the unfiltered list so callers
+            // can still resolve any tile id without re-passing a filter.
+            latestCloudTiles = readCloudTilesUnfiltered()
         }
         return latestCloudTiles.firstOrNull { it.id == tileId }
     }
@@ -146,138 +100,19 @@ class TileRepository @Inject constructor(
         return getTileById(tileId)
     }
 
-    suspend fun getTilesInProgress(): TilesInProgressResponse {
-        val snapshot = currentSnapshotOrNull()
-        val tiles = when {
-            snapshot != null -> snapshot.inProgressTiles.map { inProgress ->
-                snapshot.tiles.firstOrNull { it.id == inProgress.tileId }?.toTile(
-                    activeTileId = snapshot.activeTileId,
-                    phaseStartedAt = snapshot.phaseStartedAt
-                ) ?: Tile(
-                    id = inProgress.tileId,
-                    localTileId = inProgress.tileId,
-                    title = inProgress.title,
-                    lifecycle = TileLifecycle.STARTED.value,
-                    updatedAt = inProgress.startedAt
-                )
-            }
-            else -> {
-                readCloudTiles().orEmpty()
-                    .filter { it.lifecycle.equals(TileLifecycle.STARTED.value, ignoreCase = true) }
-            }
+    private suspend fun readCloudTilesUnfiltered(): List<Tile> {
+        val token = currentUserProvider.currentIdToken()
+        if (token.isNullOrBlank()) return emptyList()
+        return try {
+            val userId = currentUserProvider.currentUserId().orEmpty()
+            v1ApiClient.getTiles().toTiles(userId = userId)
+        } catch (e: V1Error) {
+            android.util.Log.w("TileRepository", "v1 getTiles(unfiltered) failed: ${e.message}", e)
+            emptyList()
+        } catch (e: Exception) {
+            android.util.Log.w("TileRepository", "v1 getTiles(unfiltered) failed: ${e.message}", e)
+            emptyList()
         }
-        return TilesInProgressResponse(tiles = tiles, count = tiles.size)
-    }
-
-    suspend fun getActiveTile(): ActiveTileResponse {
-        val snapshot = currentSnapshotOrNull()
-        val active = snapshot?.activeTileId?.let { id ->
-            snapshot.tiles.firstOrNull { it.id == id }?.toTile(
-                activeTileId = snapshot.activeTileId,
-                phaseStartedAt = snapshot.phaseStartedAt
-            )
-        }
-        val phaseKind = snapshot?.phaseKind ?: if (active != null) "working" else "idle"
-        return ActiveTileResponse(
-            tile = active,
-            phase = phaseKind,
-            phaseStartedAt = snapshot?.phaseStartedAt,
-            phaseEndsAt = snapshot?.phaseEndsAt,
-            nextVisibleAction = when (phaseKind.lowercase()) {
-                "break", "on_break" -> "end_break"
-                "working", "work" -> "complete"
-                else -> "start"
-            }
-        )
-    }
-
-    suspend fun getExecution(): ExecutionResponse {
-        val snapshot = currentSnapshotOrNull()
-        return ExecutionResponse(
-            activeTileId = snapshot?.activeTileId,
-            phaseKind = snapshot?.phaseKind ?: "idle",
-            phaseStartedAt = snapshot?.phaseStartedAt,
-            phaseEndsAt = snapshot?.phaseEndsAt,
-            pendingPromptId = snapshot?.promptQueue?.firstOrNull { it.status.equals("pending", true) }?.promptId,
-            tileCount = snapshot?.tiles?.size ?: 0,
-            eventCount = 0
-        )
-    }
-
-    suspend fun getExecutionView(): ExecutionViewResponse {
-        val snapshot = currentSnapshotOrNull()
-        val inProgress = getTilesInProgress().tiles
-        val main = snapshot?.activeTileId?.let { id -> inProgress.firstOrNull { it.id == id } }
-            ?: inProgress.firstOrNull()
-        val phase = snapshot?.phaseKind.orEmpty().lowercase()
-        val isOnBreak = phase.contains("break")
-        val isWorking = main != null && !isOnBreak
-        return ExecutionViewResponse(
-            tilesInProgress = inProgress,
-            mainTile = main,
-            isWorking = isWorking,
-            isOnBreak = isOnBreak,
-            isIdle = !isWorking && !isOnBreak,
-            mainTileStartedAt = snapshot?.phaseStartedAt,
-            mainTileEndsAt = snapshot?.phaseEndsAt,
-            pendingPromptId = snapshot?.promptQueue?.firstOrNull { it.status.equals("pending", true) }?.promptId,
-            tileCount = snapshot?.tiles?.size ?: 0,
-            eventCount = 0
-        )
-    }
-
-    override suspend fun getPendingPrompt(): PromptViewResponse? {
-        val snapshot = currentSnapshotOrNull() ?: return null
-        val pending = snapshot.promptQueue.firstOrNull { it.status.equals("pending", true) } ?: return null
-        val title = pending.tileId?.let { id -> snapshot.tiles.firstOrNull { it.id == id }?.title } ?: "Prompt"
-        return PromptViewResponse(
-            promptId = pending.promptId,
-            kind = pending.kind,
-            severity = pending.severity,
-            tileId = pending.tileId,
-            title = title,
-            body = pending.reason,
-            why = pending.reason,
-            suggestedMinutes = pending.suggestedMinutes,
-            actions = pending.actions.map { PromptActionViewResponse(id = it, label = it.replace("_", " ")) },
-            createdAt = pending.scheduledAt,
-            stale = false
-        )
-    }
-
-    suspend fun getPendingPromptResponse(): PendingPromptResponse {
-        return PendingPromptResponse(prompt = getPendingPrompt())
-    }
-
-    suspend fun getTodayTimelineView(): TimelineTodayResponse {
-        val zone = ZoneId.systemDefault()
-        val today = java.time.LocalDate.now().atStartOfDay(zone).toInstant()
-        val tomorrow = today.plusSeconds(24L * 60L * 60L)
-        val timeline = getTimeline(today, tomorrow)
-        return TimelineTodayResponse(
-            items = timeline.map { item ->
-                val durationMin = if (!item.endAt.isNullOrBlank()) {
-                    runCatching {
-                        val start = parseIsoInstant(item.startAt) ?: return@runCatching 0L
-                        val end = parseIsoInstant(item.endAt) ?: return@runCatching 0L
-                        ((end.epochSecond - start.epochSecond) / 60L).coerceAtLeast(0L)
-                    }.getOrDefault(0L)
-                } else {
-                    0L
-                }
-                TimelineItemViewResponse(
-                    kind = item.type,
-                    tileId = item.tileId,
-                    semanticRole = item.type,
-                    title = item.title,
-                    startedAt = item.startAt,
-                    endedAt = item.endAt,
-                    durationMin = durationMin,
-                    isActive = item.status.equals("active", ignoreCase = true) ||
-                        item.status.equals("started", ignoreCase = true)
-                )
-            }
-        )
     }
 
     suspend fun createTile(userId: String, title: String): Tile {
@@ -377,7 +212,7 @@ class TileRepository @Inject constructor(
     }
 
     override suspend fun getActiveStartedTile(userId: String): Tile? {
-        val snapshot = if (canUseSnapshotForUser(userId)) currentSnapshotOrNull() else null
+        val snapshot = currentSnapshotOrNull()
         snapshot?.activeTileId?.let { activeId ->
             snapshot.tiles.firstOrNull { it.id == activeId }
                 ?.let { return it.toTile(activeTileId = snapshot.activeTileId, phaseStartedAt = snapshot.phaseStartedAt) }
@@ -386,8 +221,14 @@ class TileRepository @Inject constructor(
             ?.let { return it.toTile(activeTileId = snapshot.activeTileId, phaseStartedAt = snapshot.phaseStartedAt) }
         if (snapshot != null && snapshot.revision > 0) return null
 
-        return readCloudTiles().orEmpty()
-            .firstOrNull { it.lifecycle.equals(TileLifecycle.STARTED.value, ignoreCase = true) }
+        // Snapshot is absent or empty — read cloud tiles and find a STARTED one.
+        // Preserve the v1 cache so subsequent calls don't re-fetch.
+        val cloudTiles = if (latestCloudTiles.isEmpty()) {
+            readCloudTilesUnfiltered()
+        } else {
+            latestCloudTiles
+        }
+        return cloudTiles.firstOrNull { it.lifecycle.equals(TileLifecycle.STARTED.value, ignoreCase = true) }
     }
 
     override suspend fun continueTile(tileId: String) {
@@ -409,34 +250,6 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
-    suspend fun startBreak(breakMin: Int, insertionMode: String? = null) {
-        // v1 has no break endpoint. Per v1/10 §10 ("breaks are not special"),
-        // breaks are Flow+Window constructs in v1. The UI still calls this,
-        // so we throw a clear UnsupportedOperationException.
-        throw UnsupportedOperationException(
-            "break.start is not supported in v1 — breaks are Flow + Window constructs. " +
-                "Use the v1 Flow + Window commands instead."
-        )
-    }
-
-    suspend fun endBreak() {
-        throw UnsupportedOperationException(
-            "break.end is not supported in v1 — breaks are Flow + Window constructs. " +
-                "Use the v1 Flow + Window commands instead."
-        )
-    }
-
-    suspend fun extendTile(extendMin: Int) {
-        // v0 carried no tile_id for extend, so v1's /v1/tiles/{id}/extend-phase
-        // cannot be addressed. We can't proceed without a tile_id. Throw a
-        // clear error — the UI's extend button must be re-wired to capture
-        // the active tile id before calling this.
-        throw UnsupportedOperationException(
-            "tile.extend requires an active tile_id; v0 callers did not pass one. " +
-                "Wire the UI's extend action to pass the currently active tile id."
-        )
-    }
-
     suspend fun updateTile(tileId: String, payload: JsonObject) {
         val ack = v1CommandDispatcher.dispatchTileUpdate(tileId, payload)
             ?: throw IllegalStateException("Cloud command rejected: update tile")
@@ -447,15 +260,6 @@ class TileRepository @Inject constructor(
         val ack = v1CommandDispatcher.dispatchPromptRequest(tileId) ?: return false
         persistEmittedEvents(currentUserProvider.currentUserId(), ack)
         return true
-    }
-
-    suspend fun requestPromptResponse(tileId: String): RequestPromptResponse {
-        val ok = requestPrompt(tileId)
-        return RequestPromptResponse(
-            ok = ok,
-            prompt = getPendingPrompt(),
-            error = if (ok) null else "command_rejected"
-        )
     }
 
     suspend fun respondStartupRecoveryPrompt(
@@ -502,7 +306,7 @@ class TileRepository @Inject constructor(
             }
         }
         if (latestCloudTiles.isEmpty()) {
-            latestCloudTiles = readCloudTiles().orEmpty()
+            latestCloudTiles = readCloudTilesUnfiltered()
         }
         val fallback = buildTimelineFromTiles(latestCloudTiles, Instant.now())
         latestReadDiagnostics = buildString {
@@ -582,12 +386,8 @@ class TileRepository @Inject constructor(
     }
 
     override suspend fun getRecentTiles(userId: String, limit: Int): List<Tile> {
-        if (canUseSnapshotForUser(userId)) {
-            projectedSnapshotTiles()?.take(limit)?.let { return it }
-        }
-
         if (latestCloudTiles.isEmpty()) {
-            latestCloudTiles = readCloudTiles().orEmpty()
+            latestCloudTiles = readCloudTilesUnfiltered()
         }
         return latestCloudTiles.take(limit)
     }
@@ -607,16 +407,6 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
-    private fun projectedSnapshotTiles(): List<Tile>? {
-        // Macro Step 5: no v0 snapshot anymore — v1 read is the only source.
-        return null
-    }
-
-    private fun canUseSnapshotForUser(userId: String): Boolean {
-        val currentUserId = currentUserProvider.currentUserId()
-        return !currentUserId.isNullOrBlank() && currentUserId == userId
-    }
-
     private fun findSnapshotTile(tileId: String): Tile? {
         // Macro Step 5: no v0 snapshot to search. Always null; callers fall
         // through to the v1 read path.
@@ -625,10 +415,8 @@ class TileRepository @Inject constructor(
 
     private fun currentSnapshotOrNull(): CoreSnapshot? {
         // Macro Step 5: the v0 CoreRuntimeService is no longer injected into
-        // TileRepository. Snapshot-backed UI surfaces (getActiveTile,
-        // getExecution, getExecutionView, getTilesInProgress) degrade to
-        // v1-only reads. A future rewrite of the mobile UI will replace these
-        // surfaces with v1 Execution / Timeline views.
+        // TileRepository. The remaining callers in this file (getActiveStartedTile,
+        // createTile) tolerate a null snapshot and degrade to v1-only reads.
         return null
     }
 
@@ -638,13 +426,13 @@ class TileRepository @Inject constructor(
         // After a v1 mutation, re-read the cloud tile list so subsequent
         // getTiles() / getTileById() calls see the new state without an
         // explicit refresh.
-        latestCloudTiles = readCloudTiles().orEmpty()
+        latestCloudTiles = readCloudTilesUnfiltered()
         executionNotificationCoordinator.syncOnce()
     }
 
     private suspend fun readCloudTileById(tileId: String): Tile? {
         if (latestCloudTiles.isEmpty()) {
-            latestCloudTiles = readCloudTiles().orEmpty()
+            latestCloudTiles = readCloudTilesUnfiltered()
         }
         return latestCloudTiles.firstOrNull { it.id == tileId }
     }

@@ -83,4 +83,36 @@ object V1NumericConstants {
         const val ORDERED_IDENTIFIED: Byte = 3
         const val SPAN_ENDPOINT: Byte = 4
     }
+
+    /**
+     * Tile list-view lifecycle codes — mirrors
+     * `tastile-web/src/lib/constants/tile-list-view-constants.ts` `LIFECYCLE_BY_CODE`.
+     */
+    object LifecycleCode {
+        const val READY: Int = 0
+        const val STARTED: Int = 1
+        const val DONE: Int = 2
+        const val CLOSED: Int = 3
+    }
+
+    /**
+     * Objective-mode codes per v1. Maps FINISH_ONCE / RECURRING /
+     * MAXIMIZE_WITHIN_INTERVAL / LABEL_ONLY. Mirrors
+     * `OBJECTIVE_MODE_BY_CODE` in the web client.
+     */
+    object ObjectiveMode {
+        const val FINISH_ONCE: Int = 0
+        const val RECURRING: Int = 1
+        const val MAXIMIZE_WITHIN_INTERVAL: Int = 2
+        const val LABEL_ONLY: Int = 3
+    }
+
+    /**
+     * Done-rule codes per v1. Maps MANUAL / TIME_REACHED / INTERVAL_END.
+     */
+    object DoneRule {
+        const val MANUAL: Int = 0
+        const val TIME_REACHED: Int = 1
+        const val INTERVAL_END: Int = 2
+    }
 }

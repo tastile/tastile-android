@@ -4,4 +4,47 @@
     <string name="mobile_top_search">Search</string>
     <string name="mobile_top_notifications">Notifications</string>
     <string name="mobile_top_avatar">Account menu</string>
+
+    <!-- Tiles tab (C4 — web→android parity sweep) -->
+    <string name="dashboard_tiles_title">Tiles Workspace</string>
+    <string name="dashboard_tiles_tab_list">List</string>
+    <string name="dashboard_tiles_tab_timeline">Timeline</string>
+    <string name="dashboard_tiles_tab_changes">Changes</string>
+    <string name="dashboard_tiles_section_main">Main</string>
+    <string name="dashboard_tiles_section_sub">Sub</string>
+    <string name="dashboard_tiles_empty_main">No active main task</string>
+    <string name="dashboard_tiles_empty_sub">No sub tasks</string>
+    <string name="dashboard_tiles_summary_open_count">Open tiles</string>
+    <string name="dashboard_tiles_summary_estimated">Estimated total</string>
+    <string name="dashboard_tiles_summary_sections">Sections</string>
+    <string name="dashboard_tiles_search_placeholder">Search…</string>
+    <string name="dashboard_tiles_filter_range_label">Range:</string>
+    <string name="dashboard_tiles_filter_range_all">All</string>
+    <string name="dashboard_tiles_filter_range_today">Today</string>
+    <string name="dashboard_tiles_filter_range_recent">Last 24h</string>
+    <string name="dashboard_tiles_filter_range_exclude_future">Exclude future</string>
+    <string name="dashboard_tiles_filter_granularity_label">Granularity:</string>
+    <string name="dashboard_tiles_filter_granularity_all">All (incl. breaks)</string>
+    <string name="dashboard_tiles_filter_granularity_no_breaks">Work only</string>
+    <string name="dashboard_tiles_filter_granularity_min_5m">≥ 5m</string>
+    <string name="dashboard_tiles_filter_granularity_min_15m">≥ 15m</string>
+    <string name="dashboard_tiles_filter_granularity_min_30m">≥ 30m</string>
+    <string name="dashboard_tiles_filter_limit_label">Max:</string>
+    <string name="dashboard_tiles_filter_limit_20">20</string>
+    <string name="dashboard_tiles_filter_limit_50">50</string>
+    <string name="dashboard_tiles_filter_limit_100">100</string>
+    <string name="dashboard_tiles_filter_limit_500">500</string>
+    <string name="dashboard_tiles_filter_limit_unlimited">Unlimited</string>
+    <string name="dashboard_tiles_omitted_more">+%1$d more ▼</string>
+    <string name="dashboard_tiles_no_changes">No changes yet</string>
+    <string name="dashboard_tiles_delete_dialog_title">Delete this tile?</string>
+    <string name="dashboard_tiles_delete_dialog_body">This permanently deletes the tile.</string>
+    <string name="dashboard_tiles_delete_dialog_confirm">Delete</string>
+    <string name="dashboard_tiles_delete_dialog_cancel">Cancel</string>
+    <string name="dashboard_tiles_timeline_section_title">Timeline</string>
+    <string name="dashboard_tiles_timeline_empty">No timeline events</string>
+    <string name="dashboard_tiles_changes_section_title">Recent Changes</string>
+    <string name="dashboard_tiles_changes_empty">No changes yet</string>
+    <string name="tiles_duration">Duration</string>
+    <string name="tiles_start_at">Start</string>
 </resources>

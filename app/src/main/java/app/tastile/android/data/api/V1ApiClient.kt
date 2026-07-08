@@ -1,6 +1,8 @@
 package app.tastile.android.data.api
 
 import app.tastile.android.BuildConfig
+import app.tastile.android.data.repository.TileFilter
+import app.tastile.android.data.repository.toQueryString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
@@ -57,17 +59,20 @@ class V1ApiClient @Inject constructor(
         }
     }
 
-    suspend fun listTiles(): V1ListTilesResponse =
-        get("/v1/tiles")
+    suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): V1ListTilesResponse {
+        val query = filter.toQueryString()
+        return if (query.isEmpty()) {
+            get("/v1/tiles")
+        } else {
+            get("/v1/tiles?$query")
+        }
+    }
 
     suspend fun readTile(tileId: String): TileDetailView =
         get("/v1/tiles/$tileId")
 
     suspend fun listPlacements(): List<V1PlacementListItem> =
         get("/v1/placements")
-
-    suspend fun getExecution(executionId: String): V1ExecutionView =
-        get("/v1/executions/$executionId")
 
     suspend fun getTimeline(start: Instant, end: Instant): V1TimelineResponse {
         val startIso = URLEncoder.encode(start.toString(), Charsets.UTF_8.name())

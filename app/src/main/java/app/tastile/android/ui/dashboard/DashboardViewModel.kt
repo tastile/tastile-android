@@ -3,20 +3,19 @@ package app.tastile.android.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.data.model.Integration
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
+import app.tastile.android.data.model.TileLifecycle
+import app.tastile.android.data.model.projectLabels
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.CalendarProjectionResponse
-import app.tastile.android.data.repository.CalendarSyncPlanPreviewResponse
-import app.tastile.android.data.repository.GoogleCalendarIntegrationSettings
-import app.tastile.android.data.repository.IntegrationRepository
 import app.tastile.android.data.repository.ProfileRepository
 import app.tastile.android.data.repository.TastileAuthState
+import app.tastile.android.data.repository.TileFilter
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.util.formatIsoDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
@@ -43,6 +41,31 @@ import java.time.ZoneId
 import javax.inject.Inject
 
 enum class TimelineScale { Day, Week, Month }
+
+/**
+ * Sub-tab selector for the mobile Tiles tab. Independent from
+ * [TimelineScale] (which drives the main `/timeline` route) so
+ * C4 can ship a self-contained scale selector without colliding
+ * with the existing timeline screen.
+ */
+enum class TilesTab { LIST, TIMELINE, CHANGES }
+
+enum class TileRange { ALL, TODAY, RECENT, EXCLUDE_FUTURE }
+enum class TileGranularity { ALL, NO_BREAKS, MIN_5M, MIN_15M, MIN_30M }
+enum class ListGroupingMode { STATE, PROJECT, TAG }
+enum class ListViewMode { COMPACT, COMFORTABLE, DETAILED }
+enum class TimelineSubScale { DAY, WEEK, MONTH, CUSTOM }
+
+/**
+ * One labelled grouping emitted by [DashboardViewModel.groupedTiles].
+ * `groupId` is stable across recompositions so it can drive both
+ * section headers and `testTag`s.
+ */
+data class TileSection(
+    val groupId: String,
+    val labelKey: String,
+    val tiles: List<Tile>,
+)
 
 data class CreateTileDraft(
     val title: String,
@@ -78,11 +101,23 @@ class DashboardViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val tileRepository: TileRepository,
     private val userSettingsRepository: UserSettingsRepository,
-    private val integrationRepository: IntegrationRepository
 ) : ViewModel() {
     private val cardMapper = DashboardCardMapper()
     private val _tiles = MutableStateFlow<List<Tile>>(emptyList())
     val tiles: StateFlow<List<Tile>> = _tiles.asStateFlow()
+
+    private val _tileFilter = MutableStateFlow(TileFilter.DEFAULT)
+    val tileFilter: StateFlow<TileFilter> = _tileFilter.asStateFlow()
+
+    private val _nextActionableTileId = MutableStateFlow<String?>(null)
+    val nextActionableTileId: StateFlow<String?> = _nextActionableTileId.asStateFlow()
+
+    private val _nextActionableStartAt = MutableStateFlow<String?>(null)
+    val nextActionableStartAt: StateFlow<String?> = _nextActionableStartAt.asStateFlow()
+
+    fun setTileFilter(filter: TileFilter) {
+        _tileFilter.value = filter
+    }
 
     private val _selectedTileId = MutableStateFlow<String?>(null)
 
@@ -133,8 +168,6 @@ class DashboardViewModel @Inject constructor(
         computeTimelineRange(LocalDate.now(), TimelineScale.Day)
     )
     val timelineRange: StateFlow<Pair<Instant, Instant>> = _timelineRange.asStateFlow()
-    private val _googleCalendarIntegration = MutableStateFlow<GoogleCalendarIntegrationSettings?>(null)
-    val googleCalendarIntegration: StateFlow<GoogleCalendarIntegrationSettings?> = _googleCalendarIntegration.asStateFlow()
 
     private val _selectedDay = MutableStateFlow(java.time.LocalDate.now())
     val selectedDay: StateFlow<java.time.LocalDate> = _selectedDay.asStateFlow()
@@ -148,25 +181,228 @@ class DashboardViewModel @Inject constructor(
         _scale.value = scale
     }
 
-    val integrations: StateFlow<List<Integration>> = googleCalendarIntegration
-        .map { gc ->
-            listOf(
-                Integration(
-                    id = "google_calendar",
-                    name = "Calendar",
-                    connected = gc?.connected == true,
-                ),
-            )
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     private val _statsDiagnostics = MutableStateFlow("n/a")
     val statsDiagnostics: StateFlow<String> = _statsDiagnostics.asStateFlow()
-    private val _daemonStatusSummary = MutableStateFlow("daemon=n/a")
-    val daemonStatusSummary: StateFlow<String> = _daemonStatusSummary.asStateFlow()
-    private val _calendarMonthProjection = MutableStateFlow<CalendarProjectionResponse?>(null)
-    val calendarMonthProjection: StateFlow<CalendarProjectionResponse?> = _calendarMonthProjection.asStateFlow()
-    private val _calendarSyncPlanPreview = MutableStateFlow<CalendarSyncPlanPreviewResponse?>(null)
-    val calendarSyncPlanPreview: StateFlow<CalendarSyncPlanPreviewResponse?> = _calendarSyncPlanPreview.asStateFlow()
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Tiles-tab sub-tab + filter + grouping + view-mode state (C4)
+    // ─────────────────────────────────────────────────────────────────────
+
+    private val _activeTilesTab = MutableStateFlow(TilesTab.LIST)
+    val activeTilesTab: StateFlow<TilesTab> = _activeTilesTab.asStateFlow()
+
+    private val _searchTerm = MutableStateFlow("")
+    val searchTerm: StateFlow<String> = _searchTerm.asStateFlow()
+
+    private val _filterRange = MutableStateFlow(TileRange.ALL)
+    val filterRange: StateFlow<TileRange> = _filterRange.asStateFlow()
+
+    private val _filterGranularity = MutableStateFlow(TileGranularity.MIN_5M)
+    val filterGranularity: StateFlow<TileGranularity> = _filterGranularity.asStateFlow()
+
+    private val _filterLimit = MutableStateFlow(50)
+    val filterLimit: StateFlow<Int> = _filterLimit.asStateFlow()
+
+    private val _listGroupingMode = MutableStateFlow(ListGroupingMode.STATE)
+    val listGroupingMode: StateFlow<ListGroupingMode> = _listGroupingMode.asStateFlow()
+
+    private val _listViewMode = MutableStateFlow(ListViewMode.COMFORTABLE)
+    val listViewMode: StateFlow<ListViewMode> = _listViewMode.asStateFlow()
+
+    private val _expandedSections = MutableStateFlow<Set<String>>(emptySet())
+    val expandedSections: StateFlow<Set<String>> = _expandedSections.asStateFlow()
+
+    private val _sectionLimits = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val sectionLimits: StateFlow<Map<String, Int>> = _sectionLimits.asStateFlow()
+
+    private val _timelineScale = MutableStateFlow(TimelineSubScale.DAY)
+    val timelineScale: StateFlow<TimelineSubScale> = _timelineScale.asStateFlow()
+
+    private val _customStartIso = MutableStateFlow<String?>(null)
+    val customStartIso: StateFlow<String?> = _customStartIso.asStateFlow()
+
+    private val _customEndIso = MutableStateFlow<String?>(null)
+    val customEndIso: StateFlow<String?> = _customEndIso.asStateFlow()
+
+    private val _requestDeleteTileId = MutableStateFlow<String?>(null)
+    val requestDeleteTileId: StateFlow<String?> = _requestDeleteTileId.asStateFlow()
+
+    /**
+     * Tiles partitioned by the active [listGroupingMode]. STATE groups by
+     * `Tile.lifecycle` (4 buckets), PROJECT groups by the first label
+     * matching `"project:*"` (Unassigned fallback), TAG groups by every
+     * other label (Untagged fallback). Each [TileSection] carries a
+     * stable [TileSection.groupId] and a [TileSection.labelKey] the UI
+     * can resolve via `stringResource(...)`.
+     */
+    val groupedTiles: StateFlow<List<TileSection>> = combine(_tiles, _listGroupingMode) { tiles, mode ->
+        when (mode) {
+            ListGroupingMode.STATE -> tiles
+                .groupBy { TileLifecycle.fromString(it.lifecycle).name }
+                .toSortedMap()
+                .map { (key, group) ->
+                    TileSection(groupId = key.lowercase(), labelKey = key.lowercase(), tiles = group)
+                }
+            ListGroupingMode.PROJECT -> {
+                val sections = linkedMapOf<String, MutableList<Tile>>()
+                tiles.forEach { tile ->
+                    val projectLabel = tile.projectLabels().firstOrNull()
+                    val key = projectLabel?.let { "project:$it" } ?: "__unassigned"
+                    sections.getOrPut(key) { mutableListOf() }.add(tile)
+                }
+                sections.map { (key, group) ->
+                    TileSection(
+                        groupId = key,
+                        labelKey = key.removePrefix("project:").takeIf { key.startsWith("project:") }
+                            ?: "unassigned",
+                        tiles = group,
+                    )
+                }
+            }
+            ListGroupingMode.TAG -> {
+                val sections = linkedMapOf<String, MutableList<Tile>>()
+                tiles.forEach { tile ->
+                    val tags = tile.labels.filter { !it.startsWith("project:") }
+                    if (tags.isEmpty()) {
+                        sections.getOrPut("__untagged") { mutableListOf() }.add(tile)
+                    } else {
+                        tags.forEach { tag ->
+                            sections.getOrPut("tag:$tag") { mutableListOf() }.add(tile)
+                        }
+                    }
+                }
+                sections.map { (key, group) ->
+                    TileSection(
+                        groupId = key,
+                        labelKey = key.removePrefix("tag:").takeIf { key.startsWith("tag:") } ?: "untagged",
+                        tiles = group,
+                    )
+                }
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun setActiveTilesTab(tab: TilesTab) {
+        _activeTilesTab.value = tab
+    }
+
+    fun setSearchTerm(term: String) {
+        _searchTerm.value = term
+        rebuildTileFilter()
+    }
+
+    fun setFilterRange(range: TileRange) {
+        _filterRange.value = range
+        rebuildTileFilter()
+    }
+
+    fun setFilterGranularity(granularity: TileGranularity) {
+        _filterGranularity.value = granularity
+        rebuildTileFilter()
+    }
+
+    fun setFilterLimit(limit: Int) {
+        _filterLimit.value = limit
+        rebuildTileFilter()
+    }
+
+    fun setListGroupingMode(mode: ListGroupingMode) {
+        _listGroupingMode.value = mode
+    }
+
+    fun setListViewMode(mode: ListViewMode) {
+        _listViewMode.value = mode
+    }
+
+    fun toggleSectionExpanded(groupId: String) {
+        _expandedSections.value = _expandedSections.value.toMutableSet().apply {
+            if (!add(groupId)) remove(groupId)
+        }
+    }
+
+    /**
+     * Per-section visible-tile limit that doubles 8 → 16 → 32 → 60 then
+     * resets (matching web's `nextTileSectionLimit` in
+     * `tastile-web/src/app/dashboard/tiles/page.tsx`). Capped at 60 so
+     * a pathological section never explodes the LazyColumn row budget.
+     */
+    fun bumpSectionLimit(groupId: String, totalCount: Int) {
+        val current = _sectionLimits.value[groupId] ?: INITIAL_SECTION_LIMIT
+        val next = nextSectionLimit(current).coerceAtMost(maxOf(INITIAL_SECTION_LIMIT, totalCount))
+        _sectionLimits.value = _sectionLimits.value + (groupId to next)
+    }
+
+    private fun nextSectionLimit(current: Int): Int {
+        if (current >= MAX_SECTION_LIMIT) return INITIAL_SECTION_LIMIT
+        return when (current) {
+            8 -> 16
+            16 -> 32
+            32 -> 60
+            else -> INITIAL_SECTION_LIMIT
+        }
+    }
+
+    companion object {
+        private const val INITIAL_SECTION_LIMIT = 8
+        private const val MAX_SECTION_LIMIT = 60
+    }
+
+    fun setTimelineScale(scale: TimelineSubScale) {
+        _timelineScale.value = scale
+    }
+
+    fun setCustomRange(startIso: String?, endIso: String?) {
+        _customStartIso.value = startIso
+        _customEndIso.value = endIso
+    }
+
+    fun setDeleteTileCandidate(id: String?) {
+        _requestDeleteTileId.value = id
+    }
+
+    fun confirmDeleteTile() {
+        val id = _requestDeleteTileId.value ?: return
+        _requestDeleteTileId.value = null
+        deleteTile(id)
+    }
+
+    /**
+     * Format an ISO instant as a short, locale-aware date-time string.
+     * Exposed so the [app.tastile.android.ui.mobile.tabs.tiles] sub-tab
+     * bodies can render the same labels the rest of the app uses without
+     * re-importing the underlying [formatIsoDateTime] helper.
+     */
+    fun formatIsoDateTime(iso: String?, locale: AppLocale): String =
+        formatIsoDateTime(iso, locale, zone = ZoneId.systemDefault())
+
+    private fun rebuildTileFilter() {
+        val current = _tileFilter.value
+        val range = when (_filterRange.value) {
+            TileRange.ALL -> null
+            TileRange.TODAY -> "today"
+            TileRange.RECENT -> "recent"
+            TileRange.EXCLUDE_FUTURE -> "exclude_future"
+        }
+        val granularity = when (_filterGranularity.value) {
+            TileGranularity.ALL -> null
+            TileGranularity.NO_BREAKS -> "no_breaks"
+            TileGranularity.MIN_5M -> "min_5m"
+            TileGranularity.MIN_15M -> "min_15m"
+            TileGranularity.MIN_30M -> "min_30m"
+        }
+        val search = _searchTerm.value.trim().takeIf { it.isNotBlank() }
+        val excludeFuture = _filterRange.value == TileRange.EXCLUDE_FUTURE
+        setTileFilter(
+            current.copy(
+                viewMode = "list",
+                limit = _filterLimit.value.coerceAtLeast(0),
+                search = search ?: current.search,
+                excludeFuture = excludeFuture,
+                range = range ?: current.range,
+                granularity = granularity ?: current.granularity,
+            )
+        )
+    }
 
     init {
         viewModelScope.launch {
@@ -183,6 +419,25 @@ class DashboardViewModel @Inject constructor(
                     refreshTimeline()
                 }
             }
+        }
+        viewModelScope.launch {
+            combine(authRepository.authState, _tileFilter) { state, filter -> state to filter }
+                .distinctUntilChanged()
+                .collect { (state, filter) ->
+                    val userId = (state as? TastileAuthState.Authenticated)?.userId
+                    if (userId != null) {
+                        val response = tileRepository.getTiles(filter)
+                        _tiles.value = response.tiles
+                        _nextActionableTileId.value = response.nextActionableTileId
+                        _nextActionableStartAt.value = response.nextActionableStartAt
+                        _statsDiagnostics.value = tileRepository.latestReadDiagnostics()
+                    } else {
+                        _tiles.value = emptyList()
+                        _nextActionableTileId.value = null
+                        _nextActionableStartAt.value = null
+                        _statsDiagnostics.value = "source=none reason=unauthenticated"
+                    }
+                }
         }
         refreshAll()
     }
@@ -209,37 +464,14 @@ class DashboardViewModel @Inject constructor(
                 _email.value = authState?.email ?: legacySession.readNestedString("user", "email").orEmpty()
                 val metadataAvatar: String? = null
                 if (userId != null) {
-                    _tiles.value = tileRepository.getTiles(userId)
                     _profile.value = profileRepository.getProfile(userId)
                     _avatarUrl.value = metadataAvatar ?: _profile.value?.avatarUrl
                     val (tlStart, tlEnd) = _timelineRange.value
                     _timeline.value = tileRepository.getTimeline(tlStart, tlEnd)
-                    _googleCalendarIntegration.value = integrationRepository.getSettings().googleCalendar
-                    runCatching {
-                        integrationRepository.getCalendarMonthProjection()
-                    }.onSuccess { projection ->
-                        _calendarMonthProjection.value = projection
-                    }.onFailure { calendarError ->
-                        _calendarMonthProjection.value = null
-                        _error.value = "Calendar sync unavailable showing fallback timeline"
-                        _statsDiagnostics.value = "calendar_projection_error=${calendarError.javaClass.simpleName}"
-                    }
-                    _calendarSyncPlanPreview.value = runCatching {
-                        integrationRepository.getCalendarSyncPlanPreview()
-                    }.getOrNull()
-                    val daemon = integrationRepository.lastSuccessfulDaemonBaseUrl() ?: "unresolved"
-                    _statsDiagnostics.value = "${tileRepository.latestReadDiagnostics()} daemon=$daemon"
-                    refreshDaemonStatusInternal()
                 } else {
-                    _tiles.value = emptyList()
                     _timeline.value = emptyList()
                     _profile.value = null
                     _avatarUrl.value = null
-                    _googleCalendarIntegration.value = null
-                    _calendarMonthProjection.value = null
-                    _calendarSyncPlanPreview.value = null
-                    _statsDiagnostics.value = "source=none reason=unauthenticated"
-                    _daemonStatusSummary.value = "daemon=unauthenticated"
                 }
             } catch (e: Exception) {
                 _statsDiagnostics.value = "source=error reason=${e.javaClass.simpleName}"
@@ -347,99 +579,6 @@ class DashboardViewModel @Inject constructor(
         _error.value = null
     }
 
-    fun connectGoogleCalendar() {
-        viewModelScope.launch {
-            try {
-                _googleCalendarIntegration.value =
-                    integrationRepository.updateGoogleCalendarConnected(true).googleCalendar
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to connect google calendar"
-            }
-        }
-    }
-
-    fun disconnectGoogleCalendar() {
-        viewModelScope.launch {
-            try {
-                _googleCalendarIntegration.value =
-                    integrationRepository.updateGoogleCalendarConnected(false).googleCalendar
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to disconnect google calendar"
-            }
-        }
-    }
-
-    fun syncGoogleCalendarNow() {
-        viewModelScope.launch {
-            try {
-                integrationRepository.triggerSync()
-                _googleCalendarIntegration.value =
-                    integrationRepository.markGoogleCalendarSyncedNow().googleCalendar
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to sync google calendar"
-            }
-        }
-    }
-
-    fun updateGoogleCalendarPolicy(syncMode: String, selectedCalendarId: String?) {
-        viewModelScope.launch {
-            try {
-                _googleCalendarIntegration.value = integrationRepository.updateGoogleCalendarIntegration(
-                    syncMode = syncMode,
-                    selectedCalendarId = selectedCalendarId
-                ).googleCalendar
-                _calendarSyncPlanPreview.value = integrationRepository.getCalendarSyncPlanPreview()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to update google calendar policy"
-            }
-        }
-    }
-
-    fun triggerDaemonTick() {
-        viewModelScope.launch {
-            try {
-                integrationRepository.triggerTick()
-                refreshDaemonStatusInternal()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to trigger daemon tick"
-            }
-        }
-    }
-
-    fun resetLocalSyncData() {
-        viewModelScope.launch {
-            try {
-                val res = integrationRepository.resetLocalSyncData()
-                _daemonStatusSummary.value = "recovery=reset-local applied=${res.applied} ok=${res.ok}"
-                refreshAll()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to reset local sync data"
-            }
-        }
-    }
-
-    fun redownloadRemoteSyncData() {
-        viewModelScope.launch {
-            try {
-                val res = integrationRepository.redownloadRemoteSyncData()
-                _daemonStatusSummary.value = "recovery=redownload-remote applied=${res.applied} ok=${res.ok}"
-                refreshAll()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to redownload remote sync data"
-            }
-        }
-    }
-
-    fun refreshDaemonStatus() {
-        viewModelScope.launch {
-            try {
-                refreshDaemonStatusInternal()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to refresh daemon status"
-            }
-        }
-    }
-
     fun buildExecuteCards(): List<DashboardCardModel> = cardMapper.buildExecuteCards(_tiles.value)
 
     fun buildTileCards(): List<DashboardCardModel> = cardMapper.buildTileCards(_tiles.value)
@@ -451,9 +590,6 @@ class DashboardViewModel @Inject constructor(
             is CardAction.CompleteTile -> completeTile(action.tileId)
             is CardAction.DeferTile -> deferTile(action.tileId)
             is CardAction.DeleteTile -> deleteTile(action.tileId)
-            CardAction.StartBreak -> startBreak()
-            CardAction.EndBreak -> endBreak()
-            is CardAction.ExtendTile -> extendTile(action.minutes)
         }
     }
 
@@ -464,39 +600,6 @@ class DashboardViewModel @Inject constructor(
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to trigger prompt"
-            }
-        }
-    }
-
-    private fun startBreak() {
-        viewModelScope.launch {
-            try {
-                tileRepository.startBreak(breakMin = 5)
-                refreshAll()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to start break"
-            }
-        }
-    }
-
-    private fun endBreak() {
-        viewModelScope.launch {
-            try {
-                tileRepository.endBreak()
-                refreshAll()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to end break"
-            }
-        }
-    }
-
-    private fun extendTile(minutes: Int) {
-        viewModelScope.launch {
-            try {
-                tileRepository.extendTile(minutes)
-                refreshAll()
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to extend tile"
             }
         }
     }
@@ -646,19 +749,6 @@ class DashboardViewModel @Inject constructor(
         })
     }
 
-    private suspend fun refreshDaemonStatusInternal() {
-        val syncStatus = integrationRepository.getSyncStatus()
-        val runtimePaths = integrationRepository.getRuntimePaths()
-        val quota = integrationRepository.getTileQuota()
-        val syncSummary = if (syncStatus.running) "running" else "idle"
-        _daemonStatusSummary.value = buildString {
-            append("sync=$syncSummary")
-            syncStatus.lastSuccessAt?.let { append(" last_success=$it") }
-            if (!syncStatus.lastError.isNullOrBlank()) append(" last_error=${syncStatus.lastError}")
-            append(" quota=${quota.tileCount}/${quota.maxTiles}")
-            append(" profile=${runtimePaths.profileName}")
-        }
-    }
 }
 
 private fun extractAvatarUrlFromMetadata(metadata: JsonObject): String? {

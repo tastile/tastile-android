@@ -1,40 +1,37 @@
 package app.tastile.android.ui.dashboard
 
+import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.GoogleCalendarIntegrationSettings
-import app.tastile.android.data.repository.IntegrationRepository
-import app.tastile.android.data.repository.IntegrationSettingsResponse
-import app.tastile.android.data.repository.RecoveryResetResponse
-import app.tastile.android.data.repository.RuntimePathsResponse
-import app.tastile.android.data.repository.SyncStatusResponse
-import app.tastile.android.data.repository.TastileAuthState
-import app.tastile.android.data.repository.TileQuotaResponse
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.TileRepository
+import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.ui.dashboard.ListGroupingMode
+import androidx.lifecycle.viewModelScope
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.cancel
-import kotlinx.serialization.json.buildJsonObject
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import io.mockk.coEvery
-import io.mockk.coVerify
-import app.tastile.android.core.CoreTimelineItem
-import androidx.lifecycle.viewModelScope
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
@@ -53,26 +50,33 @@ class DashboardViewModelTest {
         Dispatchers.resetMain()
     }
 
-    @Test
-    fun handleCardAction_routesToRequestPromptCommand() {
+    private fun newViewModel(): DashboardViewModel {
         val authRepository = mockk<AuthRepository>(relaxed = true)
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
-        val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
         every { authRepository.currentSession } returns null
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles("user-1") } returns emptyList()
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
-        coEvery { tileRepository.requestPrompt(any()) } returns true
-        coEvery { integrationRepository.getSettings() } returns IntegrationSettingsResponse(
-            googleCalendar = GoogleCalendarIntegrationSettings()
-        )
+        return DashboardViewModel(
+            authRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+        ).also { viewModels.add(it) }
+    }
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
+    @Test
+    fun handleCardAction_routesToRequestPromptCommand() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
+        coEvery { tileRepository.requestPrompt(any()) } returns true
+
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
         viewModels.add(viewModel)
 
         viewModel.handleCardAction(CardAction.TriggerPrompt("tile-1"))
@@ -81,54 +85,12 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun handleCardAction_routesToBreakExtendAndDeferCommands() {
-        val authRepository = mockk<AuthRepository>(relaxed = true)
-        val profileRepository = mockk<ProfileRepository>(relaxed = true)
-        val tileRepository = mockk<TileRepository>(relaxed = true)
-        val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
-        val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        every { authRepository.currentSession } returns null
-        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
-        every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
-        every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
-        coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
-        coEvery { tileRepository.startBreak(any(), any()) } returns Unit
-        coEvery { tileRepository.extendTile(any()) } returns Unit
-        coEvery { tileRepository.deferTile(any(), any(), any()) } returns Unit
-        coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
-
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
-        viewModels.add(viewModel)
-
-        viewModel.handleCardAction(CardAction.StartBreak)
-        viewModel.handleCardAction(CardAction.ExtendTile(minutes = 10))
-        viewModel.handleCardAction(CardAction.DeferTile("tile-1"))
-
-        coVerify(atLeast = 1) { tileRepository.startBreak(5, null) }
-        coVerify(atLeast = 1) { tileRepository.extendTile(10) }
-        coVerify(atLeast = 1) { tileRepository.deferTile("tile-1", null, null) }
-    }
-
-    @Test
-    fun rescheduleTimelineItem_routesToCoreRescheduleCommand() {
-        val authRepository = mockk<AuthRepository>(relaxed = true)
-        val profileRepository = mockk<ProfileRepository>(relaxed = true)
-        val tileRepository = mockk<TileRepository>(relaxed = true)
-        val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
-        val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        every { authRepository.currentSession } returns null
-        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
-        every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
-        every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
+    fun rescheduleTimelineItem_routesToCoreRescheduleCommand() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.rescheduleTile(any(), any(), any()) } returns Unit
-        coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
         viewModels.add(viewModel)
         val item = CoreTimelineItem(
             id = "tl-1",
@@ -146,87 +108,10 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun refreshAll_exposesDiagnosticsForStatsValidation() {
-        val authRepository = mockk<AuthRepository>(relaxed = true)
-        val profileRepository = mockk<ProfileRepository>(relaxed = true)
-        val tileRepository = mockk<TileRepository>(relaxed = true)
-        val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
-        val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        every { authRepository.currentSession } returns null
-        every { authRepository.authState } returns MutableStateFlow(
-            TastileAuthState.Authenticated(
-                userId = "user-1",
-                email = "test@example.com",
-                idToken = "id-token",
-                accessToken = "access-token",
-                refreshToken = null
-            )
-        )
-        every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
-        every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
-        coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
-        coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
-        coEvery { integrationRepository.getSyncStatus() } returns SyncStatusResponse(
-            running = false,
-            lastSuccessAt = null,
-            lastError = null
-        )
-        coEvery { integrationRepository.getRuntimePaths() } returns RuntimePathsResponse(
-            profileName = "dev",
-            appDataDir = "C:\\tmp\\tastile\\dev",
-            dbPath = "C:\\tmp\\tastile\\dev\\db.sqlite",
-            sessionPath = "C:\\tmp\\tastile\\dev\\session.json",
-            daemonStartupLogPath = "C:\\tmp\\tastile\\dev\\daemon-start.log",
-            daemonExecutablePath = "C:\\tmp\\tastile\\dev\\tastile-daemon.exe"
-        )
-        coEvery { integrationRepository.getTileQuota() } returns TileQuotaResponse(
-            plan = "free",
-            tileCount = 5,
-            maxTiles = 500,
-            remainingTiles = 495,
-            limitReached = false,
-            source = "core"
-        )
-        every { tileRepository.latestReadDiagnostics() } returns "source=core revision=12 snapshot_tiles=5"
-        every { integrationRepository.lastSuccessfulDaemonBaseUrl() } returns "http://10.0.2.2:3140"
+    fun refreshAll_setsDiagnosticsWhenUnauthenticated() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
-        viewModels.add(viewModel)
-        viewModel.refreshAll()
-
-        var diagnostics = viewModel.statsDiagnostics.value
-        var resolved = diagnostics.contains("source=core") || diagnostics.contains("source=error")
-        val timeoutMs = 5_000L
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (!resolved && System.currentTimeMillis() < deadline) {
-            Thread.sleep(20)
-            diagnostics = viewModel.statsDiagnostics.value
-            resolved = diagnostics.contains("source=core") || diagnostics.contains("source=error")
-        }
-        assertTrue(
-            "statsDiagnostics did not resolve to source=core|source=error within ${timeoutMs}ms; last value: $diagnostics",
-            diagnostics.contains("source=core") || diagnostics.contains("source=error")
-        )
-        if (diagnostics.contains("source=core")) {
-            assertTrue(diagnostics.contains("daemon="))
-        }
-    }
-
-    @Test
-    fun refreshAll_setsDiagnosticsWhenUnauthenticated() {
-        val authRepository = mockk<AuthRepository>(relaxed = true)
-        val profileRepository = mockk<ProfileRepository>(relaxed = true)
-        val tileRepository = mockk<TileRepository>(relaxed = true)
-        val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
-        val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        every { authRepository.currentSession } returns null
-        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
-        every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
-        every { userSettingsRepository.getLocale() } returns AppLocale.JA
-
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
         viewModels.add(viewModel)
         viewModel.refreshAll()
 
@@ -234,80 +119,118 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun daemonMaintenanceActions_delegateToIntegrationRepository() {
-        val authRepository = mockk<AuthRepository>(relaxed = true)
-        val profileRepository = mockk<ProfileRepository>(relaxed = true)
-        val tileRepository = mockk<TileRepository>(relaxed = true)
-        val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
-        val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
-        every { authRepository.currentSession } returns null
-        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
-        every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
-        every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles("user-1") } returns emptyList()
-        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
-        coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
-        coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
-        coEvery { integrationRepository.triggerTick() } returns Unit
-        coEvery { integrationRepository.resetLocalSyncData() } returns RecoveryResetResponse(ok = true, message = "ok", applied = 1)
-        coEvery { integrationRepository.redownloadRemoteSyncData() } returns RecoveryResetResponse(ok = true, message = "ok", applied = 2)
+    fun groupedTiles_forStateMode_partitionsByLifecycle() = runTest {
+        val viewModel = newViewModel()
+        val ready = Tile(id = "r1", title = "R", lifecycle = "Ready")
+        val started = Tile(id = "s1", title = "S", lifecycle = "Started")
+        val done = Tile(id = "d1", title = "D", lifecycle = "Done")
+        viewModel.replaceTilesForTest(listOf(ready, started, done))
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
-        viewModels.add(viewModel)
-        viewModel.triggerDaemonTick()
-        viewModel.resetLocalSyncData()
-        viewModel.redownloadRemoteSyncData()
-
-        coVerify(atLeast = 1) { integrationRepository.triggerTick() }
-        coVerify(atLeast = 1) { integrationRepository.resetLocalSyncData() }
-        coVerify(atLeast = 1) { integrationRepository.redownloadRemoteSyncData() }
+        val sections = viewModel.groupedTiles.first { it.size >= 3 }
+        val labels = sections.map { it.labelKey }
+        assertEquals(setOf("ready", "started", "done"), labels.toSet())
+        assertEquals(1, sections.first { it.labelKey == "ready" }.tiles.size)
+        assertEquals(1, sections.first { it.labelKey == "started" }.tiles.size)
+        assertEquals(1, sections.first { it.labelKey == "done" }.tiles.size)
     }
 
     @Test
-    fun refreshDaemonStatus_buildsReadableSummary() {
+    fun groupedTiles_forProjectMode_usesProjectLabel() = runTest {
+        val viewModel = newViewModel()
+        viewModel.setListGroupingMode(ListGroupingMode.PROJECT)
+        val t1 = Tile(id = "t1", title = "A", lifecycle = "Ready", labels = listOf("project:alpha"))
+        val t2 = Tile(id = "t2", title = "B", lifecycle = "Ready", labels = listOf("project:beta"))
+        val t3 = Tile(id = "t3", title = "C", lifecycle = "Ready", labels = emptyList())
+        viewModel.replaceTilesForTest(listOf(t1, t2, t3))
+
+        val sections = viewModel.groupedTiles.first { it.size >= 3 }
+        val projectLabels = sections.map { it.labelKey }.toSet()
+        assertTrue("sections must include the two projects", projectLabels.contains("alpha"))
+        assertTrue("sections must include the unassigned bucket", projectLabels.contains("unassigned"))
+    }
+
+    @Test
+    fun groupedTiles_forTagMode_splitsByNonProjectLabels() = runTest {
+        val viewModel = newViewModel()
+        viewModel.setListGroupingMode(ListGroupingMode.TAG)
+        val t1 = Tile(id = "t1", title = "A", lifecycle = "Ready", labels = listOf("project:x", "urgent"))
+        val t2 = Tile(id = "t2", title = "B", lifecycle = "Ready", labels = listOf("urgent"))
+        val t3 = Tile(id = "t3", title = "C", lifecycle = "Ready", labels = emptyList())
+        viewModel.replaceTilesForTest(listOf(t1, t2, t3))
+
+        val sections = viewModel.groupedTiles.first { it.size >= 2 }
+        val tagLabels = sections.map { it.labelKey }.toSet()
+        assertTrue(tagLabels.contains("urgent"))
+        assertTrue(tagLabels.contains("untagged"))
+    }
+
+    @Test
+    fun toggleSectionExpanded_flipsMembershipInSet() = runTest {
+        val viewModel = newViewModel()
+        assertFalse(viewModel.expandedSections.value.contains("alpha"))
+        viewModel.toggleSectionExpanded("alpha")
+        assertTrue(viewModel.expandedSections.value.contains("alpha"))
+        viewModel.toggleSectionExpanded("alpha")
+        assertFalse(viewModel.expandedSections.value.contains("alpha"))
+    }
+
+    @Test
+    fun confirmDeleteTile_clearsCandidateAndCallsRepository() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        coEvery { tileRepository.deleteTile(any()) } returns Unit
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        viewModels.add(viewModel)
+
+        viewModel.setDeleteTileCandidate("kill-me")
+        assertEquals("kill-me", viewModel.requestDeleteTileId.value)
+        viewModel.confirmDeleteTile()
+
+        coVerify(atLeast = 1) { tileRepository.deleteTile("kill-me") }
+        assertEquals(null, viewModel.requestDeleteTileId.value)
+    }
+
+    @Test
+    fun setSearchTerm_rebuildsTileFilter() = runTest {
+        val viewModel = newViewModel()
+        val seed = app.tastile.android.data.repository.TileFilter(limit = 50)
+        viewModel.setTileFilter(seed)
+        viewModel.setSearchTerm("alpha")
+        assertEquals("alpha", viewModel.tileFilter.value.search)
+        assertEquals(50, viewModel.tileFilter.value.limit)
+    }
+
+    @Test
+    fun bumpSectionLimit_doubles8_16_32_60_thenResets() = runTest {
+        val viewModel = newViewModel()
+        val total = 200
+        viewModel.bumpSectionLimit("sec", total)
+        assertEquals(16, viewModel.sectionLimits.value["sec"])
+        viewModel.bumpSectionLimit("sec", total)
+        assertEquals(32, viewModel.sectionLimits.value["sec"])
+        viewModel.bumpSectionLimit("sec", total)
+        assertEquals(60, viewModel.sectionLimits.value["sec"])
+        viewModel.bumpSectionLimit("sec", total)
+        assertEquals(8, viewModel.sectionLimits.value["sec"])
+    }
+
+    private data class Mocks(
+        val authRepository: AuthRepository,
+        val profileRepository: ProfileRepository,
+        val tileRepository: TileRepository,
+        val userSettingsRepository: UserSettingsRepository,
+    )
+
+    private fun mocks(): Mocks {
         val authRepository = mockk<AuthRepository>(relaxed = true)
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
-        val integrationRepository = mockk<IntegrationRepository>(relaxed = true)
         every { authRepository.currentSession } returns null
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles("user-1") } returns emptyList()
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
-        coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
-        coEvery { integrationRepository.getSettings() } returns mockk(relaxed = true)
-        coEvery { integrationRepository.getSyncStatus() } returns SyncStatusResponse(
-            active = true,
-            running = true,
-            lastSuccessAt = "2026-04-06T12:00:00Z",
-            lastError = null
-        )
-        coEvery { integrationRepository.getRuntimePaths() } returns RuntimePathsResponse(
-            profileName = "default",
-            appDataDir = "C:\\data",
-            dbPath = "C:\\data\\db.sqlite",
-            sessionPath = "C:\\data\\session.json",
-            daemonStartupLogPath = "C:\\data\\daemon.log",
-            daemonExecutablePath = "C:\\bin\\daemon.exe"
-        )
-        coEvery { integrationRepository.getTileQuota() } returns TileQuotaResponse(
-            plan = "pro",
-            tileCount = 10,
-            maxTiles = 500,
-            remainingTiles = 490,
-            limitReached = false,
-            source = "server"
-        )
-
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, integrationRepository)
-        viewModels.add(viewModel)
-        viewModel.refreshDaemonStatus()
-
-        assertTrue(viewModel.daemonStatusSummary.value.contains("sync=running"))
-        assertTrue(viewModel.daemonStatusSummary.value.contains("quota=10/500"))
-        assertTrue(viewModel.daemonStatusSummary.value.contains("profile=default"))
+        return Mocks(authRepository, profileRepository, tileRepository, userSettingsRepository)
     }
 }
-

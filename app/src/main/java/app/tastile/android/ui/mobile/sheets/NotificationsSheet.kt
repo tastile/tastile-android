@@ -38,7 +38,7 @@ fun NotificationsSheet(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 if (items.isEmpty()) {

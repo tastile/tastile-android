@@ -4,7 +4,6 @@ sealed interface Overlay {
     data object Hidden : Overlay
     data object QuickCreate : Overlay
     data class TileEdit(val tileId: String) : Overlay
-    data class IntegrationConfig(val integrationId: String) : Overlay
     data object Search : Overlay
     data object Notifications : Overlay
     data object AccountMenu : Overlay
