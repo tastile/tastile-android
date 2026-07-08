@@ -74,6 +74,65 @@ data class TimelineItem(
     val resolution: ResolutionInfoView
 )
 
+// --- TileListView (GET /v1/tiles) -------------------------------------
+//
+// Mirrors `tastile-web/src/lib/hooks/use-tile-list.ts` (TileListView shape)
+// and the OpenAPI spec wired by `GET /v1/tiles`.
+//
+// Wire fields:
+//   - id, plan_id, title, lifecycle (i16), next_action, done_definition
+//   - worked_minutes, break_minutes, labels[]
+//   - objective_mode (i16), target_work_min, target_rest_min, done_rule (i16|null)
+//   - resume_note, projected_next_start_at
+//   - temporal { release_at, due_at, fixed_start, fixed_end, active_start, active_end }
+//   - recurrence { step_min, window_start_min, window_end_min, expression }
+//
+// `ignoreUnknownKeys = true` on the Json instance absorbs additional fields
+// the backend may add without breaking the deserialization.
+
+@Serializable
+data class TileListView(
+    val id: String,
+    @SerialName("plan_id") val planId: String? = null,
+    val title: String = "",
+    val lifecycle: Int? = null,
+    @SerialName("next_action") val nextAction: String? = null,
+    @SerialName("done_definition") val doneDefinition: String? = null,
+    @SerialName("worked_minutes") val workedMinutes: Long? = null,
+    @SerialName("break_minutes") val breakMinutes: Long? = null,
+    val labels: List<String> = emptyList(),
+    @SerialName("objective_mode") val objectiveMode: Int? = null,
+    @SerialName("target_work_min") val targetWorkMin: Long? = null,
+    @SerialName("target_rest_min") val targetRestMin: Long? = null,
+    @SerialName("done_rule") val doneRule: Int? = null,
+    @SerialName("resume_note") val resumeNote: String? = null,
+    @SerialName("projected_next_start_at") val projectedNextStartAt: String? = null,
+    val temporal: TileTemporalView? = null,
+    val recurrence: TileRecurrenceView? = null
+)
+
+@Serializable
+data class TileTemporalView(
+    @SerialName("release_at") val releaseAt: String? = null,
+    @SerialName("due_at") val dueAt: String? = null,
+    @SerialName("fixed_start") val fixedStart: String? = null,
+    @SerialName("fixed_end") val fixedEnd: String? = null,
+    @SerialName("active_start") val activeStart: String? = null,
+    @SerialName("active_end") val activeEnd: String? = null
+)
+
+@Serializable
+data class TileRecurrenceView(
+    @SerialName("step_min") val stepMin: Long? = null,
+    @SerialName("window_start_min") val windowStartMin: Long? = null,
+    @SerialName("window_end_min") val windowEndMin: Long? = null,
+    val expression: String? = null
+)
+
+// Legacy `TileView` shape (still used by callers that decoded
+// `GET /v1/tiles` into the old nested content/visual form before C1).
+// `readTile()` (`GET /v1/tiles/{id}`) returns the *flat* `TileDetailView`
+// documented below; this class survives for that one internal call site.
 @Serializable
 data class TileView(
     val id: String,
@@ -87,7 +146,9 @@ data class TileView(
 
 @Serializable
 data class V1ListTilesResponse(
-    val tiles: List<TileView> = emptyList()
+    val tiles: List<TileListView> = emptyList(),
+    @SerialName("next_actionable_tile_id") val nextActionableTileId: String? = null,
+    @SerialName("next_actionable_start_at") val nextActionableStartAt: String? = null
 )
 
 @Serializable
@@ -122,7 +183,7 @@ data class V1ListRuntimePathsResponse(
 //   - `GET /v1/tiles/{id}` (`read_tile`) returns a *flat* TileView with
 //     `title`, `description`, `color`, `icon`, `plan_id`, `archived_at` at
 //     the top level. NOT the nested `content`/`visual` shape that the
-//     legacy `TileView` (used by listTiles) pretends the server sends.
+//     legacy `TileView` (used by listTiles) pretended the server sends.
 //   - `GET /v1/placements` (`list_placements`) returns `PlacementListItem`.
 //   - `GET /v1/executions/{id}` (`read_execution`) returns `ExecutionView`.
 
@@ -149,14 +210,4 @@ data class V1PlacementListItem(
     val title: String = "",
     @SerialName("span_start") val spanStart: String? = null,
     @SerialName("span_end") val spanEnd: String? = null
-)
-
-@Serializable
-data class V1ExecutionView(
-    val id: String,
-    @SerialName("tile_id") val tileId: String,
-    @SerialName("owner_id") val ownerId: String,
-    val revision: Long,
-    val state: Byte,
-    @SerialName("placement_id") val placementId: String? = null
 )

@@ -15,13 +15,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +39,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -51,6 +54,9 @@ import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.components.LocalePickerDialog
 import app.tastile.android.ui.dashboard.components.ThemePickerDialog
 import app.tastile.android.ui.dashboard.components.TimeoutPickerDialog
+import app.tastile.android.ui.designsystem.AppChevron
+import app.tastile.android.ui.designsystem.AppListRow
+import app.tastile.android.ui.designsystem.AppPageColumn
 import app.tastile.android.ui.designsystem.AppTheme
 
 @Composable
@@ -80,24 +86,17 @@ fun SettingsScreen(
         notificationStatus = if (granted) "Notifications enabled" else "Notifications denied"
     }
 
-    val scrollState = rememberScrollState()
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = AppTheme.spacing.md, vertical = AppTheme.spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
-    ) {
-        SettingsRow(
-            icon = "🌐",
+    AppPageColumn {
+        AppListRow(
             label = "Locale",
-            value = localeLabel(locale),
+            meta = localeLabel(locale),
+            leading = { Icon(Icons.Outlined.Language, contentDescription = null) },
             onClick = { showLocale = true },
         )
-        SettingsRow(
-            icon = "🎨",
+        AppListRow(
             label = "Theme",
-            value = themeLabel(theme),
+            meta = themeLabel(theme),
+            leading = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
             onClick = { showTheme = true },
         )
         SecurityLockRow(
@@ -144,16 +143,16 @@ fun SettingsScreen(
                 }
             },
         )
-        SettingsRow(
-            icon = "🔒",
+        AppListRow(
             label = "Privacy",
-            value = "›",
+            leading = { Icon(Icons.Outlined.PrivacyTip, contentDescription = null) },
+            trailing = { AppChevron() },
             onClick = { showPrivacy = true },
         )
-        SettingsRow(
-            icon = "ℹ",
+        AppListRow(
             label = "About",
-            value = "›",
+            leading = { Icon(Icons.Outlined.Info, contentDescription = null) },
+            trailing = { AppChevron() },
             onClick = { showAbout = true },
         )
     }
@@ -194,61 +193,36 @@ private fun SecurityLockRow(
     onToggle: (Boolean) -> Unit,
     onTimeout: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = AppTheme.spacing.xs)
-            .semantics(mergeDescendants = true) { contentDescription = "Security lock" },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
-    ) {
-        Text("🔒", style = MaterialTheme.typography.bodyMedium)
-        Column(modifier = Modifier.weight(1f)) {
-            Text("Security lock", style = MaterialTheme.typography.bodyMedium)
-            Text(
-                "Require biometric to open the app",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
+        AppListRow(
+            label = "Security lock",
+            meta = "Require biometric to open the app",
+            leading = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+            trailing = {
+                Switch(checked = enabled, onCheckedChange = onToggle)
+            },
+            onClick = { onToggle(!enabled) },
+            description = "Security lock",
+        )
+        if (enabled) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button, onClick = onTimeout)
+                    .padding(
+                        start = AppTheme.component.listRowIndent,
+                        top = AppTheme.spacing.xs,
+                        bottom = AppTheme.spacing.sm,
+                    )
+                    .semantics { contentDescription = "Lock timeout" },
+            ) {
+                Text(
+                    "Timeout: $timeoutMinutes min  ›",
+                    style = AppTheme.typography.bodySmall,
+                    color = AppTheme.colors.onSurfaceVariant,
+                )
+            }
         }
-        Switch(checked = enabled, onCheckedChange = onToggle)
-    }
-    if (enabled) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(role = Role.Button, onClick = onTimeout)
-                .padding(start = 32.dp, top = 4.dp, bottom = 8.dp)
-                .semantics { contentDescription = "Lock timeout" },
-        ) {
-            Text(
-                "Timeout: $timeoutMinutes min  ›",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SettingsRow(
-    icon: String,
-    label: String,
-    value: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = AppTheme.spacing.sm)
-            .semantics(mergeDescendants = true) { contentDescription = "$label: $value" },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
-    ) {
-        Text(icon, style = MaterialTheme.typography.bodyMedium)
-        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -258,11 +232,11 @@ private fun PrivacyDialog(onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text("Privacy") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
                 Text("tastile stores your tiles and execution history on AWS (Cognito + RDS).")
                 Text(
                     "View the full privacy policy:",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTheme.typography.bodySmall,
                 )
                 val context = LocalContext.current
                 Row(
@@ -273,9 +247,9 @@ private fun PrivacyDialog(onDismiss: () -> Unit) {
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         }
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = AppTheme.spacing.xs),
                 ) {
-                    Text("tastile.app/privacy", style = MaterialTheme.typography.bodyMedium)
+                    Text("tastile.app/privacy", style = AppTheme.typography.bodyMedium)
                 }
             }
         },
@@ -295,7 +269,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text("About tastile") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
                 Text("Version: $version")
                 Row(
                     modifier = Modifier
@@ -305,9 +279,9 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         }
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = AppTheme.spacing.xs),
                 ) {
-                    Text("github.com/rebuildup/tastile", style = MaterialTheme.typography.bodyMedium)
+                    Text("github.com/rebuildup/tastile", style = AppTheme.typography.bodyMedium)
                 }
             }
         },
@@ -328,21 +302,30 @@ private fun NotificationSettingsSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppTheme.spacing.sm)
             .semantics(mergeDescendants = true) {
                 contentDescription = "Notifications: ${if (granted) "allowed" else "blocked"}, alarms: ${if (fullScreenGranted) "allowed" else "limited"}"
             },
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("🔔 Notifications", style = MaterialTheme.typography.bodyMedium)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Notifications,
+                    contentDescription = null,
+                    tint = AppTheme.colors.onSurfaceVariant,
+                )
+                Text("Notifications", style = AppTheme.typography.bodyMedium)
+            }
             Text(
                 if (granted && fullScreenGranted) "Alarm ready" else if (granted) "Limited" else "Blocked",
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.bodySmall,
             )
         }
         Row(
@@ -368,7 +351,7 @@ private fun NotificationSettingsSection(
             }
         }
         if (status.isNotBlank()) {
-            Text(status, style = MaterialTheme.typography.bodySmall)
+            Text(status, style = AppTheme.typography.bodySmall)
         }
     }
 }

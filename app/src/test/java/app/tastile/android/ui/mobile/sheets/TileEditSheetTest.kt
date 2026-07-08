@@ -9,14 +9,8 @@ import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.GoogleCalendarIntegrationSettings
-import app.tastile.android.data.repository.IntegrationRepository
-import app.tastile.android.data.repository.IntegrationSettingsResponse
 import app.tastile.android.data.repository.ProfileRepository
-import app.tastile.android.data.repository.RuntimePathsResponse
-import app.tastile.android.data.repository.SyncStatusResponse
 import app.tastile.android.data.repository.TastileAuthState
-import app.tastile.android.data.repository.TileQuotaResponse
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.repository.UserSettingsRepository
@@ -53,42 +47,19 @@ class TileEditSheetTest {
         val profileRepo = mockk<ProfileRepository>(relaxed = true)
         val tileRepo = mockk<TileRepository>(relaxed = true)
         val userSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
-        val integrationRepo = mockk<IntegrationRepository>(relaxed = true)
         every { userSettingsRepo.getLocale() } returns AppLocale.EN
         // Unauthenticated keeps refreshAll in the empty-state branch so it never
         // touches the mock repositories; refreshTimeline (fired by the
         // selectedDay/scale combine) still runs, so stub getTimeline explicitly.
         every { authRepo.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()
-        coEvery { tileRepo.getTiles(any<String>()) } returns emptyList()
-        coEvery { tileRepo.getTiles() } returns TilesResponse(emptyList())
+        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")
-        coEvery { integrationRepo.getSettings() } returns IntegrationSettingsResponse(
-            googleCalendar = GoogleCalendarIntegrationSettings()
-        )
-        every { integrationRepo.lastSuccessfulDaemonBaseUrl() } returns null
-        coEvery { integrationRepo.getSyncStatus() } returns SyncStatusResponse()
-        coEvery { integrationRepo.getRuntimePaths() } returns RuntimePathsResponse(
-            profileName = "cloud",
-            appDataDir = "",
-            dbPath = "",
-            sessionPath = "",
-            daemonStartupLogPath = "",
-            daemonExecutablePath = "",
-        )
-        coEvery { integrationRepo.getTileQuota() } returns TileQuotaResponse(
-            plan = "free",
-            tileCount = 0,
-            maxTiles = 100,
-            remainingTiles = 100,
-            limitReached = false,
-        )
         return DashboardViewModel(
             authRepository = authRepo,
             profileRepository = profileRepo,
             tileRepository = tileRepo,
             userSettingsRepository = userSettingsRepo,
-            integrationRepository = integrationRepo,
         ).also { viewModels.add(it) }
     }
 

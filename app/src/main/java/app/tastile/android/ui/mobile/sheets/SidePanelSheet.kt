@@ -1,10 +1,18 @@
 package app.tastile.android.ui.mobile.sheets
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Bookmark
@@ -12,14 +20,24 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.designsystem.AppComponentSize
+import app.tastile.android.ui.designsystem.AppListRow
+import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.SidePanelSection
@@ -40,56 +58,134 @@ private val tabs = listOf(
 )
 
 /**
- * Bottom-anchored navigation drawer. Tapping a tab immediately navigates
- * the main canvas to that route and dismisses the sheet — no intermediate
- * preview / commit step.
+ * Bottom-anchored navigation drawer with a 2-page HorizontalPager. Page 0
+ * lists the section tabs; tapping any tab switches the main canvas
+ * immediately (no intermediate commit step) and dismisses the sheet. Page 1
+ * shows the section's content preview (mini calendar, recurring tasks,
+ * reference links, etc.) and is reachable by swiping right — swipe left to
+ * come back to the tab list. The header title switches with the active
+ * page; pager dots below the body indicate the two pages.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SidePanelSheet(
     overlay: OverlayViewModel,
+    dashboardViewModel: DashboardViewModel,
     onNavigate: (String) -> Unit,
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
     val section = (current as? Overlay.SidePanel)?.section ?: return
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val selectedIndex = tabs.indexOfFirst { it.section == section }.coerceAtLeast(0)
+    val initialIndex = tabs.indexOfFirst { it.section == section }.coerceAtLeast(0)
+    var selectedIndex by remember(section) { mutableStateOf(initialIndex) }
+    val pagerState = rememberPagerState(initialPage = 0) { 2 }
+
+    val titleText = if (pagerState.currentPage == 0) {
+        "Navigation"
+    } else {
+        tabs[selectedIndex].label
+    }
 
     PanelSheet(
-        title = "Navigation",
+        title = titleText,
         sheetState = sheetState,
         onDismiss = { overlay.dismiss() },
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            TabsList(
-                selectedIndex = selectedIndex,
-                onSelect = { spec ->
-                    onNavigate(spec.route)
-                    overlay.dismiss()
-                },
+        Column(modifier = Modifier.fillMaxSize()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                userScrollEnabled = true,
+            ) { page ->
+                when (page) {
+                    0 -> TabsPage(
+                        selectedIndex = selectedIndex,
+                        onSelect = { index ->
+                            selectedIndex = index
+                            onNavigate(tabs[index].route)
+                            overlay.dismiss()
+                        },
+                    )
+                    else -> SectionPage(
+                        spec = tabs[selectedIndex],
+                        dashboardViewModel = dashboardViewModel,
+                    )
+                }
+            }
+            PagerDots(
+                currentPage = pagerState.currentPage,
+                pageCount = 2,
             )
-            Spacer(modifier = Modifier.fillMaxSize())
         }
     }
 }
 
 @Composable
-private fun TabsList(
+private fun TabsPage(
     selectedIndex: Int,
-    onSelect: (TabSpec) -> Unit,
+    onSelect: (Int) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
         tabs.forEachIndexed { index, spec ->
-            PanelRow(
+            AppListRow(
                 label = spec.label,
-                icon = spec.icon,
+                leading = {
+                    androidx.compose.material3.Icon(
+                        imageVector = spec.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(AppComponentSize.listRowGlyphSize),
+                    )
+                },
                 selected = selectedIndex == index,
                 role = Role.Tab,
-                onClick = { onSelect(spec) },
+                onClick = { onSelect(index) },
+            )
+        }
+        Spacer(modifier = Modifier.fillMaxSize())
+    }
+}
+
+@Composable
+private fun SectionPage(
+    spec: TabSpec,
+    dashboardViewModel: DashboardViewModel,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        SectionPanelContent(
+            section = spec.section,
+            dashboardViewModel = dashboardViewModel,
+        )
+        Spacer(modifier = Modifier.fillMaxSize())
+    }
+}
+
+@Composable
+private fun PagerDots(
+    currentPage: Int,
+    pageCount: Int,
+) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppSpacing.sm),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        repeat(pageCount) { i ->
+            val isCurrent = i == currentPage
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = AppSpacing.xs)
+                    .size(if (isCurrent) AppSpacing.sm + AppSpacing.xs else AppSpacing.sm - AppSpacing.xxs)
+                    .clip(CircleShape)
+                    .background(
+                        if (isCurrent) colors.onSurface
+                        else colors.onSurfaceVariant.copy(alpha = 0.30f),
+                    ),
             )
         }
     }

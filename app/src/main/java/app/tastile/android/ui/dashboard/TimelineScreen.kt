@@ -50,16 +50,15 @@ fun TimelineScreen(
     viewModel: DashboardViewModel,
     mode: CalendarViewMode = CalendarViewMode.MONTH
 ) {
-    val monthProjection by viewModel.calendarMonthProjection.collectAsStateWithLifecycle()
     val timeline by viewModel.timeline.collectAsStateWithLifecycle()
     when (mode) {
         CalendarViewMode.MONTH -> MonthCalendarScreen(
-            projection = monthProjection,
+            projection = null,
             fallbackTimeline = timeline,
             modifier = Modifier.fillMaxSize()
         )
-        CalendarViewMode.DAY -> DayAgendaScreen(monthProjection, timeline, Modifier.fillMaxSize())
-        CalendarViewMode.WEEK -> WeekAgendaScreen(monthProjection, timeline, Modifier.fillMaxSize())
+        CalendarViewMode.DAY -> DayAgendaScreen(null, timeline, Modifier.fillMaxSize())
+        CalendarViewMode.WEEK -> WeekAgendaScreen(null, timeline, Modifier.fillMaxSize())
     }
 }
 

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.ThemeMode
@@ -39,11 +40,11 @@ class SettingsScreenTest {
             SettingsScreen(viewModel = stubVm())
         }
 
-        rule.onAllNodesWithText("Locale", substring = true).onFirst().assertIsDisplayed()
-        rule.onAllNodesWithText("Theme", substring = true).onFirst().assertIsDisplayed()
-        rule.onAllNodesWithText("Notifications", substring = true).onFirst().assertIsDisplayed()
-        rule.onAllNodesWithText("Privacy", substring = true).onFirst().assertIsDisplayed()
-        rule.onAllNodesWithText("About", substring = true).onFirst().assertIsDisplayed()
+        rule.onAllNodesWithText("Locale", substring = true).onFirst().performScrollTo().assertIsDisplayed()
+        rule.onAllNodesWithText("Theme", substring = true).onFirst().performScrollTo().assertIsDisplayed()
+        rule.onAllNodesWithText("Notifications", substring = true).onFirst().performScrollTo().assertIsDisplayed()
+        rule.onAllNodesWithText("Privacy", substring = true).onFirst().performScrollTo().assertIsDisplayed()
+        rule.onAllNodesWithText("About", substring = true).onFirst().performScrollTo().assertIsDisplayed()
     }
 
     @Test

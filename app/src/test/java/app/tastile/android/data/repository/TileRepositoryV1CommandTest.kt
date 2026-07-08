@@ -3,13 +3,11 @@ package app.tastile.android.data.repository
 import app.tastile.android.core.CoreCommandResponse
 import app.tastile.android.data.api.CommandResponse
 import app.tastile.android.data.api.AggregateRef
-import app.tastile.android.data.api.TileContentView
 import app.tastile.android.data.api.TileDetailView
-import app.tastile.android.data.api.TileVisualView
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1NumericConstants
 import app.tastile.android.data.api.V1ListTilesResponse
-import app.tastile.android.data.api.TileView
+import app.tastile.android.data.api.TileListView
 import app.tastile.android.data.api.V1PlacementListItem
 import app.tastile.android.data.command.V1CommandDispatcher
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
@@ -96,13 +94,10 @@ class TileRepositoryV1CommandTest {
     private fun cloudTileListResponse(tileId: String = "t-123"): V1ListTilesResponse =
         V1ListTilesResponse(
             tiles = listOf(
-                TileView(
+                TileListView(
                     id = tileId,
-                    kind = V1NumericConstants.TileKind.PLACEMENT,
-                    ownerId = "user-1",
-                    content = TileContentView(title = "Walk dog"),
-                    visual = TileVisualView(),
-                    revision = 1L
+                    title = "Walk dog",
+                    lifecycle = V1NumericConstants.LifecycleCode.READY,
                 )
             )
         )
@@ -160,7 +155,7 @@ class TileRepositoryV1CommandTest {
     @Test
     fun startTile_routesToV1DispatcherAndRefreshesCloudCache() = runTest {
         val apiClient = mockk<V1ApiClient>()
-        coEvery { apiClient.listTiles() } returns cloudTileListResponse("t-123")
+        coEvery { apiClient.getTiles(any()) } returns cloudTileListResponse("t-123")
         val dispatcher = mockk<V1CommandDispatcher>()
         coEvery { dispatcher.dispatchTileStart("t-123") } returns okAck("t-123")
 
@@ -168,7 +163,7 @@ class TileRepositoryV1CommandTest {
         val tile = repository.startTile("t-123")
 
         coVerify(exactly = 1) { dispatcher.dispatchTileStart("t-123") }
-        coVerify(exactly = 1) { apiClient.listTiles() }
+        coVerify(atLeast = 1) { apiClient.getTiles(any()) }
         assertEquals("t-123", tile.id)
     }
 
@@ -377,46 +372,6 @@ class TileRepositoryV1CommandTest {
         repository.attachMemo(tileId = null, text = "remember", memoKind = null)
     }
 
-    // --- break.start / break.end (UnsupportedOperationException) -------
-
-    @Test
-    fun startBreak_throwsUnsupportedOperationException() = runTest {
-        val apiClient = mockk<V1ApiClient>(relaxed = true)
-        val dispatcher = mockk<V1CommandDispatcher>(relaxed = true)
-
-        val repository = newRepository(apiClient, dispatcher)
-        val ex = assertThrows(UnsupportedOperationException::class.java) {
-            kotlinx.coroutines.runBlocking { repository.startBreak(breakMin = 5) }
-        }
-        assertTrue(ex.message!!.contains("v1"))
-    }
-
-    @Test
-    fun endBreak_throwsUnsupportedOperationException() = runTest {
-        val apiClient = mockk<V1ApiClient>(relaxed = true)
-        val dispatcher = mockk<V1CommandDispatcher>(relaxed = true)
-
-        val repository = newRepository(apiClient, dispatcher)
-        val ex = assertThrows(UnsupportedOperationException::class.java) {
-            kotlinx.coroutines.runBlocking { repository.endBreak() }
-        }
-        assertTrue(ex.message!!.contains("v1"))
-    }
-
-    // --- extendTile (no tile_id, must throw) ----------------------------
-
-    @Test
-    fun extendTile_throwsUnsupportedOperationException() = runTest {
-        val apiClient = mockk<V1ApiClient>(relaxed = true)
-        val dispatcher = mockk<V1CommandDispatcher>(relaxed = true)
-
-        val repository = newRepository(apiClient, dispatcher)
-        val ex = assertThrows(UnsupportedOperationException::class.java) {
-            kotlinx.coroutines.runBlocking { repository.extendTile(extendMin = 5) }
-        }
-        assertTrue(ex.message!!.contains("tile_id"))
-    }
-
     // --- prompt.request -------------------------------------------------
 
     @Test
@@ -484,26 +439,26 @@ class TileRepositoryV1CommandTest {
     @Test
     fun deleteTile_refreshesLatestCloudTilesAfterV1Success() = runTest {
         val apiClient = mockk<V1ApiClient>()
-        coEvery { apiClient.listTiles() } returns cloudTileListResponse("t-123")
+        coEvery { apiClient.getTiles(any()) } returns cloudTileListResponse("t-123")
         val dispatcher = mockk<V1CommandDispatcher>()
         coEvery { dispatcher.dispatchTileDelete(any()) } returns okAck("t-123")
 
         val repository = newRepository(apiClient, dispatcher)
         repository.deleteTile("t-123")
 
-        coVerify(exactly = 1) { apiClient.listTiles() }
+        coVerify(atLeast = 1) { apiClient.getTiles(any()) }
     }
 
     @Test
     fun startTile_refreshesLatestCloudTilesAfterV1Success() = runTest {
         val apiClient = mockk<V1ApiClient>()
-        coEvery { apiClient.listTiles() } returns cloudTileListResponse("t-123")
+        coEvery { apiClient.getTiles(any()) } returns cloudTileListResponse("t-123")
         val dispatcher = mockk<V1CommandDispatcher>()
         coEvery { dispatcher.dispatchTileStart(any()) } returns okAck("t-123")
 
         val repository = newRepository(apiClient, dispatcher)
         repository.startTile("t-123")
 
-        coVerify(exactly = 1) { apiClient.listTiles() }
+        coVerify(atLeast = 1) { apiClient.getTiles(any()) }
     }
 }

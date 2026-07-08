@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -87,16 +88,37 @@ fun MobileScaffold(
         // top-bar gradient can show the timeline peeking through.
         contentWindowInsets = WindowInsets(0),
     ) { innerPadding ->
+        // Non-timeline tabs pad themselves with the scaffold's innerPadding so their
+        // first row sits below the top bar. TimelineScreen already pads internally
+        // (status bar + MobileTokens.topBarHeight); applying innerPadding here too
+        // would push it off-screen, so we leave the timeline route alone.
+        val topPad = innerPadding.calculateTopPadding()
         Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 navController = navController,
                 startDestination = START,
             ) {
                 composable("timeline") { TimelineScreen(viewModel = dashboardViewModel, overlay = overlayViewModel) }
-                composable("execute") { ExecuteScreen(viewModel = dashboardViewModel) }
-                composable("tiles") { TilesScreen(viewModel = dashboardViewModel) }
-                composable("integrations") { IntegrationsScreen(viewModel = dashboardViewModel) }
-                composable("settings") { SettingsScreen(viewModel = dashboardViewModel) }
+                composable("execute") {
+                    Box(modifier = Modifier.padding(top = topPad)) {
+                        ExecuteScreen(viewModel = dashboardViewModel)
+                    }
+                }
+                composable("tiles") {
+                    Box(modifier = Modifier.padding(top = topPad)) {
+                        TilesScreen(viewModel = dashboardViewModel)
+                    }
+                }
+                composable("integrations") {
+                    Box(modifier = Modifier.padding(top = topPad)) {
+                        IntegrationsScreen(viewModel = dashboardViewModel)
+                    }
+                }
+                composable("settings") {
+                    Box(modifier = Modifier.padding(top = topPad)) {
+                        SettingsScreen(viewModel = dashboardViewModel)
+                    }
+                }
             }
             OverlayLayer(
                 overlay = overlayViewModel,

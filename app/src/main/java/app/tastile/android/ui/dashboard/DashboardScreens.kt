@@ -262,8 +262,6 @@ private fun CardPrimaryActions(
             CardStatus.STARTED -> {
                 AppPrimaryButton(text = "Complete", onClick = { onAction(CardAction.CompleteTile(tileId)) })
                 AppTonalButton(text = "Defer", onClick = { onAction(CardAction.DeferTile(tileId)) })
-                AppSecondaryButton(text = "Break", onClick = { onAction(CardAction.StartBreak) })
-                AppSecondaryButton(text = "Extend+10", onClick = { onAction(CardAction.ExtendTile(minutes = 10)) })
             }
             CardStatus.DONE, CardStatus.ARCHIVED -> {
                 AppDangerButton(text = "Delete", onClick = { onAction(CardAction.DeleteTile(tileId)) })

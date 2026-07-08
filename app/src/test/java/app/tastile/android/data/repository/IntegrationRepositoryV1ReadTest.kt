@@ -1,22 +1,13 @@
 package app.tastile.android.data.repository
 
-import app.tastile.android.data.api.PlacementInsideView
-import app.tastile.android.data.api.PlacementSourceView
-import app.tastile.android.data.api.ResolutionInfoView
 import app.tastile.android.data.api.RuntimePathView
-import app.tastile.android.data.api.Span
-import app.tastile.android.data.api.TileContentView
-import app.tastile.android.data.api.TileVisualView
-import app.tastile.android.data.api.TimelineItem
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.V1ListRuntimePathsResponse
-import app.tastile.android.data.api.V1TimelineResponse
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -51,7 +42,6 @@ class IntegrationRepositoryV1ReadTest {
             )
         )
         val repository = IntegrationRepository(
-            authRepository = mockk<AuthRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentIdToken() } returns "token-abc"
             },
@@ -75,7 +65,6 @@ class IntegrationRepositoryV1ReadTest {
         val apiClient = mockk<V1ApiClient>()
         coEvery { apiClient.listRuntimePaths() } throws V1Error.Network(IOException("boom"))
         val repository = IntegrationRepository(
-            authRepository = mockk<AuthRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentIdToken() } returns "token-abc"
             },
@@ -98,7 +87,6 @@ class IntegrationRepositoryV1ReadTest {
         val apiClient = mockk<V1ApiClient>()
         coEvery { apiClient.listRuntimePaths() } throws V1Error.Auth()
         val repository = IntegrationRepository(
-            authRepository = mockk<AuthRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentIdToken() } returns "token-abc"
             },
@@ -116,7 +104,6 @@ class IntegrationRepositoryV1ReadTest {
     fun getRuntimePaths_skipsV1WhenNoToken() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         val repository = IntegrationRepository(
-            authRepository = mockk<AuthRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentIdToken() } returns null
             },
@@ -146,7 +133,6 @@ class IntegrationRepositoryV1ReadTest {
             )
         )
         val repository = IntegrationRepository(
-            authRepository = mockk<AuthRepository>(relaxed = true),
             currentUserProvider = mockk<CurrentUserProvider> {
                 every { currentIdToken() } returns "token-abc"
             },
@@ -168,37 +154,5 @@ class IntegrationRepositoryV1ReadTest {
             "expected user_match=true in diagnostic, got: $diagnostic",
             diagnostic.contains("user_match=true")
         )
-    }
-
-    @Test
-    fun streamStateEvents_emitsAtLeastOneTimelineSnapshot() = runTest {
-        val apiClient = mockk<V1ApiClient>()
-        coEvery { apiClient.getTimeline(any(), any()) } returns V1TimelineResponse(
-            items = listOf(
-                TimelineItem(
-                    placementId = "pl-1",
-                    revision = 1L,
-                    content = TileContentView(title = "Demo"),
-                    visual = TileVisualView(),
-                    role = 0,
-                    span = Span(startAt = "2026-07-01T10:00:00Z", endAt = "2026-07-01T11:00:00Z"),
-                    inside = PlacementInsideView(placementId = "pl-1"),
-                    source = PlacementSourceView(value = 0),
-                    resolution = ResolutionInfoView(state = 0)
-                )
-            )
-        )
-        val repository = IntegrationRepository(
-            authRepository = mockk<AuthRepository>(relaxed = true),
-            currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentIdToken() } returns "token-abc"
-            },
-            v1ApiClient = apiClient
-        )
-
-        val emission = repository.streamStateEvents().first()
-
-        assertTrue("emission must be non-empty", emission.isNotEmpty())
-        assertTrue("emission must contain timeline JSON marker", emission.contains("\"items\""))
     }
 }

@@ -47,9 +47,6 @@ import javax.inject.Singleton
  *   - tile.defer: v0 `minutes` → `deferred_until = now + minutes`. State=1 (deferred).
  *   - tile.complete: state=2, `completed_at = now`. The server is allowed to
  *     overwrite this if domain invariants demand a different timestamp.
- *   - tile.extend: callers in [TileRepository.extendTile] throw
- *     `UnsupportedOperationException` directly. The dispatcher entry is kept
- *     for symmetry but is never invoked from production code today.
  *   - memo.attach: v0 `text` → v1 `body`.
  */
 @Singleton
