@@ -31,6 +31,9 @@ class V1ApiClient @Inject constructor(
     private fun baseUrl(): String =
         BuildConfig.TASTILE_CORE_URL.trim().trimEnd('/')
 
+    private fun webAuthBaseUrl(): String =
+        BuildConfig.COGNITO_WEB_AUTH_BASE_URL.trim().trimEnd('/')
+
     private suspend inline fun <reified T> get(path: String): T = withContext(Dispatchers.IO) {
         try {
             val token = tokenProvider()
@@ -211,66 +214,26 @@ class V1ApiClient @Inject constructor(
     }
 
     /**
-     * Bootstrap call against `POST /v1/api-tokens`, used by `ApiTokenManager`
-     * to mint the Tastile API token. Unlike the rest of [V1ApiClient], this
-     * method takes an explicit `bootstrapToken` because, by definition, the
-     * Tastile API token does not exist yet. The caller must supply the user's
-     * Cognito `id_token` as the bearer — see PROJECT-TRUTH.md ("Authentication")
-     * and `docs/agent-handoff/DEEP-REVIEW-NOTES.md` for the two-auth model.
+     * Mints the first Tastile API token through the web public-client boundary.
+     * The Cognito access token is verified server-side; the Core bridge secret
+     * never leaves the web host or enters the Android artifact.
      */
-    suspend fun mintApiToken(
-        bootstrapToken: String,
+    suspend fun mintApiTokenViaWeb(
+        accessToken: String,
         request: V1ApiTokenCreateRequest
-    ): V1ApiTokenCreateResponse = mintApiTokenInternal(
-        authorization = "Bearer $bootstrapToken",
-        request = request,
-    )
-
-    /**
-     * Server-to-server "bridge" bootstrap. The v1 daemon accepts mint requests
-     * from the web client (which already holds the per-user cookie session) by
-     * trusting a shared secret plus the user's `sub`. This is the same path
-     * `tastile-web/src/lib/account/api-token-session.ts` uses via its Next.js
-     * API route, invoked here directly because the Android client has the
-     * Cognito `sub` available from its own sign-in.
-     *
-     * Returns `null` if the server hasn't been configured with
-     * `TASTILE_WEB_BRIDGE_SECRET` (the headers are then ignored).
-     */
-    suspend fun mintApiTokenViaBridge(
-        bridgeSecret: String,
-        userSub: String,
-        request: V1ApiTokenCreateRequest
-    ): V1ApiTokenCreateResponse = mintApiTokenInternal(
-        authorization = null,
-        request = request,
-        extraHeaders = mapOf(
-            "x-tastile-web-bridge-secret" to bridgeSecret,
-            "x-tastile-web-session-user" to userSub,
-        ),
-    )
-
-    private suspend fun mintApiTokenInternal(
-        authorization: String?,
-        request: V1ApiTokenCreateRequest,
-        extraHeaders: Map<String, String> = emptyMap(),
     ): V1ApiTokenCreateResponse = withContext(Dispatchers.IO) {
         try {
             val body = buildJsonObject {
                 put("label", request.label?.let { JsonPrimitive(it) } ?: JsonNull)
             }
-            val url = URL("${baseUrl()}/v1/api-tokens")
+            val url = URL("${webAuthBaseUrl()}/api/mobile/api-token")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
                 doInput = true
-                if (authorization != null) {
-                    setRequestProperty("Authorization", authorization)
-                }
-                extraHeaders.forEach { (k, v) -> setRequestProperty(k, v) }
+                setRequestProperty("Authorization", "Bearer $accessToken")
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Accept", "application/json")
-                setRequestProperty("Idempotency-Key", V1Idempotency.generate())
                 connectTimeout = 15_000
                 readTimeout = 15_000
             }

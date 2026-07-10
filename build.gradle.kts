@@ -10,5 +10,5 @@ plugins {
 tasks.register("verify") {
     group = "verification"
     description = "Runs the repository verification suite."
-    dependsOn(":app:testDebugUnitTest")
+    dependsOn(":app:check")
 }

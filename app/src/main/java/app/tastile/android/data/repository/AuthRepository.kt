@@ -55,6 +55,10 @@ class AuthRepository @Inject constructor(
         (_authState.value as? TastileAuthState.Authenticated)?.idToken?.takeIf { !isJwtExpired(it) }
             ?: refreshCognitoSessionOrNull()?.idToken
 
+    override fun currentAccessToken(): String? =
+        (_authState.value as? TastileAuthState.Authenticated)?.accessToken?.takeIf { !isJwtExpired(it) }
+            ?: refreshCognitoSessionOrNull()?.accessToken
+
     override suspend fun signInWithCognito(context: Context) {
         startCognitoHostedUi(context, platform = "android")
     }

@@ -2,7 +2,6 @@ package app.tastile.android.data.repository
 
 import android.content.Context
 import android.util.Log
-import app.tastile.android.BuildConfig
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1ApiTokenCreateRequest
 import app.tastile.android.data.api.V1ApiTokenCreateResponse
@@ -16,25 +15,13 @@ import javax.inject.Singleton
 /**
  * Owns the *Tastile* API token (the second authentication concern per
  * `docs/agent-handoff/PROJECT-TRUTH.md`). The token is minted lazily once
- * per user session by calling `POST /v1/api-tokens` and is then cached in
+ * per user session through `POST /api/mobile/api-token` and is then cached in
  * [EncryptedTokenStorage]'s Keystore-backed preferences. All v1 API calls
  * (`V1ApiClient` → `tokenProvider`) read the cached token from this manager.
  *
- * The v1 daemon accepts two mint bootstrap paths:
- *   1. The "web bridge" — `x-tastile-web-bridge-secret` +
- *      `x-tastile-web-session-user: <cognito_sub>` (what `tastile-web`
- *      uses via its Next.js API route).
- *   2. An existing Tastile API token in `Authorization: Bearer …` —
- *      chicken-and-egg, not useful for first-time mint.
- *
- * We prefer the bridge path because it does not require the daemon to
- * recognize the Cognito `id_token` as a v1 bearer (it currently doesn't
- * — `common.rs::authenticate` only hashes the bearer into the
- * `v1_api_token` table). The bridge secret is supplied at build time via
- * the `TASTILE_WEB_BRIDGE_SECRET` Gradle property (see
- * `app/build.gradle.kts`). When the property is empty we fall back to
- * the Cognito `id_token` bearer so unit tests and the CI dev surface
- * still exercise the call site.
+ * Bootstrap uses the public-client web endpoint with the user's Cognito
+ * access token. The web server verifies that token with Cognito and keeps the
+ * Core bridge secret server-side; no shared credential is embedded in the APK.
  *
  * Concurrency: a single [Mutex] guards the mint path so multiple parallel
  * first-use callers issue exactly one mint request.
@@ -55,23 +42,12 @@ class ApiTokenManager @Inject constructor(
         cachedToken?.takeIf { it.isNotBlank() }?.let { return it }
         return mutex.withLock {
             cachedToken?.takeIf { it.isNotBlank() }?.let { return@withLock it }
-            val bridgeSecret = BuildConfig.TASTILE_WEB_BRIDGE_SECRET.trim()
+            val accessToken = currentUser.currentAccessToken() ?: return@withLock null
             val response = try {
-                if (bridgeSecret.isNotEmpty()) {
-                    val userSub = currentUser.currentUserId()?.takeIf { it.isNotBlank() }
-                        ?: return@withLock null
-                    v1ApiClient.get().mintApiTokenViaBridge(
-                        bridgeSecret = bridgeSecret,
-                        userSub = userSub,
-                        request = V1ApiTokenCreateRequest(label = "android-client"),
-                    )
-                } else {
-                    val bootstrap = currentUser.currentIdToken() ?: return@withLock null
-                    v1ApiClient.get().mintApiToken(
-                        bootstrapToken = bootstrap,
-                        request = V1ApiTokenCreateRequest(label = "android-client"),
-                    )
-                }
+                v1ApiClient.get().mintApiTokenViaWeb(
+                    accessToken = accessToken,
+                    request = V1ApiTokenCreateRequest(label = "android-client"),
+                )
             } catch (e: Exception) {
                 Log.w(TAG, "mintApiToken failed: ${e.message}")
                 null

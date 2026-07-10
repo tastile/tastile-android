@@ -13,11 +13,10 @@ import kotlinx.serialization.Serializable
  *   PATCH  /v1/api-tokens/{id}   — rename / re-scope.
  *   DELETE /v1/api-tokens/{id}   — revoke.
  *
- * The Android client uses these endpoints the same way the web client does:
- * after Cognito login issues an `id_token`, the client calls
- * `POST /v1/api-tokens` (with the Cognito `id_token` as the bootstrap bearer)
- * to obtain a Tastile API token, stores it under encrypted preferences, and
- * uses it as the only `Authorization` header for all subsequent v1 calls.
+ * After Cognito login, Android sends its public-client access token to the
+ * Tastile Web bootstrap endpoint. Web verifies it with Cognito and performs
+ * the server-only Core bridge call, returning a Tastile API token that Android
+ * stores under encrypted preferences and uses for subsequent v1 calls.
  *
  * See PROJECT-TRUTH.md ("Authentication") and DEEP-REVIEW-NOTES.md
  * ("Android Token Storage Is Not Production Safe").

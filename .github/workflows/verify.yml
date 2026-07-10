@@ -34,5 +34,5 @@ jobs:
       - name: Ensure Gradle wrapper is executable
         run: chmod +x ./gradlew
 
-      - name: Verify JVM test suite
-        run: ./gradlew testDebugUnitTest
+      - name: Verify repository quality gates
+        run: ./gradlew verify

@@ -18,7 +18,6 @@ val cognitoHostedUiDomain = providers.gradleProperty("COGNITO_HOSTED_UI_DOMAIN")
 val cognitoRedirectUri = providers.gradleProperty("COGNITO_REDIRECT_URI")
 val cognitoWebAuthBaseUrl = providers.gradleProperty("COGNITO_WEB_AUTH_BASE_URL")
 val tastileCoreUrl = providers.gradleProperty("TASTILE_CORE_URL")
-val tastileWebBridgeSecret = providers.gradleProperty("TASTILE_WEB_BRIDGE_SECRET")
 val hasReleaseSigning =
     releaseStoreFile.isPresent &&
         releaseStorePassword.isPresent &&
@@ -55,7 +54,6 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         buildConfigField("String", "COGNITO_REDIRECT_URI", "\"${cognitoRedirectUri.orNull ?: "tastile://auth/callback"}\"")
         buildConfigField("String", "COGNITO_WEB_AUTH_BASE_URL", "\"${cognitoWebAuthBaseUrl.orNull ?: "https://app.tastile.app"}\"")
         buildConfigField("String", "TASTILE_CORE_URL", "\"${tastileCoreUrl.orNull ?: "https://api.tastile.app"}\"")
-        buildConfigField("String", "TASTILE_WEB_BRIDGE_SECRET", "\"${tastileWebBridgeSecret.orNull ?: ""}\"")
     }
 
     buildTypes {
@@ -136,8 +134,29 @@ tasks.register("verifyDesignSystemImports") {
     }
 }
 
+tasks.register("verifyNoEmbeddedServerSecrets") {
+    group = "verification"
+    description = "Reject server-only bridge credentials from Android sources and BuildConfig."
+    doLast {
+        val forbidden = listOf(
+            "TASTILE_WEB_BRIDGE_" + "SECRET",
+            "x-tastile-web-bridge-" + "secret",
+        )
+        val sources = fileTree("src/main") { include("**/*.kt", "**/*.java") }.files
+        val buildScript = project.file("build.gradle.kts")
+        val offenders = (sources + buildScript).filter { file ->
+            val content = file.readText()
+            forbidden.any(content::contains)
+        }
+        check(offenders.isEmpty()) {
+            "Server-only bridge credentials must not enter Android artifacts:\n" +
+                offenders.joinToString(separator = "\n") { "- ${it.path}" }
+        }
+    }
+}
+
 tasks.named("check").configure {
-    dependsOn("verifyDesignSystemImports")
+    dependsOn("verifyDesignSystemImports", "verifyNoEmbeddedServerSecrets")
 }
 
 dependencies {
