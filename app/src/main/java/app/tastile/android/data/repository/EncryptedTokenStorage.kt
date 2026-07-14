@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package app.tastile.android.data.repository
 
 import android.content.Context

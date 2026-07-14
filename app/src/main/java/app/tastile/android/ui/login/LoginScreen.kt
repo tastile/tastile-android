@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -32,10 +31,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -166,27 +168,32 @@ private fun PrivacyFooter() {
     val linkStyle = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
     val links: AnnotatedString = remember(linkColor) {
         buildAnnotatedString {
-            pushStringAnnotation(tag = "URL", annotation = "https://tastile.app/terms")
-            withStyle(linkStyle) { append("Terms of Service") }
-            pop()
+            withLink(
+                LinkAnnotation.Clickable(
+                    "https://tastile.app/terms",
+                    styles = TextLinkStyles(style = linkStyle),
+                ) { uriHandler.openUri("https://tastile.app/terms") },
+            ) {
+                withStyle(linkStyle) { append("Terms of Service") }
+            }
             append("   ·   ")
-            pushStringAnnotation(tag = "URL", annotation = "https://tastile.app/privacy")
-            withStyle(linkStyle) { append("Privacy Policy") }
-            pop()
+            withLink(
+                LinkAnnotation.Clickable(
+                    "https://tastile.app/privacy",
+                    styles = TextLinkStyles(style = linkStyle),
+                ) { uriHandler.openUri("https://tastile.app/privacy") },
+            ) {
+                withStyle(linkStyle) { append("Privacy Policy") }
+            }
         }
     }
 
-    ClickableText(
+    Text(
         text = links,
         style = MaterialTheme.typography.bodySmall.copy(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         ),
         modifier = Modifier.fillMaxWidth(),
-        onClick = { offset ->
-            links.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                .firstOrNull()
-                ?.let { uriHandler.openUri(it.item) }
-        },
     )
 }

@@ -96,6 +96,16 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     }
 }
 
+kotlin {
+    compilerOptions {
+        // KT-73255: future-proof Hilt qualifier annotations (e.g. @ApplicationContext)
+        // so they apply to both the value parameter and the backing field.
+        freeCompilerArgs.addAll(
+            "-Xannotation-default-target=param-property",
+        )
+    }
+}
+
 // In AGP 9.0+, Kotlin is integrated.
 // We can use the extension if it exists, or just rely on defaults.
 
