@@ -3,6 +3,9 @@ package app.tastile.android.ui.mobile.sheets
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 
 /** The Web quick-create base panel and its eight subpanels. */
 enum class QuickCreatePanel { Base, Intent, Time, Duration, Recurring, References, Completion, Meta, Behavior }
@@ -12,7 +15,6 @@ enum class QuickCreatePlanRole { Executable, Label }
 enum class QuickCreateIntent { FinishOnce, Recurring, MaximizeWithinInterval, LabelOnly }
 enum class QuickCreateWhenMode { None, Day, Range, Reference }
 enum class QuickCreateTimeOfDayMode { AllDay, Range, Unspecified }
-enum class QuickCreateRecurringLifecycleState { Active, Paused, Archived }
 enum class QuickCreateRepeatMode { Once, Daily, Weekly, Interval, Condition }
 
 data class QuickCreateVisual(val color: String = "#3b82f6", val icon: String = "check-circle")
@@ -25,16 +27,30 @@ data class QuickCreateIdentity(
     val visual: QuickCreateVisual = QuickCreateVisual(),
 )
 
-data class QuickCreatePlanReference(val id: String, val kind: String)
+data class QuickCreatePlanReference(val target: JsonElement, val pick: JsonElement)
 
-sealed interface QuickCreateConditionNode {
-    data class All(val children: List<QuickCreateConditionNode>) : QuickCreateConditionNode
-    data class Any(val children: List<QuickCreateConditionNode>) : QuickCreateConditionNode
-    data class Term(val kind: String, val value: String, val state: String) : QuickCreateConditionNode
-}
+/** Open v1 condition node: numeric kind and JSON term preserve ALL/ANY/NOT and typed terms. */
+data class QuickCreateConditionNode(
+    val kind: Int,
+    val children: List<QuickCreateConditionNode> = emptyList(),
+    val term: JsonElement? = null,
+)
 
-data class QuickCreateTimeRequirement(val id: String, val minMinutes: Int?, val maxMinutes: Int?)
-data class QuickCreateTaskDefinition(val id: String, val title: String, val note: String? = null)
+data class QuickCreateTimeRequirement(
+    val id: String,
+    val observation: JsonElement,
+    val required: JsonElement,
+    val preferred: JsonElement? = null,
+)
+
+data class QuickCreateTaskContent(val title: String, val note: String? = null)
+data class QuickCreateTaskDefinition(
+    val id: String,
+    val content: QuickCreateTaskContent,
+    val show: JsonElement? = null,
+    val complete: QuickCreateConditionNode? = null,
+    val order: JsonArray = JsonArray(emptyList()),
+)
 
 data class QuickCreatePlanCompletion(
     val root: QuickCreateConditionNode? = null,
@@ -42,11 +58,20 @@ data class QuickCreatePlanCompletion(
     val tasks: List<QuickCreateTaskDefinition> = emptyList(),
 )
 
+data class QuickCreatePlanning(
+    val placementRules: JsonArray = JsonArray(emptyList()),
+    val nestingRules: JsonArray = JsonArray(emptyList()),
+    val flows: JsonArray = JsonArray(emptyList()),
+)
+
 data class QuickCreatePlan(
     val role: QuickCreatePlanRole = QuickCreatePlanRole.Executable,
     val intent: QuickCreateIntent = QuickCreateIntent.FinishOnce,
     val references: List<QuickCreatePlanReference> = emptyList(),
     val completion: QuickCreatePlanCompletion = QuickCreatePlanCompletion(),
+    val planning: QuickCreatePlanning = QuickCreatePlanning(),
+    val metrics: JsonArray = JsonArray(emptyList()),
+    val decisions: JsonArray = JsonArray(emptyList()),
 )
 
 data class QuickCreateSpan(val start: String = "", val end: String = "")
@@ -63,20 +88,34 @@ data class QuickCreateTime(
     val referenceLabel: String = "",
 )
 
-data class QuickCreateWindow(val kind: String, val startOffsetMinute: Int, val endOffsetMinute: Int)
-
-data class QuickCreateRecurringLife(
-    val activeFrom: String? = null,
-    val activeUntil: String? = null,
-    val state: QuickCreateRecurringLifecycleState = QuickCreateRecurringLifecycleState.Active,
+data class QuickCreateWindow(
+    val id: String,
+    val owner: JsonElement,
+    val kind: Int,
+    val bounds: QuickCreateSpan,
+    val rules: JsonArray = JsonArray(emptyList()),
+    val referenceId: String? = null,
 )
 
-data class QuickCreateFrameRule(val id: String, val stepMinutes: Int, val weekdayMask: Int)
+data class QuickCreateChanged(val at: String, val actor: JsonElement)
+
+data class QuickCreateRecurringLife(
+    val active: QuickCreateSpan = QuickCreateSpan(),
+    val state: Int = 0,
+    val changed: QuickCreateChanged? = null,
+)
+
+data class QuickCreateFrameRule(
+    val id: String,
+    val active: JsonElement? = null,
+    val rank: Int,
+    val generator: JsonElement,
+)
 
 data class QuickCreateRecurring(
     val life: QuickCreateRecurringLife = QuickCreateRecurringLife(),
     val frameRules: List<QuickCreateFrameRule> = emptyList(),
-    val rules: List<String> = emptyList(),
+    val rules: JsonArray = JsonArray(emptyList()),
     val repeatMode: QuickCreateRepeatMode = QuickCreateRepeatMode.Once,
     val weekdayMask: Int = 0b0011111,
     val endDate: String? = null,
