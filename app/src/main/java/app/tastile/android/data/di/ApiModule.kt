@@ -1,5 +1,6 @@
 package app.tastile.android.data.di
 
+import app.tastile.android.data.api.CognitoAccountApi
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.command.V1CommandDispatcher
 import app.tastile.android.data.repository.ApiTokenManager
@@ -30,6 +31,11 @@ object ApiModule {
     @Singleton
     fun provideV1ApiClient(apiTokenManager: ApiTokenManager): V1ApiClient =
         V1ApiClient { apiTokenManager.getOrMint() }
+
+    @Provides
+    @Singleton
+    fun provideCognitoAccountApi(apiTokenManager: ApiTokenManager): CognitoAccountApi =
+        CognitoAccountApi { apiTokenManager.getOrMint() }
 
     @Provides
     @Singleton
