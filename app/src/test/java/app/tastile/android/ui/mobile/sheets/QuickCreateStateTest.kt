@@ -19,7 +19,7 @@ class QuickCreateStateTest {
         assertEquals(0, draft.plan.completion.root.kind)
         assertEquals(1, draft.plan.completion.root.children.size)
         assertEquals(3, draft.plan.completion.root.children.single().kind)
-        assertEquals("time_requirement_default", draft.plan.completion.timeRequirements.single().id)
+        assertFalse(draft.plan.completion.timeRequirements.single().id.isBlank())
         assertEquals("task_default", draft.plan.completion.tasks.single().id)
         assertEquals(3, draft.plan.completion.tasks.single().complete.kind)
         assertEquals(30 * 60_000L, draft.time.durationMinMax.minMs)
@@ -27,6 +27,14 @@ class QuickCreateStateTest {
         assertEquals(QuickCreateDateRange("", ""), draft.recurring.life.active)
         assertFalse(draft.recurring.life.changed.at.isBlank())
         Instant.parse(draft.recurring.life.changed.at)
+    }
+
+    @Test
+    fun `default time requirement receives a fresh id for each draft`() {
+        val first = QuickCreateDraftState()
+        val second = QuickCreateDraftState()
+
+        assertFalse(first.plan.completion.timeRequirements.single().id == second.plan.completion.timeRequirements.single().id)
     }
 
     @Test

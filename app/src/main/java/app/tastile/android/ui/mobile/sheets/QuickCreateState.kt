@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.time.Instant
+import java.util.UUID
 
 /** The Web quick-create base panel and its eight subpanels. */
 enum class QuickCreatePanel { Base, Intent, Time, Duration, Recurring, References, Completion, Meta, Behavior }
@@ -210,7 +211,7 @@ private fun defaultTermCondition() = QuickCreateConditionNode(
 )
 
 private fun defaultTimeRequirement() = QuickCreateTimeRequirement(
-    id = "time_requirement_default",
+    id = "tr_${UUID.randomUUID()}",
     observation = JsonObject(mapOf("scope" to JsonPrimitive(1), "source" to JsonPrimitive(0), "aggregate" to JsonPrimitive(0), "quantifier" to JsonPrimitive(0))),
     required = JsonObject(mapOf("minMs" to JsonPrimitive(30 * 60_000L), "maxMs" to JsonPrimitive(90 * 60_000L))),
     preferred = null,
