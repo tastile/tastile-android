@@ -181,4 +181,144 @@
     <string name="account_subscription_pro_plan_price">$4</string>
     <string name="account_subscription_loading">Loading…</string>
     <string name="account_subscription_error">Could not load subscription info</string>
+
+    <!-- C12 — i18n keys consolidation (web parity namespaces) -->
+
+    <!-- nav.* (top tab/section navigation) -->
+    <string name="nav_execute">Execute</string>
+    <string name="nav_tiles">Tiles</string>
+    <string name="nav_integrations">Integrations</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_new">New</string>
+    <string name="nav_timeline">Timeline</string>
+    <string name="nav_tasks">Tasks</string>
+    <string name="nav_projects">Projects</string>
+    <string name="nav_schedule">Schedule</string>
+    <string name="nav_references">References</string>
+    <string name="nav_preferences">Preferences</string>
+
+    <!-- shell.activityBar.* -->
+    <string name="shell_activity_bar_execute">Execute</string>
+    <string name="shell_activity_bar_tiles">Tiles</string>
+    <string name="shell_activity_bar_integrations">Integrations</string>
+    <string name="shell_activity_bar_settings">Settings</string>
+    <string name="shell_activity_bar_new">New</string>
+    <string name="shell_activity_bar_timeline">Timeline</string>
+
+    <!-- shell.floatingHeader.* -->
+    <string name="shell_floating_header_title">Title</string>
+    <string name="shell_floating_header_subtitle">Subtitle</string>
+    <string name="shell_floating_header_search">Search</string>
+    <string name="shell_floating_header_notifications">Notifications</string>
+    <string name="shell_floating_header_account">Account</string>
+    <string name="shell_floating_header_menu">Menu</string>
+    <string name="shell_floating_header_close">Close</string>
+    <string name="shell_floating_header_open">Open</string>
+    <string name="shell_floating_header_more">More</string>
+    <string name="shell_floating_header_loading">Loading</string>
+    <string name="shell_floating_header_synced">Synced</string>
+    <string name="shell_floating_header_syncing">Syncing</string>
+    <string name="shell_floating_header_offline">Offline</string>
+
+    <!-- notifications.* (8 kinds) -->
+    <string name="notifications_kind_reminder">Reminder</string>
+    <string name="notifications_kind_alert">Alert</string>
+    <string name="notifications_kind_prompt">Prompt</string>
+    <string name="notifications_kind_break">Break</string>
+    <string name="notifications_kind_resume">Resume</string>
+    <string name="notifications_kind_sync">Sync</string>
+    <string name="notifications_kind_error">Error</string>
+    <string name="notifications_kind_default">Notification</string>
+
+    <!-- header.* (sync states + general) -->
+    <string name="header_sync_idle">Idle</string>
+    <string name="header_sync_syncing">Syncing</string>
+    <string name="header_sync_error">Sync error</string>
+    <string name="header_sync_offline">Offline</string>
+    <string name="header_general_title">Title</string>
+    <string name="header_general_subtitle">Subtitle</string>
+
+    <!-- languageToggle.* -->
+    <string name="language_toggle_label">Language</string>
+    <string name="language_toggle_hint">Switch language</string>
+
+    <!-- execution.* (5 prompt options) -->
+    <string name="execution_prompt_continue">Continue</string>
+    <string name="execution_prompt_pause">Pause</string>
+    <string name="execution_prompt_stop">Stop</string>
+    <string name="execution_prompt_skip">Skip</string>
+    <string name="execution_prompt_extend">Extend</string>
+
+    <!-- sidebar.* -->
+    <string name="sidebar_open">Open</string>
+    <string name="sidebar_close">Close</string>
+    <string name="sidebar_resize">Resize</string>
+    <string name="sidebar_collapse">Collapse</string>
+
+    <!-- common.* -->
+    <string name="common_save">Save</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_close">Close</string>
+    <string name="common_loading">Loading</string>
+    <string name="common_confirm">Confirm</string>
+    <string name="common_back">Back</string>
+
+    <!-- auth.mfaSetup.* -->
+    <string name="auth_mfa_setup_title">MFA setup</string>
+    <string name="auth_mfa_setup_subtitle">Enable two-factor authentication</string>
+    <string name="auth_mfa_setup_qr">QR code</string>
+    <string name="auth_mfa_setup_manual">Manual entry</string>
+    <string name="auth_mfa_setup_secret">Secret</string>
+    <string name="auth_mfa_setup_code">Code</string>
+    <string name="auth_mfa_setup_verify">Verify</string>
+    <string name="auth_mfa_setup_skip">Skip</string>
+    <string name="auth_mfa_setup_success">Setup complete</string>
+    <string name="auth_mfa_setup_error">Error</string>
+    <string name="auth_mfa_setup_help">Help</string>
+    <string name="auth_mfa_setup_required">Required</string>
+    <string name="auth_mfa_setup_optional">Optional</string>
+
+    <!-- prompt.actions.* -->
+    <string name="prompt_actions_continue">Continue</string>
+    <string name="prompt_actions_pause">Pause</string>
+    <string name="prompt_actions_stop">Stop</string>
+    <string name="prompt_actions_skip">Skip</string>
+    <string name="prompt_actions_extend">Extend</string>
+    <string name="prompt_actions_reschedule">Reschedule</string>
+    <string name="prompt_actions_defer">Defer</string>
+
+    <!-- tiles.* (actions, dialogs, metadata) -->
+    <string name="tiles_end_at">End</string>
+    <string name="tiles_labels">Labels</string>
+    <string name="tiles_project">Project</string>
+    <string name="tiles_recurrence">Recurrence</string>
+    <string name="tiles_complete">Complete</string>
+    <string name="tiles_start">Start</string>
+    <string name="tiles_defer">Defer</string>
+    <string name="tiles_delete">Delete</string>
+
+    <!-- panels.tasks.* -->
+    <string name="panels_tasks_title">Tasks</string>
+    <string name="panels_tasks_empty">No tasks</string>
+    <string name="panels_tasks_new">New task</string>
+    <string name="panels_tasks_search">Search</string>
+    <string name="panels_tasks_filter_all">All</string>
+    <string name="panels_tasks_filter_active">Active</string>
+    <string name="panels_tasks_filter_completed">Completed</string>
+    <string name="panels_tasks_sort_title">By title</string>
+    <string name="panels_tasks_sort_due">By due date</string>
+    <string name="panels_tasks_sort_created">By creation date</string>
+    <string name="panels_tasks_complete">Complete</string>
+    <string name="panels_tasks_edit">Edit</string>
+    <string name="panels_tasks_delete">Delete</string>
+    <string name="panels_tasks_due_today">Due today</string>
+    <string name="panels_tasks_due_overdue">Overdue</string>
+    <string name="panels_tasks_due_future">Upcoming</string>
+
+    <!-- Schedule panel (C11 — web→android parity sweep) -->
+    <string name="panels_schedule_recurring">Recurring Tiles</string>
+    <string name="panels_schedule_upcoming">Upcoming Deadlines</string>
+    <string name="panels_schedule_projects">Projects</string>
 </resources>

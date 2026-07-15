@@ -180,4 +180,144 @@
     <string name="account_subscription_pro_plan_price">4ドル</string>
     <string name="account_subscription_loading">読み込み中…</string>
     <string name="account_subscription_error">サブスク情報を取得できませんでした</string>
+
+    <!-- C12 — i18n keys consolidation (web parity namespaces) -->
+
+    <!-- nav.* (top tab/section navigation) -->
+    <string name="nav_execute">実行</string>
+    <string name="nav_tiles">タイル</string>
+    <string name="nav_integrations">連携</string>
+    <string name="nav_settings">設定</string>
+    <string name="nav_new">新規</string>
+    <string name="nav_timeline">タイムライン</string>
+    <string name="nav_tasks">タスク</string>
+    <string name="nav_projects">プロジェクト</string>
+    <string name="nav_schedule">スケジュール</string>
+    <string name="nav_references">参照</string>
+    <string name="nav_preferences">環境設定</string>
+
+    <!-- shell.activityBar.* -->
+    <string name="shell_activity_bar_execute">実行</string>
+    <string name="shell_activity_bar_tiles">タイル</string>
+    <string name="shell_activity_bar_integrations">連携</string>
+    <string name="shell_activity_bar_settings">設定</string>
+    <string name="shell_activity_bar_new">新規</string>
+    <string name="shell_activity_bar_timeline">タイムライン</string>
+
+    <!-- shell.floatingHeader.* -->
+    <string name="shell_floating_header_title">タイトル</string>
+    <string name="shell_floating_header_subtitle">サブタイトル</string>
+    <string name="shell_floating_header_search">検索</string>
+    <string name="shell_floating_header_notifications">通知</string>
+    <string name="shell_floating_header_account">アカウント</string>
+    <string name="shell_floating_header_menu">メニュー</string>
+    <string name="shell_floating_header_close">閉じる</string>
+    <string name="shell_floating_header_open">開く</string>
+    <string name="shell_floating_header_more">詳細</string>
+    <string name="shell_floating_header_loading">読み込み中</string>
+    <string name="shell_floating_header_synced">同期済み</string>
+    <string name="shell_floating_header_syncing">同期中</string>
+    <string name="shell_floating_header_offline">オフライン</string>
+
+    <!-- notifications.* (8 kinds) -->
+    <string name="notifications_kind_reminder">リマインダー</string>
+    <string name="notifications_kind_alert">アラート</string>
+    <string name="notifications_kind_prompt">プロンプト</string>
+    <string name="notifications_kind_break">休憩</string>
+    <string name="notifications_kind_resume">再開</string>
+    <string name="notifications_kind_sync">同期</string>
+    <string name="notifications_kind_error">エラー</string>
+    <string name="notifications_kind_default">通知</string>
+
+    <!-- header.* (sync states + general) -->
+    <string name="header_sync_idle">待機中</string>
+    <string name="header_sync_syncing">同期中</string>
+    <string name="header_sync_error">同期エラー</string>
+    <string name="header_sync_offline">オフライン</string>
+    <string name="header_general_title">タイトル</string>
+    <string name="header_general_subtitle">サブタイトル</string>
+
+    <!-- languageToggle.* -->
+    <string name="language_toggle_label">言語</string>
+    <string name="language_toggle_hint">言語を切り替える</string>
+
+    <!-- execution.* (5 prompt options) -->
+    <string name="execution_prompt_continue">続ける</string>
+    <string name="execution_prompt_pause">一時停止</string>
+    <string name="execution_prompt_stop">停止</string>
+    <string name="execution_prompt_skip">スキップ</string>
+    <string name="execution_prompt_extend">延長</string>
+
+    <!-- sidebar.* -->
+    <string name="sidebar_open">開く</string>
+    <string name="sidebar_close">閉じる</string>
+    <string name="sidebar_resize">リサイズ</string>
+    <string name="sidebar_collapse">折りたたむ</string>
+
+    <!-- common.* -->
+    <string name="common_save">保存</string>
+    <string name="common_cancel">キャンセル</string>
+    <string name="common_delete">削除</string>
+    <string name="common_edit">編集</string>
+    <string name="common_close">閉じる</string>
+    <string name="common_loading">読み込み中</string>
+    <string name="common_confirm">確認</string>
+    <string name="common_back">戻る</string>
+
+    <!-- auth.mfaSetup.* -->
+    <string name="auth_mfa_setup_title">MFA設定</string>
+    <string name="auth_mfa_setup_subtitle">二要素認証を有効化</string>
+    <string name="auth_mfa_setup_qr">QRコード</string>
+    <string name="auth_mfa_setup_manual">手動入力</string>
+    <string name="auth_mfa_setup_secret">シークレット</string>
+    <string name="auth_mfa_setup_code">コード</string>
+    <string name="auth_mfa_setup_verify">確認</string>
+    <string name="auth_mfa_setup_skip">スキップ</string>
+    <string name="auth_mfa_setup_success">設定完了</string>
+    <string name="auth_mfa_setup_error">エラー</string>
+    <string name="auth_mfa_setup_help">ヘルプ</string>
+    <string name="auth_mfa_setup_required">必須</string>
+    <string name="auth_mfa_setup_optional">任意</string>
+
+    <!-- prompt.actions.* -->
+    <string name="prompt_actions_continue">続ける</string>
+    <string name="prompt_actions_pause">一時停止</string>
+    <string name="prompt_actions_stop">停止</string>
+    <string name="prompt_actions_skip">スキップ</string>
+    <string name="prompt_actions_extend">延長</string>
+    <string name="prompt_actions_reschedule">再スケジュール</string>
+    <string name="prompt_actions_defer">延期</string>
+
+    <!-- tiles.* (actions, dialogs, metadata) -->
+    <string name="tiles_end_at">終了</string>
+    <string name="tiles_labels">ラベル</string>
+    <string name="tiles_project">プロジェクト</string>
+    <string name="tiles_recurrence">繰り返し</string>
+    <string name="tiles_complete">完了</string>
+    <string name="tiles_start">開始</string>
+    <string name="tiles_defer">延期</string>
+    <string name="tiles_delete">削除</string>
+
+    <!-- panels.tasks.* -->
+    <string name="panels_tasks_title">タスク</string>
+    <string name="panels_tasks_empty">タスクがありません</string>
+    <string name="panels_tasks_new">新規タスク</string>
+    <string name="panels_tasks_search">検索</string>
+    <string name="panels_tasks_filter_all">すべて</string>
+    <string name="panels_tasks_filter_active">アクティブ</string>
+    <string name="panels_tasks_filter_completed">完了済み</string>
+    <string name="panels_tasks_sort_title">タイトル順</string>
+    <string name="panels_tasks_sort_due">期限順</string>
+    <string name="panels_tasks_sort_created">作成順</string>
+    <string name="panels_tasks_complete">完了</string>
+    <string name="panels_tasks_edit">編集</string>
+    <string name="panels_tasks_delete">削除</string>
+    <string name="panels_tasks_due_today">今日が期限</string>
+    <string name="panels_tasks_due_overdue">期限超過</string>
+    <string name="panels_tasks_due_future">今後の期限</string>
+
+    <!-- Schedule panel (C11 — web→android parity sweep) -->
+    <string name="panels_schedule_recurring">繰り返しタイル</string>
+    <string name="panels_schedule_upcoming">今後の期限</string>
+    <string name="panels_schedule_projects">プロジェクト</string>
 </resources>
