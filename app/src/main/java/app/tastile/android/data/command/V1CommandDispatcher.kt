@@ -69,8 +69,6 @@ class V1CommandDispatcher @Inject constructor(
                 kind = kind,
                 title = title,
                 description = note,
-                color = null,
-                icon = null,
                 externalId = null,
                 planRole = planRole
             )

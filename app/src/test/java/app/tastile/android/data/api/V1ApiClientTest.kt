@@ -131,6 +131,24 @@ class V1ApiClientTest {
     }
 
     @Test
+    fun standard_tile_create_includes_web_null_fields_and_default_visuals() {
+        val tile = Json.encodeToJsonElement(
+            CreateTilePayload.serializer(),
+            CreateTilePayload(
+                kind = V1NumericConstants.TileKind.PLACEMENT,
+                title = "Inbox item",
+                planRole = V1NumericConstants.PlanRole.EXECUTABLE,
+            ),
+        ).jsonObject
+
+        assertNull(tile["description"]?.jsonPrimitive?.contentOrNull)
+        assertNull(tile["external_id"]?.jsonPrimitive?.contentOrNull)
+        assertNull(tile["owner_subject_id"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("#3b82f6", tile["color"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("check-circle", tile["icon"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
     fun recurring_frame_rule_and_placement_source_ref_match_web_full_wire_shapes() {
         val frameRule = FrameRulePayload(
             id = "00000000-0000-0000-0000-000000000000",

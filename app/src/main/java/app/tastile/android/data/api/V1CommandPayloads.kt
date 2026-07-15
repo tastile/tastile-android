@@ -24,11 +24,16 @@ import kotlinx.serialization.EncodeDefault
 data class CreateTilePayload(
     val kind: Byte,
     val title: String,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val description: String? = null,
-    val color: String? = null,
-    val icon: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val color: String? = "#3b82f6",
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val icon: String? = "check-circle",
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("external_id") val externalId: String? = null,
     @SerialName("plan_role") val planRole: Byte,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("owner_subject_id") val ownerSubjectId: String? = null,
     @SerialName("frame_rule") val frameRule: FrameRulePayload? = null,
 )
