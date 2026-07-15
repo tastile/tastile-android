@@ -86,6 +86,45 @@ class V1ApiClient @Inject constructor(
     suspend fun listRuntimePaths(): V1ListRuntimePathsResponse =
         get("/v1/runtime/paths")
 
+    // --- C5 Projects (workspaces) ---------------------------------------
+    //
+    // All three endpoints are *raw JSON* (no CommandRequest envelope) — the
+    // web hooks call them through `getCoreClient().call("listMyWorkspaces")`
+    // with no envelope. The Rust handlers at
+    // `crates/v1/api/src/handlers/access.rs` accept a plain JSON body, so
+    // we follow suit.
+
+    suspend fun listWorkspaces(): V1ListWorkspacesResponse =
+        get("/v1/access/subjects?kind=1")
+
+    /**
+     * `POST /v1/access/workspaces` body `{ display_name, slug?, color?,
+     * parent_subject_id? }`. Returns the created `Workspace` row per the
+     * 201 CREATED wire shape.
+     */
+    suspend fun createWorkspace(input: CreateWorkspaceInput): Workspace {
+        val body = buildJsonObject {
+            put("display_name", input.displayName)
+            put("slug", input.slug?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("color", input.color?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("parent_subject_id", input.parentSubjectId?.let { JsonPrimitive(it) } ?: JsonNull)
+        }
+        return postRawJson(
+            path = "/v1/access/workspaces",
+            body = body,
+            responseSerializer = Workspace.serializer(),
+        )
+    }
+
+    /**
+     * `DELETE /v1/access/subjects/{id}` returns 204 NO CONTENT with no body.
+     * Surface that as a unit (`Unit`) and let the caller's `Response` chain
+     * collapse it.
+     */
+    suspend fun deleteWorkspace(id: String) {
+        deleteRaw(path = "/v1/access/subjects/$id")
+    }
+
     suspend fun <Req, Resp> postCommand(
         path: String,
         commandKind: String,
@@ -134,11 +173,9 @@ class V1ApiClient @Inject constructor(
     }
 
     /**
-     * Issues a POST request whose body is sent verbatim (no `CommandRequest`
-     * envelope wrapping).  Used by Macro Step 5 for endpoints that bypass the
-     * standard envelope: `POST /v1/prompts` and
-     * `POST /v1/prompts/startup-recovery`.  Idempotency keys are still added
-     * via the `Idempotency-Key` header so retry dedup still works.
+     * Issues a POST request whose body is sent verbatim (no CommandRequest
+     * envelope). Used for endpoints that take a plain JSON payload — C5
+     * projects (`POST /v1/access/workspaces`).
      */
     suspend fun <Resp> postRawJson(
         path: String,
@@ -208,6 +245,36 @@ class V1ApiClient @Inject constructor(
                 throw V1Error.Unknown(status, body.take(200))
             }
             json.decodeFromString(responseSerializer, body)
+        } catch (e: IOException) {
+            throw V1Error.Network(e)
+        }
+    }
+
+    /**
+     * Issues a DELETE request whose response body is unused. Used by
+     * C5 projects (`DELETE /v1/access/subjects/{id}` returns
+     * 204 NO CONTENT) where the [deleteCommand] envelope-decoding
+     * path is not appropriate.
+     */
+    suspend fun deleteRaw(path: String) = withContext(Dispatchers.IO) {
+        try {
+            val token = tokenProvider()
+            if (token.isNullOrBlank()) throw V1Error.Auth()
+            val url = URL("${baseUrl()}$path")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "DELETE"
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000
+                readTimeout = 15_000
+            }
+            val status = connection.responseCode
+            if (status !in 200..299) {
+                val body = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
+                if (err != null) throw V1Error.fromApiBody(err)
+                throw V1Error.Unknown(status, body.take(200))
+            }
         } catch (e: IOException) {
             throw V1Error.Network(e)
         }

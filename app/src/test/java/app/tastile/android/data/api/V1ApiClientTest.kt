@@ -30,6 +30,7 @@ class V1ApiClientTest {
     fun api_error_maps_to_sealed_branch() {
         val body = V1ApiErrorBody(kind = V1NumericConstants.ApiErrorKind.STALE_REVISION, message = "stale", currentRevision = 12)
         val error = V1Error.fromApiBody(body)
+        @Suppress("USELESS_IS_CHECK")
         assertTrue(error is V1Error.Api)
         error as V1Error.Api
         assertEquals("STALE_REVISION", error.kindName)

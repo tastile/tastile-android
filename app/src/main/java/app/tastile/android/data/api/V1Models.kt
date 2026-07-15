@@ -202,6 +202,41 @@ data class TileDetailView(
     @SerialName("archived_at") val archivedAt: String? = null
 )
 
+// --- C5 Projects (workspaces) -------------------------------------------
+//
+// Wire shape for `GET /v1/access/subjects?kind=1` and friends.
+// Mirrors the web `Workspace` interface (see tastile-web
+// `src/lib/hooks/use-projects.ts`). We use only the fields Android reads; the
+// list endpoint returns SubjectRow items as opaque Workspace summaries.
+
+@Serializable
+data class Workspace(
+    val id: String,
+    val kind: Short = 1,
+    @SerialName("display_name") val displayName: String,
+    val slug: String? = null,
+    val email: String? = null,
+    @SerialName("parent_subject_id") val parentSubjectId: String? = null,
+    val color: String? = null,
+    @SerialName("owner_user_id") val ownerUserId: String? = null,
+    @SerialName("disabled_at") val disabledAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+)
+
+data class CreateWorkspaceInput(
+    @SerialName("display_name") val displayName: String,
+    val slug: String? = null,
+    val color: String? = null,
+    @SerialName("parent_subject_id") val parentSubjectId: String? = null,
+)
+
+@Serializable
+data class V1ListWorkspacesResponse(
+    val items: List<Workspace> = emptyList(),
+    val count: Int = 0,
+)
+
 @Serializable
 data class V1PlacementListItem(
     @SerialName("placement_id") val placementId: String,

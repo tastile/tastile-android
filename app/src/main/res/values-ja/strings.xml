@@ -46,4 +46,22 @@
     <string name="dashboard_tiles_changes_empty">変更履歴はありません</string>
     <string name="tiles_duration">所要</string>
     <string name="tiles_start_at">開始</string>
+
+    <!-- Projects side panel (C5 — web→android parity sweep) -->
+    <string name="panels_projects_projects">プロジェクト</string>
+    <string name="panels_projects_all_projects">すべてのプロジェクト</string>
+    <string name="panels_projects_loading_projects">プロジェクトを読み込み中…</string>
+    <string name="panels_projects_new_button">＋ 新規</string>
+    <string name="panels_projects_name_placeholder">プロジェクト名</string>
+    <string name="panels_projects_slug_placeholder">スラッグ（任意）</string>
+    <string name="panels_projects_color_label">色</string>
+    <string name="panels_projects_create">作成</string>
+    <string name="panels_projects_creating">作成中…</string>
+    <string name="panels_projects_cancel">キャンセル</string>
+    <string name="panels_projects_delete_hint">× を長押しで削除</string>
+    <string name="panels_projects_delete_confirm_title">「%1$s」を削除しますか？</string>
+    <string name="panels_projects_delete_confirm_body">このプロジェクトと関連付けが完全に削除されます。</string>
+    <string name="panels_projects_error_empty">名前は必須です</string>
+    <string name="panels_projects_error_slug">このスラッグは使用できません</string>
+    <string name="panels_projects_error_create">作成に失敗しました</string>
 </resources>

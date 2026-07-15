@@ -424,10 +424,8 @@ internal fun ProjectsCheckboxSection(
 
 @Composable
 private fun ProjectsSectionContent(viewModel: DashboardViewModel) {
-    val tiles by viewModel.tiles.collectAsStateWithLifecycle()
-    Column(modifier = Modifier.fillMaxWidth()) {
-        ProjectsCheckboxSection(tiles = tiles)
-    }
+    // C5: full CRUD port — see ProjectsSectionContent.kt in ui/mobile/panels/.
+    app.tastile.android.ui.mobile.panels.ProjectsSectionContent()
 }
 
 private fun extractProjects(tiles: List<app.tastile.android.data.model.Tile>): List<String> =
