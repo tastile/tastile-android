@@ -225,6 +225,5 @@ class AccountViewModelTest {
         vm.dismissCreatedToken()
         assertNull(vm.tokens.value.created)
     }
-
-    private fun any(): String = io.mockk.MockKMatcherScope.any<String>()
 }
+

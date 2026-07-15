@@ -17,9 +17,9 @@ import org.junit.Test
  * [CognitoAccountApi] in the right direction (no accidental swap of
  * the Next route base vs. the v1 base).
  *
- * Web routes (`/api/account/*`) live on `COGNITO_WEB_AUTH_BASE_URL`
+ * Web routes at `/api/account/...` live on `COGNITO_WEB_AUTH_BASE_URL`
  * and use the Cognito id/access token.
- * V1 routes (`/v1/api-tokens*`) live on `TASTILE_CORE_URL` and use
+ * V1 routes at `/v1/api-tokens...` live on `TASTILE_CORE_URL` and use
  * the Tastile API token.
  */
 class AccountRepositoryTest {
@@ -165,8 +165,9 @@ class AccountRepositoryTest {
         }
     }
 
-    /** Encode `{ "sub": "<sub>", "email": "<email>", "email_verified": <v> }` as a
-     *  Cognito-shape JWT (header.payload.signature). */
+    /** Encode `{ "sub": "sub", "email": "email", "email_verified": boolean }`
+     *  as a Cognito-shape JWT (header.payload.signature). The literal
+     *  sub/email keys are encoded as JSON object keys inside the payload. */
     private fun makeIdToken(sub: String, email: String, emailVerified: Boolean): String {
         val header = base64Url("""{"alg":"RS256","typ":"JWT"}""")
         val payload = base64Url(

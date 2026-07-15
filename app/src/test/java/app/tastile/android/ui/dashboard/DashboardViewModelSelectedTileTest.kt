@@ -5,6 +5,7 @@ import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.ReferenceOverlayStore
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.TileRepository
@@ -52,6 +53,7 @@ class DashboardViewModelSelectedTileTest {
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
+        val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
@@ -63,6 +65,7 @@ class DashboardViewModelSelectedTileTest {
             profileRepository,
             tileRepository,
             userSettingsRepository,
+            referenceOverlayStore,
         ).also { viewModels.add(it) }
     }
 

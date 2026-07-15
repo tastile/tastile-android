@@ -10,6 +10,7 @@ import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.ReferenceOverlayStore
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.TilesResponse
@@ -47,6 +48,7 @@ class TileEditSheetTest {
         val profileRepo = mockk<ProfileRepository>(relaxed = true)
         val tileRepo = mockk<TileRepository>(relaxed = true)
         val userSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
+        val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { userSettingsRepo.getLocale() } returns AppLocale.EN
         // Unauthenticated keeps refreshAll in the empty-state branch so it never
         // touches the mock repositories; refreshTimeline (fired by the
@@ -60,6 +62,7 @@ class TileEditSheetTest {
             profileRepository = profileRepo,
             tileRepository = tileRepo,
             userSettingsRepository = userSettingsRepo,
+            referenceOverlayStore = referenceOverlayStore,
         ).also { viewModels.add(it) }
     }
 

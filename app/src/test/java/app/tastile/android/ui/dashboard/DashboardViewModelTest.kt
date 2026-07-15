@@ -6,6 +6,7 @@ import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.ReferenceOverlayStore
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.TileRepository
@@ -55,6 +56,7 @@ class DashboardViewModelTest {
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
+        val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
@@ -67,16 +69,17 @@ class DashboardViewModelTest {
             profileRepository,
             tileRepository,
             userSettingsRepository,
+            referenceOverlayStore,
         ).also { viewModels.add(it) }
     }
 
     @Test
     fun handleCardAction_routesToRequestPromptCommand() = runTest {
-        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.requestPrompt(any()) } returns true
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
 
         viewModel.handleCardAction(CardAction.TriggerPrompt("tile-1"))
@@ -86,11 +89,11 @@ class DashboardViewModelTest {
 
     @Test
     fun rescheduleTimelineItem_routesToCoreRescheduleCommand() = runTest {
-        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.rescheduleTile(any(), any(), any()) } returns Unit
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
         val item = CoreTimelineItem(
             id = "tl-1",
@@ -109,9 +112,9 @@ class DashboardViewModelTest {
 
     @Test
     fun refreshAll_setsDiagnosticsWhenUnauthenticated() = runTest {
-        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
         viewModel.refreshAll()
 
@@ -176,9 +179,9 @@ class DashboardViewModelTest {
 
     @Test
     fun confirmDeleteTile_clearsCandidateAndCallsRepository() = runTest {
-        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { tileRepository.deleteTile(any()) } returns Unit
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
 
         viewModel.setDeleteTileCandidate("kill-me")
@@ -218,6 +221,7 @@ class DashboardViewModelTest {
         val profileRepository: ProfileRepository,
         val tileRepository: TileRepository,
         val userSettingsRepository: UserSettingsRepository,
+        val referenceOverlayStore: ReferenceOverlayStore,
     )
 
     private fun mocks(): Mocks {
@@ -225,12 +229,13 @@ class DashboardViewModelTest {
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
+        val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
-        return Mocks(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        return Mocks(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
     }
 }
