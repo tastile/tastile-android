@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import java.time.Instant
 
 /** The Web quick-create base panel and its eight subpanels. */
 enum class QuickCreatePanel { Base, Intent, Time, Duration, Recurring, References, Completion, Meta, Behavior }
@@ -54,8 +57,8 @@ data class QuickCreateTaskDefinition(
 
 data class QuickCreatePlanCompletion(
     val root: QuickCreateConditionNode = defaultAllCondition(),
-    val timeRequirements: List<QuickCreateTimeRequirement> = emptyList(),
-    val tasks: List<QuickCreateTaskDefinition> = emptyList(),
+    val timeRequirements: List<QuickCreateTimeRequirement> = listOf(defaultTimeRequirement()),
+    val tasks: List<QuickCreateTaskDefinition> = listOf(defaultTaskDefinition()),
 )
 
 data class QuickCreatePlanning(
@@ -106,11 +109,11 @@ data class QuickCreateWindowRule(
     val timeEnd: String? = null,
     val holidayKind: Int? = null,
     val dateRange: QuickCreateDateRange? = null,
-    val whenCondition: QuickCreateConditionNode? = null,
+    val `when`: QuickCreateConditionNode? = null,
 )
 
 data class QuickCreateActor(val id: String = "self", val kind: Int = 0, val ownerId: String? = null)
-data class QuickCreateChanged(val at: String = "", val actor: QuickCreateActor = QuickCreateActor())
+data class QuickCreateChanged(val at: String = Instant.now().toString(), val actor: QuickCreateActor = QuickCreateActor())
 
 data class QuickCreateRecurringLife(
     val active: QuickCreateDateRange = QuickCreateDateRange("", ""),
@@ -127,7 +130,7 @@ data class QuickCreateFrameRule(
 
 data class QuickCreateRecurringRule(
     val id: String,
-    val whenCondition: QuickCreateConditionNode? = null,
+    val `when`: QuickCreateConditionNode? = null,
     val rank: Int,
     val outputs: JsonArray = JsonArray(emptyList()),
 )
@@ -189,5 +192,32 @@ class QuickCreateStateStore(initial: QuickCreateDraftState = QuickCreateDraftSta
     }
 }
 
-private fun defaultAllCondition() = QuickCreateConditionNode(kind = 0)
-private fun defaultTermCondition() = QuickCreateConditionNode(kind = 3, term = JsonNull)
+private const val DEFAULT_TASK_ID = "task_default"
+
+private fun defaultAllCondition() = QuickCreateConditionNode(
+    kind = 0,
+    children = listOf(defaultTermCondition()),
+)
+
+private fun defaultTermCondition() = QuickCreateConditionNode(
+    kind = 3,
+    term = JsonObject(
+        mapOf(
+            "kind" to JsonPrimitive("task"),
+            "value" to JsonObject(mapOf("taskId" to JsonPrimitive(DEFAULT_TASK_ID), "state" to JsonPrimitive(2))),
+        )
+    ),
+)
+
+private fun defaultTimeRequirement() = QuickCreateTimeRequirement(
+    id = "time_requirement_default",
+    observation = JsonObject(mapOf("scope" to JsonPrimitive(1), "source" to JsonPrimitive(0), "aggregate" to JsonPrimitive(0), "quantifier" to JsonPrimitive(0))),
+    required = JsonObject(mapOf("minMs" to JsonPrimitive(30 * 60_000L), "maxMs" to JsonPrimitive(90 * 60_000L))),
+    preferred = null,
+)
+
+private fun defaultTaskDefinition() = QuickCreateTaskDefinition(
+    id = DEFAULT_TASK_ID,
+    content = QuickCreateTaskContent(title = "作業完了"),
+    complete = defaultTermCondition(),
+)

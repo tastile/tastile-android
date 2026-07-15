@@ -5,22 +5,28 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.time.Instant
 
 class QuickCreateStateTest {
 
     @Test
-    fun `v1 required defaults use all root term task completion and millisecond duration`() {
+    fun `web defaults use a non-vacuous completion and timestamped recurring life`() {
         val draft = QuickCreateDraftState()
-        val task = QuickCreateTaskDefinition(id = "task-1", content = QuickCreateTaskContent("Task"))
 
         assertEquals(0, draft.plan.completion.root.kind)
-        assertEquals(3, task.complete.kind)
+        assertEquals(1, draft.plan.completion.root.children.size)
+        assertEquals(3, draft.plan.completion.root.children.single().kind)
+        assertEquals("time_requirement_default", draft.plan.completion.timeRequirements.single().id)
+        assertEquals("task_default", draft.plan.completion.tasks.single().id)
+        assertEquals(3, draft.plan.completion.tasks.single().complete.kind)
         assertEquals(30 * 60_000L, draft.time.durationMinMax.minMs)
         assertEquals(90 * 60_000L, draft.time.durationMinMax.maxMs)
         assertEquals(QuickCreateDateRange("", ""), draft.recurring.life.active)
-        assertEquals(QuickCreateChanged(), draft.recurring.life.changed)
+        assertFalse(draft.recurring.life.changed.at.isBlank())
+        Instant.parse(draft.recurring.life.changed.at)
     }
 
     @Test
@@ -46,6 +52,7 @@ class QuickCreateStateTest {
         assertEquals(populated.windows, draft.windows)
         assertEquals("owner", draft.windows.single().owner)
         assertEquals("rule-1", draft.windows.single().rules.single().id)
+        assertEquals(populated.plan.completion.root, draft.windows.single().rules.single().`when`)
         assertEquals(populated.recurring, draft.recurring)
         assertEquals("frame-1", draft.recurring.frameRules.single().id)
         assertEquals("step", draft.recurring.frameRules.single().generator.kind)
