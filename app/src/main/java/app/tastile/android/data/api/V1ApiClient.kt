@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -41,7 +42,7 @@ internal object V1Endpoints {
 /** Serializes the v1 `CommandRequest<T>` wire format used by tastile-web. */
 internal object V1Wire {
     fun commandEnvelope(
-        payload: JsonObject,
+        payload: JsonElement,
         idempotencyKey: String = V1Idempotency.generate(),
         occurredAt: String = Instant.now().toString(),
         expectedRevision: Long? = null,
@@ -182,8 +183,7 @@ class V1ApiClient @Inject constructor(
         try {
             val token = tokenProvider()
             if (token.isNullOrBlank()) throw V1Error.Auth()
-            val encodedPayload = json.encodeToJsonElement(payloadSerializer, payload) as? JsonObject
-                ?: throw IllegalArgumentException("v1 command payload must serialize to a JSON object")
+            val encodedPayload = json.encodeToJsonElement(payloadSerializer, payload)
             val envelope = V1Wire.commandEnvelope(
                 payload = encodedPayload,
                 expectedRevision = expectedRevision,
@@ -214,6 +214,16 @@ class V1ApiClient @Inject constructor(
             throw V1Error.Network(e)
         }
     }
+
+    suspend fun <Resp> postNullCommand(
+        path: String,
+        responseSerializer: KSerializer<Resp>,
+    ): Resp = postCommand(
+        path = path,
+        payload = JsonNull,
+        payloadSerializer = JsonElement.serializer(),
+        responseSerializer = responseSerializer,
+    )
 
     /**
      * Issues a POST request whose body is sent verbatim (no CommandRequest

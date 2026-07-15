@@ -9,11 +9,11 @@ import app.tastile.android.data.api.AttachMemoPayload
 import app.tastile.android.data.api.CommandResponse
 import app.tastile.android.data.api.CreatePromptRequestPayload
 import app.tastile.android.data.api.CreateTilePayload
-import app.tastile.android.data.api.PauseExecutionPayload
-import app.tastile.android.data.api.ResumeExecutionPayload
 import app.tastile.android.data.api.SetTileLifecyclePayload
 import app.tastile.android.data.api.StartTileBaseline
 import app.tastile.android.data.api.StartTilePayload
+import app.tastile.android.data.api.PlacementSpanPayload
+import app.tastile.android.data.api.SourceRefPayload
 import app.tastile.android.data.api.UpdateTilePayload
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1NumericConstants
@@ -241,8 +241,10 @@ class V1CommandDispatcher @Inject constructor(
                 tileId = tileId,
                 planId = planId,
                 source = V1NumericConstants.PlacementSource.MANUAL,
-                sourceRef = null,
-                baseline = StartTileBaseline(startAt = now, endAt = now)
+                sourceRef = SourceRefPayload.empty(),
+                baseline = StartTileBaseline(
+                    span = PlacementSpanPayload(start = now, end = now),
+                )
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/start",
@@ -270,11 +272,8 @@ class V1CommandDispatcher @Inject constructor(
         return runCatching {
             val executionId = findActiveExecutionIdForTile(tileId)
                 ?: throw IllegalStateException("tile.pause: no active execution for tile $tileId")
-            val payload = PauseExecutionPayload(executionId = executionId)
-            val response = v1ApiClient.postCommand(
+            val response = v1ApiClient.postNullCommand(
                 path = "/v1/executions/$executionId/pause",
-                payload = payload,
-                payloadSerializer = PauseExecutionPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
             )
             response.toCoreAck()
@@ -294,11 +293,8 @@ class V1CommandDispatcher @Inject constructor(
         return runCatching {
             val executionId = findActiveExecutionIdForTile(tileId)
                 ?: throw IllegalStateException("tile.continue: no active execution for tile $tileId")
-            val payload = ResumeExecutionPayload(executionId = executionId)
-            val response = v1ApiClient.postCommand(
+            val response = v1ApiClient.postNullCommand(
                 path = "/v1/executions/$executionId/resume",
-                payload = payload,
-                payloadSerializer = ResumeExecutionPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
             )
             response.toCoreAck()

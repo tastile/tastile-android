@@ -12,6 +12,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import java.time.Instant
 
@@ -96,7 +97,11 @@ class V1ApiClientTest {
                 title = "Daily review",
                 planRole = V1NumericConstants.PlanRole.EXECUTABLE,
                 ownerSubjectId = "subject-1",
-                frameRule = buildJsonObject { put("rank", 0) },
+                frameRule = FrameRulePayload(
+                    id = "rule-1",
+                    rank = 0,
+                    generator = FrameRuleGeneratorPayload(FrameRuleStepPayload(86_400_000)),
+                ),
             ),
         ).jsonObject
         val plan = Json.encodeToJsonElement(
@@ -107,7 +112,7 @@ class V1ApiClientTest {
             CreatePlacementPayload.serializer(),
             CreatePlacementPayload(
                 "tile-1", "plan-1", 0,
-                buildJsonObject { put("created", JsonNull) },
+                SourceRefPayload.empty(),
                 PlacementBaselinePayload(PlacementSpanPayload("2026-07-01T00:00:00Z", "2026-07-01T01:00:00Z")),
             ),
         ).jsonObject
@@ -123,6 +128,55 @@ class V1ApiClientTest {
         assertTrue(placement.containsKey("source_ref"))
         assertEquals("rule-1", materialize["frame_rule_id"]?.jsonPrimitive?.contentOrNull)
         assertEquals("2026-07-01T00:00:00Z", materialize["range_start"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun recurring_frame_rule_and_placement_source_ref_match_web_full_wire_shapes() {
+        val frameRule = FrameRulePayload(
+            id = "00000000-0000-0000-0000-000000000000",
+            active = null,
+            rank = 0,
+            generator = FrameRuleGeneratorPayload(
+                step = FrameRuleStepPayload(step = 86_400_000, origin = null, bounds = null),
+            ),
+        )
+        val sourceRef = SourceRefPayload.empty()
+        val tile = Json.encodeToJsonElement(
+            CreateTilePayload.serializer(),
+            CreateTilePayload(0, "Daily", planRole = 0, frameRule = frameRule),
+        ).jsonObject
+        val placement = Json.encodeToJsonElement(
+            CreatePlacementPayload.serializer(),
+            CreatePlacementPayload(
+                "tile-1", "plan-1", 0, sourceRef,
+                PlacementBaselinePayload(PlacementSpanPayload("2026-07-01T00:00:00Z", "2026-07-01T01:00:00Z")),
+            ),
+        ).jsonObject
+
+        val generator = tile["frame_rule"]!!.jsonObject["generator"]!!.jsonObject
+        assertEquals(86_400_000L, generator["Step"]!!.jsonObject["step"]!!.jsonPrimitive.long)
+        assertNull(generator["Step"]!!.jsonObject["origin"]?.jsonPrimitive?.contentOrNull)
+        assertNull(generator["Step"]!!.jsonObject["bounds"]?.jsonPrimitive?.contentOrNull)
+        val wireSourceRef = placement["source_ref"]!!.jsonObject
+        assertEquals(setOf("created", "recurring", "flow", "frame", "proposal", "source_text", "external_id"), wireSourceRef.keys)
+        wireSourceRef.values.forEach { assertNull(it.jsonPrimitive.contentOrNull) }
+    }
+
+    @Test
+    fun start_tile_and_execution_lifecycle_match_web_v1_payloads() {
+        val start = Json.encodeToJsonElement(
+            StartTilePayload.serializer(),
+            StartTilePayload(
+                "tile-1", "plan-1", 0, SourceRefPayload.empty(),
+                StartTileBaseline(PlacementSpanPayload("2026-07-01T00:00:00Z", "2026-07-01T01:00:00Z")),
+            ),
+        ).jsonObject
+        val pauseEnvelope = V1Wire.commandEnvelope(payload = JsonNull)
+
+        assertEquals(setOf("span", "inside"), start["baseline"]!!.jsonObject.keys)
+        assertEquals("2026-07-01T00:00:00Z", start["baseline"]!!.jsonObject["span"]!!.jsonObject["start"]!!.jsonPrimitive.content)
+        assertEquals(setOf("created", "recurring", "flow", "frame", "proposal", "source_text", "external_id"), start["source_ref"]!!.jsonObject.keys)
+        assertTrue(pauseEnvelope["payload"] is JsonNull)
     }
 
     @Test
