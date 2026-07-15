@@ -115,7 +115,7 @@ private fun QuickCreateBaseDetails(
 ) {
     Column(Modifier.testTag("quick-create-subpanel-Base").verticalScroll(rememberScrollState())) {
         BackHeader(onBack)
-        OutlinedTextField(draft.identity.title, { onUpdate(draft.identity.copy(title = it)) }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(draft.identity.title, { onUpdate(draft.identity.copy(title = it)) }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-title"))
         OutlinedTextField(draft.identity.description.orEmpty(), { onUpdate(draft.identity.copy(description = it.ifBlank { null })) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             QuickCreateTileKind.entries.forEach { kind -> TextButton(onClick = { onUpdate(draft.identity.copy(kind = kind)) }) { Text(kind.name) } }
