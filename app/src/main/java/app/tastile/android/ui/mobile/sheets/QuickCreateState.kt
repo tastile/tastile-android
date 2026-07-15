@@ -27,7 +27,7 @@ data class QuickCreateIdentity(
     val visual: QuickCreateVisual = QuickCreateVisual(),
 )
 
-data class QuickCreatePlanReference(val target: JsonElement, val pick: JsonElement)
+data class QuickCreatePlanReference(val id: String, val target: JsonElement, val pick: JsonElement)
 
 /** Open v1 condition node: numeric kind and JSON term preserve ALL/ANY/NOT and typed terms. */
 data class QuickCreateConditionNode(
@@ -48,12 +48,12 @@ data class QuickCreateTaskDefinition(
     val id: String,
     val content: QuickCreateTaskContent,
     val show: JsonElement? = null,
-    val complete: QuickCreateConditionNode? = null,
+    val complete: QuickCreateConditionNode = defaultTermCondition(),
     val order: JsonArray = JsonArray(emptyList()),
 )
 
 data class QuickCreatePlanCompletion(
-    val root: QuickCreateConditionNode? = null,
+    val root: QuickCreateConditionNode = defaultAllCondition(),
     val timeRequirements: List<QuickCreateTimeRequirement> = emptyList(),
     val tasks: List<QuickCreateTaskDefinition> = emptyList(),
 )
@@ -75,7 +75,7 @@ data class QuickCreatePlan(
 )
 
 data class QuickCreateSpan(val start: String = "", val end: String = "")
-data class QuickCreateDurationRange(val minMinutes: Int? = 30, val maxMinutes: Int? = 90)
+data class QuickCreateDurationRange(val minMs: Long? = 30 * 60_000L, val maxMs: Long? = 90 * 60_000L)
 
 data class QuickCreateTime(
     val span: QuickCreateSpan = QuickCreateSpan(),
@@ -90,32 +90,52 @@ data class QuickCreateTime(
 
 data class QuickCreateWindow(
     val id: String,
-    val owner: JsonElement,
+    val owner: String,
     val kind: Int,
     val bounds: QuickCreateSpan,
-    val rules: JsonArray = JsonArray(emptyList()),
+    val rules: List<QuickCreateWindowRule> = emptyList(),
     val referenceId: String? = null,
 )
 
-data class QuickCreateChanged(val at: String, val actor: JsonElement)
+data class QuickCreateDateRange(val startDate: String, val endDate: String)
 
-data class QuickCreateRecurringLife(
-    val active: QuickCreateSpan = QuickCreateSpan(),
-    val state: Int = 0,
-    val changed: QuickCreateChanged? = null,
+data class QuickCreateWindowRule(
+    val id: String,
+    val weekdayMask: Int? = null,
+    val timeStart: String? = null,
+    val timeEnd: String? = null,
+    val holidayKind: Int? = null,
+    val dateRange: QuickCreateDateRange? = null,
+    val whenCondition: QuickCreateConditionNode? = null,
 )
 
+data class QuickCreateActor(val id: String = "self", val kind: Int = 0, val ownerId: String? = null)
+data class QuickCreateChanged(val at: String = "", val actor: QuickCreateActor = QuickCreateActor())
+
+data class QuickCreateRecurringLife(
+    val active: QuickCreateDateRange = QuickCreateDateRange("", ""),
+    val state: Int = 0,
+    val changed: QuickCreateChanged = QuickCreateChanged(),
+)
+
+data class QuickCreateFrameGenerator(val kind: String, val value: JsonElement)
 data class QuickCreateFrameRule(
     val id: String,
-    val active: JsonElement? = null,
+    val generator: QuickCreateFrameGenerator,
+    val active: QuickCreateConditionNode? = null,
+)
+
+data class QuickCreateRecurringRule(
+    val id: String,
+    val whenCondition: QuickCreateConditionNode? = null,
     val rank: Int,
-    val generator: JsonElement,
+    val outputs: JsonArray = JsonArray(emptyList()),
 )
 
 data class QuickCreateRecurring(
     val life: QuickCreateRecurringLife = QuickCreateRecurringLife(),
     val frameRules: List<QuickCreateFrameRule> = emptyList(),
-    val rules: JsonArray = JsonArray(emptyList()),
+    val rules: List<QuickCreateRecurringRule> = emptyList(),
     val repeatMode: QuickCreateRepeatMode = QuickCreateRepeatMode.Once,
     val weekdayMask: Int = 0b0011111,
     val endDate: String? = null,
@@ -168,3 +188,6 @@ class QuickCreateStateStore(initial: QuickCreateDraftState = QuickCreateDraftSta
         mutableState.value = transform(mutableState.value)
     }
 }
+
+private fun defaultAllCondition() = QuickCreateConditionNode(kind = 0)
+private fun defaultTermCondition() = QuickCreateConditionNode(kind = 3, term = JsonNull)
