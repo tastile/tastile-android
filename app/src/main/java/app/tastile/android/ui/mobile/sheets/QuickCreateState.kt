@@ -142,7 +142,7 @@ data class QuickCreateRecurring(
     val rules: List<QuickCreateRecurringRule> = emptyList(),
     val repeatMode: QuickCreateRepeatMode = QuickCreateRepeatMode.Once,
     val weekdayMask: Int = 0b0011111,
-    val endDate: String? = null,
+    val endDate: String = "",
 )
 
 data class QuickCreateMeta(

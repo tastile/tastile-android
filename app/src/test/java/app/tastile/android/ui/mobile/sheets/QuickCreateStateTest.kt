@@ -26,6 +26,7 @@ class QuickCreateStateTest {
         assertEquals(90 * 60_000L, draft.time.durationMinMax.maxMs)
         assertEquals(QuickCreateDateRange("", ""), draft.recurring.life.active)
         assertFalse(draft.recurring.life.changed.at.isBlank())
+        assertEquals("", draft.recurring.endDate)
         Instant.parse(draft.recurring.life.changed.at)
     }
 
