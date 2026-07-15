@@ -20,7 +20,7 @@ import javax.inject.Singleton
 /**
  * Thin HTTP client for the account-management endpoints exposed by the
  * Next.js web app and the v1 daemon. The Cognito id/access tokens are
- * the bearer credential for the Next routes (`/api/account/*`); the
+ * the bearer credential for the Next routes (`/api/account/...`); the
  * Tastile API token is the bearer for the v1 routes (`/v1/api-tokens`).
  *
  * Distinct from [V1ApiClient] because:
