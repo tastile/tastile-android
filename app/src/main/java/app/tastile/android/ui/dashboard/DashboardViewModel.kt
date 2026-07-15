@@ -10,6 +10,7 @@ import app.tastile.android.data.model.projectLabels
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.ReferenceOverlayStore
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.TileFilter
 import app.tastile.android.data.repository.TileRepository
@@ -101,6 +102,7 @@ class DashboardViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val tileRepository: TileRepository,
     private val userSettingsRepository: UserSettingsRepository,
+    private val referenceOverlayStore: ReferenceOverlayStore,
 ) : ViewModel() {
     private val cardMapper = DashboardCardMapper()
     private val _tiles = MutableStateFlow<List<Tile>>(emptyList())
@@ -164,6 +166,9 @@ class DashboardViewModel @Inject constructor(
     private val _timeline = MutableStateFlow<List<CoreTimelineItem>>(emptyList())
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
 
+    private val _isLoadingTimeline = MutableStateFlow(false)
+    val isLoadingTimeline: StateFlow<Boolean> = _isLoadingTimeline.asStateFlow()
+
     private val _timelineRange = MutableStateFlow(
         computeTimelineRange(LocalDate.now(), TimelineScale.Day)
     )
@@ -224,8 +229,32 @@ class DashboardViewModel @Inject constructor(
     private val _customEndIso = MutableStateFlow<String?>(null)
     val customEndIso: StateFlow<String?> = _customEndIso.asStateFlow()
 
+    /**
+     * Schedule right-pane view mode. Mirrors the `?view=` URL parameter
+     * on `tastile-web/src/components/panels/ScheduleSidePanel.tsx`;
+     * persisted via [UserSettingsRepository] so the toggle survives
+     * process death. C11 ships the two-button toggle + filter logic.
+     * Values are unconstrained strings (`"recurring"` / `"upcoming"`)
+     * intentionally — see
+     * `app.tastile.android.ui.mobile.panels.schedule.VIEW_RECURRING` /
+     * `VIEW_UPCOMING` constants.
+     */
+    private val _scheduleView = MutableStateFlow(userSettingsRepository.getScheduleView())
+    val scheduleView: StateFlow<String> = _scheduleView.asStateFlow()
+
     private val _requestDeleteTileId = MutableStateFlow<String?>(null)
     val requestDeleteTileId: StateFlow<String?> = _requestDeleteTileId.asStateFlow()
+
+    /**
+     * Labels the user has enabled as overlays from the References side panel.
+     * Mirrors `tastile-web/src/lib/stores/reference-overlay-store.ts`. C6
+     * binds this to a `Switch` row per unique label inside the mobile panel.
+     */
+    val referenceOverlayEnabled: StateFlow<Set<String>> = referenceOverlayStore.enabled
+
+    fun toggleReference(label: String) {
+        viewModelScope.launch { referenceOverlayStore.toggle(label) }
+    }
 
     /**
      * Tiles partitioned by the active [listGroupingMode]. STATE groups by
@@ -351,6 +380,12 @@ class DashboardViewModel @Inject constructor(
         _timelineScale.value = scale
     }
 
+    fun setScheduleView(view: String) {
+        if (_scheduleView.value == view) return
+        _scheduleView.value = view
+        userSettingsRepository.setScheduleView(view)
+    }
+
     fun setCustomRange(startIso: String?, endIso: String?) {
         _customStartIso.value = startIso
         _customEndIso.value = endIso
@@ -445,10 +480,13 @@ class DashboardViewModel @Inject constructor(
     private fun refreshTimeline() {
         val (start, end) = _timelineRange.value
         viewModelScope.launch {
+            _isLoadingTimeline.value = true
             try {
                 _timeline.value = tileRepository.getTimeline(start, end)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load timeline"
+            } finally {
+                _isLoadingTimeline.value = false
             }
         }
     }

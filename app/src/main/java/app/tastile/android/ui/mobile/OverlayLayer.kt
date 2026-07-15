@@ -5,6 +5,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import app.tastile.android.notifications.NotificationRepository
 import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.mobile.account.AccountSheet
+import app.tastile.android.ui.mobile.account.SubscriptionSheet
+import app.tastile.android.ui.mobile.account.TokensSheet
 import app.tastile.android.ui.mobile.sheets.AccountMenuSheet
 import app.tastile.android.ui.mobile.sheets.NotificationsSheet
 import app.tastile.android.ui.mobile.sheets.QuickCreateSheetMobile
@@ -36,6 +39,9 @@ fun OverlayLayer(
         dashboardViewModel = dashboardViewModel,
         onNavigate = onNavigate,
     )
+    AccountSheet(overlay = overlay)
+    SubscriptionSheet(overlay = overlay)
+    TokensSheet(overlay = overlay)
 }
 
 /**
