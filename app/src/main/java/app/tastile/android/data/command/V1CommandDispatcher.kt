@@ -76,7 +76,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = "CreateTile",
                 payload = payload,
                 payloadSerializer = CreateTilePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -123,7 +122,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/update",
-                commandKind = "UpdateTile",
                 payload = payload,
                 payloadSerializer = UpdateTilePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -151,7 +149,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$effectiveTileId/complete",
-                commandKind = "SetTileLifecycle",
                 payload = payload,
                 payloadSerializer = SetTileLifecyclePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -180,7 +177,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/defer",
-                commandKind = "SetTileLifecycle",
                 payload = payload,
                 payloadSerializer = SetTileLifecyclePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -209,7 +205,6 @@ class V1CommandDispatcher @Inject constructor(
             val payload = AttachMemoPayload(tileId = tileId, body = body)
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/memos",
-                commandKind = "AttachMemo",
                 payload = payload,
                 payloadSerializer = AttachMemoPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -251,7 +246,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/start",
-                commandKind = "StartTile",
                 payload = payload,
                 payloadSerializer = StartTilePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -279,7 +273,6 @@ class V1CommandDispatcher @Inject constructor(
             val payload = PauseExecutionPayload(executionId = executionId)
             val response = v1ApiClient.postCommand(
                 path = "/v1/executions/$executionId/pause",
-                commandKind = "PauseExecution",
                 payload = payload,
                 payloadSerializer = PauseExecutionPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -304,7 +297,6 @@ class V1CommandDispatcher @Inject constructor(
             val payload = ResumeExecutionPayload(executionId = executionId)
             val response = v1ApiClient.postCommand(
                 path = "/v1/executions/$executionId/resume",
-                commandKind = "ResumeExecution",
                 payload = payload,
                 payloadSerializer = ResumeExecutionPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -369,7 +361,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/placements/${placement.placementId}/changes",
-                commandKind = "AppendChanges",
                 payload = payload,
                 payloadSerializer = AppendChangesPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()

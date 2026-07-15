@@ -25,7 +25,52 @@ data class CreateTilePayload(
     val color: String? = null,
     val icon: String? = null,
     @SerialName("external_id") val externalId: String? = null,
-    @SerialName("plan_role") val planRole: Byte
+    @SerialName("plan_role") val planRole: Byte,
+    @SerialName("owner_subject_id") val ownerSubjectId: String? = null,
+    @SerialName("frame_rule") val frameRule: kotlinx.serialization.json.JsonObject? = null,
+)
+
+/** Exact body for `POST /v1/tiles/{tileId}/plan`. */
+@Serializable
+data class SetPlanPayload(
+    @SerialName("tile_id") val tileId: String,
+    val role: Byte,
+    val references: kotlinx.serialization.json.JsonElement,
+    val completion: kotlinx.serialization.json.JsonElement,
+    val planning: kotlinx.serialization.json.JsonElement,
+    val metrics: kotlinx.serialization.json.JsonArray,
+    val decisions: kotlinx.serialization.json.JsonArray,
+)
+
+/** Exact body for `POST /v1/placements`. */
+@Serializable
+data class CreatePlacementPayload(
+    @SerialName("tile_id") val tileId: String,
+    @SerialName("plan_id") val planId: String,
+    val source: Byte,
+    @SerialName("source_ref") val sourceRef: kotlinx.serialization.json.JsonObject,
+    val baseline: PlacementBaselinePayload,
+)
+
+@Serializable
+data class PlacementBaselinePayload(
+    val span: PlacementSpanPayload,
+    val inside: kotlinx.serialization.json.JsonObject? = null,
+)
+
+@Serializable
+data class PlacementSpanPayload(
+    val start: String,
+    val end: String,
+)
+
+/** Exact body for recurring-frame materialization. */
+@Serializable
+data class MaterializeRecurringPayload(
+    @SerialName("recurring_id") val recurringId: String,
+    @SerialName("frame_rule_id") val frameRuleId: String,
+    @SerialName("range_start") val rangeStart: String,
+    @SerialName("range_end") val rangeEnd: String,
 )
 
 @Serializable

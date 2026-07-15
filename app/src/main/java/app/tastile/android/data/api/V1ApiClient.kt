@@ -22,6 +22,37 @@ import javax.inject.Singleton
 
 typealias AuthTokenProvider = suspend () -> String?
 
+/** Canonical endpoint paths shared with tastile-web's v1 command client. */
+internal object V1Endpoints {
+    const val CREATE_TILE = "/v1/tiles"
+    const val CREATE_PLACEMENT = "/v1/placements"
+
+    fun setPlan(tileId: String) = "/v1/tiles/$tileId/plan"
+    fun materializeRecurring(tileId: String, frameRuleId: String) =
+        "/v1/recurring/$tileId/frame-rules/$frameRuleId/materialize"
+
+    fun timeline(start: Instant, end: Instant): String {
+        val startIso = URLEncoder.encode(start.toString(), Charsets.UTF_8.name())
+        val endIso = URLEncoder.encode(end.toString(), Charsets.UTF_8.name())
+        return "/v1/timeline?start=$startIso&end=$endIso"
+    }
+}
+
+/** Serializes the v1 `CommandRequest<T>` wire format used by tastile-web. */
+internal object V1Wire {
+    fun commandEnvelope(
+        payload: JsonObject,
+        idempotencyKey: String = V1Idempotency.generate(),
+        occurredAt: String = Instant.now().toString(),
+        expectedRevision: Long? = null,
+    ): JsonObject = buildJsonObject {
+        put("expected_revision", expectedRevision?.let(::JsonPrimitive) ?: JsonNull)
+        put("idempotency_key", idempotencyKey)
+        put("occurred_at", occurredAt)
+        put("payload", payload)
+    }
+}
+
 @Singleton
 class V1ApiClient @Inject constructor(
     private val tokenProvider: AuthTokenProvider
@@ -78,10 +109,25 @@ class V1ApiClient @Inject constructor(
         get("/v1/placements")
 
     suspend fun getTimeline(start: Instant, end: Instant): V1TimelineResponse {
-        val startIso = URLEncoder.encode(start.toString(), Charsets.UTF_8.name())
-        val endIso = URLEncoder.encode(end.toString(), Charsets.UTF_8.name())
-        return get("/v1/timeline?start=$startIso&end=$endIso")
+        return get(V1Endpoints.timeline(start, end))
     }
+
+    suspend fun createTile(payload: CreateTilePayload): CommandResponse =
+        postCommand(V1Endpoints.CREATE_TILE, payload, CreateTilePayload.serializer(), CommandResponse.serializer())
+
+    suspend fun setPlan(tileId: String, payload: SetPlanPayload): CommandResponse =
+        postCommand(V1Endpoints.setPlan(tileId), payload, SetPlanPayload.serializer(), CommandResponse.serializer())
+
+    suspend fun createPlacement(payload: CreatePlacementPayload): CommandResponse =
+        postCommand(V1Endpoints.CREATE_PLACEMENT, payload, CreatePlacementPayload.serializer(), CommandResponse.serializer())
+
+    suspend fun materializeRecurring(payload: MaterializeRecurringPayload): CommandResponse =
+        postCommand(
+            V1Endpoints.materializeRecurring(payload.recurringId, payload.frameRuleId),
+            payload,
+            MaterializeRecurringPayload.serializer(),
+            CommandResponse.serializer(),
+        )
 
     suspend fun listRuntimePaths(): V1ListRuntimePathsResponse =
         get("/v1/runtime/paths")
@@ -127,24 +173,21 @@ class V1ApiClient @Inject constructor(
 
     suspend fun <Req, Resp> postCommand(
         path: String,
-        commandKind: String,
         payload: Req,
         payloadSerializer: KSerializer<Req>,
         responseSerializer: KSerializer<Resp>,
-        expectedRevision: Long? = null
+        expectedRevision: Long? = null,
+        @Suppress("UNUSED_PARAMETER") commandKind: String? = null,
     ): Resp = withContext(Dispatchers.IO) {
         try {
             val token = tokenProvider()
             if (token.isNullOrBlank()) throw V1Error.Auth()
-            val envelope = buildJsonObject {
-                put("expectedRevision", expectedRevision?.let { JsonPrimitive(it) } ?: JsonNull)
-                put("idempotencyKey", V1Idempotency.generate())
-                put("occurredAt", Instant.now().toString())
-                put("payload", buildJsonObject {
-                    put("kind", commandKind)
-                    put("value", json.encodeToJsonElement(payloadSerializer, payload))
-                })
-            }
+            val encodedPayload = json.encodeToJsonElement(payloadSerializer, payload) as? JsonObject
+                ?: throw IllegalArgumentException("v1 command payload must serialize to a JSON object")
+            val envelope = V1Wire.commandEnvelope(
+                payload = encodedPayload,
+                expectedRevision = expectedRevision,
+            )
             val url = URL("${baseUrl()}$path")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
