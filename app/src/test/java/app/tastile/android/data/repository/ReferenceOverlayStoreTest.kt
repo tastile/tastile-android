@@ -38,14 +38,14 @@ class ReferenceOverlayStoreTest {
     @Test
     fun getEnabled_defaultsToEmptySet() = runTest {
         val store = ReferenceOverlayStore(context)
-        assertEquals(emptySet<String>(), store.getEnabled().first())
+        assertEquals(emptySet<String>(), store.enabled.first())
     }
 
     @Test
     fun toggle_addsLabelWhenAbsent() = runTest {
         val store = ReferenceOverlayStore(context)
         store.toggle("work")
-        assertEquals(setOf("work"), store.getEnabled().first())
+        assertEquals(setOf("work"), store.enabled.first())
     }
 
     @Test
@@ -53,7 +53,7 @@ class ReferenceOverlayStoreTest {
         val store = ReferenceOverlayStore(context)
         store.toggle("work")
         store.toggle("work")
-        assertEquals(emptySet<String>(), store.getEnabled().first())
+        assertEquals(emptySet<String>(), store.enabled.first())
     }
 
     @Test
@@ -61,7 +61,7 @@ class ReferenceOverlayStoreTest {
         val store = ReferenceOverlayStore(context)
         store.toggle("work")
         store.toggle("urgent")
-        assertEquals(setOf("work", "urgent"), store.getEnabled().first())
+        assertEquals(setOf("work", "urgent"), store.enabled.first())
     }
 
     @Test
@@ -69,7 +69,7 @@ class ReferenceOverlayStoreTest {
         val store = ReferenceOverlayStore(context)
         store.toggle("work")
         store.setEnabled(setOf("a", "b", "c"))
-        assertEquals(setOf("a", "b", "c"), store.getEnabled().first())
+        assertEquals(setOf("a", "b", "c"), store.enabled.first())
     }
 
     @Test
@@ -78,7 +78,7 @@ class ReferenceOverlayStoreTest {
         store.toggle("work")
         store.toggle("urgent")
         store.setEnabled(emptySet())
-        assertEquals(emptySet<String>(), store.getEnabled().first())
+        assertEquals(emptySet<String>(), store.enabled.first())
     }
 
     @Test
@@ -86,7 +86,7 @@ class ReferenceOverlayStoreTest {
         ReferenceOverlayStore(context).toggle("work")
         ReferenceOverlayStore(context).toggle("urgent")
         val reread = ReferenceOverlayStore(context)
-        assertEquals(setOf("work", "urgent"), reread.getEnabled().first())
+        assertEquals(setOf("work", "urgent"), reread.enabled.first())
     }
 
     private fun prefs() = ReferenceOverlayStore.prefs(context)

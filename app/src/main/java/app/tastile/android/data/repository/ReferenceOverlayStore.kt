@@ -40,9 +40,6 @@ class ReferenceOverlayStore @Inject constructor(
     /** Live set of label-overlays the user has enabled. */
     val enabled: StateFlow<Set<String>> = _enabled.asStateFlow()
 
-    /** Flow-shaped accessor — kept for parity with the test API. */
-    fun getEnabled(): StateFlow<Set<String>> = enabled
-
     /** Add [label] when absent, remove it when present. Idempotent. */
     suspend fun toggle(label: String) {
         val current = _enabled.value
