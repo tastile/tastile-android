@@ -48,20 +48,41 @@
     <string name="tiles_start_at">開始</string>
 
     <!-- Projects side panel (C5 — web→android parity sweep) -->
-    <string name="panels_projects_projects">プロジェクト</string>
+    <string name="panels_projects_title">プロジェクト</string>
     <string name="panels_projects_all_projects">すべてのプロジェクト</string>
     <string name="panels_projects_loading_projects">プロジェクトを読み込み中…</string>
     <string name="panels_projects_new_button">＋ 新規</string>
     <string name="panels_projects_name_placeholder">プロジェクト名</string>
     <string name="panels_projects_slug_placeholder">スラッグ（任意）</string>
+    <string name="panels_projects_slug_hint">小文字・数字・ハイフンのみ</string>
     <string name="panels_projects_color_label">色</string>
     <string name="panels_projects_create">作成</string>
     <string name="panels_projects_creating">作成中…</string>
     <string name="panels_projects_cancel">キャンセル</string>
+    <string name="panels_projects_delete">削除</string>
     <string name="panels_projects_delete_hint">× を長押しで削除</string>
     <string name="panels_projects_delete_confirm_title">「%1$s」を削除しますか？</string>
     <string name="panels_projects_delete_confirm_body">このプロジェクトと関連付けが完全に削除されます。</string>
     <string name="panels_projects_error_empty">名前は必須です</string>
     <string name="panels_projects_error_slug">このスラッグは使用できません</string>
     <string name="panels_projects_error_create">作成に失敗しました</string>
+
+    <!-- Settings (C9 — web→android parity sweep) -->
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_theme_light">ライト</string>
+    <string name="settings_theme_gray">グレー</string>
+    <string name="settings_theme_dark">ダーク</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_language_ja">日本語</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_security_lock_on">セキュリティロックオン</string>
+    <string name="settings_security_lock_off">セキュリティロックオフ</string>
+    <string name="settings_security_lock_timeout_label">タイムアウト: %1$d 分</string>
+    <string name="settings_security_lock_timeout_decrease">-5</string>
+    <string name="settings_security_lock_timeout_increase">+5</string>
+    <string name="settings_notifications_allow">許可</string>
+    <string name="settings_notifications_test">テスト</string>
+    <string name="settings_notifications_status_allowed">通知が有効です</string>
+    <string name="settings_notifications_status_denied">通知が拒否されました</string>
+    <string name="settings_notifications_status_unsupported">通知はサポートされていません</string>
 </resources>

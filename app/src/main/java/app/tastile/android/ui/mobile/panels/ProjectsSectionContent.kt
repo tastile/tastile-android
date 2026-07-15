@@ -69,7 +69,7 @@ fun ProjectsSectionContent(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = stringResource(R.string.panels_projects_projects),
+                text = stringResource(R.string.panels_projects_title),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -136,7 +136,7 @@ fun ProjectsSectionContent(
                     projectsViewModel.deleteWorkspace(target.id)
                     deleteCandidate = null
                 }) {
-                    Text(stringResource(R.string.panels_projects_create)) // web uses "Delete" button; reuse this for the visible label
+                    Text(stringResource(R.string.panels_projects_delete))
                 }
             },
             dismissButton = {

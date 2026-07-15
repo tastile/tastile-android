@@ -49,20 +49,49 @@
     <string name="tiles_start_at">Start</string>
 
     <!-- Projects side panel (C5 — web→android parity sweep) -->
-    <string name="panels_projects_projects">Projects</string>
+    <string name="panels_projects_title">Projects</string>
     <string name="panels_projects_all_projects">All Projects</string>
     <string name="panels_projects_loading_projects">Loading projects…</string>
     <string name="panels_projects_new_button">+ New</string>
     <string name="panels_projects_name_placeholder">Project name</string>
     <string name="panels_projects_slug_placeholder">slug (optional)</string>
+    <string name="panels_projects_slug_hint">Lowercase letters, numbers, dashes only</string>
     <string name="panels_projects_color_label">Color</string>
     <string name="panels_projects_create">Create</string>
     <string name="panels_projects_creating">Creating…</string>
     <string name="panels_projects_cancel">Cancel</string>
+    <string name="panels_projects_delete">Delete</string>
     <string name="panels_projects_delete_hint">Long-press × to delete</string>
     <string name="panels_projects_delete_confirm_title">Delete project \"%1$s\"?</string>
     <string name="panels_projects_delete_confirm_body">This permanently deletes the project and its associations.</string>
     <string name="panels_projects_error_empty">name required</string>
     <string name="panels_projects_error_slug">Slug conflict</string>
     <string name="panels_projects_error_create">Failed to create</string>
+
+    <!-- Settings (C9 — web→android parity sweep) -->
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_gray">Gray</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_ja">日本語</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_security_lock_on">Security lock on</string>
+    <string name="settings_security_lock_off">Security lock off</string>
+    <string name="settings_security_lock_timeout_label">Timeout: %1$d min</string>
+    <string name="settings_security_lock_timeout_decrease">-5</string>
+    <string name="settings_security_lock_timeout_increase">+5</string>
+    <string name="settings_notifications_allow">Allow</string>
+    <string name="settings_notifications_test">Test</string>
+    <string name="settings_notifications_status_allowed">Notifications enabled</string>
+    <string name="settings_notifications_status_denied">Notifications denied</string>
+    <string name="settings_notifications_status_unsupported">Notifications unsupported</string>
+
+    <!-- Account dropdown (C8 — web→android parity sweep) -->
+    <string name="nav_account_profile">Profile</string>
+    <string name="nav_account_subscription">Subscription</string>
+    <string name="nav_account_tokens">Access Tokens</string>
+    <string name="nav_account_sign_out">Sign out</string>
+    <string name="shell_account_signed_in">Signed in</string>
+    <string name="shell_account_sign_out_confirm">You\'ll need to sign in again to use the app.</string>
 </resources>

@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.ui.designsystem.AppSpacing
 
+private val SLUG_REGEX = Regex("[a-z0-9-]+")
+
 /**
  * Inline "+ New" create form — mirrors the `<form>` block in
  * `tastile-web/src/components/panels/ProjectsSidePanel.tsx`.
@@ -80,9 +82,11 @@ fun NewProjectForm(
             OutlinedTextField(
                 value = slug,
                 onValueChange = { v ->
-                    slug = v.lowercase().filter { c -> c.isLetterOrDigit() || c == '-' }.take(40)
+                    val lower = v.lowercase()
+                    slug = lower.filter { c -> SLUG_REGEX.matches(c.toString()) }.take(40)
                 },
                 placeholder = { Text(stringResource(R.string.panels_projects_slug_placeholder)) },
+                supportingText = { Text(stringResource(R.string.panels_projects_slug_hint)) },
                 singleLine = true,
                 modifier = Modifier
                     .weight(1f)
