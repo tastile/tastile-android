@@ -68,6 +68,11 @@
     <string name="panels_projects_error_slug">Slug conflict</string>
     <string name="panels_projects_error_create">Failed to create</string>
 
+    <!-- References (C6 — web→android parity sweep) -->
+    <string name="panels_references_title">References</string>
+    <string name="panels_references_empty">No labels yet. Tiles with labels will appear here.</string>
+    <string name="panels_references_label_hint">Label</string>
+
     <!-- Settings (C9 — web→android parity sweep) -->
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_light">Light</string>

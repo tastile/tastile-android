@@ -139,11 +139,12 @@ private fun ThemeSection(
     current: ThemeMode,
     onPick: (ThemeMode) -> Unit,
 ) {
+    val themeA11y = stringResource(R.string.settings_theme)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                contentDescription = stringResource(R.string.settings_theme)
+                contentDescription = themeA11y
             },
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
     ) {
@@ -179,11 +180,12 @@ private fun LanguageSection(
     current: AppLocale,
     onPick: (AppLocale) -> Unit,
 ) {
+    val languageA11y = stringResource(R.string.settings_language)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                contentDescription = stringResource(R.string.settings_language)
+                contentDescription = languageA11y
             },
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
     ) {
@@ -265,15 +267,15 @@ private fun NotificationsSection(
     onAllow: () -> Unit,
     onTest: () -> Unit,
 ) {
+    val notifA11y = stringResource(
+        if (granted) R.string.settings_notifications_status_allowed
+        else R.string.settings_notifications_status_denied
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                contentDescription = if (granted) {
-                    stringResource(R.string.settings_notifications_status_allowed)
-                } else {
-                    stringResource(R.string.settings_notifications_status_denied)
-                }
+                contentDescription = notifA11y
             },
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
     ) {

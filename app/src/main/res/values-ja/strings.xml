@@ -67,6 +67,11 @@
     <string name="panels_projects_error_slug">このスラッグは使用できません</string>
     <string name="panels_projects_error_create">作成に失敗しました</string>
 
+    <!-- References (C6 — web→android parity sweep) -->
+    <string name="panels_references_title">参照</string>
+    <string name="panels_references_empty">ラベルがまだありません。タイルにラベルを付けるとここに表示されます。</string>
+    <string name="panels_references_label_hint">ラベル</string>
+
     <!-- Settings (C9 — web→android parity sweep) -->
     <string name="settings_theme">テーマ</string>
     <string name="settings_theme_light">ライト</string>

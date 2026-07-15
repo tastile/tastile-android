@@ -11,8 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.designsystem.AppCorner
@@ -21,7 +19,6 @@ import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.designsystem.MobileTokens
 import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 
 /**
@@ -73,7 +70,7 @@ private fun TimelineBlockRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(AppCorner.smallShape))
+            .clip(AppCorner.smallShape)
             .background(AppTheme.colors.surfaceVariant.copy(alpha = MobileTokens.SurfaceAlpha.subtle))
             .padding(horizontal = AppSpacing.xs, vertical = AppSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,

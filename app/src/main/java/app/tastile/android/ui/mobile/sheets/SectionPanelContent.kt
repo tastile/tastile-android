@@ -1,7 +1,5 @@
 package app.tastile.android.ui.mobile.sheets
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,11 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
@@ -58,6 +54,7 @@ import app.tastile.android.ui.mobile.panels.schedule.ScheduleRowList
 import app.tastile.android.ui.mobile.panels.schedule.ScheduleViewToggle
 import app.tastile.android.ui.mobile.panels.schedule.VIEW_RECURRING as SCHEDULE_VIEW_RECURRING
 import app.tastile.android.ui.mobile.panels.schedule.VIEW_UPCOMING as SCHEDULE_VIEW_UPCOMING
+import app.tastile.android.ui.mobile.panels.ReferencesSectionContent
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -134,36 +131,6 @@ private fun ScheduleSectionContent(viewModel: DashboardViewModel) {
         )
         MovedProjectsCheckboxSection(tiles = tiles)
     }
-}
-
-@Composable
-private fun ReferencesSectionContent() {
-    val context = LocalContext.current
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = AppSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
-    ) {
-        ReferenceLink("Help", "https://tastile.app/help", context)
-        ReferenceLink("Changelog", "https://tastile.app/changelog", context)
-        ReferenceLink("GitHub", "https://github.com/rebuildup/tastile", context)
-        ReferenceLink("Send feedback", "https://github.com/rebuildup/tastile/issues", context)
-    }
-}
-
-@Composable
-private fun ReferenceLink(label: String, url: String, context: Context) {
-    AppListRow(
-        label = label,
-        onClick = {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, url.toUri())
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            )
-        },
-        description = label,
-    )
 }
 
 @Composable
