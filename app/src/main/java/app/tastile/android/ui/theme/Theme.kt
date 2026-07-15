@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import app.tastile.android.data.repository.ThemeMode
+import app.tastile.android.ui.designsystem.GrayColors
 import androidx.compose.ui.unit.dp
 
 private val M3LightColorScheme = lightColorScheme(
@@ -41,6 +42,20 @@ private val M3DarkColorScheme = darkColorScheme(
     outline = TastileColors.GrayOutline,
 )
 
+private val M3GrayColorScheme = androidx.compose.material3.lightColorScheme(
+    primary = GrayColors.primary,
+    onPrimary = GrayColors.onPrimary,
+    primaryContainer = GrayColors.primaryContainer,
+    onPrimaryContainer = GrayColors.onPrimaryContainer,
+    background = GrayColors.background,
+    onBackground = GrayColors.onBackground,
+    surface = GrayColors.surface,
+    onSurface = GrayColors.onSurface,
+    surfaceVariant = GrayColors.surfaceVariant,
+    onSurfaceVariant = GrayColors.onSurfaceVariant,
+    outline = GrayColors.outline,
+)
+
 private val TastileShapes = androidx.compose.material3.Shapes(
     extraSmall = RoundedCornerShape(6.dp),
     small = RoundedCornerShape(8.dp),
@@ -54,7 +69,12 @@ fun TastileTheme(
     themeMode: ThemeMode = ThemeMode.DARK,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (themeMode == ThemeMode.LIGHT) M3LightColorScheme else M3DarkColorScheme
+    val colorScheme = when (themeMode) {
+        ThemeMode.LIGHT -> M3LightColorScheme
+        ThemeMode.GRAY -> M3GrayColorScheme
+        ThemeMode.DARK -> M3DarkColorScheme
+    }
+    val isLightAppearance = themeMode != ThemeMode.DARK
     val view = LocalView.current
     if (!view.isInEditMode) {
         @Suppress("DEPRECATION")
@@ -62,8 +82,8 @@ fun TastileTheme(
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.background.toArgb()
             window.navigationBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = themeMode == ThemeMode.LIGHT
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = themeMode == ThemeMode.LIGHT
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = isLightAppearance
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = isLightAppearance
         }
     }
 

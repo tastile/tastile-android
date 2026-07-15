@@ -321,4 +321,16 @@
     <string name="panels_schedule_recurring">Recurring Tiles</string>
     <string name="panels_schedule_upcoming">Upcoming Deadlines</string>
     <string name="panels_schedule_projects">Projects</string>
+
+    <!-- Calendar/Timeline panel (C10 — web→android parity sweep) -->
+    <string name="panels_calendar_scale">Scale</string>
+    <string name="panels_calendar_day">Day</string>
+    <string name="panels_calendar_week">Week</string>
+    <string name="panels_calendar_month">Month</string>
+    <string name="panels_calendar_custom">Custom</string>
+    <string name="panels_timeline_empty">No blocks in this range. Create a tile to seed the timeline.</string>
+    <string name="panels_timeline_loading">Loading timeline…</string>
+    <string name="panels_timeline_meta_blocks">blocks</string>
+    <string name="panels_timeline_meta_work">work</string>
+    <string name="panels_timeline_meta_breaks">breaks</string>
 </resources>

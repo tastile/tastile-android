@@ -320,4 +320,16 @@
     <string name="panels_schedule_recurring">繰り返しタイル</string>
     <string name="panels_schedule_upcoming">今後の期限</string>
     <string name="panels_schedule_projects">プロジェクト</string>
+
+    <!-- Calendar/Timeline panel (C10 — web→android parity sweep) -->
+    <string name="panels_calendar_scale">表示スケール</string>
+    <string name="panels_calendar_day">日</string>
+    <string name="panels_calendar_week">週</string>
+    <string name="panels_calendar_month">月</string>
+    <string name="panels_calendar_custom">カスタム</string>
+    <string name="panels_timeline_empty">この範囲にブロックはありません。タイルを作成してタイムラインを埋めましょう。</string>
+    <string name="panels_timeline_loading">タイムラインを読み込み中…</string>
+    <string name="panels_timeline_meta_blocks">ブロック</string>
+    <string name="panels_timeline_meta_work">作業</string>
+    <string name="panels_timeline_meta_breaks">休憩</string>
 </resources>
