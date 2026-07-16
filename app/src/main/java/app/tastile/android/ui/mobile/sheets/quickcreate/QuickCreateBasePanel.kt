@@ -26,6 +26,10 @@ import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
 import app.tastile.android.ui.mobile.sheets.QuickCreateStateStore
 import app.tastile.android.ui.mobile.sheets.QuickCreateTileKind
+import app.tastile.android.ui.mobile.sheets.QuickCreatePlan
+import app.tastile.android.ui.mobile.sheets.QuickCreateTaskContent
+import app.tastile.android.ui.mobile.sheets.QuickCreateTaskDefinition
+import java.util.UUID
 import java.time.OffsetDateTime
 
 private val panelOrder = listOf(
@@ -50,6 +54,7 @@ fun QuickCreatePanelContent(store: QuickCreateStateStore, onClose: () -> Unit) {
         baseDetailsOpen -> QuickCreateBaseDetails(
             draft = draft,
             onUpdate = store::updateIdentity,
+            onUpdatePlan = store::updatePlan,
             onBack = { baseDetailsOpen = false },
         )
         active != null && active != QuickCreatePanel.Base -> QuickCreateSubpanel(
@@ -112,6 +117,7 @@ private fun QuickCreatePanelList(
 private fun QuickCreateBaseDetails(
     draft: QuickCreateDraftState,
     onUpdate: (app.tastile.android.ui.mobile.sheets.QuickCreateIdentity) -> Unit,
+    onUpdatePlan: (QuickCreatePlan) -> Unit,
     onBack: () -> Unit,
 ) {
     Column(Modifier.testTag("quick-create-subpanel-Base").verticalScroll(rememberScrollState())) {
@@ -126,6 +132,16 @@ private fun QuickCreateBaseDetails(
         OutlinedTextField(draft.identity.visual.color, { onUpdate(draft.identity.copy(visual = draft.identity.visual.copy(color = it))) }, label = { Text("Color") })
         OutlinedTextField(draft.identity.visual.icon, { onUpdate(draft.identity.copy(visual = draft.identity.visual.copy(icon = it))) }, label = { Text("Icon") })
         OutlinedTextField(draft.identity.externalId.orEmpty(), { onUpdate(draft.identity.copy(externalId = it.ifBlank { null })) }, label = { Text("External ID") })
+        Text("Tasks")
+        draft.plan.completion.tasks.forEachIndexed { index, task ->
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(task.content.title.ifBlank { "Untitled" })
+                TextButton(onClick = { if (index > 0) onUpdatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.swap(index, index - 1)))) }) { Text("Up") }
+                TextButton(onClick = { if (index < draft.plan.completion.tasks.lastIndex) onUpdatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.swap(index, index + 1)))) }) { Text("Down") }
+                TextButton(onClick = { onUpdatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.filterIndexed { item, _ -> item != index }))) }) { Text("Remove") }
+            }
+        }
+        TextButton(onClick = { onUpdatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks + QuickCreateTaskDefinition(UUID.randomUUID().toString(), QuickCreateTaskContent(""))))) }) { Text("Add task") }
     }
 }
 
@@ -153,3 +169,4 @@ fun quickCreateValidation(draft: QuickCreateDraftState): QuickCreateValidation {
 internal fun BackHeader(onBack: () -> Unit) { TextButton(onClick = onBack) { Text("Back") } }
 
 private fun String.parseOffsetDateTimeOrNull(): OffsetDateTime? = runCatching { OffsetDateTime.parse(this) }.getOrNull()
+private fun <T> List<T>.swap(first: Int, second: Int): List<T> = toMutableList().also { list -> val item = list[first]; list[first] = list[second]; list[second] = item }
