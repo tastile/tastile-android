@@ -47,6 +47,11 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         versionCode = 31
         versionName = "0.3.0"
 
+        // R17 (android-archdoc audit 2026-07-16): instrumented UI navigation tests.
+        // The runner swaps the production Application for Hilt's HiltTestApplication
+        // so per-test Hilt @TestInstallIn modules can swap repositories.
+        testInstrumentationRunner = "app.tastile.android.util.TastileTestRunner"
+
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
         buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: "3f14cs42nkc0v3qf6k57gthlfe"}\"")
         buildConfigField("String", "COGNITO_REGION", "\"${cognitoRegion.orNull ?: "ap-northeast-1"}\"")
@@ -76,6 +81,20 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    // M3 baseline (2026-07-16): enable Compose Compiler Reports so the next
+    // successful Kotlin compile drops HTML stability reports under
+    // app/build/compose-reports/ and metrics under app/build/compose-metrics/.
+    // Captured baseline lives at docs/superpowers/m3/before-reports/.
+    composeOptions {
+        freeCompilerArgs += listOf(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+                project.layout.projectDirectory.dir("build/compose-reports").asFile.absolutePath,
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
+                project.layout.projectDirectory.dir("build/compose-metrics").asFile.absolutePath,
+        )
     }
     lint {
         // OldTargetApi is suppressed deliberately: this box only has API 35 and 37 installed
@@ -235,6 +254,22 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // R17: instrumented UI navigation tests (audit 2026-07-16).
+    // Hilt-testing lives in androidTest only so the unit-test source set stays
+    // Robolectric-only and avoids dragging the Hilt test-application into the
+    // `test` classpath (which would conflict with @HiltAndroidTest subclasses
+    // that try to use HiltTestApplication).
+    androidTestImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("io.mockk:mockk-android:1.13.12")
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.59.2")
+    androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.3.3")
 
     // Custom lint rules (M2-T4): WrapperParameterOrderDetector (L0 C1 + C2).
     lintChecks(project(":lint-rules"))
