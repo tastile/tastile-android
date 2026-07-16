@@ -17,6 +17,7 @@
 package app.tastile.android.core.designsystem.component
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
@@ -25,13 +26,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonColors
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.icon.NiaIcons
 import app.tastile.android.core.designsystem.theme.NiaTheme
@@ -310,4 +321,158 @@ object NiaButtonDefaults {
     // TODO: File bug
     // OutlinedButton default border width isn't exposed via ButtonDefaults
     val OutlinedButtonBorderWidth = 1.dp
+}
+
+/**
+ * Tastile filled tonal button. Wraps Material 3 [FilledTonalButton].
+ *
+ * @param onClick Will be called when the user clicks the button.
+ * @param modifier Modifier to be applied to the button.
+ * @param enabled Controls the enabled state of the button.
+ * @param contentPadding The spacing values to apply internally between the container and the
+ * content.
+ * @param content The button content.
+ */
+@Composable
+fun NiaFilledTonalButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    content: @Composable RowScope.() -> Unit,
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
+        contentPadding = contentPadding,
+        content = content,
+    )
+}
+
+/**
+ * Tastile filled tonal button with text and icon content slots.
+ *
+ * @param onClick Will be called when the user clicks the button.
+ * @param modifier Modifier to be applied to the button.
+ * @param enabled Controls the enabled state of the button.
+ * @param text The button text label content.
+ * @param leadingIcon The button leading icon content.
+ */
+@Composable
+fun NiaFilledTonalButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    text: @Composable () -> Unit,
+    leadingIcon: @Composable (() -> Unit)? = null,
+) {
+    NiaFilledTonalButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        contentPadding = if (leadingIcon != null) {
+            ButtonDefaults.ButtonWithIconContentPadding
+        } else {
+            ButtonDefaults.ContentPadding
+        },
+    ) {
+        NiaButtonContent(text = text, leadingIcon = leadingIcon)
+    }
+}
+
+/**
+ * Tastile icon button. Wraps Material 3 [IconButton].
+ *
+ * @param onClick Called when the user clicks the button.
+ * @param modifier Modifier to be applied to the icon button.
+ * @param enabled Whether the button is enabled.
+ * @param colors [IconButtonColors] used to render the button.
+ * @param interactionSource Optional interaction source.
+ * @param content The icon content slot.
+ */
+@Composable
+fun NiaIconButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: IconButtonColors = IconButtonDefaults.iconButtonColors(
+        contentColor = MaterialTheme.colorScheme.onBackground,
+    ),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    content: @Composable () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = colors,
+        interactionSource = interactionSource,
+        content = content,
+    )
+}
+
+/**
+ * Tastile floating action button. Wraps Material 3 [FloatingActionButton].
+ *
+ * @param onClick Called when the user clicks the FAB.
+ * @param modifier Modifier applied to the FAB.
+ * @param shape The shape of the FAB.
+ * @param containerColor The container color of the FAB.
+ * @param contentColor The content color of the FAB.
+ * @param elevation FAB elevation applied.
+ * @param content The FAB content slot.
+ */
+@Composable
+fun NiaFloatingActionButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = FloatingActionButtonDefaults.shape,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    elevation: androidx.compose.material3.FloatingActionButtonElevation =
+        FloatingActionButtonDefaults.elevation(),
+    content: @Composable () -> Unit,
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = shape,
+        containerColor = containerColor,
+        contentColor = contentColor,
+        elevation = elevation,
+        content = content,
+    )
+}
+
+/**
+ * Tastile extended floating action button. Wraps Material 3
+ * [androidx.compose.material3.ExtendedFloatingActionButton].
+ *
+ * @param text The visible text label of the FAB.
+ * @param icon The leading icon shown inside the FAB.
+ * @param onClick Called when the user clicks the FAB.
+ * @param modifier Modifier applied to the FAB.
+ * @param expanded Whether the FAB is expanded (shows text + icon) or collapsed (icon only).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NiaExtendedFloatingActionButton(
+    text: @Composable () -> Unit,
+    icon: @Composable () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    expanded: Boolean = true,
+) {
+    ExtendedFloatingActionButton(
+        text = text,
+        icon = icon,
+        onClick = onClick,
+        modifier = modifier,
+        expanded = expanded,
+    )
 }
