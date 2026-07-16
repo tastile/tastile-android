@@ -338,4 +338,26 @@
     <string name="panels_timeline_meta_blocks">blocks</string>
     <string name="panels_timeline_meta_work">work</string>
     <string name="panels_timeline_meta_breaks">breaks</string>
+
+    <!-- MUI Redesign — parity strings (mobile UI) -->
+    <string name="empty_tiles_title">No tiles yet</string>
+    <string name="empty_tiles_hint">Create a tile from the Projects tab to seed the timeline.</string>
+    <string name="empty_projects_title">No projects yet</string>
+    <string name="empty_projects_hint">Add a project to start organising tiles.</string>
+    <string name="empty_schedule_title">Nothing scheduled</string>
+    <string name="empty_schedule_hint">Quick-create a tile or pick a time window to begin.</string>
+    <string name="empty_blocks_title">No blocks in this view</string>
+    <string name="empty_blocks_hint">Create a tile to seed the timeline.</string>
+    <string name="tile_occurrence_label">Occurrence: %1$s</string>
+    <string name="execute_next_label">Next: %1$s</string>
+    <string name="tiles_stat_open">Open · %1$d</string>
+    <string name="tiles_stat_estimated">Estimated · %1$dm</string>
+    <string name="tiles_stat_sections">Sections · %1$d</string>
+    <string name="picker_time_start">Start time</string>
+    <string name="picker_time_end">End time</string>
+    <string name="picker_date_start">Start date</string>
+    <string name="picker_date_end">End date</string>
+    <string name="picker_duration_label">Duration</string>
+    <string name="picker_reference_label">Reference</string>
+    <string name="common_dismiss">Dismiss</string>
 </resources>
