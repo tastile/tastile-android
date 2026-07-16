@@ -7,6 +7,7 @@ import com.android.tools.lint.detector.api.CURRENT_API
 class IssueRegistry : IssueRegistry() {
     override val issues = listOf(
         WrapperParameterOrderDetector.ISSUE,
+        WrapperStabilityDetector.ISSUE,
     )
     override val api = CURRENT_API
     override val minApi = 14

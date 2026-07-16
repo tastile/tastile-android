@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.ui.app.AppShellViewModel
 import app.tastile.android.ui.mobile.MobileNavGraph
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
@@ -39,6 +40,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val dashboardViewModel: DashboardViewModel by viewModels()
+    private val appShellViewModel: AppShellViewModel by viewModels()
 
     @Inject
     lateinit var authRepository: AuthRepository
