@@ -45,6 +45,7 @@ fun ProjectRow(
     depth: Int,
     selected: Boolean,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var revealDelete by remember(workspace.id) { mutableStateOf(false) }
@@ -81,6 +82,9 @@ fun ProjectRow(
             modifier = Modifier.weight(1f),
         )
         if (revealDelete) {
+            IconButton(onClick = onEdit, modifier = Modifier.size(28.dp).testTag("project-edit-${workspace.id}")) {
+                Text("Edit", style = MaterialTheme.typography.labelSmall)
+            }
             IconButton(
                 onClick = onDelete,
                 modifier = Modifier

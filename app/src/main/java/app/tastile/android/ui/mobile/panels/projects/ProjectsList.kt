@@ -39,6 +39,7 @@ fun ProjectsList(
     workspaces: List<Workspace>,
     selectedOwnerId: String?,
     onSelect: (String?) -> Unit,
+    onEditRequest: (Workspace) -> Unit,
     onDeleteRequest: (Workspace) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -55,6 +56,7 @@ fun ProjectsList(
                 depth = entry.depth,
                 selected = selectedOwnerId == entry.workspace.id,
                 onClick = { onSelect(entry.workspace.id) },
+                onEdit = { onEditRequest(entry.workspace) },
                 onDelete = { onDeleteRequest(entry.workspace) },
             )
         }

@@ -203,6 +203,17 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun setOwnerFilter_updatesTileFilterAndClearsBackToAllProjects() = runTest {
+        val viewModel = newViewModel()
+
+        viewModel.setOwnerFilter("project-1")
+        assertEquals(listOf("project-1"), viewModel.tileFilter.value.ownerIds)
+
+        viewModel.setOwnerFilter(null)
+        assertTrue(viewModel.tileFilter.value.ownerIds.isEmpty())
+    }
+
+    @Test
     fun bumpSectionLimit_doubles8_16_32_60_thenResets() = runTest {
         val viewModel = newViewModel()
         val total = 200

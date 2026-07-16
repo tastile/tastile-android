@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,6 +26,8 @@ import app.tastile.android.data.api.Workspace
 import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.mobile.panels.projects.NewProjectForm
 import app.tastile.android.ui.mobile.panels.projects.ProjectsList
+import app.tastile.android.ui.mobile.panels.projects.ProjectEditForm
+import app.tastile.android.ui.dashboard.DashboardViewModel
 
 /**
  * Section pane content for `SidePanelSection.Projects`.
@@ -48,12 +51,18 @@ import app.tastile.android.ui.mobile.panels.projects.ProjectsList
 @Composable
 fun ProjectsSectionContent(
     modifier: Modifier = Modifier,
+    dashboardViewModel: DashboardViewModel? = null,
     projectsViewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     val state by projectsViewModel.state.collectAsState()
     val creating by projectsViewModel.creating.collectAsState()
     val selectedOwnerId by projectsViewModel.selectedOwnerId.collectAsState()
     var deleteCandidate by remember { mutableStateOf<Workspace?>(null) }
+    var editCandidate by remember { mutableStateOf<Workspace?>(null) }
+
+    LaunchedEffect(selectedOwnerId) {
+        dashboardViewModel?.setOwnerFilter(selectedOwnerId)
+    }
 
     Column(
         modifier = modifier
@@ -86,8 +95,9 @@ fun ProjectsSectionContent(
             NewProjectForm(
                 busy = state.createBusy,
                 errorText = state.createError,
-                onSubmit = { name, slug, color ->
-                    projectsViewModel.create(name, slug, color)
+                workspaces = state.workspaces,
+                onSubmit = { name, slug, color, parentId ->
+                    projectsViewModel.create(name, slug, color ?: "#6b7280", parentId)
                 },
                 onCancel = projectsViewModel::closeCreateForm,
             )
@@ -110,10 +120,32 @@ fun ProjectsSectionContent(
                 workspaces = state.workspaces,
                 selectedOwnerId = selectedOwnerId,
                 onSelect = projectsViewModel::selectOwner,
+                onEditRequest = { ws -> editCandidate = ws },
                 onDeleteRequest = { ws -> deleteCandidate = ws },
                 modifier = Modifier.padding(horizontal = AppSpacing.sm),
             )
         }
+    }
+
+    if (editCandidate != null) {
+        val target = editCandidate!!
+        AlertDialog(
+            onDismissRequest = { editCandidate = null },
+            title = { Text("Edit project") },
+            text = {
+                ProjectEditForm(
+                    workspace = target,
+                    workspaces = state.workspaces,
+                    busy = state.updateBusy,
+                    errorText = state.updateError,
+                    onSave = { name, slug, color, parent ->
+                        projectsViewModel.update(target.id, name, slug, color, parent)
+                    },
+                    onCancel = { editCandidate = null },
+                )
+            },
+            confirmButton = {},
+        )
     }
 
     if (deleteCandidate != null) {

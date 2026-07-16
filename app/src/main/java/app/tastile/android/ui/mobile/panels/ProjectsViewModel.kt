@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.api.CreateWorkspaceInput
 import app.tastile.android.data.api.Workspace
+import app.tastile.android.data.api.UpdateWorkspaceInput
 import app.tastile.android.data.repository.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,8 @@ class ProjectsViewModel @Inject constructor(
         val error: String? = null,
         val createBusy: Boolean = false,
         val createError: String? = null,
+        val updateBusy: Boolean = false,
+        val updateError: String? = null,
     )
 
     private val _state = MutableStateFlow(State())
@@ -143,6 +146,43 @@ class ProjectsViewModel @Inject constructor(
                 .onFailure { err ->
                     _state.update { it.copy(error = err.message ?: "delete failed") }
                 }
+        }
+    }
+
+    fun update(
+        id: String,
+        name: String,
+        slug: String?,
+        color: String?,
+        parentSubjectId: String?,
+    ) {
+        if (name.isBlank()) {
+            _state.update { it.copy(updateError = "name required") }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(updateBusy = true, updateError = null) }
+            runCatching {
+                workspaceRepository.update(
+                    id,
+                    UpdateWorkspaceInput(
+                        displayName = name.trim(),
+                        slug = slug?.trim()?.takeIf { it.isNotEmpty() },
+                        color = color?.trim()?.takeIf { it.isNotEmpty() },
+                        parentSubjectId = parentSubjectId,
+                    ),
+                )
+            }.onSuccess { updated ->
+                _state.update { s ->
+                    s.copy(
+                        updateBusy = false,
+                        updateError = null,
+                        workspaces = s.workspaces.map { if (it.id == updated.id) updated else it },
+                    )
+                }
+            }.onFailure { err ->
+                _state.update { it.copy(updateBusy = false, updateError = err.message ?: "update failed") }
+            }
         }
     }
 }

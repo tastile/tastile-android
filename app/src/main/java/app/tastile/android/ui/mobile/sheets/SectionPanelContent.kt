@@ -197,5 +197,5 @@ private fun PreferencesNavRow(
 @Composable
 private fun ProjectsSectionContent(viewModel: DashboardViewModel) {
     // C5: full CRUD port — see ProjectsSectionContent.kt in ui/mobile/panels/.
-    app.tastile.android.ui.mobile.panels.ProjectsSectionContent()
+    app.tastile.android.ui.mobile.panels.ProjectsSectionContent(dashboardViewModel = viewModel)
 }
