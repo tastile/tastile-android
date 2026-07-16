@@ -7,11 +7,11 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import app.tastile.android.data.repository.ThemeMode
-import app.tastile.android.ui.designsystem.GrayColors
 import androidx.compose.ui.unit.dp
 
 private val M3LightColorScheme = lightColorScheme(
@@ -43,17 +43,17 @@ private val M3DarkColorScheme = darkColorScheme(
 )
 
 private val M3GrayColorScheme = androidx.compose.material3.lightColorScheme(
-    primary = GrayColors.primary,
-    onPrimary = GrayColors.onPrimary,
-    primaryContainer = GrayColors.primaryContainer,
-    onPrimaryContainer = GrayColors.onPrimaryContainer,
-    background = GrayColors.background,
-    onBackground = GrayColors.onBackground,
-    surface = GrayColors.surface,
-    onSurface = GrayColors.onSurface,
-    surfaceVariant = GrayColors.surfaceVariant,
-    onSurfaceVariant = GrayColors.onSurfaceVariant,
-    outline = GrayColors.outline,
+    primary = Color(0xFF71717A),
+    onPrimary = Color(0xFFFAFAFA),
+    primaryContainer = Color(0xFFE4E4E7),
+    onPrimaryContainer = Color(0xFF18181B),
+    background = Color(0xFFFAFAFA),
+    onBackground = Color(0xFF18181B),
+    surface = Color(0xFFF4F4F5),
+    onSurface = Color(0xFF18181B),
+    surfaceVariant = Color(0xFFE4E4E7),
+    onSurfaceVariant = Color(0xFF52525B),
+    outline = Color(0xFFD4D4D8),
 )
 
 private val TastileShapes = androidx.compose.material3.Shapes(
