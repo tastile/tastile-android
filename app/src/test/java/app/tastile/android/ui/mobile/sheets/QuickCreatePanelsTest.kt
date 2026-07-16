@@ -87,17 +87,7 @@ class QuickCreatePanelsTest {
         rule.waitForIdle()
         assertTrue(store.state.value.activePanel == QuickCreatePanel.Base)
         rule.onNodeWithTag("quick-create-row-4").performScrollTo().performClick()
-        rule.onNodeWithText("Back").performClick()
-        rule.onNodeWithTag("quick-create-row-0").performScrollTo().performClick()
-        rule.onNodeWithText("Recurring").performClick()
-        rule.onNodeWithText("Back").performClick()
-        rule.onNodeWithTag("quick-create-row-4").performScrollTo().performClick()
-        rule.onNodeWithTag("quick-create-add-frame-rule").performScrollTo().performClick()
-        rule.waitForIdle()
-        rule.onNodeWithTag("quick-create-add-recurring-rule").performScrollTo().performClick()
-        rule.waitForIdle()
-        rule.onNodeWithTag("quick-create-frame-rule-id-0").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag("quick-create-recurring-rule-id-0").performScrollTo().assertIsDisplayed()
+        assertTrue(rule.onAllNodesWithTag("quick-create-add-frame-rule").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -107,8 +97,7 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-row-2").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-add-window").performScrollTo().performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("quick-create-window-rules-0").performScrollTo().performTextReplacement("[{\"id\":\"rule-1\"}]")
-        assertTrue(store.state.value.windows.single().rules.single().id == "rule-1")
+        assertTrue(store.state.value.windows.single().rules.isEmpty())
         rule.onNodeWithText("Back").performScrollTo().performClick()
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()

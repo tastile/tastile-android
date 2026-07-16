@@ -103,9 +103,6 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             store.updateWindows(draft.windows.replace(index, window.copy(bounds = window.bounds.copy(end = value))))
         }, label = { Text("Window end") })
         OutlinedTextField(window.referenceId.orEmpty(), { value -> store.updateWindows(draft.windows.replace(index, window.copy(referenceId = value.ifBlank { null }))) }, label = { Text("Window reference") })
-        JsonEditor("Window rules", windowRulesToJson(window.rules), "quick-create-window-rules-$index") { value ->
-            windowRulesFromJson(value)?.let { rules -> store.updateWindows(draft.windows.replace(index, window.copy(rules = rules))) }
-        }
         TextButton(onClick = { store.updateWindows(draft.windows.filterIndexed { item, _ -> item != index }) }) { Text("Remove window") }
     }
 }
@@ -129,30 +126,7 @@ private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateState
         OutlinedTextField(draft.recurring.endDate, { value -> store.updateRecurring(draft.recurring.copy(endDate = value)) }, label = { Text("End date") })
         OutlinedTextField(draft.recurring.life.active.startDate, { value -> store.updateRecurring(draft.recurring.copy(life = draft.recurring.life.copy(active = draft.recurring.life.active.copy(startDate = value)))) }, label = { Text("Active from") })
         OutlinedTextField(draft.recurring.life.active.endDate, { value -> store.updateRecurring(draft.recurring.copy(life = draft.recurring.life.copy(active = draft.recurring.life.active.copy(endDate = value)))) }, label = { Text("Active until") })
-        TextButton(onClick = { store.updateRecurring(draft.recurring.copy(frameRules = draft.recurring.frameRules + QuickCreateFrameRule(UUID.randomUUID().toString(), QuickCreateFrameGenerator("interval", JsonNull)))) }, modifier = Modifier.testTag("quick-create-add-frame-rule")) { Text("Add frame rule") }
-        draft.recurring.frameRules.forEachIndexed { index, rule ->
-            OutlinedTextField(rule.id, { value -> store.updateRecurring(draft.recurring.copy(frameRules = draft.recurring.frameRules.replace(index, rule.copy(id = value)))) }, label = { Text("Frame rule ID") }, modifier = Modifier.testTag("quick-create-frame-rule-id-$index"))
-            OutlinedTextField(rule.generator.kind, { value ->
-                store.updateRecurring(draft.recurring.copy(frameRules = draft.recurring.frameRules.replace(index, rule.copy(generator = rule.generator.copy(kind = value)))))
-            }, label = { Text("Generator kind") })
-            JsonEditor("Generator value", rule.generator.value) { value -> store.updateRecurring(draft.recurring.copy(frameRules = draft.recurring.frameRules.replace(index, rule.copy(generator = rule.generator.copy(value = value)))) ) }
-            JsonEditor("Active condition", rule.active?.let(::conditionToJson) ?: JsonNull) { value ->
-                conditionFromJson(value)?.let { condition -> store.updateRecurring(draft.recurring.copy(frameRules = draft.recurring.frameRules.replace(index, rule.copy(active = condition)))) }
-            }
-            TextButton(onClick = { store.updateRecurring(draft.recurring.copy(frameRules = draft.recurring.frameRules.filterIndexed { item, _ -> item != index })) }) { Text("Remove frame rule") }
-        }
-        TextButton(onClick = { store.updateRecurring(draft.recurring.copy(rules = draft.recurring.rules + QuickCreateRecurringRule(UUID.randomUUID().toString(), null, 0))) }, modifier = Modifier.testTag("quick-create-add-recurring-rule")) { Text("Add recurring rule") }
-        draft.recurring.rules.forEachIndexed { index, rule ->
-            OutlinedTextField(rule.id, { value -> store.updateRecurring(draft.recurring.copy(rules = draft.recurring.rules.replace(index, rule.copy(id = value)))) }, label = { Text("Recurring rule ID") }, modifier = Modifier.testTag("quick-create-recurring-rule-id-$index"))
-            OutlinedTextField(rule.rank.toString(), { value ->
-                store.updateRecurring(draft.recurring.copy(rules = draft.recurring.rules.replace(index, rule.copy(rank = value.toIntOrNull() ?: 0))))
-            }, label = { Text("Rank") })
-            JsonEditor("Rule condition", rule.`when`?.let(::conditionToJson) ?: JsonNull) { value ->
-                conditionFromJson(value)?.let { condition -> store.updateRecurring(draft.recurring.copy(rules = draft.recurring.rules.replace(index, rule.copy(`when` = condition)))) }
-            }
-            JsonEditor("Rule outputs", rule.outputs) { value -> store.updateRecurring(draft.recurring.copy(rules = draft.recurring.rules.replace(index, rule.copy(outputs = value as? kotlinx.serialization.json.JsonArray ?: rule.outputs))) ) }
-            TextButton(onClick = { store.updateRecurring(draft.recurring.copy(rules = draft.recurring.rules.filterIndexed { item, _ -> item != index })) }) { Text("Remove recurring rule") }
-        }
+        if (draft.recurring.frameRules.isNotEmpty() || draft.recurring.rules.isNotEmpty()) Text("Advanced recurrence details are preserved.")
     }
 }
 
