@@ -61,6 +61,7 @@ fun ExecuteScreen(
     val actionMessage by viewModel.lastActionMessage.collectAsStateWithLifecycle()
     val executionStates by viewModel.executionControlStates.collectAsStateWithLifecycle()
     val executionControlsInFlight by viewModel.executionControlInFlightTileIds.collectAsStateWithLifecycle()
+    var executionActionCandidate by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
 
     if (loading && tiles.isEmpty()) {
         AppCenteredLoading()
@@ -83,6 +84,8 @@ fun ExecuteScreen(
                 tile = it,
                 executionState = executionStates[it.id],
                 executionControlInFlight = it.id in executionControlsInFlight,
+                onStartExecution = { executionActionCandidate = it.id to true },
+                onFinishExecution = { executionActionCandidate = it.id to false },
                 viewModel = viewModel,
             )
         }
@@ -107,6 +110,8 @@ fun ExecuteScreen(
                     onComplete = { viewModel.completeTile(tile.id) },
                     executionState = executionStates[tile.id],
                     executionControlInFlight = tile.id in executionControlsInFlight,
+                    onStartExecution = { executionActionCandidate = tile.id to true },
+                    onFinishExecution = { executionActionCandidate = tile.id to false },
                     onPause = { viewModel.pauseTile(tile.id) },
                     onResume = { viewModel.resumeTile(tile.id) },
                     onDelete = { viewModel.setDeleteTileCandidate(tile.id) },
@@ -126,6 +131,18 @@ fun ExecuteScreen(
     }
     deferCandidate?.let { id -> DeferTileDialog(tiles.firstOrNull { it.id == id }?.title, viewModel::confirmDeferTile) { viewModel.setDeferTileCandidate(null) } }
     promptCandidate?.let { id -> PromptRequestDialog(tiles.firstOrNull { it.id == id }?.title, viewModel::confirmPromptTile) { viewModel.setPromptTileCandidate(null) } }
+    executionActionCandidate?.let { (tileId, start) ->
+        AlertDialog(
+            onDismissRequest = { executionActionCandidate = null },
+            title = { Text(if (start) "Start execution?" else "Finish execution?") },
+            text = { Text(if (start) "Start work on this existing occurrence." else "Finish this execution without completing the tile.") },
+            confirmButton = { TextButton(onClick = {
+                if (start) viewModel.startExecution(tileId) else viewModel.finishExecution(tileId)
+                executionActionCandidate = null
+            }) { Text(if (start) "Start" else "Finish") } },
+            dismissButton = { TextButton(onClick = { executionActionCandidate = null }) { Text("Cancel") } },
+        )
+    }
 }
 
 @Composable
@@ -133,6 +150,8 @@ private fun ActiveTileHero(
     tile: Tile,
     executionState: ExecutionControlState?,
     executionControlInFlight: Boolean,
+    onStartExecution: () -> Unit,
+    onFinishExecution: () -> Unit,
     viewModel: DashboardViewModel,
 ) {
     AppOutlinedPanel {
@@ -160,7 +179,16 @@ private fun ActiveTileHero(
                     enabled = !executionControlInFlight,
                     modifier = Modifier.testTag("execute-resume-${tile.id}"),
                 ) { Text("Resume") }
-                null -> Unit
+                null -> OutlinedButton(
+                    onClick = onStartExecution,
+                    enabled = !executionControlInFlight,
+                ) { Text("Start execution") }
+            }
+            if (executionState != null) {
+                OutlinedButton(
+                    onClick = onFinishExecution,
+                    enabled = !executionControlInFlight,
+                ) { Text("Finish execution") }
             }
         }
     }
@@ -174,6 +202,8 @@ private fun TileActionRow(
     onComplete: () -> Unit,
     executionState: ExecutionControlState?,
     executionControlInFlight: Boolean,
+    onStartExecution: () -> Unit,
+    onFinishExecution: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onDelete: () -> Unit,
@@ -225,7 +255,18 @@ private fun TileActionRow(
                                 onClick = { menuOpen = false; onResume() },
                                 enabled = !executionControlInFlight,
                             )
-                            null -> Unit
+                            null -> DropdownMenuItem(
+                                text = { Text("Start execution") },
+                                onClick = { menuOpen = false; onStartExecution() },
+                                enabled = !executionControlInFlight,
+                            )
+                        }
+                        if (executionState != null) {
+                            DropdownMenuItem(
+                                text = { Text("Finish execution") },
+                                onClick = { menuOpen = false; onFinishExecution() },
+                                enabled = !executionControlInFlight,
+                            )
                         }
                     }
                     DropdownMenuItem(

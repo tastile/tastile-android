@@ -587,7 +587,7 @@ class V1CommandDispatcherTest {
         val dispatcher = V1CommandDispatcher(apiClient)
         assertNotNull(dispatcher.dispatchTilePause("t-123"))
 
-        assertEquals(ExecutionStateLookup.InvalidExecution, dispatcher.executionStateLookupForTile("t-123"))
+        assertTrue(dispatcher.executionStateLookupForTile("t-123") is ExecutionStateLookup.Unavailable)
         coVerify(exactly = 1) { apiClient.getActiveTile() }
     }
 
@@ -599,6 +599,65 @@ class V1CommandDispatcherTest {
         val dispatcher = V1CommandDispatcher(apiClient)
 
         assertEquals(ExecutionStateLookup.NoActiveExecution, dispatcher.executionStateLookupForTile("t-123"))
+    }
+
+    @Test
+    fun dispatchPlacementExecutionStart_postsExactPlacementCommand() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.listPlacements() } returns listOf(
+            app.tastile.android.data.api.V1PlacementListItem(
+                placementId = "pl-1",
+                tileId = "t-123",
+                planId = "plan-1",
+                spanStart = "2026-01-01T00:00:00Z",
+                spanEnd = "2026-01-01T01:00:00Z",
+            )
+        )
+        coEvery {
+            apiClient.postCommand(
+                "/v1/placements/pl-1/executions",
+                app.tastile.android.data.api.StartExecutionPayload("pl-1"),
+                app.tastile.android.data.api.StartExecutionPayload.serializer(),
+                CommandResponse.serializer(),
+            )
+        } returns okResponse("ex-1")
+
+        assertNotNull(V1CommandDispatcher(apiClient).dispatchPlacementExecutionStart("t-123"))
+
+        coVerify(exactly = 1) {
+            apiClient.postCommand(
+                "/v1/placements/pl-1/executions",
+                app.tastile.android.data.api.StartExecutionPayload("pl-1"),
+                app.tastile.android.data.api.StartExecutionPayload.serializer(),
+                CommandResponse.serializer(),
+            )
+        }
+    }
+
+    @Test
+    fun dispatchExecutionFinish_postsFinishOnlyWithoutTileComplete() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.getActiveTile() } returns app.tastile.android.data.api.ActiveTileView("t-123", "pl-1", "ex-1")
+        coEvery { apiClient.readExecution("ex-1") } returns app.tastile.android.data.api.ExecutionView("ex-1", "t-123", 0, "pl-1")
+        coEvery {
+            apiClient.postCommand(
+                "/v1/executions/ex-1/finish",
+                app.tastile.android.data.api.ExecutionFinishPayload(kind = 0, note = null),
+                app.tastile.android.data.api.ExecutionFinishPayload.serializer(),
+                CommandResponse.serializer(),
+            )
+        } returns okResponse("ex-1")
+
+        assertNotNull(V1CommandDispatcher(apiClient).dispatchExecutionFinish("t-123"))
+
+        coVerify(exactly = 1) {
+            apiClient.postCommand(
+                "/v1/executions/ex-1/finish",
+                app.tastile.android.data.api.ExecutionFinishPayload(kind = 0, note = null),
+                app.tastile.android.data.api.ExecutionFinishPayload.serializer(),
+                CommandResponse.serializer(),
+            )
+        }
     }
 
     // --- Step 5: tile.reschedule ----------------------------------------

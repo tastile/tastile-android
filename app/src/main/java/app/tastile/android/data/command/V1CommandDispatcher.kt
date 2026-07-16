@@ -59,6 +59,8 @@ sealed interface ExecutionStateLookup {
     data object NoActiveExecution : ExecutionStateLookup
     /** The claimed execution was missing, terminal, mismatched, or unreadable. */
     data object InvalidExecution : ExecutionStateLookup
+    /** The authoritative lookup itself could not be completed. */
+    data class Unavailable(val cause: Throwable) : ExecutionStateLookup
 }
 
 @Singleton
@@ -307,6 +309,48 @@ class V1CommandDispatcher @Inject constructor(
      * no placement exists we throw — the user can't pause something that
      * was never started in v1.
      */
+    /** Starts an execution for an already-created placement without creating or completing a tile. */
+    suspend fun dispatchPlacementExecutionStart(tileId: String): CoreCommandAck? {
+        return runCatching {
+            val placement = findPlacementForTile(tileId)
+                ?: throw IllegalStateException("execution.start: no placement for tile ${tileId}")
+            val execution = v1ApiClient.postCommand(
+                path = "/v1/placements/${placement.placementId}/executions",
+                payload = StartExecutionPayload(placement.placementId),
+                payloadSerializer = StartExecutionPayload.serializer(),
+                responseSerializer = CommandResponse.serializer(),
+            )
+            val executionId = execution.aggregate?.id
+                ?: throw IllegalStateException("execution.start response missing execution aggregate for tile ${tileId}")
+            executionIdsByTile[tileId] = executionId
+            execution.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("execution.start", error)
+            null
+        }.getOrNull()
+    }
+
+    /** Finishes only the current execution; tile lifecycle is intentionally unchanged. */
+    suspend fun dispatchExecutionFinish(tileId: String): CoreCommandAck? {
+        return runCatching {
+            val executionId = findExecutionIdForTile(tileId)
+                ?: throw IllegalStateException("execution.finish: no active execution for tile ${tileId}")
+            val response = v1ApiClient.postCommand(
+                path = "/v1/executions/${executionId}/finish",
+                payload = ExecutionFinishPayload(kind = 0, note = null),
+                payloadSerializer = ExecutionFinishPayload.serializer(),
+                responseSerializer = CommandResponse.serializer(),
+            )
+            executionIdsByTile.remove(tileId)
+            response.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("execution.finish", error)
+            null
+        }.getOrNull()
+    }
+
     suspend fun dispatchTilePause(tileId: String): CoreCommandAck? {
         return runCatching {
             val executionId = findExecutionIdForTile(tileId)
@@ -551,20 +595,30 @@ class V1CommandDispatcher @Inject constructor(
     suspend fun executionStateLookupForTile(tileId: String): ExecutionStateLookup {
         val cachedId = executionIdsByTile[tileId]
         if (cachedId != null) {
-            val execution = runCatching { v1ApiClient.readExecution(cachedId) }.getOrNull()
-            if (execution?.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES) {
+            val execution = try {
+                v1ApiClient.readExecution(cachedId)
+            } catch (error: Throwable) {
+                return ExecutionStateLookup.Unavailable(error)
+            }
+            if (execution.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES) {
                 return ExecutionStateLookup.Found(execution.state)
             }
             executionIdsByTile.remove(tileId)
             return ExecutionStateLookup.InvalidExecution
         }
 
-        val active = runCatching { v1ApiClient.getActiveTile() }.getOrNull()
-            ?: return ExecutionStateLookup.NoActiveExecution
+        val active = try {
+            v1ApiClient.getActiveTile()
+        } catch (error: Throwable) {
+            return ExecutionStateLookup.Unavailable(error)
+        } ?: return ExecutionStateLookup.NoActiveExecution
         val executionId = active.takeIf { it.tileId == tileId }?.executionId
             ?: return ExecutionStateLookup.NoActiveExecution
-        val execution = runCatching { v1ApiClient.readExecution(executionId) }.getOrNull()
-            ?: return ExecutionStateLookup.InvalidExecution
+        val execution = try {
+            v1ApiClient.readExecution(executionId)
+        } catch (error: Throwable) {
+            return ExecutionStateLookup.Unavailable(error)
+        }
         if (execution.tileId != tileId || execution.state !in ACTIVE_EXECUTION_STATES) {
             return ExecutionStateLookup.InvalidExecution
         }

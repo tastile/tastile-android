@@ -49,6 +49,7 @@ fun TileEditSheet(
     if (current is Overlay.TileEdit) {
         var editedTitle by remember(tile?.id) { mutableStateOf(tile?.title.orEmpty()) }
         var confirmSave by remember(tile?.id) { mutableStateOf(false) }
+        var confirmExecutionAction by remember(tile?.id) { mutableStateOf<Boolean?>(null) }
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         PanelSheet(
             title = tile?.title ?: "Tile",
@@ -102,7 +103,10 @@ fun TileEditSheet(
                         when (executionStates[selected.id]) {
                             ExecutionControlState.Active -> TextButton(onClick = { viewModel.pauseTile(selected.id) }, enabled = selected.id !in executionControlsInFlight) { Text("Pause") }
                             ExecutionControlState.Paused -> TextButton(onClick = { viewModel.resumeTile(selected.id) }, enabled = selected.id !in executionControlsInFlight) { Text("Resume") }
-                            null -> Unit
+                            null -> TextButton(onClick = { confirmExecutionAction = true }, enabled = selected.id !in executionControlsInFlight) { Text("Start execution") }
+                        }
+                        if (executionStates[selected.id] != null) {
+                            TextButton(onClick = { confirmExecutionAction = false }, enabled = selected.id !in executionControlsInFlight) { Text("Finish execution") }
                         }
                     }
                     TextButton(onClick = {
@@ -136,6 +140,18 @@ fun TileEditSheet(
                 tileTitle = selected?.title,
                 onConfirm = viewModel::confirmPromptTile,
                 onCancel = { viewModel.setPromptTileCandidate(null) },
+            )
+        }
+        confirmExecutionAction?.takeIf { selected != null }?.let { start ->
+            AlertDialog(
+                onDismissRequest = { confirmExecutionAction = null },
+                title = { Text(if (start) "Start execution?" else "Finish execution?") },
+                text = { Text(if (start) "Start work on this occurrence." else "Finish this execution without completing the tile.") },
+                confirmButton = { TextButton(onClick = {
+                    if (start) viewModel.startExecution(selected!!.id) else viewModel.finishExecution(selected!!.id)
+                    confirmExecutionAction = null
+                }) { Text(if (start) "Start" else "Finish") } },
+                dismissButton = { TextButton(onClick = { confirmExecutionAction = null }) { Text("Cancel") } },
             )
         }
         if (confirmSave && selected != null) {

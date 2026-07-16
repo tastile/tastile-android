@@ -213,6 +213,18 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
+    suspend fun startExecution(tileId: String) {
+        val ack = v1CommandDispatcher.dispatchPlacementExecutionStart(tileId)
+            ?: throw IllegalStateException("Cloud command rejected: start execution")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
+    suspend fun finishExecution(tileId: String) {
+        val ack = v1CommandDispatcher.dispatchExecutionFinish(tileId)
+            ?: throw IllegalStateException("Cloud command rejected: finish execution")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
     override suspend fun pauseTile(tileId: String) {
         val ack = v1CommandDispatcher.dispatchTilePause(tileId)
             ?: throw IllegalStateException("Cloud command rejected: pause tile")

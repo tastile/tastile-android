@@ -670,6 +670,41 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun startExecution(tileId: String) {
+        if (!beginExecutionControl(tileId)) return
+        viewModelScope.launch {
+            try {
+                tileRepository.startExecution(tileId)
+                _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Active)
+                _lastActionMessage.value = "Execution started"
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to start execution"
+            } finally {
+                endExecutionControl(tileId)
+            }
+        }
+    }
+
+    fun finishExecution(tileId: String) {
+        if (!beginExecutionControl(tileId)) return
+        viewModelScope.launch {
+            try {
+                tileRepository.finishExecution(tileId)
+                recentlyPausedUntilElapsedMs.remove(tileId)
+                _executionControlStates.value = _executionControlStates.value - tileId
+                _lastActionMessage.value = "Execution finished"
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to finish execution"
+            } finally {
+                endExecutionControl(tileId)
+            }
+        }
+    }
+
     fun pauseTile(tileId: String) {
         if (!beginExecutionControl(tileId)) return
         viewModelScope.launch {
@@ -758,6 +793,10 @@ class DashboardViewModel @Inject constructor(
                     else -> null
                 }
                 ExecutionStateLookup.NoActiveExecution, ExecutionStateLookup.InvalidExecution -> null
+                is ExecutionStateLookup.Unavailable -> {
+                    _error.value = "Unable to verify execution state"
+                    null
+                }
             }
         }.toMap()
         val now = SystemClock.elapsedRealtime()
@@ -769,7 +808,9 @@ class DashboardViewModel @Inject constructor(
             }
             .keys
         recentlyPausedUntilElapsedMs.entries.removeAll { (tileId, expiresAt) ->
-            tileId !in startedIds || expiresAt <= now || lookups[tileId] == ExecutionStateLookup.InvalidExecution
+            tileId !in startedIds || expiresAt <= now ||
+                lookups[tileId] == ExecutionStateLookup.InvalidExecution ||
+                lookups[tileId] is ExecutionStateLookup.Unavailable
         }
         _executionControlStates.value = refreshed + justPaused
             .filter { it !in refreshed }
