@@ -2,15 +2,19 @@ package app.tastile.android.ui.mobile.tabs.tiles
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.tastile.android.R
 import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 
 /**
  * Confirmation dialog triggered by
@@ -46,20 +50,20 @@ fun DeleteTileDialog(
         },
         text = { Text(stringResource(R.string.dashboard_tiles_delete_dialog_body)) },
         confirmButton = {
-            TextButton(
+            AppPrimaryButton(
+                text = stringResource(R.string.dashboard_tiles_delete_dialog_confirm),
                 onClick = onConfirm,
+                leadingIcon = Icons.Outlined.Delete,
                 modifier = Modifier.testTag("tiles-delete-dialog-confirm"),
-            ) {
-                Text(stringResource(R.string.dashboard_tiles_delete_dialog_confirm))
-            }
+            )
         },
         dismissButton = {
-            TextButton(
+            AppTertiaryButton(
+                text = stringResource(R.string.dashboard_tiles_delete_dialog_cancel),
                 onClick = onCancel,
+                leadingIcon = Icons.Outlined.Close,
                 modifier = Modifier.testTag("tiles-delete-dialog-cancel"),
-            ) {
-                Text(stringResource(R.string.dashboard_tiles_delete_dialog_cancel))
-            }
+            )
         },
         modifier = modifier.testTag("tiles-delete-dialog"),
     )

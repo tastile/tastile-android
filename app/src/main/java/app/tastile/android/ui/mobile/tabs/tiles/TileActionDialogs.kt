@@ -2,11 +2,20 @@ package app.tastile.android.ui.mobile.tabs.tiles
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Send
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -57,9 +68,23 @@ fun DeferTileDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
                 tileTitle?.let { Text(it, style = AppTheme.typography.bodyMedium) }
-                Row {
-                    TextButton(onClick = { relative = false }, modifier = Modifier.testTag("defer-mode-datetime")) { Text("Date & time") }
-                    TextButton(onClick = { relative = true }, modifier = Modifier.testTag("defer-mode-duration")) { Text("Duration") }
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().testTag("defer-mode")) {
+                    SegmentedButton(
+                        selected = !relative,
+                        onClick = { relative = false },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                        modifier = Modifier.testTag("defer-mode-datetime"),
+                        icon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
+                        label = { Text("Date & time") },
+                    )
+                    SegmentedButton(
+                        selected = relative,
+                        onClick = { relative = true },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        modifier = Modifier.testTag("defer-mode-duration"),
+                        icon = { Icon(Icons.Outlined.Timer, contentDescription = null) },
+                        label = { Text("Duration") },
+                    )
                 }
                 if (relative) {
                     OutlinedTextField(
@@ -86,12 +111,20 @@ fun DeferTileDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            AppPrimaryButton(
+                text = "Confirm",
                 onClick = { resolve()?.let(onConfirm) },
+                leadingIcon = Icons.Outlined.Check,
                 modifier = Modifier.testTag("defer-confirm"),
-            ) { Text("Confirm") }
+            )
         },
-        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
+        dismissButton = {
+            AppTertiaryButton(
+                text = "Cancel",
+                onClick = onCancel,
+                leadingIcon = Icons.Outlined.Close,
+            )
+        },
         modifier = Modifier.testTag("defer-dialog"),
     )
 }
@@ -104,11 +137,20 @@ fun PromptRequestDialog(tileTitle: String?, onConfirm: () -> Unit, onCancel: () 
         title = { Text("Request prompt?") },
         text = { Text("Create a decision prompt for ${tileTitle ?: "this tile"}.") },
         confirmButton = {
-            TextButton(onClick = onConfirm, modifier = Modifier.testTag("prompt-request-confirm")) {
-                Text("Request")
-            }
+            AppPrimaryButton(
+                text = "Request",
+                onClick = onConfirm,
+                leadingIcon = Icons.Outlined.Send,
+                modifier = Modifier.testTag("prompt-request-confirm"),
+            )
         },
-        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
+        dismissButton = {
+            AppTertiaryButton(
+                text = "Cancel",
+                onClick = onCancel,
+                leadingIcon = Icons.Outlined.Close,
+            )
+        },
         modifier = Modifier.testTag("prompt-request-dialog"),
     )
 }

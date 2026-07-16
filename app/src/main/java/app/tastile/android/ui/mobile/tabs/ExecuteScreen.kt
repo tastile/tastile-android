@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
@@ -20,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +48,8 @@ import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
@@ -141,11 +144,23 @@ fun ExecuteScreen(
             onDismissRequest = { executionActionCandidate = null },
             title = { Text(if (start) "Start execution?" else "Finish execution?") },
             text = { Text(if (start) "Start work on this existing occurrence." else "Finish this execution without completing the tile.") },
-            confirmButton = { TextButton(onClick = {
-                if (start) viewModel.startExecution(tileId) else viewModel.finishExecution(tileId)
-                executionActionCandidate = null
-            }) { Text(if (start) "Start" else "Finish") } },
-            dismissButton = { TextButton(onClick = { executionActionCandidate = null }) { Text("Cancel") } },
+            confirmButton = {
+                AppPrimaryButton(
+                    text = if (start) "Start" else "Finish",
+                    onClick = {
+                        if (start) viewModel.startExecution(tileId) else viewModel.finishExecution(tileId)
+                        executionActionCandidate = null
+                    },
+                    leadingIcon = if (start) Icons.Outlined.PlayArrow else Icons.Outlined.Flag,
+                )
+            },
+            dismissButton = {
+                AppTertiaryButton(
+                    text = "Cancel",
+                    onClick = { executionActionCandidate = null },
+                    leadingIcon = Icons.Outlined.Close,
+                )
+            },
         )
     }
 }
