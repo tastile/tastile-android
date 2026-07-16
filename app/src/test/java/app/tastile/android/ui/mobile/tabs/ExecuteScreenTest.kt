@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
@@ -17,6 +18,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.mobile.OverlayViewModel
 import io.mockk.every
 import io.mockk.verify
@@ -45,6 +47,7 @@ class ExecuteScreenTest {
         every { vm.requestDeferTileId } returns MutableStateFlow(null)
         every { vm.requestPromptTileId } returns MutableStateFlow(null)
         every { vm.lastActionMessage } returns MutableStateFlow(null)
+        every { vm.executionControlStates } returns MutableStateFlow(emptyMap())
         every { vm.locale } returns MutableStateFlow(app.tastile.android.data.repository.AppLocale.EN)
         return vm
     }
@@ -95,6 +98,7 @@ class ExecuteScreenTest {
     fun `active execution exposes pause and complete but not another start`() {
         val active = Tile(id = "t1", title = "Code review", lifecycle = TileLifecycle.STARTED.value)
         val vm = stubVm(listOf(active))
+        every { vm.executionControlStates } returns MutableStateFlow(mapOf("t1" to ExecutionControlState.Active))
 
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
@@ -104,6 +108,23 @@ class ExecuteScreenTest {
 
         verify(exactly = 1) { vm.pauseTile("t1") }
         verify(exactly = 1) { vm.completeTile("t1") }
+    }
+
+    @Test
+    fun `paused execution replaces pause with resume and resumes the same tile`() {
+        val active = Tile(id = "t1", title = "Code review", lifecycle = TileLifecycle.STARTED.value)
+        val executionStates = MutableStateFlow(mapOf("t1" to ExecutionControlState.Active))
+        val vm = stubVm(listOf(active))
+        every { vm.executionControlStates } returns executionStates
+
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.onNodeWithTag("execute-pause-t1").performClick()
+        verify(exactly = 1) { vm.pauseTile("t1") }
+
+        rule.runOnIdle { executionStates.value = mapOf("t1" to ExecutionControlState.Paused) }
+        rule.onNodeWithTag("execute-resume-t1").performClick()
+        rule.onAllNodesWithText("Pause").assertCountEquals(0)
+        verify(exactly = 1) { vm.resumeTile("t1") }
     }
 
     @Test

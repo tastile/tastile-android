@@ -244,6 +244,10 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
+    /** v1 execution state for a visible started tile; null means unknown, not paused. */
+    suspend fun executionStateForTile(tileId: String): Int? =
+        v1CommandDispatcher.executionStateForTile(tileId)
+
     suspend fun deferTile(tileId: String, deferredUntil: String) {
         val ack = v1CommandDispatcher.dispatchTileDefer(
             tileId = tileId,

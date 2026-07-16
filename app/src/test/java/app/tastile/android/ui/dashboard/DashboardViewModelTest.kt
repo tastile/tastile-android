@@ -194,6 +194,24 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun pauseThenResume_transitionsControlStateForTheSameExecution() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.pauseTile("tile-1") } returns Unit
+        coEvery { tileRepository.continueTile("tile-1") } returns Unit
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
+
+        viewModel.pauseTile("tile-1")
+        coVerify(exactly = 1) { tileRepository.pauseTile("tile-1") }
+        assertEquals(ExecutionControlState.Paused, viewModel.executionControlStates.value["tile-1"])
+
+        viewModel.resumeTile("tile-1")
+        coVerify(exactly = 1) { tileRepository.continueTile("tile-1") }
+        assertEquals(ExecutionControlState.Active, viewModel.executionControlStates.value["tile-1"])
+    }
+
+    @Test
     fun setSearchTerm_rebuildsTileFilter() = runTest {
         val viewModel = newViewModel()
         val seed = app.tastile.android.data.repository.TileFilter(limit = 50)

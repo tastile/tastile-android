@@ -520,6 +520,19 @@ class V1CommandDispatcher @Inject constructor(
         }?.also { executionIdsByTile[tileId] = it }
     }
 
+    /**
+     * Reads the current state for a known execution. The active-tile endpoint
+     * only reports ACTIVE executions, while a cached paused execution remains
+     * readable through its execution id; callers must not infer Resume when
+     * this returns null.
+     */
+    suspend fun executionStateForTile(tileId: String): Int? = runCatching {
+        val executionId = findExecutionIdForTile(tileId) ?: return@runCatching null
+        v1ApiClient.readExecution(executionId)
+            .takeIf { it.tileId == tileId }
+            ?.state
+    }.getOrNull()
+
     private fun buildInstantChange(
         placementId: String,
         groupPart: Int,

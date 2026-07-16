@@ -23,6 +23,7 @@ import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.repository.UserSettingsRepository
 import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import io.mockk.coEvery
@@ -172,6 +173,7 @@ class TileEditSheetTest {
         val overlay = OverlayViewModel()
         val vm = newDashboardViewModel()
         vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")))
+        vm.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
         vm.selectTile("tile-1")
 
         rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }

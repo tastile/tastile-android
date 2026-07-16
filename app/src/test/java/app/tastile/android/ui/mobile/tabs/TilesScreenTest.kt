@@ -59,6 +59,8 @@ class TilesScreenTest {
         every { vm.customStartIso } returns MutableStateFlow(null)
         every { vm.customEndIso } returns MutableStateFlow(null)
         every { vm.requestDeleteTileId } returns MutableStateFlow(null)
+        every { vm.requestDeferTileId } returns MutableStateFlow(null)
+        every { vm.requestPromptTileId } returns MutableStateFlow(null)
         every { vm.expandedSections } returns MutableStateFlow(emptySet())
         every { vm.sectionLimits } returns MutableStateFlow(sectionLimits)
         every { vm.tileFilter } returns MutableStateFlow(app.tastile.android.data.repository.TileFilter.DEFAULT)

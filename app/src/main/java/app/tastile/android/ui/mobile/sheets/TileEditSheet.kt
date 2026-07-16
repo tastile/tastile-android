@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.data.model.TileLifecycle
@@ -42,6 +43,7 @@ fun TileEditSheet(
     val deferCandidate by viewModel.requestDeferTileId.collectAsStateWithLifecycle()
     val promptCandidate by viewModel.requestPromptTileId.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val executionStates by viewModel.executionControlStates.collectAsStateWithLifecycle()
 
     if (current is Overlay.TileEdit) {
         var editedTitle by remember(tile?.id) { mutableStateOf(tile?.title.orEmpty()) }
@@ -96,7 +98,11 @@ fun TileEditSheet(
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
                         TextButton(onClick = { viewModel.completeTile(selected.id) }) { Text("Complete") }
-                        TextButton(onClick = { viewModel.pauseTile(selected.id) }) { Text("Pause") }
+                        when (executionStates[selected.id]) {
+                            ExecutionControlState.Active -> TextButton(onClick = { viewModel.pauseTile(selected.id) }) { Text("Pause") }
+                            ExecutionControlState.Paused -> TextButton(onClick = { viewModel.resumeTile(selected.id) }) { Text("Resume") }
+                            null -> Unit
+                        }
                     }
                     TextButton(onClick = {
                         val placementId = (current as Overlay.TileEdit).placementId

@@ -26,11 +26,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.dashboard.isStarted
 import app.tastile.android.ui.designsystem.AppCenteredLoading
 import app.tastile.android.ui.designsystem.AppEmptyState
@@ -57,6 +59,7 @@ fun ExecuteScreen(
     val deferCandidate by viewModel.requestDeferTileId.collectAsStateWithLifecycle()
     val promptCandidate by viewModel.requestPromptTileId.collectAsStateWithLifecycle()
     val actionMessage by viewModel.lastActionMessage.collectAsStateWithLifecycle()
+    val executionStates by viewModel.executionControlStates.collectAsStateWithLifecycle()
 
     if (loading && tiles.isEmpty()) {
         AppCenteredLoading()
@@ -74,7 +77,7 @@ fun ExecuteScreen(
             Text(text = message, color = AppTheme.colors.error)
         }
         actionMessage?.let { message -> Text(text = message, color = AppTheme.colors.primary) }
-        active?.let { ActiveTileHero(tile = it, viewModel = viewModel) }
+        active?.let { ActiveTileHero(tile = it, executionState = executionStates[it.id], viewModel = viewModel) }
 
         AppSectionHeader(text = if (showable.isEmpty()) "Nothing to do — create a tile" else "Today and ready")
 
@@ -94,7 +97,9 @@ fun ExecuteScreen(
                     },
                     onStart = { viewModel.startTile(tile.id) },
                     onComplete = { viewModel.completeTile(tile.id) },
+                    executionState = executionStates[tile.id],
                     onPause = { viewModel.pauseTile(tile.id) },
+                    onResume = { viewModel.resumeTile(tile.id) },
                     onDelete = { viewModel.setDeleteTileCandidate(tile.id) },
                     onDefer = { viewModel.setDeferTileCandidate(tile.id) },
                     onPrompt = { viewModel.setPromptTileCandidate(tile.id) },
@@ -115,7 +120,11 @@ fun ExecuteScreen(
 }
 
 @Composable
-private fun ActiveTileHero(tile: Tile, viewModel: DashboardViewModel) {
+private fun ActiveTileHero(
+    tile: Tile,
+    executionState: ExecutionControlState?,
+    viewModel: DashboardViewModel,
+) {
     AppOutlinedPanel {
         Text(
             text = "▶ ${tile.title}",
@@ -130,7 +139,17 @@ private fun ActiveTileHero(tile: Tile, viewModel: DashboardViewModel) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
             Button(onClick = { viewModel.completeTile(tile.id) }) { Text("Complete") }
-            OutlinedButton(onClick = { viewModel.pauseTile(tile.id) }) { Text("Pause") }
+            when (executionState) {
+                ExecutionControlState.Active -> OutlinedButton(
+                    onClick = { viewModel.pauseTile(tile.id) },
+                    modifier = Modifier.testTag("execute-pause-${tile.id}"),
+                ) { Text("Pause") }
+                ExecutionControlState.Paused -> OutlinedButton(
+                    onClick = { viewModel.resumeTile(tile.id) },
+                    modifier = Modifier.testTag("execute-resume-${tile.id}"),
+                ) { Text("Resume") }
+                null -> Unit
+            }
         }
     }
 }
@@ -141,7 +160,9 @@ private fun TileActionRow(
     onTap: () -> Unit,
     onStart: () -> Unit,
     onComplete: () -> Unit,
+    executionState: ExecutionControlState?,
     onPause: () -> Unit,
+    onResume: () -> Unit,
     onDelete: () -> Unit,
     onDefer: () -> Unit,
     onPrompt: () -> Unit,
@@ -178,11 +199,19 @@ private fun TileActionRow(
                             text = { Text("Complete") },
                             onClick = { menuOpen = false; onComplete() },
                         )
-                        DropdownMenuItem(
-                            text = { Text("Pause") },
-                            leadingIcon = { Icon(Icons.Outlined.Pause, contentDescription = null) },
-                            onClick = { menuOpen = false; onPause() },
-                        )
+                        when (executionState) {
+                            ExecutionControlState.Active -> DropdownMenuItem(
+                                text = { Text("Pause") },
+                                leadingIcon = { Icon(Icons.Outlined.Pause, contentDescription = null) },
+                                onClick = { menuOpen = false; onPause() },
+                            )
+                            ExecutionControlState.Paused -> DropdownMenuItem(
+                                text = { Text("Resume") },
+                                leadingIcon = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
+                                onClick = { menuOpen = false; onResume() },
+                            )
+                            null -> Unit
+                        }
                     }
                     DropdownMenuItem(
                         text = { Text("Delete") },

@@ -52,6 +52,9 @@ enum class TimelineScale { Day, Week, Month, List }
 enum class TilesTab { LIST, TIMELINE, CHANGES }
 
 enum class TileRange { ALL, TODAY, RECENT, EXCLUDE_FUTURE }
+
+/** Authoritative v1 execution state available for a started tile's controls. */
+enum class ExecutionControlState { Active, Paused }
 enum class TileGranularity { ALL, NO_BREAKS, MIN_5M, MIN_15M, MIN_30M }
 enum class ListGroupingMode { STATE, PROJECT, TAG }
 enum class ListViewMode { COMPACT, COMFORTABLE, DETAILED }
@@ -117,6 +120,9 @@ class DashboardViewModel @Inject constructor(
     private val _nextActionableStartAt = MutableStateFlow<String?>(null)
     val nextActionableStartAt: StateFlow<String?> = _nextActionableStartAt.asStateFlow()
 
+    private val _executionControlStates = MutableStateFlow<Map<String, ExecutionControlState>>(emptyMap())
+    val executionControlStates: StateFlow<Map<String, ExecutionControlState>> = _executionControlStates.asStateFlow()
+
     fun setTileFilter(filter: TileFilter) {
         _tileFilter.value = filter
     }
@@ -148,6 +154,10 @@ class DashboardViewModel @Inject constructor(
 
     internal fun replaceTilesForTest(list: List<Tile>) {
         _tiles.value = list
+    }
+
+    internal fun replaceExecutionControlStatesForTest(states: Map<String, ExecutionControlState>) {
+        _executionControlStates.value = states
     }
 
     private val _profile = MutableStateFlow<Profile?>(null)
@@ -538,11 +548,13 @@ class DashboardViewModel @Inject constructor(
                         _tiles.value = response.tiles
                         _nextActionableTileId.value = response.nextActionableTileId
                         _nextActionableStartAt.value = response.nextActionableStartAt
+                        refreshExecutionControlStates(response.tiles)
                         _statsDiagnostics.value = tileRepository.latestReadDiagnostics()
                     } else {
                         _tiles.value = emptyList()
                         _nextActionableTileId.value = null
                         _nextActionableStartAt.value = null
+                        _executionControlStates.value = emptyMap()
                         _statsDiagnostics.value = "source=none reason=unauthenticated"
                     }
                 }
@@ -652,6 +664,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.pauseTile(tileId)
+                _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Paused)
                 _lastActionMessage.value = "Paused"
                 refreshAll()
             } catch (e: Exception) {
@@ -664,11 +677,34 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.continueTile(tileId)
+                _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Active)
                 _lastActionMessage.value = "Resumed"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to resume execution"
             }
+        }
+    }
+
+    private fun refreshExecutionControlStates(tiles: List<Tile>) {
+        val startedIds = tiles.filter { it.isStarted() }.map { it.id }.toSet()
+        if (startedIds.isEmpty()) {
+            _executionControlStates.value = emptyMap()
+            return
+        }
+        viewModelScope.launch {
+            val refreshed = startedIds.mapNotNull { tileId ->
+                when (tileRepository.executionStateForTile(tileId)) {
+                    0 -> tileId to ExecutionControlState.Active
+                    1 -> tileId to ExecutionControlState.Paused
+                    else -> null
+                }
+            }.toMap()
+            // Retain a just-paused execution while its authoritative execution
+            // read is refreshed; v1's active-tile route intentionally omits it.
+            _executionControlStates.value = _executionControlStates.value
+                .filterKeys { it in startedIds }
+                .plus(refreshed)
         }
     }
 
