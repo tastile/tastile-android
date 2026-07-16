@@ -311,7 +311,7 @@ private fun updateTimeRequirement(
 }
 
 private fun defaultTermValue(kind: String): JsonObject = when (kind) {
-    "calendar" -> termValue(kind, mapOf("weekdayMask" to JsonPrimitive(0), "timeStart" to JsonNull, "timeEnd" to JsonNull, "holidayKind" to JsonPrimitive(0), "dateRange" to JsonNull, "offsetMin" to JsonPrimitive(0)))
+    "calendar" -> termValue(kind, mapOf("weekdayMask" to JsonPrimitive(0), "timeStart" to JsonNull, "timeEnd" to JsonNull, "holidayKind" to JsonPrimitive(2), "dateRange" to JsonNull, "offsetMin" to JsonPrimitive(0)))
     "moment" -> termValue(kind, mapOf("referenceId" to JsonNull, "point" to JsonNull, "offsetMs" to JsonPrimitive(0)))
     "relation" -> termValue(kind, mapOf("referenceId" to JsonPrimitive(""), "relation" to JsonPrimitive(0), "windowKind" to JsonPrimitive(0)))
     "gap" -> termValue(kind, mapOf(

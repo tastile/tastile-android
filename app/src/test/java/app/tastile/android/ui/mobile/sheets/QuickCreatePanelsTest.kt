@@ -175,6 +175,9 @@ class QuickCreatePanelsTest {
             val term = store.state.value.plan.completion.root.children.first().term!!.jsonObject
             assertTrue("$kind must have a value object", term["value"] is kotlinx.serialization.json.JsonObject)
             assertTrue("$kind must only expose kind and value", term.keys == setOf("kind", "value"))
+            if (kind == "calendar") {
+                assertTrue(term["value"]?.jsonObject?.get("holidayKind")?.jsonPrimitive?.content == "2")
+            }
         }
     }
 
