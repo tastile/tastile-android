@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -77,7 +78,14 @@ fun AppPrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-) = Button(onClick = onClick, modifier = modifier, enabled = enabled) { Text(text) }
+    leadingIcon: ImageVector? = null,
+) = Button(onClick = onClick, modifier = modifier, enabled = enabled) {
+    if (leadingIcon != null) {
+        Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(MobileSpacing.xs))
+    }
+    Text(text)
+}
 
 /** Secondary CTA. Important secondary actions. */
 @Composable
@@ -86,7 +94,14 @@ fun AppSecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-) = FilledTonalButton(onClick = onClick, modifier = modifier, enabled = enabled) { Text(text) }
+    leadingIcon: ImageVector? = null,
+) = FilledTonalButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+    if (leadingIcon != null) {
+        Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(MobileSpacing.xs))
+    }
+    Text(text)
+}
 
 /** Tertiary CTA. Cancellation, alternate actions. */
 @Composable
@@ -95,7 +110,14 @@ fun AppTertiaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-) = OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled) { Text(text) }
+    leadingIcon: ImageVector? = null,
+) = OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+    if (leadingIcon != null) {
+        Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(MobileSpacing.xs))
+    }
+    Text(text)
+}
 
 /** Quaternary CTA. Dismiss / "learn more" only. */
 @Composable
@@ -104,7 +126,14 @@ fun AppDismissButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-) = TextButton(onClick = onClick, modifier = modifier, enabled = enabled) { Text(text) }
+    leadingIcon: ImageVector? = null,
+) = TextButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+    if (leadingIcon != null) {
+        Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(MobileSpacing.xs))
+    }
+    Text(text)
+}
 
 /**
  * Button-shaped input. Replaces OutlinedTextField for constrained values
