@@ -13,7 +13,7 @@ class UserSettingsRepository @Inject constructor(
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun getThemeMode(): ThemeMode {
-        val raw = prefs.getString(KEY_THEME, ThemeMode.DARK.value) ?: ThemeMode.DARK.value
+        val raw = prefs.getString(KEY_THEME, ThemeMode.SYSTEM.value) ?: ThemeMode.SYSTEM.value
         return ThemeMode.from(raw)
     }
 
