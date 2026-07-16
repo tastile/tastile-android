@@ -24,7 +24,12 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.data.api.V1ApiClient
+import app.tastile.android.data.repository.WorkspaceRepository
+import app.tastile.android.ui.mobile.panels.ProjectsViewModel
+import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateSubmissionViewModel
 import kotlinx.coroutines.cancel
 import org.junit.After
 import org.junit.Rule
@@ -37,13 +42,23 @@ class QuickCreateSheetMobileTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val viewModels = mutableListOf<DashboardViewModel>()
+    private val viewModels = mutableListOf<ViewModel>()
 
     @After
     fun tearDown() {
         viewModels.forEach { it.viewModelScope.cancel() }
         viewModels.clear()
     }
+
+    private fun newProjectsViewModel(): ProjectsViewModel {
+        val workspaceRepository = mockk<WorkspaceRepository>()
+        coEvery { workspaceRepository.list() } returns emptyList()
+        return ProjectsViewModel(workspaceRepository).also { viewModels.add(it) }
+    }
+
+    private fun newSubmissionViewModel(): QuickCreateSubmissionViewModel =
+        QuickCreateSubmissionViewModel(mockk<V1ApiClient>(relaxed = true))
+            .also { viewModels.add(it) }
 
     private fun newDashboardViewModel(): DashboardViewModel {
         val authRepo = mockk<AuthRepository>(relaxed = true)
@@ -72,11 +87,15 @@ class QuickCreateSheetMobileTest {
     fun `QuickCreateSheetMobile shows Quick Create title when overlay is QuickCreate`() {
         val overlay = OverlayViewModel()
         val vm = newDashboardViewModel()
+        val projectsVm = newProjectsViewModel()
+        val submissionVm = newSubmissionViewModel()
 
         rule.setContent {
             QuickCreateSheetMobile(
                 overlay = overlay,
                 dashboardViewModel = vm,
+                projectsViewModel = projectsVm,
+                submissionViewModel = submissionVm,
             )
         }
         rule.waitForIdle()
@@ -95,11 +114,16 @@ class QuickCreateSheetMobileTest {
     @Test
     fun `QuickCreateSheetMobile does not show Quick Create when overlay is Hidden`() {
         val overlay = OverlayViewModel() // starts Hidden
+        val dashboardVm = newDashboardViewModel()
+        val projectsVm = newProjectsViewModel()
+        val submissionVm = newSubmissionViewModel()
 
         rule.setContent {
             QuickCreateSheetMobile(
                 overlay = overlay,
-                dashboardViewModel = newDashboardViewModel(),
+                dashboardViewModel = dashboardVm,
+                projectsViewModel = projectsVm,
+                submissionViewModel = submissionVm,
             )
         }
 

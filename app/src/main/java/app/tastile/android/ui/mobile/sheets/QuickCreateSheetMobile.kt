@@ -21,20 +21,22 @@ import java.time.Instant
 fun QuickCreateSheetMobile(
     overlay: OverlayViewModel,
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
-    projectsViewModel: ProjectsViewModel = hiltViewModel(),
-    submissionViewModel: QuickCreateSubmissionViewModel = hiltViewModel(),
+    projectsViewModel: ProjectsViewModel? = null,
+    submissionViewModel: QuickCreateSubmissionViewModel? = null,
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
-    val projectsState by projectsViewModel.state.collectAsStateWithLifecycle()
     val tiles by dashboardViewModel.tiles.collectAsStateWithLifecycle()
-    val submission by submissionViewModel.state.collectAsStateWithLifecycle()
-    val knownTags = tiles.flatMap { it.labels }
-        .filter { it.isNotBlank() && !it.startsWith("project:") }
-        .map(String::trim)
-        .distinct()
-        .sortedBy { it.lowercase() }
 
     if (current is Overlay.QuickCreate || current is Overlay.QuickCreateAt) {
+        val resolvedProjectsViewModel = projectsViewModel ?: hiltViewModel()
+        val resolvedSubmissionViewModel = submissionViewModel ?: hiltViewModel()
+        val projectsState by resolvedProjectsViewModel.state.collectAsStateWithLifecycle()
+        val submission by resolvedSubmissionViewModel.state.collectAsStateWithLifecycle()
+        val knownTags = tiles.flatMap { it.labels }
+            .filter { it.isNotBlank() && !it.startsWith("project:") }
+            .map(String::trim)
+            .distinct()
+            .sortedBy { it.lowercase() }
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val initialDraft = (current as? Overlay.QuickCreateAt)?.let { slot ->
             QuickCreateDraftState(
@@ -50,7 +52,7 @@ fun QuickCreateSheetMobile(
             if (submission.createdTileId != null) {
                 quickCreateStore.reset()
                 dashboardViewModel.refreshAll()
-                submissionViewModel.consumeCreatedTile()
+                resolvedSubmissionViewModel.consumeCreatedTile()
                 overlay.dismiss()
             }
         }
@@ -62,7 +64,7 @@ fun QuickCreateSheetMobile(
             QuickCreatePanelContent(
                 store = quickCreateStore,
                 onClose = { overlay.dismiss() },
-                onSubmit = submissionViewModel::submit,
+                onSubmit = resolvedSubmissionViewModel::submit,
                 isSubmitting = submission.isSubmitting,
                 submitError = submission.error,
                 projects = projectsState.workspaces.map { QuickCreateProject(it.id, it.displayName) },
