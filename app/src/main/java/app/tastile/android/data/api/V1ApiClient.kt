@@ -331,28 +331,32 @@ class V1ApiClient @Inject constructor(
         }
     }
 
-    /**
-     * Issues a DELETE request to the v1 endpoint. Mirrors [postCommand]'s shape but
-     * with no body — used for `tile.delete` (`DELETE /v1/tiles/{id}`). The
-     * endpoint still returns a `CommandResponse` envelope, which is decoded via
-     * the supplied [responseSerializer].
-     */
-    suspend fun <Resp> deleteCommand(
+    /** Sends a v1 CommandEnvelope DELETE. Tile archive succeeds with 204. */
+    suspend fun <Req> deleteCommand(
         path: String,
-        responseSerializer: KSerializer<Resp>
-    ): Resp = withContext(Dispatchers.IO) {
+        payload: Req,
+        payloadSerializer: KSerializer<Req>,
+        expectedRevision: Long? = null,
+    ) = withContext(Dispatchers.IO) {
         try {
             val token = tokenProvider()
             if (token.isNullOrBlank()) throw V1Error.Auth()
             val url = URL("${baseUrl()}$path")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "DELETE"
+                doOutput = true
                 doInput = true
                 setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Accept", "application/json")
                 connectTimeout = 15_000
                 readTimeout = 15_000
             }
+            val envelope = V1Wire.commandEnvelope(
+                payload = json.encodeToJsonElement(payloadSerializer, payload),
+                expectedRevision = expectedRevision,
+            )
+            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
             val status = connection.responseCode
             val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
                 ?.bufferedReader()?.use { it.readText() }
@@ -362,7 +366,7 @@ class V1ApiClient @Inject constructor(
                 if (err != null) throw V1Error.fromApiBody(err)
                 throw V1Error.Unknown(status, body.take(200))
             }
-            json.decodeFromString(responseSerializer, body)
+            Unit
         } catch (e: IOException) {
             throw V1Error.Network(e)
         }

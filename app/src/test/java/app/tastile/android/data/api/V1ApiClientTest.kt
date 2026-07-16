@@ -78,6 +78,19 @@ class V1ApiClientTest {
     }
 
     @Test
+    fun delete_archive_envelope_matches_web_contract() {
+        val body = V1Wire.commandEnvelope(
+            payload = buildJsonObject { put("tile_id", "tile-1") },
+            idempotencyKey = "018f4a7c-4f7a-7000-8000-000000000001",
+            occurredAt = "2026-07-15T00:00:00Z",
+        )
+
+        assertTrue(body["expected_revision"] is JsonNull)
+        assertEquals("tile-1", body["payload"]!!.jsonObject["tile_id"]!!.jsonPrimitive.content)
+        assertEquals("2026-07-15T00:00:00Z", body["occurred_at"]!!.jsonPrimitive.content)
+    }
+
+    @Test
     fun tile_creation_paths_match_web_v1_contract() {
         assertEquals("/v1/tiles", V1Endpoints.CREATE_TILE)
         assertEquals("/v1/tiles/tile-1/plan", V1Endpoints.setPlan("tile-1"))

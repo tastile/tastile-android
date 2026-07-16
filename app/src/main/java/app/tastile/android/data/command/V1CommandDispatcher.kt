@@ -98,11 +98,12 @@ class V1CommandDispatcher @Inject constructor(
 
     suspend fun dispatchTileDelete(tileId: String): CoreCommandAck? {
         return runCatching {
-            val response = v1ApiClient.deleteCommand(
+            v1ApiClient.deleteCommand(
                 path = "/v1/tiles/$tileId",
-                responseSerializer = CommandResponse.serializer()
+                payload = ArchiveTilePayload(tileId),
+                payloadSerializer = ArchiveTilePayload.serializer(),
             )
-            response.toCoreAck()
+            CoreCommandResponse(accepted = true, requestId = null, commandId = null, eventIds = emptyList(), metadata = buildJsonObject { put("tileId", JsonPrimitive(tileId)) }, error = null)
         }.recover { error ->
             logFailure("tile.delete", error)
             null

@@ -3,6 +3,7 @@ package app.tastile.android.data.command
 import app.tastile.android.core.CoreCommandAck
 import app.tastile.android.data.api.AggregateRef
 import app.tastile.android.data.api.AppendChangesPayload
+import app.tastile.android.data.api.ArchiveTilePayload
 import app.tastile.android.data.api.SetTileLifecyclePayload
 import app.tastile.android.data.api.CommandResponse
 import app.tastile.android.data.api.PendingWork
@@ -138,15 +139,25 @@ class V1CommandDispatcherTest {
     fun dispatchTileDelete_callsDeleteEndpoint() = runTest {
         val apiClient = newApiClient()
         coEvery {
-            apiClient.deleteCommand(path = "/v1/tiles/t-123", responseSerializer = any<KSerializer<Any>>())
-        } returns okResponse(tileId = "t-123")
+            apiClient.deleteCommand(path = "/v1/tiles/t-123", payload = any<Any>(), payloadSerializer = any<KSerializer<Any>>(), expectedRevision = null)
+        } returns Unit
 
+        val payload = slot<ArchiveTilePayload>()
         val dispatcher = V1CommandDispatcher(apiClient)
         val ack = dispatcher.dispatchTileDelete("t-123")
 
         assertNotNull(ack)
+        coVerify {
+            apiClient.deleteCommand(
+                path = "/v1/tiles/t-123",
+                payload = capture(payload),
+                payloadSerializer = any<KSerializer<Any>>(),
+                expectedRevision = null,
+            )
+        }
+        assertEquals("t-123", payload.captured.tileId)
         coVerify(exactly = 1) {
-            apiClient.deleteCommand(path = "/v1/tiles/t-123", responseSerializer = any<KSerializer<Any>>())
+            apiClient.deleteCommand(path = "/v1/tiles/t-123", payload = any<Any>(), payloadSerializer = any<KSerializer<Any>>(), expectedRevision = null)
         }
     }
 
