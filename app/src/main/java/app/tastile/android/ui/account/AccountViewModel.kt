@@ -44,7 +44,7 @@ class AccountViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
             try {
-                val authState = authRepository.getAuthStateStream.value as? TastileAuthState.Authenticated
+                val authState = authRepository.authState.value as? TastileAuthState.Authenticated
                 val legacySession = authRepository.currentSession
                 val userId = authState?.userId ?: legacySession.readNestedString("user", "id")
                 

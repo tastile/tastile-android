@@ -27,7 +27,7 @@ data class RuntimePathsResponse(
 )
 
 @Singleton
-class DefaultIntegrationRepository @Inject constructor(
+class IntegrationRepository @Inject constructor(
     private val currentUserProvider: CurrentUserProvider,
     private val v1ApiClient: V1ApiClient,
 ) {

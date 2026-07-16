@@ -24,7 +24,7 @@ import javax.inject.Singleton
  *   DELETE /v1/access/subjects/{id}        → delete
  */
 @Singleton
-class DefaultWorkspaceRepository @Inject constructor(
+class WorkspaceRepository @Inject constructor(
     private val v1ApiClient: V1ApiClient,
 ) {
     suspend fun list(): List<Workspace> =

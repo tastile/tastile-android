@@ -320,7 +320,7 @@ class DashboardViewModel @Inject constructor(
      * Mirrors `tastile-web/src/lib/stores/reference-overlay-store.ts`. C6
      * binds this to a `Switch` row per unique label inside the mobile panel.
      */
-    val referenceOverlayEnabled: StateFlow<Set<String>> = referenceOverlayStore.getEnabledStream
+    val referenceOverlayEnabled: StateFlow<Set<String>> = referenceOverlayStore.enabled
 
     fun toggleReference(label: String) {
         viewModelScope.launch { referenceOverlayStore.toggle(label) }
@@ -546,14 +546,14 @@ class DashboardViewModel @Inject constructor(
                 }
         }
         viewModelScope.launch {
-            authRepository.getAuthStateStream.collect { state ->
+            authRepository.authState.collect { state ->
                 if (state is TastileAuthState.Authenticated) {
                     refreshTimeline()
                 }
             }
         }
         viewModelScope.launch {
-            combine(authRepository.getAuthStateStream, _tileFilter) { state, filter -> state to filter }
+            combine(authRepository.authState, _tileFilter) { state, filter -> state to filter }
                 .distinctUntilChanged()
                 .collect { (state, filter) ->
                     val userId = (state as? TastileAuthState.Authenticated)?.userId
@@ -593,7 +593,7 @@ class DashboardViewModel @Inject constructor(
             _loading.value = true
             _error.value = null
             try {
-                val authState = authRepository.getAuthStateStream.value as? TastileAuthState.Authenticated
+                val authState = authRepository.authState.value as? TastileAuthState.Authenticated
                 val legacySession = authRepository.currentSession
                 val userId = authState?.userId ?: legacySession.readNestedString("user", "id")
                 _email.value = authState?.email ?: legacySession.readNestedString("user", "email").orEmpty()

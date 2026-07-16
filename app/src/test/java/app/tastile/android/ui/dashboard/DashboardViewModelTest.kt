@@ -63,7 +63,7 @@ class DashboardViewModelTest {
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
-        every { authRepository.getAuthStateStream } returns MutableStateFlow(TastileAuthState.Unauthenticated)
+        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
@@ -232,7 +232,7 @@ class DashboardViewModelTest {
     fun authoritativeExecutionRefresh_clearsUnvalidatedPausedState() = runTest {
         val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         val authState = MutableStateFlow<TastileAuthState>(TastileAuthState.Authenticated("user-1", "user@example.test", "id-token", "access-token", null))
-        every { authRepository.getAuthStateStream } returns authState
+        every { authRepository.authState } returns authState
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
             listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
             null,
@@ -400,7 +400,7 @@ class DashboardViewModelTest {
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
-        every { authRepository.getAuthStateStream } returns MutableStateFlow(TastileAuthState.Unauthenticated)
+        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
