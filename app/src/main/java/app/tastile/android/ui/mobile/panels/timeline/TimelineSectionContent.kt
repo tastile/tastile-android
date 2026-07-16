@@ -20,21 +20,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.component.NiaOutlinedTextField
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineSubScale
-import app.tastile.android.ui.designsystem.AppTheme
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
-import app.tastile.android.ui.mobile.designsystem.SectionHeader
+import app.tastile.android.ui.mobile.components.AppSectionHeader
 
 /**
  * Timeline pane body. Mirrors web `/dashboard/timeline` surface in
  * `tastile-web/src/app/dashboard/timeline/page.tsx` (composition order
  * binding per plan R1):
  *
- *   1. SectionHeader(title = "Calendar")
+ *   1. AppSectionHeader(title = "Calendar")
  *   2. Meta-pills row (blocks · work · breaks)
  *   3. 4-tab pill scale selector (Day / Week / Month / Custom)
- *   4. (Custom only) Two date inputs for the custom range
+ *   4. (Custom only) Two read-only date inputs for the custom range
  *   5. Loading overlay while refreshing
  *   6. Empty state OR timeline block list
  *
@@ -54,10 +53,10 @@ internal fun TimelineSectionContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = MobileSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        SectionHeader(title = "Calendar")
+        AppSectionHeader(title = "Calendar")
 
         TimelineMetaPills(
             model = computeMetaPills(timeline),
@@ -102,24 +101,28 @@ private fun CustomDateRow(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = "${startIso ?: "—"}  →  ${endIso ?: "—"}",
-            style = MaterialTheme.typography.labelSmall,
-            color = AppTheme.colors.onSurfaceVariant,
-        )
         // Date picker dialogs intentionally deferred — the existing
         // v1 /v1/timeline endpoint accepts ISO-8601 instants, so the
         // initial release uses the day's pill selector for non-custom
-        // scales. Custom range in this release is a stub row showing
-        // the active ISO strings; Material3 DatePickerDialog wiring is
-        // tracked as a follow-up so this PR stays under the closed-test
-        // deadline.
-        Text(
-            text = "setCustomRange hook · ${onStartChange.hashCode()}/${onEndChange.hashCode()}",
-            style = MaterialTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
+        // scales. Custom range in this release shows the active ISO
+        // strings via two read-only NiaOutlinedTextFields; wiring up
+        // interactive DatePickerDialog is tracked as a follow-up so
+        // this PR stays under the closed-test deadline.
+        NiaOutlinedTextField(
+            readOnly = true,
+            label = { Text("Start") },
+            value = startIso ?: "—",
+            onValueChange = { onStartChange(it) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        NiaOutlinedTextField(
+            readOnly = true,
+            label = { Text("End") },
+            value = endIso ?: "—",
+            onValueChange = { onEndChange(it) },
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -129,18 +132,18 @@ private fun TimelineLoadingOverlay() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = MobileSpacing.md),
+            .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             CircularProgressIndicator(modifier = Modifier.padding(4.dp))
             Text(
                 text = stringResource(R.string.panels_timeline_loading),
                 style = MaterialTheme.typography.bodySmall,
-                color = AppTheme.colors.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

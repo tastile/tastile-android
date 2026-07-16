@@ -1,5 +1,24 @@
 package app.tastile.android.ui.mobile.tabs
 
+import androidx.compose.foundation.clickable
+// m2-allow: m3-component
+import androidx.compose.material3.AlertDialog
+// m2-allow: m3-component
+import androidx.compose.material3.Button
+// m2-allow: m3-component
+import androidx.compose.material3.DropdownMenu
+// m2-allow: m3-component
+import androidx.compose.material3.DropdownMenuItem
+// m2-allow: primitive
+import androidx.compose.material3.Icon
+// m2-allow: m3-component
+import androidx.compose.material3.IconButton
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
+import androidx.compose.material3.OutlinedButton
+// m2-allow: primitive
+import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,54 +33,41 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
-// m2-allow: m3-component
-import androidx.compose.material3.AlertDialog
-// m2-allow: m3-component
-import androidx.compose.material3.Button
-// m2-allow: m3-component
-import androidx.compose.material3.DropdownMenu
-// m2-allow: m3-component
-import androidx.compose.material3.DropdownMenuItem
-// m2-allow: primitive
-import androidx.compose.material3.Icon
-// m2-allow: m3-component
-import androidx.compose.material3.IconButton
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedButton
-// m2-allow: primitive
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.AppTheme
+import app.tastile.android.core.designsystem.component.MobileSpacing
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaCard
+import app.tastile.android.core.designsystem.component.NiaListItem
+import app.tastile.android.core.designsystem.component.NiaLoadingWheel
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.dashboard.isStarted
-import app.tastile.android.ui.designsystem.AppCenteredLoading
-import app.tastile.android.ui.designsystem.AppEmptyState
-import app.tastile.android.ui.designsystem.AppListRow
-import app.tastile.android.ui.designsystem.AppOutlinedPanel
-import app.tastile.android.ui.designsystem.AppPageColumn
-import app.tastile.android.ui.designsystem.AppSectionHeader
-import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.designsystem.AppListItem
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
+
+private val MobSpacingXs get() = MobileSpacing.xs
+private val MobSpacingSm get() = MobileSpacing.sm
 
 @Composable
 fun ExecuteScreen(
@@ -80,7 +86,9 @@ fun ExecuteScreen(
     var executionActionCandidate by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
 
     if (loading && tiles.isEmpty()) {
-        AppCenteredLoading()
+        Box(modifier = Modifier.fillMaxWidth()) {
+            NiaLoadingWheel(contentDesc = "Loading")
+        }
         return
     }
 
@@ -90,11 +98,13 @@ fun ExecuteScreen(
         TileLifecycle.fromString(tile.lifecycle) != TileLifecycle.DONE
     }
 
-    AppPageColumn {
+    Column(modifier = Modifier.fillMaxWidth().padding(MobSpacingSm)) {
         error?.let { message ->
-            Text(text = message, color = AppTheme.colors.error)
+            Text(text = message, color = MaterialTheme.colorScheme.error)
         }
-        actionMessage?.let { message -> Text(text = message, color = AppTheme.colors.primary) }
+        actionMessage?.let { message ->
+            Text(text = message, color = MaterialTheme.colorScheme.primary)
+        }
         active?.let {
             ActiveTileHero(
                 tile = it,
@@ -106,14 +116,29 @@ fun ExecuteScreen(
             )
         }
 
-        AppSectionHeader(text = if (showable.isEmpty()) "Nothing to do — create a tile" else "Today and ready")
+        Text(
+            text = if (showable.isEmpty()) "Nothing to do — create a tile" else "Today and ready",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = MobSpacingSm),
+        )
 
         if (showable.isEmpty()) {
-            AppEmptyState(
-                message = "No tiles for today.",
-                actionLabel = "Create",
-                onAction = { overlay.show(Overlay.QuickCreate) },
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(MobSpacingSm),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    "No tiles for today.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                NiaButton(
+                    onClick = { overlay.show(Overlay.QuickCreate) },
+                    text = { Text("Create") },
+                    modifier = Modifier.padding(top = MobSpacingSm),
+                )
+            }
         } else {
             showable.forEach { tile ->
                 TileActionRow(
@@ -145,28 +170,50 @@ fun ExecuteScreen(
             onCancel = { viewModel.setDeleteTileCandidate(null) },
         )
     }
-    deferCandidate?.let { id -> DeferTileDialog(tiles.firstOrNull { it.id == id }?.title, viewModel::confirmDeferTile) { viewModel.setDeferTileCandidate(null) } }
-    promptCandidate?.let { id -> PromptRequestDialog(tiles.firstOrNull { it.id == id }?.title, viewModel::confirmPromptTile) { viewModel.setPromptTileCandidate(null) } }
+    deferCandidate?.let { id ->
+        DeferTileDialog(
+            tileTitle = tiles.firstOrNull { it.id == id }?.title,
+            onConfirm = viewModel::confirmDeferTile,
+            onCancel = { viewModel.setDeferTileCandidate(null) },
+        )
+    }
+    promptCandidate?.let { id ->
+        PromptRequestDialog(
+            tileTitle = tiles.firstOrNull { it.id == id }?.title,
+            onConfirm = viewModel::confirmPromptTile,
+            onCancel = { viewModel.setPromptTileCandidate(null) },
+        )
+    }
     executionActionCandidate?.let { (tileId, start) ->
         AlertDialog(
             onDismissRequest = { executionActionCandidate = null },
             title = { Text(if (start) "Start execution?" else "Finish execution?") },
-            text = { Text(if (start) "Start work on this existing occurrence." else "Finish this execution without completing the tile.") },
+            text = {
+                Text(
+                    if (start) "Start work on this existing occurrence."
+                    else "Finish this execution without completing the tile.",
+                )
+            },
             confirmButton = {
-                AppPrimaryButton(
-                    text = if (start) "Start" else "Finish",
+                NiaButton(
                     onClick = {
                         if (start) viewModel.startExecution(tileId) else viewModel.finishExecution(tileId)
                         executionActionCandidate = null
                     },
-                    leadingIcon = if (start) Icons.Outlined.PlayArrow else Icons.Outlined.Flag,
+                    text = { Text(if (start) "Start" else "Finish") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (start) Icons.Outlined.PlayArrow else Icons.Outlined.Flag,
+                            contentDescription = null,
+                        )
+                    },
                 )
             },
             dismissButton = {
-                AppTertiaryButton(
-                    text = "Cancel",
+                NiaTextButton(
                     onClick = { executionActionCandidate = null },
-                    leadingIcon = Icons.Outlined.Close,
+                    text = { Text("Cancel") },
+                    leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
                 )
             },
         )
@@ -182,43 +229,50 @@ private fun ActiveTileHero(
     onFinishExecution: () -> Unit,
     viewModel: DashboardViewModel,
 ) {
-    AppOutlinedPanel {
-        Text(
-            text = "▶ ${tile.title}",
-            style = AppTheme.typography.titleMedium,
-        )
-        tile.nextAction?.takeIf { it.isNotBlank() }?.let { next ->
-            AppListItem(
-                headline = stringResource(R.string.execute_next_label, next),
-                leading = Icons.Outlined.PlayArrow,
-                trailing = Icons.Outlined.ChevronRight,
-                onClick = { /* start-execution for the active tile is wired above via the AppOutlinedPanel actions */ },
-                modifier = Modifier.padding(top = MobileSpacing.sm),
+    NiaCard(modifier = Modifier.padding(vertical = MobSpacingSm)) {
+        Column(modifier = Modifier.padding(MobSpacingSm)) {
+            Text(
+                text = "▶ ${tile.title}",
+                style = MaterialTheme.typography.titleMedium,
             )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
-            Button(onClick = { viewModel.completeTile(tile.id) }) { Text("Complete") }
-            when (executionState) {
-                ExecutionControlState.Active -> OutlinedButton(
-                    onClick = { viewModel.pauseTile(tile.id) },
-                    enabled = !executionControlInFlight,
-                    modifier = Modifier.testTag("execute-pause-${tile.id}"),
-                ) { Text("Pause") }
-                ExecutionControlState.Paused -> OutlinedButton(
-                    onClick = { viewModel.resumeTile(tile.id) },
-                    enabled = !executionControlInFlight,
-                    modifier = Modifier.testTag("execute-resume-${tile.id}"),
-                ) { Text("Resume") }
-                null -> OutlinedButton(
-                    onClick = onStartExecution,
-                    enabled = !executionControlInFlight,
-                ) { Text("Start execution") }
+            tile.nextAction?.takeIf { it.isNotBlank() }?.let { next ->
+                NiaListItem(
+                    headlineContent = {
+                        Text(stringResource(R.string.execute_next_label, next))
+                    },
+                    leadingContent = {
+                        Icon(Icons.Outlined.PlayArrow, contentDescription = null)
+                    },
+                    trailingContent = {
+                        Icon(Icons.Outlined.ChevronRight, contentDescription = null)
+                    },
+                    modifier = Modifier.padding(top = MobSpacingXs),
+                )
             }
-            if (executionState != null) {
-                OutlinedButton(
-                    onClick = onFinishExecution,
-                    enabled = !executionControlInFlight,
-                ) { Text("Finish execution") }
+            Row(horizontalArrangement = Arrangement.spacedBy(MobSpacingXs)) {
+                Button(onClick = { viewModel.completeTile(tile.id) }) { Text("Complete") }
+                when (executionState) {
+                    ExecutionControlState.Active -> OutlinedButton(
+                        onClick = { viewModel.pauseTile(tile.id) },
+                        enabled = !executionControlInFlight,
+                        modifier = Modifier.testTag("execute-pause-${tile.id}"),
+                    ) { Text("Pause") }
+                    ExecutionControlState.Paused -> OutlinedButton(
+                        onClick = { viewModel.resumeTile(tile.id) },
+                        enabled = !executionControlInFlight,
+                        modifier = Modifier.testTag("execute-resume-${tile.id}"),
+                    ) { Text("Resume") }
+                    null -> OutlinedButton(
+                        onClick = onStartExecution,
+                        enabled = !executionControlInFlight,
+                    ) { Text("Start execution") }
+                }
+                if (executionState != null) {
+                    OutlinedButton(
+                        onClick = onFinishExecution,
+                        enabled = !executionControlInFlight,
+                    ) { Text("Finish execution") }
+                }
             }
         }
     }
@@ -249,10 +303,12 @@ private fun TileActionRow(
     }
     var menuOpen by remember { mutableStateOf(false) }
 
-    AppListRow(
-        label = tile.title,
-        leading = { Text(glyph, style = AppTheme.typography.bodyMedium) },
-        trailing = {
+    NiaListItem(
+        headlineContent = { Text(tile.title) },
+        leadingContent = {
+            Text(glyph, style = MaterialTheme.typography.bodyMedium)
+        },
+        trailingContent = {
             Box {
                 IconButton(onClick = { menuOpen = true }) {
                     Icon(Icons.Outlined.MoreVert, contentDescription = "More actions")
@@ -265,7 +321,10 @@ private fun TileActionRow(
                             onClick = { menuOpen = false; onStart() },
                         )
                         DropdownMenuItem(text = { Text("Defer") }, onClick = { menuOpen = false; onDefer() })
-                        DropdownMenuItem(text = { Text("Request prompt") }, onClick = { menuOpen = false; onPrompt() })
+                        DropdownMenuItem(
+                            text = { Text("Request prompt") },
+                            onClick = { menuOpen = false; onPrompt() },
+                        )
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
                         DropdownMenuItem(
@@ -307,7 +366,9 @@ private fun TileActionRow(
                 }
             }
         },
-        onClick = onTap,
-        description = "${lifecycle.name}: ${tile.title}",
+        modifier = Modifier
+            .testTag("execute-tile-${tile.id}")
+            .clickable(onClick = onTap)
+            .semantics { contentDescription = "${lifecycle.name}: ${tile.title}" },
     )
 }

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.foundation.text.KeyboardOptions
 // m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
 // m2-allow: primitive
@@ -21,6 +22,8 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 // m2-allow: m3-component
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,9 +33,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import app.tastile.android.ui.designsystem.AppTheme
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -73,8 +77,8 @@ fun DeferTileDialog(
         onDismissRequest = onCancel,
         title = { Text("Defer tile") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
-                tileTitle?.let { Text(it, style = AppTheme.typography.bodyMedium) }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                tileTitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().testTag("defer-mode")) {
                     SegmentedButton(
                         selected = !relative,
@@ -98,6 +102,7 @@ fun DeferTileDialog(
                         value = minutes,
                         onValueChange = { minutes = it; inputError = null },
                         label = { Text("Minutes") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.testTag("defer-duration-minutes"),
                     )
                 } else {
@@ -114,22 +119,22 @@ fun DeferTileDialog(
                         modifier = Modifier.testTag("defer-time"),
                     )
                 }
-                inputError?.let { Text(it, color = AppTheme.colors.error) }
+                inputError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         },
         confirmButton = {
-            AppPrimaryButton(
-                text = "Confirm",
+            NiaButton(
                 onClick = { resolve()?.let(onConfirm) },
-                leadingIcon = Icons.Outlined.Check,
                 modifier = Modifier.testTag("defer-confirm"),
+                text = { Text("Confirm") },
+                leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
             )
         },
         dismissButton = {
-            AppTertiaryButton(
-                text = "Cancel",
+            NiaTextButton(
                 onClick = onCancel,
-                leadingIcon = Icons.Outlined.Close,
+                text = { Text("Cancel") },
+                leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
             )
         },
         modifier = Modifier.testTag("defer-dialog"),
@@ -144,18 +149,18 @@ fun PromptRequestDialog(tileTitle: String?, onConfirm: () -> Unit, onCancel: () 
         title = { Text("Request prompt?") },
         text = { Text("Create a decision prompt for ${tileTitle ?: "this tile"}.") },
         confirmButton = {
-            AppPrimaryButton(
-                text = "Request",
+            NiaButton(
                 onClick = onConfirm,
-                leadingIcon = Icons.Outlined.Send,
                 modifier = Modifier.testTag("prompt-request-confirm"),
+                text = { Text("Request") },
+                leadingIcon = { Icon(Icons.Outlined.Send, contentDescription = null) },
             )
         },
         dismissButton = {
-            AppTertiaryButton(
-                text = "Cancel",
+            NiaTextButton(
                 onClick = onCancel,
-                leadingIcon = Icons.Outlined.Close,
+                text = { Text("Cancel") },
+                leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
             )
         },
         modifier = Modifier.testTag("prompt-request-dialog"),

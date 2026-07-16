@@ -51,7 +51,7 @@ class SidePanelSheetTest {
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
-        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
+        every { authRepository.getAuthStateStream } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.SYSTEM
         every { userSettingsRepository.getLocale() } returns AppLocale.EN
         every { userSettingsRepository.getSecurityLockEnabled() } returns false

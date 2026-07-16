@@ -1,26 +1,28 @@
 package app.tastile.android.ui.mobile.panels.timeline
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.ui.designsystem.AppCorner
-import app.tastile.android.ui.designsystem.AppListRow
-import app.tastile.android.ui.designsystem.AppSpacing
-import app.tastile.android.ui.designsystem.AppTheme
-import app.tastile.android.ui.mobile.designsystem.AppEmptyState
-import app.tastile.android.ui.mobile.designsystem.MobileTokens
-import androidx.compose.foundation.background
-import androidx.compose.ui.draw.clip
+import app.tastile.android.ui.mobile.components.AppEmptyState
 
 /**
  * Renders the timeline block list using the v1 wire payload
@@ -38,8 +40,8 @@ internal fun TimelineBlockList(
 ) {
     if (blocks.isEmpty()) {
         AppEmptyState(
-            icon = Icons.Outlined.CalendarMonth,
             title = stringResource(R.string.panels_timeline_empty),
+            icon = Icons.Outlined.CalendarMonth,
             hint = "",
             modifier = modifier,
         )
@@ -48,8 +50,8 @@ internal fun TimelineBlockList(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.xs),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs),
+            .padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         blocks.forEach { block ->
             TimelineBlockRow(block = block, onClick = { onBlockClick(block) })
@@ -65,16 +67,27 @@ private fun TimelineBlockRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(AppCorner.smallShape)
-            .background(AppTheme.colors.surfaceVariant.copy(alpha = MobileTokens.SurfaceAlpha.subtle))
-            .padding(horizontal = AppSpacing.xs, vertical = AppSpacing.xs),
+            .clip(RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.10f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppListRow(
-            label = block.title,
-            description = "${block.type} · ${block.status} · ${block.startAt}",
-            onClick = onClick,
-            modifier = Modifier.padding(horizontal = AppSpacing.xxs),
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 2.dp),
+        ) {
+            Text(
+                text = block.title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "${block.type} · ${block.status} · ${block.startAt}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

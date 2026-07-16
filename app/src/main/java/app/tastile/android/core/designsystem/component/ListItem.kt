@@ -75,8 +75,6 @@ object NiaListItemDefaults {
         supportingColor: Color = Color.Unspecified,
         trailingIconColor: Color = Color.Unspecified,
         disabledHeadlineColor: Color = Color.Unspecified,
-        disabledLeadingIconColor: Color = Color.Unspecified,
-        disabledTrailingIconColor: Color = Color.Unspecified,
     ): ListItemColors = ListItemDefaults.colors(
         containerColor = containerColor,
         headlineColor = headlineColor,
@@ -85,7 +83,5 @@ object NiaListItemDefaults {
         supportingColor = supportingColor,
         trailingIconColor = trailingIconColor,
         disabledHeadlineColor = disabledHeadlineColor,
-        disabledLeadingIconColor = disabledLeadingIconColor,
-        disabledTrailingIconColor = disabledTrailingIconColor,
     )
 }

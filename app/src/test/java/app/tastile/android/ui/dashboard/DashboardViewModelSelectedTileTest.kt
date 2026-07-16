@@ -57,7 +57,7 @@ class DashboardViewModelSelectedTileTest {
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
-        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
+        every { authRepository.getAuthStateStream } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
@@ -102,7 +102,7 @@ class DashboardViewModelSelectedTileTest {
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
-        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
+        every { authRepository.getAuthStateStream } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)

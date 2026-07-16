@@ -24,24 +24,30 @@ import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
+// m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
+// m2-allow: state-holder
 import androidx.compose.material3.ListItemDefaults
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+// m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
+import androidx.compose.material3.AssistChip
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
+import app.tastile.android.core.designsystem.component.NiaListItem
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.component.NiaOutlinedTextField
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
@@ -65,7 +71,7 @@ fun QuickCreatePanelContent(
     isSubmitting: Boolean = false,
     submitError: String? = null,
 ) {
-    val draft by store.state.collectAsState()
+    val draft by store.state.collectAsStateWithLifecycle()
     val active = draft.activePanel
     if (active != null && active != QuickCreatePanel.Base) {
         QuickCreateSubpanel(active, draft, store, store::backToBase, projects, knownTags)
@@ -99,7 +105,7 @@ private fun QuickCreateBaseComposition(
             )
             HorizontalDivider()
         }
-        OutlinedTextField(
+        NiaOutlinedTextField(
             draft.identity.title,
             { store.updateIdentity(draft.identity.copy(title = it)) },
             label = { Text("Title") },
@@ -110,15 +116,13 @@ private fun QuickCreateBaseComposition(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             if (projectName != null) {
-                FilterChip(
-                    selected = true,
+                AssistChip(
                     onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
                     label = { Text(projectName) },
                 )
             }
             draft.meta.tags.forEach { tag ->
-                FilterChip(
-                    selected = true,
+                AssistChip(
                     onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
                     label = { Text("#$tag") },
                 )
@@ -135,7 +139,7 @@ private fun QuickCreateBaseComposition(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             QuickCreateTileKind.entries.forEach { kind ->
-                ListItem(
+                NiaListItem(
                     headlineContent = { Text(kind.name) },
                     trailingContent = if (draft.identity.kind == kind) {
                         { Icon(Icons.Outlined.Check, contentDescription = null) }
@@ -171,7 +175,7 @@ private fun QuickCreateBaseComposition(
             onClick = { store.openSubpanel(QuickCreatePanel.Recurring) },
         )
         HorizontalDivider()
-        ListItem(
+        NiaListItem(
             headlineContent = { Text("Completion logic") },
             supportingContent = { Text(conditionSummary(draft.plan.completion.root.kind)) },
             leadingContent = { Icon(Icons.Outlined.Checklist, contentDescription = null) },
@@ -188,7 +192,7 @@ private fun QuickCreateBaseComposition(
             text = { Text("Add condition or group") },
             leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
-        ListItem(
+        NiaListItem(
             headlineContent = { Text("Completion requires") },
             supportingContent = { Text("${draft.plan.completion.tasks.size} item(s)") },
             leadingContent = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
@@ -206,7 +210,7 @@ private fun QuickCreateBaseComposition(
                     .testTag("quick-create-task-row-$index"),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                ListItem(
+                NiaListItem(
                     headlineContent = { Text(task.content.title.ifBlank { "Untitled" }) },
                     leadingContent = { Icon(Icons.Outlined.CheckBox, contentDescription = null) },
                     modifier = Modifier
@@ -250,7 +254,7 @@ private fun QuickCreateBaseComposition(
                         modifier = Modifier.testTag("quick-create-task-move-down-$index"),
                         text = { Text("Move down") },
                     )
-                    FilledTonalButton(
+                    NiaFilledTonalButton(
                         onClick = {
                             store.updatePlan(
                                 draft.plan.copy(
@@ -287,7 +291,7 @@ private fun QuickCreateBaseComposition(
             leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
         HorizontalDivider()
-        ListItem(
+        NiaListItem(
             headlineContent = { Text("Behavior") },
             supportingContent = {
                 Text(if (draft.plan.role.name == "Label") "Label" else "Executable")
@@ -352,7 +356,7 @@ private fun EssentialRow(
     leadingIcon: ImageVector,
     onClick: () -> Unit,
 ) {
-    ListItem(
+    NiaListItem(
         headlineContent = { Text(label) },
         supportingContent = { Text(summary) },
         leadingContent = { Icon(leadingIcon, contentDescription = null) },

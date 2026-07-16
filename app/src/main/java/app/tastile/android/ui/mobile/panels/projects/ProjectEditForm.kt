@@ -19,6 +19,8 @@ import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
+import androidx.compose.material3.Icon
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,11 +30,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.api.Workspace
-import app.tastile.android.ui.mobile.designsystem.AppPickerButton
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.ui.mobile.components.AppPickerButton
 
 /** Web ProjectsMain edit fields, including the Android-visible parent link. */
 @Composable
@@ -53,7 +55,7 @@ fun ProjectEditForm(
     val candidates = remember(workspace.id, workspaces) {
         orderWorkspaceTree(workspaces.filterNot { it.id in blockedIds })
     }
-    Column(modifier = Modifier.fillMaxWidth().padding(MobileSpacing.sm)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
         OutlinedTextField(name, { name = it.take(80) }, label = { Text("Name") }, singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag("project-edit-name"))
         OutlinedTextField(slug, { slug = it.lowercase().filter { c -> c.isLetterOrDigit() || c == '-' }.take(40) }, label = { Text("Slug") }, singleLine = true,
@@ -66,17 +68,17 @@ fun ProjectEditForm(
                 value = workspaces.firstOrNull { it.id == parentId }?.displayName ?: "Top level",
                 onClick = { menuOpen = true },
                 leadingIcon = Icons.Outlined.AccountTree,
-                modifier = Modifier.testTag("project-edit-parent"),
+                testTag = "project-edit-parent",
             )
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text("Top level") },
-                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.AccountTree, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Outlined.AccountTree, contentDescription = null) },
                     onClick = { parentId = null; menuOpen = false },
                 )
                 candidates.forEach { entry -> DropdownMenuItem(
                     text = { Text("  ".repeat(entry.depth) + entry.workspace.displayName) },
-                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Folder, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null) },
                     onClick = { parentId = entry.workspace.id; menuOpen = false },
                 ) }
             }
@@ -84,17 +86,17 @@ fun ProjectEditForm(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            AppPrimaryButton(
-                text = if (busy) "Saving…" else "Save",
+            NiaButton(
+                text = { Text(if (busy) "Saving…" else "Save") },
                 onClick = { onSave(name, slug.ifBlank { null }, color.ifBlank { null }, parentId) },
                 enabled = !busy && name.isNotBlank(),
-                leadingIcon = Icons.Outlined.Check,
+                leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
                 modifier = Modifier.testTag("project-edit-save"),
             )
-            AppTertiaryButton(
-                text = "Cancel",
+            NiaTextButton(
+                text = { Text("Cancel") },
                 onClick = onCancel,
                 enabled = !busy,
             )

@@ -70,7 +70,7 @@ class QuickCreateSheetMobileTest {
         // Unauthenticated keeps refreshAll in the empty-state branch so it never
         // touches the mock repositories; refreshTimeline (fired by the
         // selectedDay/scale combine) still runs, so stub getTimeline explicitly.
-        every { authRepo.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
+        every { authRepo.getAuthStateStream } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()
         coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")

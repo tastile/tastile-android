@@ -5,7 +5,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ProfileRepository @Inject constructor() {
+class DefaultProfileRepository @Inject constructor() {
     suspend fun getProfile(userId: String): Profile? {
         return Profile(id = userId)
     }

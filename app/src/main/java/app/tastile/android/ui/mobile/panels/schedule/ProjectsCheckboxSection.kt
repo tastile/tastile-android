@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOff
 // m2-allow: m3-component
 import androidx.compose.material3.Checkbox
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,14 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.projectLabel
-import app.tastile.android.ui.designsystem.AppCorner
-import app.tastile.android.ui.designsystem.AppSpacing
-import app.tastile.android.ui.designsystem.AppTheme
-import app.tastile.android.ui.mobile.designsystem.AppEmptyState
-import app.tastile.android.ui.mobile.designsystem.SectionHeader
+import app.tastile.android.ui.mobile.components.AppEmptyState
+import app.tastile.android.ui.mobile.components.AppSectionHeader
 
 /**
  * "Projects" filter section reused by both [TimelineSectionContent]
@@ -44,8 +45,8 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
     val projects = remember(tiles) { extractProjects(tiles) }
     val checked = remember { mutableStateOf(setOf<String>()) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
-        SectionHeader(title = stringResource(R.string.panels_schedule_projects))
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        AppSectionHeader(title = stringResource(R.string.panels_schedule_projects))
         if (projects.isEmpty()) {
             AppEmptyState(
                 icon = Icons.Outlined.FolderOff,
@@ -59,11 +60,11 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(AppCorner.mediumShape)
+                    .clip(RoundedCornerShape(8.dp))
                     .clickable {
                         checked.value = if (isChecked) checked.value - name else checked.value + name
                     }
-                    .padding(horizontal = AppSpacing.xs, vertical = AppSpacing.xs + AppSpacing.xxs),
+                    .padding(horizontal = 4.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Checkbox(
@@ -74,8 +75,8 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
                 )
                 Text(
                     text = name,
-                    style = AppTheme.typography.bodyMedium,
-                    color = AppTheme.colors.onSurface,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }

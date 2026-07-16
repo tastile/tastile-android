@@ -50,6 +50,7 @@ fun NiaOutlinedTextField(
     trailingIcon: (@Composable () -> Unit)? = null,
     supportingText: (@Composable () -> Unit)? = null,
     isError: Boolean = false,
+    readOnly: Boolean = false,
 ) {
     MaterialOutlinedTextField(
         value = value,
@@ -62,5 +63,6 @@ fun NiaOutlinedTextField(
         trailingIcon = trailingIcon,
         supportingText = supportingText,
         isError = isError,
+        readOnly = readOnly,
     )
 }

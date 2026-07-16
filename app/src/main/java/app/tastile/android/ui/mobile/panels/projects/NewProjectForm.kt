@@ -19,6 +19,8 @@ import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
+import androidx.compose.material3.Icon
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,12 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.R
-import app.tastile.android.ui.mobile.designsystem.AppPickerButton
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.ui.mobile.components.AppPickerButton
 
 private val SLUG_REGEX = Regex("[a-z0-9-]+")
 
@@ -67,8 +69,8 @@ fun NewProjectForm(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(MobileSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         OutlinedTextField(
             value = name,
@@ -103,18 +105,18 @@ fun NewProjectForm(
                 value = workspaces.firstOrNull { it.id == parentId }?.displayName ?: "Top level",
                 onClick = { parentMenuOpen = true },
                 leadingIcon = Icons.Outlined.AccountTree,
-                modifier = Modifier.testTag("project-create-parent"),
+                testTag = "project-create-parent",
             )
             DropdownMenu(expanded = parentMenuOpen, onDismissRequest = { parentMenuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text("Top level") },
-                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.AccountTree, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Outlined.AccountTree, contentDescription = null) },
                     onClick = { parentId = null; parentMenuOpen = false },
                 )
                 ordered.forEach { entry ->
                     DropdownMenuItem(
                         text = { Text("  ".repeat(entry.depth) + entry.workspace.displayName) },
-                        leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Folder, contentDescription = null) },
+                        leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null) },
                         onClick = { parentId = entry.workspace.id; parentMenuOpen = false },
                     )
                 }
@@ -124,18 +126,22 @@ fun NewProjectForm(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            AppPrimaryButton(
-                text = if (busy) stringResource(R.string.panels_projects_creating)
-                else stringResource(R.string.panels_projects_create),
+            NiaButton(
+                text = {
+                    Text(
+                        if (busy) stringResource(R.string.panels_projects_creating)
+                        else stringResource(R.string.panels_projects_create),
+                    )
+                },
                 onClick = { onSubmit(name, slug.ifBlank { null }, color.ifBlank { null }, parentId) },
                 enabled = !busy && name.isNotBlank(),
-                leadingIcon = Icons.Outlined.Check,
+                leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
                 modifier = Modifier.testTag("project-create-submit"),
             )
-            AppTertiaryButton(
-                text = stringResource(R.string.panels_projects_cancel),
+            NiaTextButton(
+                text = { Text(stringResource(R.string.panels_projects_cancel)) },
                 onClick = onCancel,
                 enabled = !busy,
             )

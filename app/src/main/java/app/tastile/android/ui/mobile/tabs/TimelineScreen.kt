@@ -33,8 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-// m2-allow: m3-component
-import androidx.compose.material3.FloatingActionButton
+import app.tastile.android.core.designsystem.component.NiaFloatingActionButton
 // m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
 // m2-allow: primitive
@@ -70,12 +69,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
-import app.tastile.android.ui.designsystem.AppLoading
-import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.core.designsystem.component.NiaLoadingWheel
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.panels.ProjectsViewModel
-import app.tastile.android.ui.mobile.designsystem.MobileTokens
+
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -94,12 +94,12 @@ private const val ZOOM_MIN = 1f        // floor: 24h fit on screen
 private const val ZOOM_MAX = 6f        // ceiling: ~4h fit on screen for detail
 
 // Total top-bar height the table-control rows must clear:
-//   status bar + 56dp content (MobileTokens.topBarHeight).
+//   status bar + 56dp content (56.dp).
 // MobileScaffold sets contentWindowInsets = WindowInsets(0) and ignores innerPadding,
 // so consumers must pad themselves if they want to sit below the top bar.
 @Composable
 private fun topBarTotalHeight(): Dp =
-    WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + MobileTokens.topBarHeight
+    WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 56.dp
 
 private data class PlacedBlock(
     val id: String,
@@ -202,7 +202,7 @@ fun TimelineScreen(
         when {
             loading && timeline.isEmpty() && scale == TimelineScale.Day -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    AppLoading()
+                    NiaLoadingWheel(contentDesc = "Loading")
                 }
             }
             scale == TimelineScale.Day -> {
@@ -297,20 +297,20 @@ fun TimelineScreen(
         // scale (Day / Week / Month) so the entry point is always discoverable
         // regardless of which view the user is on. `navigationBarsPadding` keeps
         // it clear of the system gesture bar on Android 15.
-        FloatingActionButton(
+        NiaFloatingActionButton(
             onClick = { overlay.show(Overlay.QuickCreate) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
                 .padding(end = 16.dp, bottom = 16.dp),
-            containerColor = AppTheme.colors.primary,
-            contentColor = AppTheme.colors.onPrimary,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
             shape = CircleShape,
         ) {
             Icon(
                 imageVector = Icons.Filled.Add,
                 contentDescription = "Create",
-                modifier = Modifier.size(MobileTokens.iconVisualSize),
+                modifier = Modifier.size(24.dp),
             )
         }
     }
@@ -331,7 +331,7 @@ private fun CalendarToolbar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(AppTheme.colors.background.copy(alpha = 0.94f))
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.94f))
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -342,7 +342,7 @@ private fun CalendarToolbar(
             app.tastile.android.ui.dashboard.CalendarMode.entries.forEach { candidate ->
                 Text(
                     text = candidate.name,
-                    color = if (candidate == mode) AppTheme.colors.primary else AppTheme.colors.onSurfaceVariant,
+                    color = if (candidate == mode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .testTag("calendar-mode-${candidate.name.lowercase()}")
                         .clickable { onMode(candidate) },
@@ -350,11 +350,11 @@ private fun CalendarToolbar(
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Min", color = AppTheme.colors.onSurfaceVariant)
+            Text("Min", color = MaterialTheme.colorScheme.onSurfaceVariant)
             listOf(0, 5, 15, 30).forEach { minutes ->
                 Text(
                     text = if (minutes == 0) "Any" else "${minutes}m",
-                    color = if (minutes == minimumDuration) AppTheme.colors.primary else AppTheme.colors.onSurfaceVariant,
+                    color = if (minutes == minimumDuration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .testTag("calendar-min-$minutes")
                         .clickable { onMinimumDuration(minutes) },
@@ -413,7 +413,7 @@ private fun DayGrid(
         val pxPerMinBase: Float = availableHeightPx / totalMinutes
         // Floor: 24h fit on screen. pxPerMin never drops below this.
         val minPxPerMin: Float = pxPerMinBase
-        val outlineColor = AppTheme.colors.outlineVariant
+        val outlineColor = MaterialTheme.colorScheme.outlineVariant
         val nowLineColor = Color(0xFFEF5350)
 
         val effectiveZoom = pinchZoom ?: zoom
@@ -640,7 +640,7 @@ private fun DayContentLayer(
 @Composable
 private fun TimeGutterContent(startHour: Int, endHour: Int, pxPerHour: Dp, totalHeight: Dp) {
     val textMeasurer = rememberTextMeasurer()
-    val labelStyle = AppTheme.typography.labelSmall.copy(color = AppTheme.colors.onSurfaceVariant)
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
@@ -671,10 +671,10 @@ private fun TimeGutterContent(startHour: Int, endHour: Int, pxPerHour: Dp, total
 @Composable
 private fun EventChip(b: PlacedBlock, onEditEvent: (CoreTimelineItem) -> Unit) {
     val (bg, fg) = when (b.type.lowercase(Locale.ROOT)) {
-        "work" -> AppTheme.colors.primary to AppTheme.colors.onPrimary
-        "break" -> AppTheme.colors.tertiary to AppTheme.colors.onTertiary
-        "fixed" -> AppTheme.colors.secondary to AppTheme.colors.onSecondary
-        else -> AppTheme.colors.surfaceVariant to AppTheme.colors.onSurface
+        "work" -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
+        "break" -> MaterialTheme.colorScheme.tertiary to MaterialTheme.colorScheme.onTertiary
+        "fixed" -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
+        else -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurface
     }
     val statusLabel = when (b.status.lowercase(Locale.ROOT)) {
         "active", "started" -> "active"
@@ -712,14 +712,14 @@ private fun EventChip(b: PlacedBlock, onEditEvent: (CoreTimelineItem) -> Unit) {
         ) {
             Text(
                 text = b.title,
-                style = AppTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge,
                 color = fg,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
             )
             Text(
                 text = "$timeLabel · ${formatDuration(durationMin.toLong())} · $statusLabel",
-                style = AppTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = fg,
                 maxLines = 1,
             )
@@ -778,7 +778,7 @@ private fun WeekView(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(WEEK_HEADER_HEIGHT)
-                .background(AppTheme.colors.background),
+                .background(MaterialTheme.colorScheme.background),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Spacer(modifier = Modifier.width(TIME_GUTTER_WIDTH))
@@ -795,20 +795,20 @@ private fun WeekView(
                 ) {
                     Text(
                         text = day.format(eeeFormatter),
-                        style = AppTheme.typography.labelSmall,
-                        color = if (isToday) AppTheme.colors.primary else AppTheme.colors.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         text = day.dayOfMonth.toString(),
-                        style = AppTheme.typography.titleSmall,
-                        color = if (isToday) AppTheme.colors.primary else AppTheme.colors.onSurface,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         fontWeight = if (isToday) FontWeight.Bold else FontWeight.SemiBold,
                     )
                 }
             }
         }
-        HorizontalDivider(color = AppTheme.colors.outlineVariant)
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         // Body: zoomable + vertically scrollable. Gesture split mirrors DayGrid:
         //  • 1-finger vertical drag  → verticalScroll claims
@@ -943,7 +943,7 @@ private fun WeekTimeGutter(endHour: Int, pxPerHour: Dp, totalHeight: Dp) {
     // Canvas with pxPerHour.toPx() so the label y positions are pixel-aligned
     // with the grid-line y positions drawn in WeekDayColumn.
     val textMeasurer = rememberTextMeasurer()
-    val labelStyle = AppTheme.typography.labelSmall.copy(color = AppTheme.colors.onSurfaceVariant)
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
@@ -978,7 +978,7 @@ private fun WeekDayColumn(
     pxPerMin: Float,
     endHour: Int,
 ) {
-    val outlineColor = AppTheme.colors.outlineVariant
+    val outlineColor = MaterialTheme.colorScheme.outlineVariant
     val nowLineColor = Color(0xFFEF5350)
     val nowMin = remember(isToday) {
         if (isToday) LocalTime.now().hour * 60 + LocalTime.now().minute else -1
@@ -986,7 +986,7 @@ private fun WeekDayColumn(
 
     Box(
         modifier = modifier
-            .border(width = 0.5.dp, color = AppTheme.colors.outlineVariant)
+            .border(width = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
             .clickable { onOpenDay() },
     ) {
         // Hour grid lines. pxPerMin is in dp; Canvas DrawScope is in pixels,
@@ -1078,9 +1078,9 @@ private fun MonthView(
                 val date = gridStart.plusDays(col.toLong())
                 Text(
                     text = date.format(dowFormatter),
-                    style = AppTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = AppTheme.colors.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     modifier = Modifier.weight(1f),
                 )
@@ -1124,22 +1124,22 @@ private fun MonthDayCell(
     // no rounded corners. Identity (selected/today) is conveyed by text weight
     // and color, not by background tints.
     val numberColor = when {
-        !inMonth -> AppTheme.colors.onSurfaceVariant.copy(alpha = 0.45f)
-        isSelected -> AppTheme.colors.primary
-        isToday -> AppTheme.colors.primary
-        else -> AppTheme.colors.onSurface
+        !inMonth -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+        isSelected -> MaterialTheme.colorScheme.primary
+        isToday -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurface
     }
-    val dotColor = if (inMonth) AppTheme.colors.primary else AppTheme.colors.onSurfaceVariant.copy(alpha = 0.30f)
+    val dotColor = if (inMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.30f)
 
     Box(
         modifier = modifier
-            .border(width = 0.5.dp, color = AppTheme.colors.outlineVariant)
+            .border(width = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
             .clickable { onClick() }
             .padding(horizontal = 6.dp, vertical = 6.dp),
     ) {
         Text(
             text = date.dayOfMonth.toString(),
-            style = AppTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isSelected || isToday) FontWeight.SemiBold else FontWeight.Normal,
             color = numberColor,
             modifier = Modifier.align(Alignment.TopStart),
@@ -1158,13 +1158,13 @@ private fun MonthDayCell(
 @Composable
 private fun EmptyState(scale: TimelineScale) {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = AppTheme.spacing.xl),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = "No blocks in this ${scale.name.lowercase(Locale.ROOT)} view. Create a tile to seed the timeline.",
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -1287,17 +1287,17 @@ private fun TimelineListView(items: List<CoreTimelineItem>, zone: ZoneId, onEdit
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(AppTheme.colors.surfaceVariant)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable { onEditEvent(item) }
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
                     text = start?.format(DateTimeFormatter.ofPattern("MMM d HH:mm", Locale.getDefault())) ?: "—",
-                    style = AppTheme.typography.labelMedium,
-                    color = AppTheme.colors.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(item.title, style = AppTheme.typography.bodyMedium, color = AppTheme.colors.onSurface)
+                Text(item.title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

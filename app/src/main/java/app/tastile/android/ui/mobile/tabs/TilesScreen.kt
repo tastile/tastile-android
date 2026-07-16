@@ -7,13 +7,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Inbox
-import androidx.compose.material3.ExtendedFloatingActionButton
+// m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.NiaExtendedFloatingActionButton
 import app.tastile.android.data.model.Tile
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TilesTab
@@ -113,7 +118,7 @@ fun TilesScreen(
             }
         }
 
-        ExtendedFloatingActionButton(
+        NiaExtendedFloatingActionButton(
             onClick = { overlay.show(Overlay.QuickCreate) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -263,27 +268,6 @@ private fun StatChip(
     ) {
         Text(label, color = foreground, style = MaterialTheme.typography.labelSmall)
     }
-}
-
-@Composable
-private fun androidx.compose.foundation.layout.Box(
-    modifier: Modifier = Modifier,
-    background: androidx.compose.ui.graphics.Color,
-    shape: androidx.compose.ui.graphics.Shape,
-    contentAlignment: Alignment = Alignment.TopStart,
-    propagateMinConstraints: Boolean = false,
-    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit,
-) {
-    androidx.compose.foundation.layout.Box(
-        modifier = modifier.then(
-            androidx.compose.foundation.background(background, shape).then(
-                Modifier,
-            ),
-        ),
-        contentAlignment = contentAlignment,
-        propagateMinConstraints = propagateMinConstraints,
-        content = content,
-    )
 }
 
 private const val INITIAL_SECTION_LIMIT = 8

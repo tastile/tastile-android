@@ -55,6 +55,17 @@ class ProjectsViewModel @Inject constructor(
     private val _selectedOwnerId = MutableStateFlow<String?>(null)
     val selectedOwnerId: StateFlow<String?> = _selectedOwnerId.asStateFlow()
 
+    private val _deleteCandidate = MutableStateFlow<Workspace?>(null)
+    val deleteCandidate: StateFlow<Workspace?> = _deleteCandidate.asStateFlow()
+
+    private val _editCandidate = MutableStateFlow<Workspace?>(null)
+    val editCandidate: StateFlow<Workspace?> = _editCandidate.asStateFlow()
+
+    fun requestDelete(workspace: Workspace) { _deleteCandidate.value = workspace }
+    fun cancelDelete() { _deleteCandidate.value = null }
+    fun requestEdit(workspace: Workspace) { _editCandidate.value = workspace }
+    fun cancelEdit() { _editCandidate.value = null }
+
     init {
         refresh()
     }
@@ -142,6 +153,7 @@ class ProjectsViewModel @Inject constructor(
                         s.copy(workspaces = s.workspaces.filterNot { it.id == id })
                     }
                     if (_selectedOwnerId.value == id) _selectedOwnerId.value = null
+                    _deleteCandidate.value = null
                 }
                 .onFailure { err ->
                     _state.update { it.copy(error = err.message ?: "delete failed") }

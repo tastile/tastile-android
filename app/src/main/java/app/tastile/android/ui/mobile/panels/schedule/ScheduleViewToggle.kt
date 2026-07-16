@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,11 +17,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import app.tastile.android.R
-import app.tastile.android.ui.designsystem.AppCorner
-import app.tastile.android.ui.designsystem.AppSpacing
-import app.tastile.android.ui.designsystem.AppTheme
-import app.tastile.android.ui.mobile.designsystem.MobileTokens
 
 /**
  * Two-button "segmented control" that swaps the Schedule right-pane
@@ -38,11 +38,11 @@ fun ScheduleViewToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(AppCorner.mediumShape)
+            .clip(RoundedCornerShape(8.dp))
             .background(
-                AppTheme.colors.surfaceVariant.copy(alpha = MobileTokens.SurfaceAlpha.selected),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
             )
-            .padding(AppSpacing.xxs),
+            .padding(2.dp),
     ) {
         ScheduleSegmentButton(
             label = stringResource(R.string.panels_schedule_recurring),
@@ -68,21 +68,20 @@ private fun ScheduleSegmentButton(
 ) {
     Box(
         modifier = modifier
-            .clip(AppCorner.smallShape)
+            .clip(RoundedCornerShape(6.dp))
             .background(
-                if (selected) AppTheme.colors.surfaceVariant.copy(
-                    alpha = MobileTokens.SurfaceAlpha.strongSelected,
-                ) else Color.Transparent,
+                if (selected) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                else Color.Transparent,
             )
             .clickable { onClick() }
-            .padding(vertical = AppSpacing.sm),
+            .padding(vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
-            style = AppTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) AppTheme.colors.onSurface else AppTheme.colors.onSurfaceVariant,
+            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

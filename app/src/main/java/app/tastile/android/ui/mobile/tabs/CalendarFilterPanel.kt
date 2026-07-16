@@ -2,8 +2,10 @@ package app.tastile.android.ui.mobile.tabs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -18,6 +20,8 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: primitive
+import androidx.compose.material3.Icon
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -34,17 +38,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.api.Workspace
-import app.tastile.android.ui.mobile.designsystem.AppPickerButton
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
-import app.tastile.android.ui.mobile.designsystem.SectionHeader
-import app.tastile.android.ui.mobile.designsystem.StatChip
+import app.tastile.android.ui.mobile.components.AppPickerButton
+import app.tastile.android.ui.mobile.components.AppSectionHeader
 import app.tastile.android.ui.mobile.panels.projects.orderWorkspaceTree
 import app.tastile.android.ui.util.localDateFromEpochMillis
 
@@ -70,7 +70,7 @@ internal fun CalendarFilterPanel(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SectionHeader(title = "Calendar", modifier = Modifier.weight(1f))
+            AppSectionHeader(title = "Calendar", modifier = Modifier.weight(1f))
             AppPickerButton(
                 label = "Date", // TODO i18n
                 value = selectedDayLabel.ifBlank { "—" },
@@ -82,7 +82,7 @@ internal fun CalendarFilterPanel(
         if (workspaces.isNotEmpty()) {
             Row(
                 modifier = Modifier.clickable { onOwnerIdsChange(emptySet()) },
-                horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 StatChip(
@@ -91,13 +91,13 @@ internal fun CalendarFilterPanel(
                     background = MaterialTheme.colorScheme.secondaryContainer,
                     foreground = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
-                AppSecondaryButton(
-                    text = "Projects",
+                NiaFilledTonalButton(
                     onClick = { onOwnerIdsChange(emptySet()) },
-                    leadingIcon = Icons.Outlined.FilterList,
+                    leadingIcon = { Icon(Icons.Outlined.FilterList, contentDescription = null) },
+                    text = { Text("Projects") },
                 )
             }
-            SectionHeader(title = "Projects")
+            AppSectionHeader(title = "Projects")
             orderWorkspaceTree(workspaces).forEach { entry ->
                 val state = projectCheckState(entry.workspace.id, selected, descendants)
                 Row(
@@ -121,11 +121,11 @@ internal fun CalendarFilterPanel(
                             modifier = Modifier.testTag("calendar-project-${entry.workspace.id}"),
                         )
                     }
-                    AppSecondaryButton(
-                        text = entry.workspace.displayName,
+                    NiaFilledTonalButton(
                         onClick = {
                             onOwnerIdsChange(normalizeOwnerSelection(toggleProjectCascade(selected, entry.workspace.id, descendants), allIds))
                         },
+                        text = { Text(entry.workspace.displayName) },
                     )
                 }
             }
@@ -136,17 +136,20 @@ internal fun CalendarFilterPanel(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                AppPrimaryButton(
-                    text = "OK",
+                NiaButton(
                     onClick = {
                         state.selectedDateMillis?.let { onSelectDate(localDateFromEpochMillis(it)) }
                         showDatePicker = false
                     },
-                    leadingIcon = Icons.Outlined.Check,
+                    leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
+                    text = { Text("OK") },
                 )
             },
             dismissButton = {
-                AppTertiaryButton(text = "Cancel", onClick = { showDatePicker = false })
+                NiaTextButton(
+                    onClick = { showDatePicker = false },
+                    text = { Text("Cancel") },
+                )
             },
         ) { DatePicker(state = state) }
     }
@@ -155,3 +158,19 @@ internal fun CalendarFilterPanel(
 /** Empty selection means all projects to the v1 API, matching the Web URL convention. */
 internal fun normalizeOwnerSelection(selected: Set<String>, allIds: Set<String>): Set<String> =
     if (selected == allIds) emptySet() else selected
+
+@Composable
+private fun StatChip(
+    label: String,
+    value: String,
+    background: androidx.compose.ui.graphics.Color,
+    foreground: androidx.compose.ui.graphics.Color,
+) {
+    Box(
+        modifier = Modifier
+            .background(background, shape = MaterialTheme.shapes.small)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(label, color = foreground, style = MaterialTheme.typography.labelSmall)
+    }
+}

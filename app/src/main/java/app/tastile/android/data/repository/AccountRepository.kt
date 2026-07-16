@@ -22,7 +22,7 @@ import javax.inject.Singleton
  * the web composition that this repository feeds.
  */
 @Singleton
-class AccountRepository @Inject constructor(
+class DefaultAccountRepository @Inject constructor(
     private val accountApi: CognitoAccountApi,
     private val authRepository: AuthRepository,
 ) {

@@ -30,9 +30,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class TileRepository @Inject constructor(
+class DefaultTileRepository @Inject constructor(
     private val executionNotificationCoordinator: ExecutionNotificationCoordinator,
-    private val eventRepository: EventRepository,
+    private val eventRepository: DefaultEventRepository,
     private val currentUserProvider: CurrentUserProvider,
     private val v1ApiClient: V1ApiClient,
     private val v1CommandDispatcher: V1CommandDispatcher

@@ -90,7 +90,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.AppPrimaryButton
+import app.tastile.android.core.designsystem.component.AppSecondaryButton
+import app.tastile.android.core.designsystem.component.AppTertiaryButton
 import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.components.picker.DatePickerSheet
@@ -581,11 +585,11 @@ private fun IntentPanel(store: QuickCreateStateStore) {
     )
     Column(modifier = Modifier.fillMaxWidth()) {
         intentTargets.forEach { (label, panel, icon) ->
-            AppPrimaryButton(
-                text = label,
+            NiaButton(
                 onClick = { store.openSubpanel(panel) },
                 modifier = Modifier.fillMaxWidth().testTag("quick-create-intent-${label.lowercase()}"),
-                leadingIcon = icon,
+                leadingIcon = { Icon(icon, contentDescription = null) },
+                text = { Text(label) },
             )
         }
     }
@@ -607,20 +611,20 @@ private fun NativeDateField(label: String, value: String, tag: String, onSelecte
         DatePickerDialog(
             onDismissRequest = { open = false },
             confirmButton = {
-                AppPrimaryButton(
-                    text = "OK",
+                NiaButton(
                     onClick = {
                         state.selectedDateMillis?.let { millis -> onSelected(Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toString()) }
                         open = false
                     },
-                    leadingIcon = Icons.Outlined.Check,
+                    leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
+                    text = { Text("OK") },
                 )
             },
             dismissButton = {
-                AppTertiaryButton(
-                    text = "Cancel",
+                NiaTextButton(
                     onClick = { open = false },
-                    leadingIcon = Icons.Outlined.Close,
+                    leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
+                    text = { Text("Cancel") },
                 )
             },
         ) { DatePicker(state = state) }
@@ -647,27 +651,26 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     )
     ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }, allowTermKind = false)
     FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        AppSecondaryButton(
-            text = "Task",
+        NiaFilledTonalButton(
             onClick = { addCompletionTerm(draft, store, "task") },
             modifier = Modifier.testTag("quick-create-completion-add-task"),
-            leadingIcon = Icons.Outlined.Task,
+            leadingIcon = { Icon(Icons.Outlined.Task, contentDescription = null) },
+            text = { Text("Task") },
         )
-        AppSecondaryButton(
-            text = "Relation",
+        NiaFilledTonalButton(
             onClick = { addCompletionTerm(draft, store, "relation") },
             modifier = Modifier.testTag("quick-create-completion-add-relation"),
-            leadingIcon = Icons.Outlined.Link,
+            leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
+            text = { Text("Relation") },
         )
-        AppSecondaryButton(
-            text = "Metric",
+        NiaFilledTonalButton(
             onClick = { addCompletionTerm(draft, store, "metric") },
             modifier = Modifier.testTag("quick-create-completion-add-metric"),
-            leadingIcon = Icons.Outlined.BarChart,
+            leadingIcon = { Icon(Icons.Outlined.BarChart, contentDescription = null) },
+            text = { Text("Metric") },
         )
     }
-    AppSecondaryButton(
-        text = "Add time requirement",
+    NiaFilledTonalButton(
         onClick = {
             store.updatePlan(
                 draft.plan.copy(
@@ -680,7 +683,8 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             )
         },
         modifier = Modifier.testTag("quick-create-completion-add-time"),
-        leadingIcon = Icons.Outlined.Add,
+        leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+        text = { Text("Add time requirement") },
     )
     draft.plan.completion.timeRequirements.forEachIndexed { index, requirement ->
         val required = requirement.required.jsonObjectOrEmpty()
@@ -700,8 +704,7 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             suffix = "min",
             modifier = Modifier.fillMaxWidth().testTag("time-requirement-$index-required-minutes"),
         )
-        AppSecondaryButton(
-            text = "Remove time requirement",
+        NiaFilledTonalButton(
             onClick = {
                 store.updatePlan(
                     draft.plan.copy(
@@ -712,16 +715,17 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
                 )
             },
             modifier = Modifier.testTag("time-requirement-$index-remove"),
-            leadingIcon = Icons.Outlined.Delete,
+            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+            text = { Text("Remove time requirement") },
         )
     }
-    AppTertiaryButton(
-        text = "Clear completion",
+    NiaTextButton(
         onClick = {
             store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = QuickCreateConditionNode(0), timeRequirements = emptyList(), tasks = emptyList())))
         },
         modifier = Modifier.testTag("quick-create-completion-clear"),
-        leadingIcon = Icons.Outlined.DeleteSweep,
+        leadingIcon = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
+        text = { Text("Clear completion") },
     )
 }
 
@@ -808,18 +812,18 @@ private fun updateTimeRequirement(
     else {
         node.children.forEachIndexed { index, child ->
             ConditionControls(child, { updated -> onChange(node.copy(children = node.children.replace(index, updated))) }, "$path-$index")
-            AppSecondaryButton(
-                text = "Remove",
+            NiaFilledTonalButton(
                 onClick = { onChange(node.copy(children = node.children.filterIndexed { item, _ -> item != index })) },
                 modifier = Modifier.testTag("condition-$path-child-$index-remove"),
-                leadingIcon = Icons.Outlined.Delete,
+                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+                text = { Text("Remove") },
             )
         }
-        AppSecondaryButton(
-            text = "Add condition",
+        NiaFilledTonalButton(
             onClick = { onChange(node.copy(children = node.children + QuickCreateConditionNode(3, term = defaultTermValue("calendar")))) },
             modifier = Modifier.testTag("condition-$path-add-child"),
-            leadingIcon = Icons.Outlined.Add,
+            leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+            text = { Text("Add condition") },
         )
     }
 }
@@ -1025,35 +1029,35 @@ private fun MetaPanel(
     }
     var tagDraft by remember { mutableStateOf("") }
     OutlinedTextField(tagDraft, { tagDraft = it }, label = { Text("Add tag") }, modifier = Modifier.fillMaxWidth().testTag("meta-tag-input"))
-    AppSecondaryButton(
-        text = "Add tag",
+    NiaFilledTonalButton(
         onClick = {
             val tag = tagDraft.trim().removePrefix("#")
             if (tag.isNotBlank() && tag !in draft.meta.tags) store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag))
             tagDraft = ""
         },
         modifier = Modifier.testTag("meta-tag-add"),
-        leadingIcon = Icons.Outlined.Add,
+        leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+        text = { Text("Add tag") },
     )
     OutlinedTextField(draft.meta.memo, { value -> store.updateMeta(draft.meta.copy(memo = value)) }, label = { Text("Memo") }, modifier = Modifier.fillMaxWidth().testTag("meta-memo"))
     FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        AppTertiaryButton(
-            text = "Clear",
+        NiaTextButton(
             onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null, tags = emptyList(), memo = "")) },
             modifier = Modifier.testTag("meta-clear"),
-            leadingIcon = Icons.Outlined.DeleteSweep,
+            leadingIcon = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
+            text = { Text("Clear") },
         )
-        AppTertiaryButton(
-            text = "Cancel",
+        NiaTextButton(
             onClick = onBack,
             modifier = Modifier.testTag("meta-cancel"),
-            leadingIcon = Icons.Outlined.Close,
+            leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
+            text = { Text("Cancel") },
         )
-        AppPrimaryButton(
-            text = "Apply",
+        NiaButton(
             onClick = onBack,
             modifier = Modifier.testTag("meta-apply"),
-            leadingIcon = Icons.Outlined.Check,
+            leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
+            text = { Text("Apply") },
         )
     }
 }

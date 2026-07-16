@@ -11,27 +11,23 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 // m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: primitive
+import androidx.compose.material3.Icon
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.data.api.Workspace
-import app.tastile.android.ui.designsystem.AppSpacing
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.panels.projects.NewProjectForm
 import app.tastile.android.ui.mobile.panels.projects.ProjectsList
 import app.tastile.android.ui.mobile.panels.projects.ProjectEditForm
@@ -59,29 +55,25 @@ import app.tastile.android.ui.dashboard.DashboardViewModel
 @Composable
 fun ProjectsSectionContent(
     modifier: Modifier = Modifier,
-    dashboardViewModel: DashboardViewModel? = null,
+    dashboardViewModel: DashboardViewModel,
     projectsViewModel: ProjectsViewModel = hiltViewModel(),
 ) {
-    val state by projectsViewModel.state.collectAsState()
-    val creating by projectsViewModel.creating.collectAsState()
-    val selectedOwnerId by projectsViewModel.selectedOwnerId.collectAsState()
-    var deleteCandidate by remember { mutableStateOf<Workspace?>(null) }
-    var editCandidate by remember { mutableStateOf<Workspace?>(null) }
-
-    LaunchedEffect(selectedOwnerId) {
-        dashboardViewModel?.setOwnerFilter(selectedOwnerId)
-    }
+    val state by projectsViewModel.state.collectAsStateWithLifecycle()
+    val creating by projectsViewModel.creating.collectAsStateWithLifecycle()
+    val selectedOwnerId by projectsViewModel.selectedOwnerId.collectAsStateWithLifecycle()
+    val deleteCandidate by projectsViewModel.deleteCandidate.collectAsStateWithLifecycle()
+    val editCandidate by projectsViewModel.editCandidate.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = AppSpacing.md, vertical = AppSpacing.xs),
+                .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -91,10 +83,10 @@ fun ProjectsSectionContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (!creating) {
-                AppTertiaryButton(
-                    text = stringResource(R.string.panels_projects_new_button),
+                NiaTextButton(
+                    text = { Text(stringResource(R.string.panels_projects_new_button)) },
                     onClick = projectsViewModel::openCreateForm,
-                    leadingIcon = Icons.Outlined.Check,
+                    leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
                 )
             }
         }
@@ -116,21 +108,24 @@ fun ProjectsSectionContent(
                 text = stringResource(R.string.panels_projects_loading_projects),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = AppSpacing.md),
+                modifier = Modifier.padding(horizontal = 12.dp),
             )
             state.error != null -> Text(
                 text = state.error.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = AppSpacing.md),
+                modifier = Modifier.padding(horizontal = 12.dp),
             )
             else -> ProjectsList(
                 workspaces = state.workspaces,
                 selectedOwnerId = selectedOwnerId,
-                onSelect = projectsViewModel::selectOwner,
-                onEditRequest = { ws -> editCandidate = ws },
-                onDeleteRequest = { ws -> deleteCandidate = ws },
-                modifier = Modifier.padding(horizontal = AppSpacing.sm),
+                onSelect = { id ->
+                    projectsViewModel.selectOwner(id)
+                    dashboardViewModel.setOwnerFilter(id)
+                },
+                onEditRequest = projectsViewModel::requestEdit,
+                onDeleteRequest = projectsViewModel::requestDelete,
+                modifier = Modifier.padding(horizontal = 8.dp),
             )
         }
     }
@@ -138,7 +133,7 @@ fun ProjectsSectionContent(
     if (editCandidate != null) {
         val target = editCandidate!!
         AlertDialog(
-            onDismissRequest = { editCandidate = null },
+            onDismissRequest = projectsViewModel::cancelEdit,
             title = { Text("Edit project") },
             text = {
                 ProjectEditForm(
@@ -149,7 +144,7 @@ fun ProjectsSectionContent(
                     onSave = { name, slug, color, parent ->
                         projectsViewModel.update(target.id, name, slug, color, parent)
                     },
-                    onCancel = { editCandidate = null },
+                    onCancel = projectsViewModel::cancelEdit,
                 )
             },
             confirmButton = {},
@@ -159,7 +154,7 @@ fun ProjectsSectionContent(
     if (deleteCandidate != null) {
         val target = deleteCandidate!!
         AlertDialog(
-            onDismissRequest = { deleteCandidate = null },
+            onDismissRequest = projectsViewModel::cancelDelete,
             title = {
                 Text(
                     stringResource(
@@ -172,20 +167,19 @@ fun ProjectsSectionContent(
                 Text(stringResource(R.string.panels_projects_delete_confirm_body))
             },
             confirmButton = {
-                AppPrimaryButton(
-                    text = stringResource(R.string.panels_projects_delete),
+                NiaButton(
+                    text = { Text(stringResource(R.string.panels_projects_delete)) },
                     onClick = {
                         projectsViewModel.deleteWorkspace(target.id)
-                        deleteCandidate = null
                     },
-                    leadingIcon = Icons.Outlined.Delete,
+                    leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
                 )
             },
             dismissButton = {
-                AppTertiaryButton(
-                    text = stringResource(R.string.panels_projects_cancel),
-                    onClick = { deleteCandidate = null },
-                    leadingIcon = Icons.Outlined.Close,
+                NiaTextButton(
+                    text = { Text(stringResource(R.string.panels_projects_cancel)) },
+                    onClick = projectsViewModel::cancelDelete,
+                    leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
                 )
             },
         )
