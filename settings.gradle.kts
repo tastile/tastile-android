@@ -17,3 +17,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Tastile"
 include(":app")
+include(":lint-rules")
+project(":lint-rules").projectDir = file("app/lint-rules")
