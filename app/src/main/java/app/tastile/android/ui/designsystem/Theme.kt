@@ -1,5 +1,6 @@
 package app.tastile.android.ui.designsystem
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -10,11 +11,15 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import app.tastile.android.data.repository.ThemeMode
 
 val LocalAppTouchTarget = staticCompositionLocalOf<Dp> { 48.dp }
@@ -88,6 +93,18 @@ fun TastileTheme(
             if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
         themeMode == ThemeMode.GRAY -> grayColorScheme(dark)
         else                        -> if (dark) BrandColors.dark() else BrandColors.light()
+    }
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        @Suppress("DEPRECATION")
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = cs.background.toArgb()
+            window.navigationBarColor = cs.background.toArgb()
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !dark
+            controller.isAppearanceLightNavigationBars = !dark
+        }
     }
     MaterialTheme(
         colorScheme = cs,

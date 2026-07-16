@@ -27,7 +27,7 @@ import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import app.tastile.android.sync.SyncCoordinator
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.theme.TastileTheme
+import app.tastile.android.ui.designsystem.TastileTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode by dashboardViewModel.themeMode.collectAsStateWithLifecycle()
 
-            TastileTheme(themeMode = themeMode) {
+            TastileTheme(themeMode = themeMode, dynamicColor = true) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

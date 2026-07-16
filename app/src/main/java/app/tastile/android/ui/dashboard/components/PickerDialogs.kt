@@ -20,7 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.ThemeMode
-import app.tastile.android.ui.theme.TastileTheme
+import app.tastile.android.ui.designsystem.TastileTheme
 
 @Composable
 fun <T> PickerDialog(
