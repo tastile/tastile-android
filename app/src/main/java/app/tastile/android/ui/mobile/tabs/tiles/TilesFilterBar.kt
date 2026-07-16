@@ -8,15 +8,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.Search
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
 // m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
@@ -31,9 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.ui.designsystem.AppCorner
-import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.dashboard.ListGroupingMode
 import app.tastile.android.ui.dashboard.ListViewMode
 import app.tastile.android.ui.dashboard.TileGranularity
@@ -61,19 +65,19 @@ fun TilesFilterBar(
     onViewModeChange: (ListViewMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = AppTheme.colors
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(AppCorner.smallShape)
-            .background(colors.surface.copy(alpha = 0.6f))
-            .padding(AppTheme.spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OutlinedTextField(
             value = search,
             onValueChange = onSearchChange,
             placeholder = { Text(stringResource(R.string.dashboard_tiles_search_placeholder)) },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
@@ -186,29 +190,28 @@ private fun GenericDropdown(
     testTag: String,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val colors = AppTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(AppCorner.smallShape)
+            .clip(RoundedCornerShape(8.dp))
             .clickable { expanded = true }
-            .padding(vertical = AppTheme.spacing.xs)
+            .padding(vertical = 4.dp)
             .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             label,
-            style = AppTheme.typography.labelSmall,
-            color = colors.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(currentLabel, style = AppTheme.typography.bodyMedium, color = colors.onSurface)
-                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null, tint = colors.onSurfaceVariant)
+                Text(currentLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 items.forEach { (value, labelText) ->
@@ -233,30 +236,29 @@ private fun GenericSegmented(
     onPick: (Any) -> Unit,
     testTag: String,
 ) {
-    val colors = AppTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .testTag(testTag)
-            .clip(AppCorner.pillShape)
-            .background(colors.surfaceVariant)
-            .padding(AppTheme.spacing.xxs),
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs),
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         items.forEach { (value, labelText) ->
             val active = labelText == currentLabel
             Text(
                 labelText,
-                style = AppTheme.typography.labelMedium,
-                color = if (active) colors.onSurface else colors.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .clip(AppCorner.smallShape)
-                    .background(if (active) colors.surface else colors.surfaceVariant)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (active) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant)
                     .clickable {
                         @Suppress("UNCHECKED_CAST")
                         onPick(value as Any)
                     }
-                    .padding(horizontal = AppTheme.spacing.sm, vertical = AppTheme.spacing.xxs),
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
             )
         }
     }

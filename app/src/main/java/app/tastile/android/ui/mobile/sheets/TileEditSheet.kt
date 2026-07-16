@@ -28,14 +28,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
@@ -98,62 +98,66 @@ fun TileEditSheet(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
-                    AppPrimaryButton(
-                        text = "Save changes",
+                    NiaButton(
                         onClick = { confirmSave = true },
                         enabled = editedTitle.isNotBlank(),
                         modifier = Modifier.testTag("tile-edit-save-details"),
+                        text = { Text("Save changes") },
                     )
                     if (lifecycle == TileLifecycle.READY) {
-                        AppSecondaryButton(
-                            text = "Start",
+                        NiaOutlinedButton(
                             onClick = { viewModel.startTile(selected.id) },
+                            text = { Text("Start") },
                         )
-                        AppSecondaryButton(
-                            text = "Defer",
+                        NiaOutlinedButton(
                             onClick = { viewModel.setDeferTileCandidate(selected.id) },
+                            text = { Text("Defer") },
                         )
-                        AppSecondaryButton(
-                            text = "Request prompt",
+                        NiaOutlinedButton(
                             onClick = { viewModel.setPromptTileCandidate(selected.id) },
+                            text = { Text("Request prompt") },
                         )
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
-                        AppSecondaryButton(
-                            text = "Complete",
+                        NiaOutlinedButton(
                             onClick = { viewModel.completeTile(selected.id) },
+                            text = { Text("Complete") },
                         )
                         when (executionStates[selected.id]) {
-                            ExecutionControlState.Active -> AppSecondaryButton(
-                                text = "Pause",
+                            ExecutionControlState.Active -> NiaOutlinedButton(
                                 onClick = { viewModel.pauseTile(selected.id) },
                                 enabled = selected.id !in executionControlsInFlight,
+                                text = { Text("Pause") },
                             )
-                            ExecutionControlState.Paused -> AppSecondaryButton(
-                                text = "Resume",
+                            ExecutionControlState.Paused -> NiaOutlinedButton(
                                 onClick = { viewModel.resumeTile(selected.id) },
                                 enabled = selected.id !in executionControlsInFlight,
+                                text = { Text("Resume") },
                             )
-                            null -> AppSecondaryButton(
-                                text = "Start execution",
+                            null -> NiaOutlinedButton(
                                 onClick = { confirmExecutionAction = true },
                                 enabled = selected.id !in executionControlsInFlight,
+                                text = { Text("Start execution") },
                             )
                         }
                         if (executionStates[selected.id] != null) {
-                            AppSecondaryButton(
-                                text = "Finish execution",
+                            NiaOutlinedButton(
                                 onClick = { confirmExecutionAction = false },
                                 enabled = selected.id !in executionControlsInFlight,
+                                text = { Text("Finish execution") },
                             )
                         }
                     }
-                    AppSecondaryButton(
-                        text = if ((current as Overlay.TileEdit).placementId != null) "Delete occurrence" else "Delete",
+                    NiaOutlinedButton(
                         onClick = {
                             val placementId = (current as Overlay.TileEdit).placementId
                             if (placementId != null) viewModel.setClosePlacementCandidate(placementId)
                             else viewModel.setDeleteTileCandidate(selected.id)
+                        },
+                        text = {
+                            Text(
+                                if ((current as Overlay.TileEdit).placementId != null) "Delete occurrence" else "Delete",
+                            )
                         },
                     )
                 }
@@ -173,15 +177,15 @@ fun TileEditSheet(
                 title = { Text("Delete occurrence?") },
                 text = { Text("Only this calendar occurrence will be removed.") },
                 confirmButton = {
-                    AppPrimaryButton(
-                        text = "Delete",
+                    NiaButton(
                         onClick = viewModel::confirmClosePlacement,
+                        text = { Text("Delete") },
                     )
                 },
                 dismissButton = {
-                    AppTertiaryButton(
-                        text = "Cancel",
+                    NiaTextButton(
                         onClick = { viewModel.setClosePlacementCandidate(null) },
+                        text = { Text("Cancel") },
                     )
                 },
             )
@@ -206,18 +210,18 @@ fun TileEditSheet(
                 title = { Text(if (start) "Start execution?" else "Finish execution?") },
                 text = { Text(if (start) "Start work on this occurrence." else "Finish this execution without completing the tile.") },
                 confirmButton = {
-                    AppPrimaryButton(
-                        text = if (start) "Start" else "Finish",
+                    NiaButton(
                         onClick = {
                             if (start) viewModel.startExecution(selected!!.id) else viewModel.finishExecution(selected!!.id)
                             confirmExecutionAction = null
                         },
+                        text = { Text(if (start) "Start" else "Finish") },
                     )
                 },
                 dismissButton = {
-                    AppTertiaryButton(
-                        text = "Cancel",
+                    NiaTextButton(
                         onClick = { confirmExecutionAction = null },
+                        text = { Text("Cancel") },
                     )
                 },
             )
@@ -228,18 +232,18 @@ fun TileEditSheet(
                 title = { Text("Save tile changes?") },
                 text = { Text("Update ${selected.title} to $editedTitle.") },
                 confirmButton = {
-                    AppPrimaryButton(
-                        text = "Save",
+                    NiaButton(
                         onClick = {
                             viewModel.updateTileTitle(selected.id, editedTitle)
                             confirmSave = false
                         },
+                        text = { Text("Save") },
                     )
                 },
                 dismissButton = {
-                    AppTertiaryButton(
-                        text = "Cancel",
+                    NiaTextButton(
                         onClick = { confirmSave = false },
+                        text = { Text("Cancel") },
                     )
                 },
             )
