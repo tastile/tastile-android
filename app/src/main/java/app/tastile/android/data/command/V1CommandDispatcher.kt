@@ -508,13 +508,16 @@ class V1CommandDispatcher @Inject constructor(
 
     private suspend fun findExecutionIdForTile(tileId: String): String? {
         executionIdsByTile[tileId]?.let { cached ->
-            val execution = v1ApiClient.readExecution(cached)
-            if (execution.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES) return cached
+            val execution = runCatching { v1ApiClient.readExecution(cached) }.getOrNull()
+            if (execution?.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES) return cached
+            // A failed or mismatched validation is never a reason to keep
+            // offering Resume. Discard the volatile id before falling back
+            // to the authoritative active-tile lookup.
             executionIdsByTile.remove(tileId)
         }
         val active = v1ApiClient.getActiveTile()
         val executionId = active?.takeIf { it.tileId == tileId }?.executionId ?: return null
-        val execution = v1ApiClient.readExecution(executionId)
+        val execution = runCatching { v1ApiClient.readExecution(executionId) }.getOrNull() ?: return null
         return executionId.takeIf {
             execution.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES
         }?.also { executionIdsByTile[tileId] = it }

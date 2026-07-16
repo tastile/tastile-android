@@ -194,10 +194,67 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun startTile_reloadsTheStartedTileAndExposesPauseControl() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        var response = TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Ready")),
+            null,
+            null,
+        )
+        coEvery { tileRepository.getTiles(any()) } answers { response }
+        coEvery { tileRepository.startTile("tile-1") } answers {
+            response = TilesResponse(
+                listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
+                null,
+                null,
+            )
+            Tile(id = "tile-1", title = "Focus", lifecycle = "Started")
+        }
+        coEvery { tileRepository.executionStateForTile("tile-1") } returns 0
+
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+
+        viewModel.startTile("tile-1")
+
+        assertEquals("Started", viewModel.tiles.value.single().lifecycle)
+        assertEquals(ExecutionControlState.Active, viewModel.executionControlStates.value["tile-1"])
+        coVerify(exactly = 1) { tileRepository.startTile("tile-1") }
+        coVerify(atLeast = 1) { tileRepository.getTiles(any()) }
+    }
+
+    @Test
+    fun authoritativeExecutionRefresh_clearsUnvalidatedPausedState() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val authState = MutableStateFlow<TastileAuthState>(TastileAuthState.Authenticated("user-1", "user@example.test", "id-token", "access-token", null))
+        every { authRepository.authState } returns authState
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
+            null,
+            null,
+        )
+        coEvery { tileRepository.executionStateForTile("tile-1") } returns null
+
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Paused))
+
+        viewModel.setTileFilter(app.tastile.android.data.repository.TileFilter(limit = 21))
+
+        assertEquals(null, viewModel.executionControlStates.value["tile-1"])
+    }
+
+    @Test
     fun pauseThenResume_transitionsControlStateForTheSameExecution() = runTest {
         val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { tileRepository.pauseTile("tile-1") } returns Unit
         coEvery { tileRepository.continueTile("tile-1") } returns Unit
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
+            null,
+            null,
+        )
+        coEvery { tileRepository.executionStateForTile("tile-1") } returnsMany listOf(1, 0)
         val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
         viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))

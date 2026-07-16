@@ -566,6 +566,31 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) { apiClient.postNullCommand("/v1/executions/ex-1/resume", any<KSerializer<Any>>()) }
     }
 
+    @Test
+    fun executionStateForTile_clearsVolatileIdWhenRevalidationFails() = runTest {
+        val apiClient = newApiClient()
+        val activeExecution = app.tastile.android.data.api.ExecutionView(
+            id = "ex-1",
+            tileId = "t-123",
+            state = 0,
+            placementId = "pl-1",
+        )
+        coEvery { apiClient.getActiveTile() } returnsMany listOf(
+            app.tastile.android.data.api.ActiveTileView("t-123", "pl-1", "ex-1"),
+            null,
+        )
+        coEvery { apiClient.readExecution("ex-1") } returns activeExecution andThenThrows V1Error.Network(IOException("offline"))
+        coEvery {
+            apiClient.postNullCommand("/v1/executions/ex-1/pause", any<KSerializer<Any>>())
+        } returns okResponse("ex-1")
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        assertNotNull(dispatcher.dispatchTilePause("t-123"))
+
+        assertNull(dispatcher.executionStateForTile("t-123"))
+        coVerify(exactly = 2) { apiClient.getActiveTile() }
+    }
+
     // --- Step 5: tile.reschedule ----------------------------------------
 
     @Test

@@ -1,5 +1,6 @@
 package app.tastile.android.ui.dashboard
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
@@ -122,6 +123,14 @@ class DashboardViewModel @Inject constructor(
 
     private val _executionControlStates = MutableStateFlow<Map<String, ExecutionControlState>>(emptyMap())
     val executionControlStates: StateFlow<Map<String, ExecutionControlState>> = _executionControlStates.asStateFlow()
+
+    /**
+     * The v1 active-tile endpoint deliberately omits paused executions. Keep
+     * the locally paused state only long enough for an immediate resume while
+     * the same process still holds the execution id; all later UI state comes
+     * from a validated execution read.
+     */
+    private val recentlyPausedUntilElapsedMs = mutableMapOf<String, Long>()
 
     fun setTileFilter(filter: TileFilter) {
         _tileFilter.value = filter
@@ -431,6 +440,7 @@ class DashboardViewModel @Inject constructor(
     companion object {
         private const val INITIAL_SECTION_LIMIT = 8
         private const val MAX_SECTION_LIMIT = 60
+        private const val JUST_PAUSED_GRACE_MS = 5_000L
     }
 
     fun setTimelineScale(scale: TimelineSubScale) {
@@ -544,12 +554,7 @@ class DashboardViewModel @Inject constructor(
                 .collect { (state, filter) ->
                     val userId = (state as? TastileAuthState.Authenticated)?.userId
                     if (userId != null) {
-                        val response = tileRepository.getTiles(filter)
-                        _tiles.value = response.tiles
-                        _nextActionableTileId.value = response.nextActionableTileId
-                        _nextActionableStartAt.value = response.nextActionableStartAt
-                        refreshExecutionControlStates(response.tiles)
-                        _statsDiagnostics.value = tileRepository.latestReadDiagnostics()
+                        reloadVisibleTilesAndExecutionControls(filter)
                     } else {
                         _tiles.value = emptyList()
                         _nextActionableTileId.value = null
@@ -640,6 +645,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.startTile(tileId)
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
                 _lastActionMessage.value = "Started"
                 refreshAll()
             } catch (e: Exception) {
@@ -665,6 +671,8 @@ class DashboardViewModel @Inject constructor(
             try {
                 tileRepository.pauseTile(tileId)
                 _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Paused)
+                recentlyPausedUntilElapsedMs[tileId] = SystemClock.elapsedRealtime() + JUST_PAUSED_GRACE_MS
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
                 _lastActionMessage.value = "Paused"
                 refreshAll()
             } catch (e: Exception) {
@@ -677,7 +685,9 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.continueTile(tileId)
+                recentlyPausedUntilElapsedMs.remove(tileId)
                 _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Active)
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
                 _lastActionMessage.value = "Resumed"
                 refreshAll()
             } catch (e: Exception) {
@@ -686,26 +696,39 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun refreshExecutionControlStates(tiles: List<Tile>) {
+    private suspend fun reloadVisibleTilesAndExecutionControls(filter: TileFilter) {
+        val response = tileRepository.getTiles(filter)
+        _tiles.value = response.tiles
+        _nextActionableTileId.value = response.nextActionableTileId
+        _nextActionableStartAt.value = response.nextActionableStartAt
+        refreshExecutionControlStates(response.tiles)
+        _statsDiagnostics.value = tileRepository.latestReadDiagnostics()
+    }
+
+    private suspend fun refreshExecutionControlStates(tiles: List<Tile>) {
         val startedIds = tiles.filter { it.isStarted() }.map { it.id }.toSet()
         if (startedIds.isEmpty()) {
+            recentlyPausedUntilElapsedMs.clear()
             _executionControlStates.value = emptyMap()
             return
         }
-        viewModelScope.launch {
-            val refreshed = startedIds.mapNotNull { tileId ->
-                when (tileRepository.executionStateForTile(tileId)) {
-                    0 -> tileId to ExecutionControlState.Active
-                    1 -> tileId to ExecutionControlState.Paused
-                    else -> null
-                }
-            }.toMap()
-            // Retain a just-paused execution while its authoritative execution
-            // read is refreshed; v1's active-tile route intentionally omits it.
-            _executionControlStates.value = _executionControlStates.value
-                .filterKeys { it in startedIds }
-                .plus(refreshed)
+        val refreshed = startedIds.mapNotNull { tileId ->
+            when (tileRepository.executionStateForTile(tileId)) {
+                0 -> tileId to ExecutionControlState.Active
+                1 -> tileId to ExecutionControlState.Paused
+                else -> null
+            }
+        }.toMap()
+        val now = SystemClock.elapsedRealtime()
+        val justPaused = recentlyPausedUntilElapsedMs
+            .filter { (tileId, expiresAt) -> tileId in startedIds && expiresAt > now }
+            .keys
+        recentlyPausedUntilElapsedMs.entries.removeAll { (tileId, expiresAt) ->
+            tileId !in startedIds || expiresAt <= now
         }
+        _executionControlStates.value = refreshed + justPaused
+            .filter { it !in refreshed }
+            .associateWith { ExecutionControlState.Paused }
     }
 
     fun deferTile(tileId: String, deferredUntil: String) {
