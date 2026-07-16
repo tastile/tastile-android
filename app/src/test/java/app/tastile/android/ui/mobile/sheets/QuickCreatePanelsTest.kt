@@ -101,12 +101,8 @@ class QuickCreatePanelsTest {
         rule.onNodeWithText("Back").performScrollTo().performClick()
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
-        rule.onNodeWithTag("quick-create-task-show-0").performScrollTo().performTextReplacement("true")
-        rule.onNodeWithTag("quick-create-task-complete-0").performScrollTo().performTextReplacement("{\"kind\":3,\"children\":[],\"term\":\"done\"}")
-        rule.onNodeWithTag("quick-create-task-order-0").performScrollTo().performTextReplacement("[\"first\"]")
-        assertTrue(store.state.value.plan.completion.tasks.single().show == kotlinx.serialization.json.JsonPrimitive(true))
-        assertTrue(store.state.value.plan.completion.tasks.single().complete.term == kotlinx.serialization.json.JsonPrimitive("done"))
-        assertTrue(store.state.value.plan.completion.tasks.single().order.size == 1)
+        rule.onNodeWithText("Add condition").performClick()
+        assertTrue(store.state.value.plan.completion.root.children.isNotEmpty())
     }
 
     @Test

@@ -147,31 +147,23 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
 
 @Composable
 private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    JsonEditor("Completion root condition", conditionToJson(draft.plan.completion.root)) { value ->
-        conditionFromJson(value)?.let { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }
-    }
+    Text("Logic")
+    Row { listOf(0 to "ALL", 1 to "ANY", 2 to "NOT").forEach { (kind, label) -> TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = draft.plan.completion.root.copy(kind = kind, term = null)))) }) { Text(label) } } }
+    ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) })
     TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements + QuickCreateTimeRequirement(UUID.randomUUID().toString(), JsonNull, JsonNull)))) }) { Text("Add time requirement") }
     draft.plan.completion.timeRequirements.forEachIndexed { index, requirement ->
         OutlinedTextField(requirement.id, { value ->
             store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements.replace(index, requirement.copy(id = value)))))
         }, label = { Text("Requirement ID") })
-        JsonEditor("Observation", requirement.observation) { value -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements.replace(index, requirement.copy(observation = value)))) ) }
-        JsonEditor("Required", requirement.required) { value -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements.replace(index, requirement.copy(required = value)))) ) }
-        JsonEditor("Preferred", requirement.preferred ?: JsonNull) { value -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements.replace(index, requirement.copy(preferred = value)))) ) }
+        Text("${requirement.required.jsonObjectOrEmpty().string("minMs")} ms")
         TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements.filterIndexed { item, _ -> item != index }))) }) { Text("Remove time requirement") }
     }
-    TextButton(onClick = {
-        store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks + QuickCreateTaskDefinition(UUID.randomUUID().toString(), QuickCreateTaskContent("")))))
-    }) { Text("Add completion task") }
-    draft.plan.completion.tasks.forEachIndexed { index, task ->
-        OutlinedTextField(task.id, { value -> updateTask(draft, store, index, task.copy(id = value)) }, label = { Text("Task ID") })
-        OutlinedTextField(task.content.title, { value -> updateTask(draft, store, index, task.copy(content = task.content.copy(title = value))) }, label = { Text("Task title") })
-        OutlinedTextField(task.content.note.orEmpty(), { value -> updateTask(draft, store, index, task.copy(content = task.content.copy(note = value.ifBlank { null }))) }, label = { Text("Task note") })
-        JsonEditor("Show", task.show ?: JsonNull, "quick-create-task-show-$index") { value -> updateTask(draft, store, index, task.copy(show = value)) }
-        JsonEditor("Complete condition", conditionToJson(task.complete), "quick-create-task-complete-$index") { value -> conditionFromJson(value)?.let { complete -> updateTask(draft, store, index, task.copy(complete = complete)) } }
-        JsonEditor("Order", task.order, "quick-create-task-order-$index") { value -> (value as? kotlinx.serialization.json.JsonArray)?.let { order -> updateTask(draft, store, index, task.copy(order = order)) } }
-        TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.filterIndexed { item, _ -> item != index }))) }) { Text("Remove completion task") }
-    }
+}
+
+@Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit) {
+    Row { listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").forEach { (kind, label) -> TextButton(onClick = { onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) JsonObject(mapOf("kind" to JsonPrimitive("calendar"))) else null)) }) { Text(label) } } }
+    if (node.kind == 3) Row { listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life").forEach { type -> TextButton(onClick = { onChange(node.copy(term = JsonObject(mapOf("kind" to JsonPrimitive(type))))) }) { Text(type) } } }
+    else { node.children.forEachIndexed { index, child -> ConditionControls(child) { updated -> onChange(node.copy(children = node.children.replace(index, updated))) }; TextButton(onClick = { onChange(node.copy(children = node.children.filterIndexed { item, _ -> item != index })) }) { Text("Remove") } }; TextButton(onClick = { onChange(node.copy(children = node.children + QuickCreateConditionNode(3, term = JsonObject(mapOf("kind" to JsonPrimitive("calendar")))))) }) { Text("Add condition") } }
 }
 
 @Composable
