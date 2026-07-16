@@ -1,10 +1,11 @@
 package app.tastile.android.ui.mobile.panels.projects
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -22,7 +23,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.R
-import app.tastile.android.ui.designsystem.AppSpacing
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 
 private val SLUG_REGEX = Regex("[a-z0-9-]+")
 
@@ -55,8 +58,8 @@ fun NewProjectForm(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            .padding(MobileSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
     ) {
         OutlinedTextField(
             value = name,
@@ -104,21 +107,20 @@ fun NewProjectForm(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
         ) {
-            Button(
+            AppPrimaryButton(
+                text = if (busy) stringResource(R.string.panels_projects_creating)
+                else stringResource(R.string.panels_projects_create),
                 onClick = { onSubmit(name, slug.ifBlank { null }, color.ifBlank { null }, parentId) },
                 enabled = !busy && name.isNotBlank(),
                 modifier = Modifier.testTag("project-create-submit"),
-            ) {
-                Text(
-                    if (busy) stringResource(R.string.panels_projects_creating)
-                    else stringResource(R.string.panels_projects_create),
-                )
-            }
-            TextButton(onClick = onCancel, enabled = !busy) {
-                Text(stringResource(R.string.panels_projects_cancel))
-            }
+            )
+            AppTertiaryButton(
+                text = stringResource(R.string.panels_projects_cancel),
+                onClick = onCancel,
+                enabled = !busy,
+            )
         }
         if (!errorText.isNullOrBlank()) {
             Text(

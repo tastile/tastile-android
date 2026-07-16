@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,16 +38,16 @@ import app.tastile.android.data.model.dueAtDate
 import app.tastile.android.data.model.isRecurring
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
-import app.tastile.android.ui.designsystem.AppChevron
-import app.tastile.android.ui.designsystem.AppComponentSize
 import app.tastile.android.ui.designsystem.AppCorner
-import app.tastile.android.ui.designsystem.AppListRow
 import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.SidePanelSection
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 import app.tastile.android.ui.mobile.designsystem.MobileTokens
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
 import app.tastile.android.ui.mobile.panels.schedule.ProjectsCheckboxSection as MovedProjectsCheckboxSection
 import app.tastile.android.ui.mobile.panels.schedule.ScheduleRowList
 import app.tastile.android.ui.mobile.panels.schedule.ScheduleViewToggle
@@ -142,50 +141,35 @@ private fun PreferencesSectionContent(overlayViewModel: OverlayViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            .padding(vertical = MobileSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
     ) {
-        PreferencesNavRow(
-            label = stringResource(R.string.preferences_nav_general),
-            icon = Icons.Outlined.Tune,
+        SectionHeader(title = stringResource(R.string.nav_preferences))
+        AppListItem(
+            headline = stringResource(R.string.preferences_nav_general),
+            leading = Icons.Outlined.Tune,
+            trailing = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
             onClick = { /* TODO(C9): open GeneralPreferencesSheet */ },
         )
-        PreferencesNavRow(
-            label = stringResource(R.string.preferences_nav_profile),
-            icon = Icons.Outlined.AccountCircle,
+        AppListItem(
+            headline = stringResource(R.string.preferences_nav_profile),
+            leading = Icons.Outlined.AccountCircle,
+            trailing = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
             onClick = { overlayViewModel.show(Overlay.AccountSettings) },
         )
-        PreferencesNavRow(
-            label = stringResource(R.string.preferences_nav_subscription),
-            icon = Icons.Outlined.CreditCard,
+        AppListItem(
+            headline = stringResource(R.string.preferences_nav_subscription),
+            leading = Icons.Outlined.CreditCard,
+            trailing = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
             onClick = { overlayViewModel.show(Overlay.Subscription) },
         )
-        PreferencesNavRow(
-            label = stringResource(R.string.preferences_nav_tokens),
-            icon = Icons.Outlined.Key,
+        AppListItem(
+            headline = stringResource(R.string.preferences_nav_tokens),
+            leading = Icons.Outlined.Key,
+            trailing = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
             onClick = { overlayViewModel.show(Overlay.Tokens) },
         )
     }
-}
-
-@Composable
-private fun PreferencesNavRow(
-    label: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-) {
-    AppListRow(
-        label = label,
-        leading = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(AppComponentSize.listRowGlyphSize),
-            )
-        },
-        trailing = { AppChevron() },
-        onClick = onClick,
-    )
 }
 
 // ─────────────────────────────────────────────

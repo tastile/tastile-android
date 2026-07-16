@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FolderOff
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +23,8 @@ import app.tastile.android.data.model.projectLabel
 import app.tastile.android.ui.designsystem.AppCorner
 import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
 
 /**
  * "Projects" filter section reused by both [TimelineSectionContent]
@@ -39,17 +43,12 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
     val checked = remember { mutableStateOf(setOf<String>()) }
 
     Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
-        Text(
-            text = stringResource(R.string.panels_schedule_projects),
-            style = AppTheme.typography.labelSmall,
-            color = AppTheme.colors.onSurfaceVariant,
-        )
+        SectionHeader(title = stringResource(R.string.panels_schedule_projects))
         if (projects.isEmpty()) {
-            Text(
-                text = "No projects yet",
-                style = AppTheme.typography.bodySmall,
-                color = AppTheme.colors.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = AppSpacing.xs),
+            AppEmptyState(
+                icon = Icons.Outlined.FolderOff,
+                title = stringResource(R.string.empty_projects_title),
+                hint = stringResource(R.string.empty_projects_hint),
             )
             return@Column
         }

@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +17,7 @@ import app.tastile.android.ui.designsystem.AppCorner
 import app.tastile.android.ui.designsystem.AppListRow
 import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
 import app.tastile.android.ui.mobile.designsystem.MobileTokens
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
@@ -36,18 +37,12 @@ internal fun TimelineBlockList(
     modifier: Modifier = Modifier,
 ) {
     if (blocks.isEmpty()) {
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(vertical = AppSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
-        ) {
-            Text(
-                text = stringResource(R.string.panels_timeline_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppTheme.colors.onSurfaceVariant,
-            )
-        }
+        AppEmptyState(
+            icon = Icons.Outlined.CalendarMonth,
+            title = stringResource(R.string.panels_timeline_empty),
+            hint = "",
+            modifier = modifier,
+        )
         return
     }
     Column(

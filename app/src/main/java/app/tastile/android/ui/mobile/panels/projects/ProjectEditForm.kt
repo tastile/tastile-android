@@ -1,10 +1,11 @@
 package app.tastile.android.ui.mobile.panels.projects
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -16,10 +17,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import app.tastile.android.data.api.Workspace
-import app.tastile.android.ui.designsystem.AppSpacing
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 
 /** Web ProjectsMain edit fields, including the Android-visible parent link. */
 @Composable
@@ -40,7 +44,7 @@ fun ProjectEditForm(
     val candidates = remember(workspace.id, workspaces) {
         orderWorkspaceTree(workspaces.filterNot { it.id in blockedIds })
     }
-    Column(modifier = Modifier.fillMaxWidth().padding(AppSpacing.sm)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(MobileSpacing.sm)) {
         OutlinedTextField(name, { name = it.take(80) }, label = { Text("Name") }, singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag("project-edit-name"))
         OutlinedTextField(slug, { slug = it.lowercase().filter { c -> c.isLetterOrDigit() || c == '-' }.take(40) }, label = { Text("Slug") }, singleLine = true,
@@ -59,12 +63,23 @@ fun ProjectEditForm(
                 ) }
             }
         }
-        Button(
-            onClick = { onSave(name, slug.ifBlank { null }, color.ifBlank { null }, parentId) },
-            enabled = !busy && name.isNotBlank(),
-            modifier = Modifier.testTag("project-edit-save"),
-        ) { Text(if (busy) "Saving…" else "Save") }
-        TextButton(onClick = onCancel, enabled = !busy) { Text("Cancel") }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+        ) {
+            AppPrimaryButton(
+                text = if (busy) "Saving…" else "Save",
+                onClick = { onSave(name, slug.ifBlank { null }, color.ifBlank { null }, parentId) },
+                enabled = !busy && name.isNotBlank(),
+                modifier = Modifier.testTag("project-edit-save"),
+            )
+            AppTertiaryButton(
+                text = "Cancel",
+                onClick = onCancel,
+                enabled = !busy,
+            )
+        }
         if (!errorText.isNullOrBlank()) Text(errorText, color = MaterialTheme.colorScheme.error)
     }
 }

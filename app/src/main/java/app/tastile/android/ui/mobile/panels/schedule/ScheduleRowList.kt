@@ -3,17 +3,21 @@ package app.tastile.android.ui.mobile.panels.schedule
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.EventBusy
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
-import app.tastile.android.ui.designsystem.AppListRow
 import app.tastile.android.ui.designsystem.AppSpacing
-import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.AppListItem
 
 /**
  * Filtered list of schedule rows for the active view. Mirrors the web
@@ -24,7 +28,7 @@ import app.tastile.android.ui.designsystem.AppTheme
  * upcoming (the filter logic lives in [ScheduleSectionContent] so it
  * can read `LocalDate.now()` once per recomposition).
  * @param recurring whether the active view is "recurring" — toggles
- * the leading glyph (↻) and the description prefix.
+ * the leading icon and the description prefix.
  * @param onSelect invoked when a row is tapped.
  */
 @Composable
@@ -34,11 +38,10 @@ fun ScheduleRowList(
     onSelect: (String) -> Unit,
 ) {
     if (tiles.isEmpty()) {
-        Text(
-            text = "No tiles",
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
-            modifier = Modifier.padding(vertical = AppSpacing.xs),
+        AppEmptyState(
+            icon = Icons.Outlined.EventBusy,
+            title = stringResource(R.string.empty_schedule_title),
+            hint = stringResource(R.string.empty_schedule_hint),
         )
         return
     }
@@ -64,26 +67,11 @@ private fun ScheduleRow(
     recurring: Boolean,
     onClick: () -> Unit,
 ) {
-    if (recurring) {
-        AppListRow(
-            label = tile.title,
-            leading = {
-                Text(
-                    text = "↻",
-                    style = AppTheme.typography.bodyMedium,
-                    color = AppTheme.colors.onSurfaceVariant,
-                )
-            },
-            onClick = onClick,
-            description = tile.title,
-        )
-    } else {
-        AppListRow(
-            label = tile.title,
-            onClick = onClick,
-            description = tile.title,
-        )
-    }
+    AppListItem(
+        headline = tile.title,
+        leading = if (recurring) Icons.Outlined.Replay else Icons.Outlined.Schedule,
+        onClick = onClick,
+    )
 }
 
 private const val VISIBLE_LIMIT = 10

@@ -19,16 +19,16 @@ import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineSubScale
-import app.tastile.android.ui.designsystem.AppScreenTitle
-import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
 
 /**
  * Timeline pane body. Mirrors web `/dashboard/timeline` surface in
  * `tastile-web/src/app/dashboard/timeline/page.tsx` (composition order
  * binding per plan R1):
  *
- *   1. AppScreenTitle
+ *   1. SectionHeader(title = "Calendar")
  *   2. Meta-pills row (blocks · work · breaks)
  *   3. 4-tab pill scale selector (Day / Week / Month / Custom)
  *   4. (Custom only) Two date inputs for the custom range
@@ -51,10 +51,10 @@ internal fun TimelineSectionContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+            .padding(vertical = MobileSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
     ) {
-        AppScreenTitle(text = stringResource(R.string.panels_calendar_scale))
+        SectionHeader(title = "Calendar")
 
         TimelineMetaPills(
             model = computeMetaPills(timeline),
@@ -99,7 +99,7 @@ private fun CustomDateRow(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs),
     ) {
         Text(
             text = "${startIso ?: "—"}  →  ${endIso ?: "—"}",
@@ -126,11 +126,11 @@ private fun TimelineLoadingOverlay() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.md),
+            .padding(vertical = MobileSpacing.md),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             CircularProgressIndicator(modifier = Modifier.padding(4.dp))

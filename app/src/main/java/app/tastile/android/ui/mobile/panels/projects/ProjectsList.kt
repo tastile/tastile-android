@@ -1,31 +1,19 @@
 package app.tastile.android.ui.mobile.panels.projects
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import app.tastile.android.data.api.Workspace
-import app.tastile.android.ui.designsystem.AppCorner
-import app.tastile.android.ui.designsystem.AppSpacing
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.FolderOff
 import app.tastile.android.R
+import app.tastile.android.data.api.Workspace
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 
 /**
  * Renders the "All Projects" + per-workspace rows in a parent-before-child
@@ -43,12 +31,21 @@ fun ProjectsList(
     onDeleteRequest: (Workspace) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)) {
-        AllProjectsRow(
-            selected = selectedOwnerId == null,
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs)) {
+        AppListItem(
+            headline = stringResource(R.string.panels_projects_all_projects),
+            leading = Icons.Outlined.Folder,
             onClick = { onSelect(null) },
+            selected = selectedOwnerId == null,
         )
-        if (workspaces.isEmpty()) return@Column
+        if (workspaces.isEmpty()) {
+            AppEmptyState(
+                icon = Icons.Outlined.FolderOff,
+                title = stringResource(R.string.empty_projects_title),
+                hint = stringResource(R.string.empty_projects_hint),
+            )
+            return@Column
+        }
         val ordered = remember(workspaces) { orderWorkspaceTree(workspaces) }
         ordered.forEach { entry ->
             ProjectRow(
@@ -60,37 +57,6 @@ fun ProjectsList(
                 onDelete = { onDeleteRequest(entry.workspace) },
             )
         }
-    }
-}
-
-@Composable
-private fun AllProjectsRow(selected: Boolean, onClick: () -> Unit) {
-    val bg = if (selected) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-    else Color.Transparent
-    val fg = if (selected) MaterialTheme.colorScheme.onSurface
-    else MaterialTheme.colorScheme.onSurfaceVariant
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(AppCorner.mediumShape)
-            .background(bg)
-            .clickable(onClick = onClick)
-            .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.outline),
-        )
-        Box(Modifier.size(AppSpacing.sm))
-        Text(
-            text = stringResource(R.string.panels_projects_all_projects),
-            style = MaterialTheme.typography.bodyMedium,
-            color = fg,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-        )
     }
 }
 
