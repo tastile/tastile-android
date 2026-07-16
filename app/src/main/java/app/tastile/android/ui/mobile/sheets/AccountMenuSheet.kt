@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.sheets
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
@@ -11,6 +12,12 @@ import androidx.compose.material.icons.outlined.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
+import androidx.compose.material3.ListItem
+// m2-allow: m3-component
+import androidx.compose.material3.ListItemDefaults
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
@@ -27,12 +34,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.designsystem.AppListItem
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 
 /**
  * Account dropdown mirroring the web account menu (`src/app/app/account-menu.tsx`).
@@ -107,19 +113,19 @@ fun AccountMenuSheet(
             title = { Text(stringResource(R.string.nav_account_sign_out)) },
             text = { Text(stringResource(R.string.shell_account_sign_out_confirm)) },
             confirmButton = {
-                AppPrimaryButton(
-                    text = stringResource(R.string.nav_account_sign_out),
+                NiaButton(
                     onClick = {
                         showSignOutConfirm = false
                         overlay.dismiss()
                         viewModel.signOut()
                     },
+                    text = { Text(stringResource(R.string.nav_account_sign_out)) },
                 )
             },
             dismissButton = {
-                AppTertiaryButton(
-                    text = stringResource(R.string.dashboard_tiles_delete_dialog_cancel),
+                NiaTextButton(
                     onClick = { showSignOutConfirm = false },
+                    text = { Text(stringResource(R.string.dashboard_tiles_delete_dialog_cancel)) },
                 )
             },
         )
@@ -133,11 +139,13 @@ private fun AccountMenuRow(
     testTag: String,
     onClick: () -> Unit,
 ) {
-    AppListItem(
-        headline = label,
-        leading = icon,
-        trailing = Icons.Outlined.ChevronRight,
-        onClick = onClick,
-        modifier = Modifier.testTag(testTag),
+    ListItem(
+        headlineContent = { Text(label, style = MaterialTheme.typography.bodyLarge) },
+        leadingContent = { Icon(icon, contentDescription = null) },
+        trailingContent = { Icon(Icons.Outlined.ChevronRight, contentDescription = null) },
+        modifier = Modifier
+            .testTag(testTag)
+            .clickable(onClick = onClick),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     )
 }

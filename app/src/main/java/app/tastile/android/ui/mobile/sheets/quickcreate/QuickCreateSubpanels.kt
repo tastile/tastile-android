@@ -1,15 +1,22 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.Add
@@ -29,7 +36,6 @@ import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Link
@@ -45,15 +51,31 @@ import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material.icons.outlined.WbSunny
 // m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
-// m2-allow: m3-component
-import androidx.compose.material3.FilterChip
-// m2-allow: m3-component
 import androidx.compose.material3.DatePicker
 // m2-allow: m3-component
 import androidx.compose.material3.DatePickerDialog
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: m3-component
+import androidx.compose.material3.FilledTonalButton
+// m2-allow: m3-component
+import androidx.compose.material3.FilterChip
+// m2-allow: primitive
+import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
+import androidx.compose.material3.Icon
+// m2-allow: m3-component
+import androidx.compose.material3.ListItem
+// m2-allow: m3-component
+import androidx.compose.material3.ListItemDefaults
+// m2-allow: m3-component
+import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
+import androidx.compose.material3.OutlinedButton
+// m2-allow: m3-component
+import androidx.compose.material3.OutlinedTextField
+// m2-allow: m3-component
+import androidx.compose.material3.Surface
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,25 +83,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.components.picker.DatePickerSheet
 import app.tastile.android.ui.mobile.components.picker.ReferenceOption
 import app.tastile.android.ui.mobile.components.picker.ReferencePickerSheet
 import app.tastile.android.ui.mobile.components.picker.TimePickerSheet
-import app.tastile.android.ui.mobile.designsystem.AppDismissButton
-import app.tastile.android.ui.mobile.designsystem.AppNumberField
-import app.tastile.android.ui.mobile.designsystem.AppPickerButton
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
-import app.tastile.android.ui.mobile.designsystem.AppSelectList
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
-import app.tastile.android.ui.mobile.designsystem.AppWeekdayPicker
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
-import app.tastile.android.ui.mobile.designsystem.SectionHeader
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreateDurationRange
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
@@ -132,11 +149,20 @@ internal fun QuickCreateSubpanel(
         Modifier
             .testTag("quick-create-subpanel-${panel.name}")
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = MobileSpacing.lg, vertical = MobileSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        BackHeader(onBack)
-        SectionHeader(title = panel.name)
+        NiaTextButton(
+            onClick = onBack,
+            text = { Text("Back") },
+            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null) },
+        )
+        Text(
+            text = panel.name,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        HorizontalDivider()
         when (panel) {
             QuickCreatePanel.Intent -> IntentPanel(store)
             QuickCreatePanel.Time -> TimePanel(draft, store)
@@ -174,13 +200,13 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             ReferenceOption(id = refId, label = ref.id.ifBlank { refId })
         }
     }
-    AppTertiaryButton(
-        text = "No date or time",
+    NiaOutlinedButton(
         onClick = { setWhen(QuickCreateWhenMode.None) },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-when-none"),
-        leadingIcon = Icons.Outlined.EventBusy,
+        text = { Text("No date or time") },
+        leadingIcon = { Icon(Icons.Outlined.EventBusy, contentDescription = null) },
     )
-    SectionHeader(title = "When")
+    LocalSectionHeader(title = "When")
     val whenModes = listOf(QuickCreateWhenMode.Day, QuickCreateWhenMode.Range, QuickCreateWhenMode.Reference)
     val whenIcon: (QuickCreateWhenMode) -> androidx.compose.ui.graphics.vector.ImageVector = { mode ->
         when (mode) {
@@ -190,7 +216,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             QuickCreateWhenMode.Reference -> Icons.Outlined.Tag
         }
     }
-    AppSelectList(
+    LocalSelectList(
         options = whenModes,
         selected = draft.time.whenMode.takeIf { it in whenModes },
         label = { it.name },
@@ -203,8 +229,8 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         if (draft.time.whenMode == QuickCreateWhenMode.Range) NativeDateField("End date", draft.time.span.end, "quick-create-end") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }
     }
     if (draft.time.whenMode == QuickCreateWhenMode.Reference) Column(Modifier.testTag("quick-create-reference-catalog")) {
-        SectionHeader(title = "Reference range")
-        AppPickerButton(
+        LocalSectionHeader(title = "Reference range")
+        LocalPickerField(
             label = stringResource(R.string.picker_reference_label),
             value = draft.time.referenceId.orEmpty().ifBlank { "—" },
             onClick = { showReferencePicker = true },
@@ -214,9 +240,9 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         OutlinedTextField(draft.time.referenceLabel, { value -> store.updateTime(draft.time.copy(referenceLabel = value)) }, label = { Text("Reference label") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-label"))
     }
     if (draft.time.whenMode != QuickCreateWhenMode.None) {
-        SectionHeader(title = "Time of day")
+        LocalSectionHeader(title = "Time of day")
         val timeOfDayModes = QuickCreateTimeOfDayMode.entries.toList()
-        AppSelectList(
+        LocalSelectList(
             options = timeOfDayModes,
             selected = draft.time.timeOfDayMode,
             label = { it.name },
@@ -227,7 +253,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             testTag = { "quick-create-time-of-day-${it.name.lowercase()}" },
         )
         if (draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range) {
-            AppPickerButton(
+            LocalPickerField(
                 label = stringResource(R.string.picker_time_start),
                 value = draft.time.timeOfDayStart.ifBlank { "—" },
                 onClick = { showStartTime = true },
@@ -245,7 +271,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                     titleRes = R.string.picker_time_start,
                 )
             }
-            AppPickerButton(
+            LocalPickerField(
                 label = stringResource(R.string.picker_time_end),
                 value = draft.time.timeOfDayEnd.ifBlank { "—" },
                 onClick = { showEndTime = true },
@@ -268,7 +294,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                 Triple("midday", "09:00" to "18:00", Icons.Outlined.LightMode),
                 Triple("night", "18:00" to "24:00", Icons.Outlined.DarkMode),
             )
-            AppSelectList(
+            LocalSelectList(
                 options = quickRanges,
                 selected = quickRanges.firstOrNull { (_, range, _) ->
                     draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range &&
@@ -290,17 +316,19 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             )
         }
     }
-    AppSecondaryButton(
-        text = "Add window",
+    FilledTonalButton(
         onClick = { store.updateWindows(draft.windows + QuickCreateWindow(UUID.randomUUID().toString(), "self", 0, app.tastile.android.ui.mobile.sheets.QuickCreateSpan())) },
         modifier = Modifier.testTag("quick-create-add-window"),
-        leadingIcon = Icons.Outlined.Add,
-    )
+    ) {
+        Icon(Icons.Outlined.Add, contentDescription = null)
+        Spacer(Modifier.width(8.dp))
+        Text("Add window")
+    }
     draft.windows.forEachIndexed { index, window ->
         var showWindowStartDate by remember(index) { mutableStateOf(false) }
         var showWindowEndDate by remember(index) { mutableStateOf(false) }
         var showWindowReferencePicker by remember(index) { mutableStateOf(false) }
-        SectionHeader(title = "Window ${index + 1}")
+        LocalSectionHeader(title = "Window ${index + 1}")
         val windowKinds = listOf(0, 1, 2, 3)
         val windowKindLabel: (Int) -> String = { kind -> when (kind) {
             0 -> "Calendar"
@@ -314,7 +342,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             2 -> Icons.Outlined.Schedule
             else -> Icons.Outlined.Repeat
         } }
-        AppSelectList(
+        LocalSelectList(
             options = windowKinds,
             selected = window.kind,
             label = windowKindLabel,
@@ -322,7 +350,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             onSelect = { kind -> store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) },
             testTag = { "quick-create-window-$index-kind-$it" },
         )
-        AppPickerButton(
+        LocalPickerField(
             label = stringResource(R.string.picker_date_start),
             value = window.bounds.start.ifBlank { "—" },
             onClick = { showWindowStartDate = true },
@@ -340,7 +368,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                 titleRes = R.string.picker_date_start,
             )
         }
-        AppPickerButton(
+        LocalPickerField(
             label = stringResource(R.string.picker_date_end),
             value = window.bounds.end.ifBlank { "—" },
             onClick = { showWindowEndDate = true },
@@ -359,7 +387,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             )
         }
         if (window.kind in 1..3) {
-            AppPickerButton(
+            LocalPickerField(
                 label = stringResource(R.string.picker_reference_label),
                 value = window.referenceId.orEmpty().ifBlank { "—" },
                 onClick = { showWindowReferencePicker = true },
@@ -377,12 +405,14 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                 )
             }
         }
-        AppSecondaryButton(
-            text = "Remove window",
+        FilledTonalButton(
             onClick = { store.updateWindows(draft.windows.filterIndexed { item, _ -> item != index }) },
             modifier = Modifier.testTag("quick-create-window-$index-remove"),
-            leadingIcon = Icons.Outlined.Delete,
-        )
+        ) {
+            Icon(Icons.Outlined.Delete, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Remove window")
+        }
     }
     if (showReferencePicker) {
         ReferencePickerSheet(
@@ -399,13 +429,13 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
 @Composable
 private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     val duration = draft.time.durationMinMax
-    AppTertiaryButton(
-        text = "No duration",
+    NiaOutlinedButton(
         onClick = { store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(null, null))) },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none"),
-        leadingIcon = Icons.Outlined.Close,
+        text = { Text("No duration") },
+        leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
     )
-    AppNumberField(
+    LocalNumberField(
         value = duration.minMs?.div(60_000L)?.toString() ?: "90",
         onValueChange = { value -> value.toLongOrNull()?.let { minutes ->
             val milliseconds = minutes.coerceIn(10L, 720L) * 60_000L
@@ -415,11 +445,11 @@ private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
         suffix = "min",
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-minutes"),
     )
-    AppTertiaryButton(
-        text = "Use for completion",
+    NiaOutlinedButton(
         onClick = { /* wired by caller if needed */ },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-completion-link"),
-        leadingIcon = Icons.Outlined.Check,
+        text = { Text("Use for completion") },
+        leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
     )
 }
 
@@ -436,7 +466,7 @@ private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateState
                 QuickCreateRepeatMode.Condition -> Icons.Outlined.Autorenew
             }
         }
-        AppSelectList(
+        LocalSelectList(
             options = repeatModes,
             selected = draft.recurring.repeatMode,
             label = { it.name },
@@ -447,21 +477,21 @@ private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateState
             },
             testTag = { "quick-create-repeat-${it.name.lowercase()}" },
         )
-        SectionHeader(
+        LocalSectionHeader(
             title = "Weekdays",
             subtitle = if (draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly) null else "Weekly only",
         )
-        AppWeekdayPicker(
+        LocalWeekdayPicker(
             selectedMask = draft.recurring.weekdayMask,
             onToggle = { bit -> store.updateRecurring(draft.recurring.copy(weekdayMask = draft.recurring.weekdayMask xor (1 shl bit))) },
             enabled = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly,
             testTag = { "quick-create-weekday-$it" },
         )
-        AppTertiaryButton(
-            text = "End date",
+        NiaOutlinedButton(
             onClick = { store.updateRecurring(draft.recurring.copy(endDate = if (draft.recurring.endDate.isBlank()) LocalDate.now().toString() else "")) },
             modifier = Modifier.testTag("quick-create-recurring-end-switch"),
-            leadingIcon = Icons.Outlined.CalendarMonth,
+            text = { Text("End date") },
+            leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null) },
         )
         if (draft.recurring.endDate.isNotBlank()) NativeDateField("End date", draft.recurring.endDate, "quick-create-recurring-end-date") { value -> store.updateRecurring(draft.recurring.copy(endDate = value)) }
     }
@@ -487,7 +517,7 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             else -> "Filter"
         } }
         val targetKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> if (kind == 0) Icons.Outlined.Tag else Icons.Outlined.Link }
-        AppSelectList(
+        LocalSelectList(
             options = targetKinds,
             selected = target["kind"]?.jsonPrimitive?.content?.toIntOrNull(),
             label = targetKindLabel,
@@ -495,7 +525,7 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             onSelect = { kind -> updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) },
             testTag = { "quick-create-reference-record-$index-target-kind-$it" },
         )
-        SectionHeader(title = "Relation")
+        LocalSectionHeader(title = "Relation")
         val relations = listOf(4, 3, 1, 2, 0)
         val relationLabel: (Int) -> String = { relation -> when (relation) {
             0 -> "Touch"
@@ -505,7 +535,7 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             else -> "After"
         } }
         val relationIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { Icons.Outlined.Link }
-        AppSelectList(
+        LocalSelectList(
             options = relations,
             selected = pick["kind"]?.jsonPrimitive?.content?.toIntOrNull(),
             label = relationLabel,
@@ -513,7 +543,7 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             onSelect = { relation -> updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) },
             testTag = { "quick-create-reference-record-$index-relation-$it" },
         )
-        AppNumberField(
+        LocalNumberField(
             value = pick.string("momentId", "10"),
             onValueChange = { value -> value.toIntOrNull()?.coerceIn(5, 120)?.let { minutes -> updateReference(draft, store, index, reference.copy(pick = pick.with("momentId", minutes.toString()))) } },
             label = "Interval",
@@ -537,7 +567,7 @@ private fun defaultPlanReference() = QuickCreatePlanReference(
 
 @Composable
 private fun IntentPanel(store: QuickCreateStateStore) {
-    SectionHeader(title = "Add condition or group")
+    LocalSectionHeader(title = "Add condition or group")
     val intentTargets = listOf(
         Triple("Time", QuickCreatePanel.Time, Icons.Outlined.Schedule),
         Triple("References", QuickCreatePanel.References, Icons.Outlined.Link),
@@ -561,7 +591,7 @@ private fun IntentPanel(store: QuickCreateStateStore) {
 @OptIn(ExperimentalMaterial3Api::class)
 private fun NativeDateField(label: String, value: String, tag: String, onSelected: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    AppPickerButton(
+    LocalPickerField(
         label = label,
         value = value.ifBlank { "—" },
         onClick = { open = true },
@@ -596,14 +626,14 @@ private fun NativeDateField(label: String, value: String, tag: String, onSelecte
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    SectionHeader(title = "Logic")
+    LocalSectionHeader(title = "Logic")
     val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT")
     val logicIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
         0 -> Icons.Outlined.PlaylistAddCheck
         1 -> Icons.Outlined.PlaylistAdd
         else -> Icons.Outlined.Block
     } }
-    AppSelectList(
+    LocalSelectList(
         options = logicKinds,
         selected = logicKinds.firstOrNull { it.first == draft.plan.completion.root.kind },
         label = { it.second },
@@ -612,7 +642,7 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         testTag = { "quick-create-completion-logic-${it.second.lowercase()}" },
     )
     ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }, allowTermKind = false)
-    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
+    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         AppSecondaryButton(
             text = "Task",
             onClick = { addCompletionTerm(draft, store, "task") },
@@ -651,7 +681,7 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     draft.plan.completion.timeRequirements.forEachIndexed { index, requirement ->
         val required = requirement.required.jsonObjectOrEmpty()
         val minimumMinutes = required.long("minMs")?.div(60_000L)?.toString().orEmpty()
-        AppNumberField(
+        LocalNumberField(
             value = minimumMinutes,
             onValueChange = { input ->
                 val minutes = input.toLongOrNull()
@@ -727,7 +757,7 @@ private fun updateTimeRequirement(
         2 -> Icons.Outlined.Block
         else -> Icons.Outlined.TextFields
     } }
-    AppSelectList(
+    LocalSelectList(
         options = logicKinds,
         selected = logicKinds.firstOrNull { it.first == node.kind },
         label = { it.second },
@@ -749,7 +779,7 @@ private fun updateTimeRequirement(
             "life" -> Icons.Outlined.Favorite
             else -> Icons.Outlined.TextFields
         } }
-        AppSelectList(
+        LocalSelectList(
             options = termTypes,
             selected = node.term?.jsonObjectOrEmpty()?.string("kind"),
             label = { it },
@@ -792,14 +822,14 @@ private fun updateTimeRequirement(
 
 @Composable private fun CalendarTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
-    AppNumberField(
+    LocalNumberField(
         value = value.string("weekdayMask", "0"),
         onValueChange = { input -> onChange(term.withValue("weekdayMask", input.toIntOrNull() ?: 0)) },
         label = "Weekday mask",
         suffix = "0–127",
         modifier = Modifier.fillMaxWidth().testTag("condition-$path-calendar-weekday-mask"),
     )
-    AppNumberField(
+    LocalNumberField(
         value = value.string("offsetMin", "0"),
         onValueChange = { input -> onChange(term.withValue("offsetMin", input.toIntOrNull() ?: 0)) },
         label = "Offset minutes",
@@ -813,7 +843,7 @@ private fun updateTimeRequirement(
 @Composable private fun MomentTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
     OutlinedTextField(value.string("referenceId"), { input -> onChange(term.withValue("referenceId", input.ifBlank { null })) }, label = { Text("Reference ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-moment-reference"))
-    AppNumberField(
+    LocalNumberField(
         value = value.string("offsetMs", "0"),
         onValueChange = { input -> onChange(term.withValue("offsetMs", input.toLongOrNull() ?: 0L)) },
         label = "Offset ms",
@@ -833,7 +863,7 @@ private fun updateTimeRequirement(
         3 -> "Before"
         else -> "After"
     } }
-    AppSelectList(
+    LocalSelectList(
         options = relations,
         selected = value.string("relation", "0").toIntOrNull(),
         label = relationLabel,
@@ -848,7 +878,7 @@ private fun updateTimeRequirement(
         2 -> "Parent span"
         else -> "Gap"
     } }
-    AppSelectList(
+    LocalSelectList(
         options = windowKinds,
         selected = value.string("windowKind", "0").toIntOrNull(),
         label = windowKindLabel,
@@ -861,7 +891,7 @@ private fun updateTimeRequirement(
 @Composable private fun TaskTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
     OutlinedTextField(value.string("taskId"), { input -> onChange(term.withValue("taskId", input)) }, label = { Text("Task ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-task-id"))
-    AppNumberField(
+    LocalNumberField(
         value = value.string("state", "0"),
         onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
         label = "State",
@@ -880,7 +910,7 @@ private fun updateTimeRequirement(
     OutlinedTextField(value.string("requirementId"), { input ->
         onChange(term.withValue("requirementId", input))
     }, label = { Text("Requirement ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-requirement-id"))
-    AppNumberField(
+    LocalNumberField(
         value = value.string("state", "0"),
         onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
         label = "State",
@@ -900,7 +930,7 @@ private fun updateTimeRequirement(
     OutlinedTextField(value.string(idKey), { input ->
         onChange(term.withValue(idKey, input))
     }, label = { Text("ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-id"))
-    AppNumberField(
+    LocalNumberField(
         value = value.string("op", "0"),
         onValueChange = { input -> onChange(term.withValue("op", input.toIntOrNull() ?: 0)) },
         label = "Operator",
@@ -916,7 +946,7 @@ private fun updateTimeRequirement(
     OutlinedTextField(value.string("target"), { input ->
         onChange(term.withValue("target", input))
     }, label = { Text("Target") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-life-target"))
-    AppNumberField(
+    LocalNumberField(
         value = value.string("state", "0"),
         onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
         label = "State",
@@ -963,7 +993,7 @@ private fun MetaPanel(
     knownTags: List<String>,
     onBack: () -> Unit,
 ) {
-    SectionHeader(title = "Project")
+    LocalSectionHeader(title = "Project")
     Column(Modifier.testTag("meta-project-catalog")) {
         FilterChip(
             selected = draft.meta.ownerSubjectId == null,
@@ -980,7 +1010,7 @@ private fun MetaPanel(
             )
         }
     }
-    SectionHeader(title = "Tags")
+    LocalSectionHeader(title = "Tags")
     FlowRow(Modifier.testTag("meta-tag-chips")) {
         knownTags.filterNot { it in draft.meta.tags }.forEach { tag ->
             FilterChip(false, { store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag)) }, { Text("#$tag") }, Modifier.testTag("meta-tag-suggestion-$tag"))
@@ -1002,7 +1032,7 @@ private fun MetaPanel(
         leadingIcon = Icons.Outlined.Add,
     )
     OutlinedTextField(draft.meta.memo, { value -> store.updateMeta(draft.meta.copy(memo = value)) }, label = { Text("Memo") }, modifier = Modifier.fillMaxWidth().testTag("meta-memo"))
-    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
+    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         AppTertiaryButton(
             text = "Clear",
             onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null, tags = emptyList(), memo = "")) },
@@ -1033,7 +1063,7 @@ private fun BehaviorPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
             QuickCreatePlanRole.Executable -> Icons.Outlined.PlayArrow
         }
     }
-    AppSelectList(
+    LocalSelectList(
         options = planRoles,
         selected = draft.plan.role,
         label = { it.name },
@@ -1056,6 +1086,158 @@ private fun JsonEditor(label: String, value: JsonElement, tag: String? = null, o
         label = { Text(label) },
         modifier = Modifier.fillMaxWidth().then(if (tag == null) Modifier else Modifier.testTag(tag)),
     )
+}
+
+// ── Local design system helpers (NiA equivalents of the deleted App* primitives) ──
+
+@Composable
+internal fun LocalSectionHeader(title: String, subtitle: String? = null) {
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun <T> LocalSelectList(
+    options: List<T>,
+    selected: T?,
+    label: (T) -> String,
+    leading: ((T) -> androidx.compose.ui.graphics.vector.ImageVector)? = null,
+    onSelect: (T) -> Unit,
+    testTag: ((T) -> String)? = null,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        options.forEach { option ->
+            val isSelected = option == selected
+            ListItem(
+                headlineContent = { Text(label(option)) },
+                leadingContent = if (leading != null) {
+                    { Icon(leading(option), contentDescription = null) }
+                } else {
+                    null
+                },
+                trailingContent = if (isSelected) {
+                    { Icon(Icons.Outlined.Check, contentDescription = null) }
+                } else {
+                    null
+                },
+                colors = if (isSelected) {
+                    ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                } else {
+                    ListItemDefaults.colors()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (testTag != null) Modifier.testTag(testTag(option)) else Modifier,
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+internal fun LocalNumberField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    suffix: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        label = { Text(label) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        suffix = if (suffix != null) { { Text(suffix) } } else null,
+    )
+}
+
+@Composable
+internal fun LocalPickerField(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.small,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = modifier,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                leadingIcon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun LocalWeekdayPicker(
+    selectedMask: Int,
+    onToggle: (Int) -> Unit,
+    enabled: Boolean,
+    testTag: (Int) -> String,
+) {
+    val days = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        days.forEachIndexed { index, name ->
+            val bit = 1 shl index
+            FilterChip(
+                selected = (selectedMask and bit) != 0,
+                onClick = { if (enabled) onToggle(index) },
+                label = { Text(name) },
+                enabled = enabled,
+                modifier = Modifier.testTag(testTag(index)),
+            )
+        }
+    }
 }
 
 private fun <T> List<T>.replace(index: Int, value: T): List<T> = toMutableList().also { it[index] = value }

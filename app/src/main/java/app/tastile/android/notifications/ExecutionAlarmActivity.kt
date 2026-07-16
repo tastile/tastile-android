@@ -41,7 +41,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.tastile.android.data.repository.UserSettingsRepository
-import app.tastile.android.ui.designsystem.TastileTheme
+import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.ui.util.SystemBarEffect
+import app.tastile.android.ui.util.resolveDarkTheme
+import app.tastile.android.ui.util.supportsDynamicColor
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.hypot
@@ -66,7 +69,13 @@ class ExecutionAlarmActivity : ComponentActivity() {
         val body = intent.getStringExtra(EXTRA_BODY) ?: "Tastile needs your attention."
         setContent {
             val themeMode = remember { mutableStateOf(userSettingsRepository.getThemeMode()) }
-            TastileTheme(themeMode = themeMode.value, dynamicColor = false) {
+            val darkTheme = resolveDarkTheme(themeMode.value)
+            NiaTheme(
+                darkTheme = darkTheme,
+                androidTheme = false,
+                disableDynamicTheming = true,
+            ) {
+                SystemBarEffect(color = MaterialTheme.colorScheme.background, darkTheme = darkTheme)
                 AlarmSurface(
                     title = title,
                     body = body,

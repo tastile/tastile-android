@@ -1,6 +1,7 @@
 package app.tastile.android.ui.mobile.account
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,12 @@ import androidx.compose.material3.Icon
 // m2-allow: m3-component
 import androidx.compose.material3.IconButton
 // m2-allow: m3-component
+import androidx.compose.material3.ListItem
+// m2-allow: m3-component
+import androidx.compose.material3.ListItemDefaults
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
@@ -32,17 +39,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.designsystem.AppListItem
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
-import app.tastile.android.ui.mobile.designsystem.SectionHeader
 import app.tastile.android.ui.mobile.sheets.PanelSheet
 
 /**
@@ -82,8 +86,8 @@ internal fun AccountSheetBody(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = MobileSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
+            .padding(bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ProfileHeading()
         AccountPanel(state = state, onRefresh = viewModel::loadProfile)
@@ -100,16 +104,16 @@ internal fun AccountSheetBody(
 
 @Composable
 private fun ProfileHeading() {
-    Column(verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = stringResource(R.string.preferences_account_profile_heading),
-            style = AppTheme.typography.titleMedium,
-            color = AppTheme.colors.onSurface,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.preferences_account_profile_guide),
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -122,8 +126,8 @@ private fun AccountPanel(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = MobileSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -138,15 +142,15 @@ private fun AccountPanel(
                 Icon(
                     imageVector = Icons.Outlined.Refresh,
                     contentDescription = stringResource(R.string.preferences_account_refresh),
-                    tint = AppTheme.colors.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
         if (state.loading) {
             Text(
                 text = stringResource(R.string.preferences_account_loading),
-                style = AppTheme.typography.bodySmall,
-                color = AppTheme.colors.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             return
         }
@@ -162,32 +166,35 @@ private fun AccountPanel(
 
 @Composable
 private fun EmailRow(email: String) {
-    AppListItem(
+    AccountListItem(
         headline = stringResource(R.string.preferences_account_email),
         supporting = email.ifBlank { "-" },
         leading = Icons.Outlined.Mail,
+        onClick = null,
     )
 }
 
 @Composable
 private fun EmailVerificationRow(verified: Boolean) {
-    AppListItem(
+    AccountListItem(
         headline = stringResource(R.string.preferences_account_email_verified),
         supporting = stringResource(
             if (verified) R.string.preferences_account_verified
             else R.string.preferences_account_unverified,
         ),
         leading = Icons.Outlined.Verified,
+        onClick = null,
     )
 }
 
 @Composable
 private fun AccountIdRow(sub: String, fallback: String) {
     val display = sub.takeIf { it.isNotBlank() } ?: fallback.takeIf { it.isNotBlank() } ?: "-"
-    AppListItem(
+    AccountListItem(
         headline = stringResource(R.string.preferences_account_account_id),
         supporting = display,
         leading = Icons.Outlined.AccountCircle,
+        onClick = null,
     )
 }
 
@@ -202,13 +209,13 @@ private fun ChangeEmailPanel(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = MobileSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         SectionHeader(title = stringResource(R.string.preferences_account_change_email_heading))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
@@ -218,15 +225,15 @@ private fun ChangeEmailPanel(
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
-            AppPrimaryButton(
-                text = stringResource(R.string.preferences_account_send_code),
+            NiaButton(
                 onClick = onSendCode,
                 enabled = !state.submitting && state.pendingEmail.isNotBlank(),
+                text = { Text(stringResource(R.string.preferences_account_send_code)) },
             )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
@@ -237,10 +244,10 @@ private fun ChangeEmailPanel(
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
-            AppPrimaryButton(
-                text = stringResource(R.string.preferences_account_verify_code),
+            NiaButton(
                 onClick = onVerify,
                 enabled = !state.submitting && state.verificationCode.isNotBlank(),
+                text = { Text(stringResource(R.string.preferences_account_verify_code)) },
             )
         }
     }
@@ -252,12 +259,13 @@ private fun LoginMethodsPanel() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = MobileSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         SectionHeader(title = stringResource(R.string.preferences_account_login_methods))
-        AppListItem(
+        AccountListItem(
             headline = stringResource(R.string.preferences_account_passkey),
+            supporting = null,
             leading = Icons.Outlined.Shield,
             onClick = {
                 val intent = Intent(
@@ -267,8 +275,9 @@ private fun LoginMethodsPanel() {
                 context.startActivity(intent)
             },
         )
-        AppListItem(
+        AccountListItem(
             headline = stringResource(R.string.preferences_account_email_otp_relogin),
+            supporting = null,
             leading = Icons.Outlined.Mail,
             onClick = {
                 val intent = Intent(
@@ -279,4 +288,44 @@ private fun LoginMethodsPanel() {
             },
         )
     }
+}
+
+@Composable
+private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
+    ListItem(
+        headlineContent = {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun AccountListItem(
+    headline: String,
+    supporting: String?,
+    leading: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: (() -> Unit)?,
+) {
+    val baseModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+    ListItem(
+        headlineContent = { Text(headline, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = supporting?.let {
+            {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        leadingContent = { Icon(leading, contentDescription = null) },
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = baseModifier,
+    )
 }

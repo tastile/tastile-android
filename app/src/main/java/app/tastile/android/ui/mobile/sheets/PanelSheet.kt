@@ -21,8 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import app.tastile.android.ui.designsystem.AppSpacing
-import app.tastile.android.ui.mobile.designsystem.MobileTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,28 +35,28 @@ internal fun PanelSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = colors.background.copy(alpha = MobileTokens.SurfaceAlpha.strongSelected),
-        scrimColor = Color.Black.copy(alpha = MobileTokens.SurfaceAlpha.scrim),
+        containerColor = colors.background.copy(alpha = 0.55f),
+        scrimColor = Color.Black.copy(alpha = 0.45f),
     ) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.88f)
                 .navigationBarsPadding()
-                .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.sm),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.onSurface,
                 modifier = Modifier.padding(
-                    top = AppSpacing.xs,
-                    bottom = AppSpacing.md,
+                    top = 4.dp,
+                    bottom = 12.dp,
                 ),
             )
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
                 content = content,
             )
         }

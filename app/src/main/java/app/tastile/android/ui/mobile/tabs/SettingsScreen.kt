@@ -16,19 +16,14 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
-// m2-allow: m3-component
-import androidx.compose.material3.Button
-// m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: m3-component
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
-// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButtonDefaults
-// m2-allow: m3-component
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-// m2-allow: m3-component
 import androidx.compose.material3.Switch
-// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,18 +36,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.notifications.ExecutionNotificationChannels
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.designsystem.AppListRow
-import app.tastile.android.ui.designsystem.AppPageColumn
-import app.tastile.android.ui.designsystem.AppTheme
 
 private const val TIMEOUT_STEP = 5
 private const val TIMEOUT_MIN = 1
@@ -76,7 +70,7 @@ fun SettingsScreen(
                 context.getString(R.string.settings_notifications_status_allowed)
             } else {
                 context.getString(R.string.settings_notifications_status_unsupported)
-            }
+            },
         )
     }
 
@@ -86,11 +80,16 @@ fun SettingsScreen(
         notificationGranted = granted
         notificationStatus = context.getString(
             if (granted) R.string.settings_notifications_status_allowed
-            else R.string.settings_notifications_status_denied
+            else R.string.settings_notifications_status_denied,
         )
     }
 
-    AppPageColumn {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         ThemeSection(
             current = theme,
             onPick = { viewModel.setThemeMode(it) },
@@ -119,7 +118,7 @@ fun SettingsScreen(
                 } else {
                     notificationGranted = true
                     notificationStatus = context.getString(
-                        R.string.settings_notifications_status_allowed
+                        R.string.settings_notifications_status_allowed,
                     )
                 }
             },
@@ -129,11 +128,11 @@ fun SettingsScreen(
                 if (grantedNow) {
                     postTestNotification(context)
                     notificationStatus = context.getString(
-                        R.string.settings_notifications_test
+                        R.string.settings_notifications_test,
                     )
                 } else {
                     notificationStatus = context.getString(
-                        R.string.settings_notifications_status_denied
+                        R.string.settings_notifications_status_denied,
                     )
                 }
             },
@@ -153,14 +152,14 @@ private fun ThemeSection(
             .semantics(mergeDescendants = true) {
                 contentDescription = themeA11y
             },
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        AppListRow(
-            label = stringResource(R.string.settings_theme),
-            meta = themeLabel(current),
-            leading = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
-            onClick = {},
-            description = stringResource(R.string.settings_theme),
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_theme)) },
+            supportingContent = { Text(themeLabel(current)) },
+            leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             SegmentedButton(
@@ -194,14 +193,14 @@ private fun LanguageSection(
             .semantics(mergeDescendants = true) {
                 contentDescription = languageA11y
             },
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        AppListRow(
-            label = stringResource(R.string.settings_language),
-            meta = localeLabel(current),
-            leading = { Icon(Icons.Outlined.Language, contentDescription = null) },
-            onClick = {},
-            description = stringResource(R.string.settings_language),
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_language)) },
+            supportingContent = { Text(localeLabel(current)) },
+            leadingContent = { Icon(Icons.Outlined.Language, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             SegmentedButton(
@@ -228,38 +227,46 @@ private fun SecurityLockSection(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        AppListRow(
-            label = stringResource(
-                if (enabled) R.string.settings_security_lock_on
-                else R.string.settings_security_lock_off
-            ),
-            leading = { Icon(Icons.Outlined.Lock, contentDescription = null) },
-            trailing = { Switch(checked = enabled, onCheckedChange = onToggle) },
-            onClick = { onToggle(!enabled) },
-            description = stringResource(R.string.settings_security_lock_off),
+        ListItem(
+            headlineContent = {
+                Text(
+                    stringResource(
+                        if (enabled) R.string.settings_security_lock_on
+                        else R.string.settings_security_lock_off,
+                    ),
+                )
+            },
+            leadingContent = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+            trailingContent = { Switch(checked = enabled, onCheckedChange = onToggle) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    contentDescription = stringResource(R.string.settings_security_lock_off)
+                },
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )
         if (enabled) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = AppTheme.component.listRowIndent),
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Button(onClick = onDecrement) {
+                NiaButton(onClick = onDecrement) {
                     Text(stringResource(R.string.settings_security_lock_timeout_decrease))
                 }
                 Text(
                     stringResource(
                         R.string.settings_security_lock_timeout_label,
-                        timeoutMinutes.coerceIn(TIMEOUT_MIN, TIMEOUT_MAX)
+                        timeoutMinutes.coerceIn(TIMEOUT_MIN, TIMEOUT_MAX),
                     ),
-                    style = AppTheme.typography.bodyMedium,
-                    color = AppTheme.colors.onSurface,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
-                Button(onClick = onIncrement) {
+                NiaButton(onClick = onIncrement) {
                     Text(stringResource(R.string.settings_security_lock_timeout_increase))
                 }
             }
@@ -276,7 +283,7 @@ private fun NotificationsSection(
 ) {
     val notifA11y = stringResource(
         if (granted) R.string.settings_notifications_status_allowed
-        else R.string.settings_notifications_status_denied
+        else R.string.settings_notifications_status_denied,
     )
     Column(
         modifier = Modifier
@@ -284,7 +291,7 @@ private fun NotificationsSection(
             .semantics(mergeDescendants = true) {
                 contentDescription = notifA11y
             },
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -292,30 +299,30 @@ private fun NotificationsSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
                     contentDescription = null,
-                    tint = AppTheme.colors.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(stringResource(R.string.mobile_top_notifications))
             }
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Button(onClick = onAllow) {
+            NiaButton(onClick = onAllow) {
                 Text(stringResource(R.string.settings_notifications_allow))
             }
-            Button(onClick = onTest) {
+            NiaButton(onClick = onTest) {
                 Text(stringResource(R.string.settings_notifications_test))
             }
         }
         if (status.isNotBlank()) {
-            Text(status, style = AppTheme.typography.bodySmall)
+            Text(status, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -351,6 +358,6 @@ private fun postTestNotification(context: android.content.Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
-            .build()
+            .build(),
     )
 }

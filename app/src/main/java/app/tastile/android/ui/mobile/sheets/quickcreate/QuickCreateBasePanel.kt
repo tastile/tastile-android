@@ -1,21 +1,21 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Link
@@ -24,13 +24,14 @@ import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Tune
-// m2-allow: m3-component
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
-// m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
-// m2-allow: m3-component
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -39,13 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import app.tastile.android.ui.mobile.designsystem.AppDismissButton
-import app.tastile.android.ui.mobile.designsystem.AppListItem
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
-import app.tastile.android.ui.mobile.designsystem.SectionHeader
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlan
@@ -91,106 +88,169 @@ private fun QuickCreateBaseComposition(
     val projectName = projects.firstOrNull { it.id == draft.meta.ownerSubjectId }?.displayName
         ?: draft.meta.ownerSubjectId
     Column(
-        Modifier.testTag("quick-create-base").verticalScroll(rememberScrollState()).padding(MobileSpacing.lg),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
+        Modifier.testTag("quick-create-base").verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        SectionHeader(title = "Create tile")
+        Column {
+            Text(
+                text = "Create tile",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            HorizontalDivider()
+        }
         OutlinedTextField(
             draft.identity.title,
             { store.updateIdentity(draft.identity.copy(title = it)) },
             label = { Text("Title") },
             modifier = Modifier.fillMaxWidth().testTag("quick-create-title"),
         )
-        FlowRow(modifier = Modifier.fillMaxWidth().testTag("quick-create-organize-row"), horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
-            if (projectName != null) FilterChip(true, { store.openSubpanel(QuickCreatePanel.Meta) }, { Text(projectName) })
-            draft.meta.tags.forEach { tag -> FilterChip(true, { store.openSubpanel(QuickCreatePanel.Meta) }, { Text("#$tag") }) }
-            AppTertiaryButton(
-                text = "Organize",
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-organize-row"),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (projectName != null) {
+                FilterChip(
+                    selected = true,
+                    onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
+                    label = { Text(projectName) },
+                )
+            }
+            draft.meta.tags.forEach { tag ->
+                FilterChip(
+                    selected = true,
+                    onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
+                    label = { Text("#$tag") },
+                )
+            }
+            NiaOutlinedButton(
                 onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
                 modifier = Modifier.testTag("quick-create-organize"),
-                leadingIcon = Icons.Outlined.Tune,
+                text = { Text("Organize") },
+                leadingIcon = { Icon(Icons.Outlined.Tune, contentDescription = null) },
             )
         }
-        Column(Modifier.fillMaxWidth().testTag("quick-create-tile-kind"), verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs)) {
+        Column(
+            Modifier.fillMaxWidth().testTag("quick-create-tile-kind"),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             QuickCreateTileKind.entries.forEach { kind ->
-                AppListItem(
-                    headline = kind.name,
-                    selected = draft.identity.kind == kind,
-                    trailing = if (draft.identity.kind == kind) Icons.Outlined.Check else null,
-                    onClick = { store.updateIdentity(draft.identity.copy(kind = kind)) },
-                    modifier = Modifier.fillMaxWidth().testTag("quick-create-kind-${kind.name}"),
+                ListItem(
+                    headlineContent = { Text(kind.name) },
+                    trailingContent = if (draft.identity.kind == kind) {
+                        { Icon(Icons.Outlined.Check, contentDescription = null) }
+                    } else null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { store.updateIdentity(draft.identity.copy(kind = kind)) }
+                        .testTag("quick-create-kind-${kind.name}"),
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             }
         }
         HorizontalDivider()
-        EssentialRow("Time", timeSummary(draft), "quick-create-essential-time", Icons.Outlined.Schedule) { store.openSubpanel(QuickCreatePanel.Time) }
-        EssentialRow("Duration", durationSummary(draft), "quick-create-essential-duration", Icons.Outlined.Timer) { store.openSubpanel(QuickCreatePanel.Duration) }
-        EssentialRow("Repeat", repeatSummary(draft), "quick-create-essential-repeat", Icons.Outlined.Repeat) { store.openSubpanel(QuickCreatePanel.Recurring) }
-        HorizontalDivider()
-        AppListItem(
-            headline = "Completion logic",
-            supporting = conditionSummary(draft.plan.completion.root.kind),
-            leading = Icons.Outlined.Checklist,
-            trailing = Icons.Outlined.ChevronRight,
-            onClick = { store.openSubpanel(QuickCreatePanel.Completion) },
-            modifier = Modifier.testTag("quick-create-condition-card"),
+        EssentialRow(
+            label = "Time",
+            summary = timeSummary(draft),
+            tag = "quick-create-essential-time",
+            leadingIcon = Icons.Outlined.Schedule,
+            onClick = { store.openSubpanel(QuickCreatePanel.Time) },
         )
-        AppTertiaryButton(
-            text = "Add condition or group",
+        EssentialRow(
+            label = "Duration",
+            summary = durationSummary(draft),
+            tag = "quick-create-essential-duration",
+            leadingIcon = Icons.Outlined.Timer,
+            onClick = { store.openSubpanel(QuickCreatePanel.Duration) },
+        )
+        EssentialRow(
+            label = "Repeat",
+            summary = repeatSummary(draft),
+            tag = "quick-create-essential-repeat",
+            leadingIcon = Icons.Outlined.Repeat,
+            onClick = { store.openSubpanel(QuickCreatePanel.Recurring) },
+        )
+        HorizontalDivider()
+        ListItem(
+            headlineContent = { Text("Completion logic") },
+            supportingContent = { Text(conditionSummary(draft.plan.completion.root.kind)) },
+            leadingContent = { Icon(Icons.Outlined.Checklist, contentDescription = null) },
+            trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { store.openSubpanel(QuickCreatePanel.Completion) }
+                .testTag("quick-create-condition-card"),
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        )
+        NiaOutlinedButton(
             onClick = { store.openSubpanel(QuickCreatePanel.Intent) },
             modifier = Modifier.testTag("quick-create-condition-add"),
-            leadingIcon = Icons.Outlined.Add,
+            text = { Text("Add condition or group") },
+            leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
-        AppListItem(
-            headline = "Completion requires",
-            supporting = "${draft.plan.completion.tasks.size} item(s)",
-            leading = Icons.Outlined.PlayArrow,
-            trailing = Icons.Outlined.ChevronRight,
-            onClick = { store.openSubpanel(QuickCreatePanel.Completion) },
-            modifier = Modifier.testTag("quick-create-tasks-header"),
+        ListItem(
+            headlineContent = { Text("Completion requires") },
+            supportingContent = { Text("${draft.plan.completion.tasks.size} item(s)") },
+            leadingContent = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
+            trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { store.openSubpanel(QuickCreatePanel.Completion) }
+                .testTag("quick-create-tasks-header"),
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )
         draft.plan.completion.tasks.forEachIndexed { index, task ->
-            Column(Modifier.fillMaxWidth().testTag("quick-create-task-row-$index"), verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
-                AppListItem(
-                    headline = task.content.title.ifBlank { "Untitled" },
-                    leading = Icons.Outlined.CheckBox,
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { /* tap to focus task */ },
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .testTag("quick-create-task-row-$index"),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                ListItem(
+                    headlineContent = { Text(task.content.title.ifBlank { "Untitled" }) },
+                    leadingContent = { Icon(Icons.Outlined.CheckBox, contentDescription = null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { /* tap to focus task */ },
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
                 )
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    AppTertiaryButton(
-                        text = "Move up",
+                    NiaOutlinedButton(
                         onClick = {
-                            if (index > 0) store.updatePlan(
-                                draft.plan.copy(
-                                    completion = draft.plan.completion.copy(
-                                        tasks = draft.plan.completion.tasks.swap(index, index - 1),
+                            if (index > 0) {
+                                store.updatePlan(
+                                    draft.plan.copy(
+                                        completion = draft.plan.completion.copy(
+                                            tasks = draft.plan.completion.tasks.swap(index, index - 1),
+                                        ),
                                     ),
-                                ),
-                            )
+                                )
+                            }
                         },
                         enabled = index > 0,
                         modifier = Modifier.testTag("quick-create-task-move-up-$index"),
+                        text = { Text("Move up") },
                     )
-                    AppTertiaryButton(
-                        text = "Move down",
+                    NiaOutlinedButton(
                         onClick = {
-                            if (index < draft.plan.completion.tasks.lastIndex) store.updatePlan(
-                                draft.plan.copy(
-                                    completion = draft.plan.completion.copy(
-                                        tasks = draft.plan.completion.tasks.swap(index, index + 1),
+                            if (index < draft.plan.completion.tasks.lastIndex) {
+                                store.updatePlan(
+                                    draft.plan.copy(
+                                        completion = draft.plan.completion.copy(
+                                            tasks = draft.plan.completion.tasks.swap(index, index + 1),
+                                        ),
                                     ),
-                                ),
-                            )
+                                )
+                            }
                         },
                         enabled = index < draft.plan.completion.tasks.lastIndex,
                         modifier = Modifier.testTag("quick-create-task-move-down-$index"),
+                        text = { Text("Move down") },
                     )
-                    AppSecondaryButton(
-                        text = "Remove",
+                    FilledTonalButton(
                         onClick = {
                             store.updatePlan(
                                 draft.plan.copy(
@@ -201,57 +261,75 @@ private fun QuickCreateBaseComposition(
                             )
                         },
                         modifier = Modifier.testTag("quick-create-task-remove-$index"),
-                        leadingIcon = Icons.Outlined.Delete,
-                    )
+                    ) {
+                        Icon(Icons.Outlined.Delete, contentDescription = null)
+                        Text("Remove")
+                    }
                 }
             }
         }
-        AppTertiaryButton(
-            text = "Add task",
+        NiaOutlinedButton(
             onClick = {
                 store.updatePlan(
                     draft.plan.copy(
                         completion = draft.plan.completion.copy(
                             tasks = draft.plan.completion.tasks +
-                                QuickCreateTaskDefinition(UUID.randomUUID().toString(), QuickCreateTaskContent("")),
+                                QuickCreateTaskDefinition(
+                                    UUID.randomUUID().toString(),
+                                    QuickCreateTaskContent(""),
+                                ),
                         ),
                     ),
                 )
             },
             modifier = Modifier.testTag("quick-create-add-task"),
-            leadingIcon = Icons.Outlined.Add,
+            text = { Text("Add task") },
+            leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
         HorizontalDivider()
-        AppListItem(
-            headline = "Behavior",
-            supporting = if (draft.plan.role.name == "Label") "Label" else "Executable",
-            leading = Icons.Outlined.Tune,
-            trailing = Icons.Outlined.ChevronRight,
-            onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
-            modifier = Modifier.testTag("quick-create-behavior-card"),
+        ListItem(
+            headlineContent = { Text("Behavior") },
+            supportingContent = {
+                Text(if (draft.plan.role.name == "Label") "Label" else "Executable")
+            },
+            leadingContent = { Icon(Icons.Outlined.Tune, contentDescription = null) },
+            trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { store.openSubpanel(QuickCreatePanel.Meta) }
+                .testTag("quick-create-behavior-card"),
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )
-        AppTertiaryButton(
-            text = "References",
+        NiaOutlinedButton(
             onClick = { store.openSubpanel(QuickCreatePanel.References) },
             modifier = Modifier.testTag("quick-create-references-link"),
-            leadingIcon = Icons.Outlined.Link,
+            text = { Text("References") },
+            leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
         )
         val submissionValidation = quickCreateSubmissionValidation(draft)
-        if (!submissionValidation.isValid) Text(submissionValidation.message ?: "Fix required fields", Modifier.testTag("quick-create-validation-error"))
+        if (!submissionValidation.isValid) {
+            Text(
+                submissionValidation.message ?: "Fix required fields",
+                Modifier.testTag("quick-create-validation-error"),
+            )
+        }
         submitError?.let { Text(it, Modifier.testTag("quick-create-submit-error")) }
-        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MobileSpacing.sm)) {
-            AppTertiaryButton(
-                text = "Cancel",
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            NiaTextButton(
                 onClick = onClose,
                 enabled = !isSubmitting,
-                leadingIcon = Icons.Outlined.Close,
+                text = { Text("Cancel") },
+                leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
             )
-            AppPrimaryButton(
-                text = if (isSubmitting) "Creating…" else "Create",
+            NiaButton(
                 onClick = { onSubmit(draft) },
                 enabled = submissionValidation.isValid && !isSubmitting,
                 modifier = Modifier.testTag("quick-create-submit"),
-                leadingIcon = Icons.Outlined.Check,
+                text = { Text(if (isSubmitting) "Creating…" else "Create") },
+                leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
             )
         }
     }
@@ -259,21 +337,31 @@ private fun QuickCreateBaseComposition(
 
 @Composable
 internal fun BackHeader(onBack: () -> Unit) {
-    AppDismissButton(
-        text = "Back",
+    NiaTextButton(
         onClick = onBack,
-        leadingIcon = Icons.AutoMirrored.Outlined.ArrowBack,
+        text = { Text("Back") },
+        leadingIcon = { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null) },
     )
 }
 
-@Composable private fun EssentialRow(label: String, summary: String, tag: String, leadingIcon: ImageVector, onClick: () -> Unit) {
-    AppListItem(
-        headline = label,
-        supporting = summary,
-        leading = leadingIcon,
-        trailing = Icons.Outlined.ChevronRight,
-        onClick = onClick,
-        modifier = Modifier.testTag(tag),
+@Composable
+private fun EssentialRow(
+    label: String,
+    summary: String,
+    tag: String,
+    leadingIcon: ImageVector,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(label) },
+        supportingContent = { Text(summary) },
+        leadingContent = { Icon(leadingIcon, contentDescription = null) },
+        trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .testTag(tag),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     )
 }
 
@@ -283,9 +371,20 @@ private fun timeSummary(draft: QuickCreateDraftState): String = when {
     draft.time.span.start.isNotBlank() -> draft.time.span.start
     else -> "Not set"
 }
-private fun durationSummary(draft: QuickCreateDraftState): String = draft.time.durationMinMax.minMs?.div(60_000)?.let { "$it min" } ?: "Not set"
-private fun repeatSummary(draft: QuickCreateDraftState): String = if (draft.recurring.repeatMode.name == "Once") "Not set" else draft.recurring.repeatMode.name
-private fun conditionSummary(kind: Int): String = when (kind) { 0 -> "ALL"; 1 -> "ANY"; 2 -> "NOT"; else -> "ALL" }
+
+private fun durationSummary(draft: QuickCreateDraftState): String =
+    draft.time.durationMinMax.minMs?.div(60_000)?.let { "$it min" } ?: "Not set"
+
+private fun repeatSummary(draft: QuickCreateDraftState): String =
+    if (draft.recurring.repeatMode.name == "Once") "Not set" else draft.recurring.repeatMode.name
+
+private fun conditionSummary(kind: Int): String = when (kind) {
+    0 -> "ALL"
+    1 -> "ANY"
+    2 -> "NOT"
+    else -> "ALL"
+}
+
 private fun <T> List<T>.swap(first: Int, second: Int): List<T> = toMutableList().also { items ->
     val item = items[first]
     items[first] = items[second]
@@ -293,6 +392,7 @@ private fun <T> List<T>.swap(first: Int, second: Int): List<T> = toMutableList()
 }
 
 data class QuickCreateValidation(val isValid: Boolean)
+
 fun quickCreateValidation(draft: QuickCreateDraftState): QuickCreateValidation {
     val duration = draft.time.durationMinMax
     val start = draft.time.span.start.parseOffsetDateTimeOrNull()
@@ -304,6 +404,12 @@ fun quickCreateValidation(draft: QuickCreateDraftState): QuickCreateValidation {
         start == null || end == null -> false
         else -> end.isAfter(start)
     }
-    return QuickCreateValidation(draft.identity.title.isNotBlank() && validSpan && (duration.minMs == null || duration.maxMs == null || duration.minMs <= duration.maxMs))
+    return QuickCreateValidation(
+        draft.identity.title.isNotBlank() &&
+            validSpan &&
+            (duration.minMs == null || duration.maxMs == null || duration.minMs <= duration.maxMs),
+    )
 }
-private fun String.parseOffsetDateTimeOrNull(): OffsetDateTime? = runCatching { OffsetDateTime.parse(this) }.getOrNull()
+
+private fun String.parseOffsetDateTimeOrNull(): OffsetDateTime? =
+    runCatching { OffsetDateTime.parse(this) }.getOrNull()

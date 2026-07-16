@@ -1,6 +1,7 @@
 package app.tastile.android.ui.mobile.sheets
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,11 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Bookmark
@@ -23,6 +26,10 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.Icon
+// m2-allow: primitive
+import androidx.compose.material3.Text
 // m2-allow: m3-component
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -35,12 +42,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.designsystem.AppComponentSize
-import app.tastile.android.ui.designsystem.AppListRow
-import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.SidePanelSection
@@ -131,15 +138,15 @@ private fun TabsPage(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         tabs.forEachIndexed { index, spec ->
-            AppListRow(
+            SidePanelTabRow(
                 label = spec.label,
                 leading = {
-                    androidx.compose.material3.Icon(
+                    Icon(
                         imageVector = spec.icon,
                         contentDescription = null,
-                        modifier = Modifier.size(AppComponentSize.listRowGlyphSize),
+                        modifier = Modifier.size(20.dp),
                     )
                 },
                 selected = selectedIndex == index,
@@ -174,7 +181,7 @@ private fun PagerDots(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.sm),
+            .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -182,8 +189,8 @@ private fun PagerDots(
             val isCurrent = i == currentPage
             Box(
                 modifier = Modifier
-                    .padding(horizontal = AppSpacing.xs)
-                    .size(if (isCurrent) AppSpacing.sm + AppSpacing.xs else AppSpacing.sm - AppSpacing.xxs)
+                    .padding(horizontal = 4.dp)
+                    .size(if (isCurrent) 12.dp else 6.dp)
                     .clip(CircleShape)
                     .background(
                         if (isCurrent) colors.onSurface
@@ -191,5 +198,46 @@ private fun PagerDots(
                     ),
             )
         }
+    }
+}
+
+/**
+ * Tastile single-tap navigation row — replaces the deleted [AppListRow] for
+ * the side-panel tab list. Inset card with 6dp rounded corners and a subtle
+ * surface tint that intensifies when the row is selected.
+ */
+@Composable
+private fun SidePanelTabRow(
+    label: String,
+    leading: @Composable () -> Unit,
+    selected: Boolean,
+    role: Role,
+    onClick: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val containerAlpha = if (selected) 0.55f else 0.10f
+    val contentColor = if (selected) colors.onSurface else colors.onSurfaceVariant
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(colors.surface.copy(alpha = containerAlpha))
+            .clickable(role = role, onClick = onClick)
+            .heightIn(min = 56.dp)
+            .padding(vertical = 8.dp, horizontal = 8.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = label
+                this.role = role
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        leading()
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = contentColor,
+            modifier = Modifier.weight(1f),
+        )
     }
 }

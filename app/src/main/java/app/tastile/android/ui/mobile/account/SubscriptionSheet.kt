@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
@@ -14,15 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 import app.tastile.android.ui.mobile.sheets.PanelSheet
 
 /**
@@ -59,13 +60,13 @@ private fun SubscriptionBody() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = MobileSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
+            .padding(bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = stringResource(R.string.preferences_account_subscription_guide),
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         PlanCard()
     }
@@ -76,34 +77,34 @@ private fun PlanCard() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = MobileSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.account_subscription_current_plan),
-                style = AppTheme.typography.titleSmall,
-                color = AppTheme.colors.onSurface,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = stringResource(R.string.account_subscription_free_description),
-                style = AppTheme.typography.bodySmall,
-                color = AppTheme.colors.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = stringResource(R.string.account_subscription_free_badge),
-                style = AppTheme.typography.labelMedium,
-                color = AppTheme.colors.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        AppSecondaryButton(
-            text = stringResource(R.string.account_subscription_manage),
+        NiaOutlinedButton(
             onClick = { /* TODO: open Stripe Customer Portal */ },
+            text = { Text(stringResource(R.string.account_subscription_manage)) },
             modifier = Modifier.fillMaxWidth(),
         )
-        AppPrimaryButton(
-            text = stringResource(R.string.account_subscription_upgrade),
+        NiaButton(
             onClick = { /* TODO: open /pricing */ },
+            text = { Text(stringResource(R.string.account_subscription_upgrade)) },
             modifier = Modifier.fillMaxWidth(),
         )
     }

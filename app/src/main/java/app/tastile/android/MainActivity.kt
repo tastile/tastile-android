@@ -27,7 +27,10 @@ import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import app.tastile.android.sync.SyncCoordinator
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.designsystem.TastileTheme
+import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.ui.util.SystemBarEffect
+import app.tastile.android.ui.util.resolveDarkTheme
+import app.tastile.android.ui.util.supportsDynamicColor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -77,8 +80,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val themeMode by dashboardViewModel.themeMode.collectAsStateWithLifecycle()
+            val darkTheme = resolveDarkTheme(themeMode)
 
-            TastileTheme(themeMode = themeMode, dynamicColor = true) {
+            NiaTheme(
+                darkTheme = darkTheme,
+                androidTheme = supportsDynamicColor(),
+                disableDynamicTheming = !supportsDynamicColor(),
+            ) {
+                SystemBarEffect(color = MaterialTheme.colorScheme.background, darkTheme = darkTheme)
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

@@ -1,26 +1,38 @@
 package app.tastile.android.ui.mobile.sheets
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Notifications
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.Icon
+// m2-allow: m3-component
+import androidx.compose.material3.ListItem
+// m2-allow: m3-component
+import androidx.compose.material3.ListItemDefaults
+// m2-allow: primitive
+import androidx.compose.material3.Text
 // m2-allow: m3-component
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.notifications.NotificationRepository
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.designsystem.AppEmptyState
-import app.tastile.android.ui.mobile.designsystem.AppListItem
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,24 +51,50 @@ fun NotificationsSheet(
             onDismiss = { overlay.dismiss() },
         ) {
             if (items.isEmpty()) {
-                AppEmptyState(
-                    icon = Icons.Outlined.Notifications,
-                    title = stringResource(R.string.empty_tiles_title),
-                    hint = stringResource(R.string.empty_tiles_hint),
-                )
+                NotificationsEmptyState()
             } else {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     items.forEach {
-                        AppListItem(
-                            headline = it.label,
-                            leading = Icons.Outlined.Notifications,
+                        ListItem(
+                            headlineContent = { Text(it.label, style = MaterialTheme.typography.bodyLarge) },
+                            leadingContent = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
+                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun NotificationsEmptyState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Notifications,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(48.dp),
+        )
+        Box(Modifier.size(12.dp))
+        Text(
+            text = stringResource(R.string.empty_tiles_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Box(Modifier.size(4.dp))
+        Text(
+            text = stringResource(R.string.empty_tiles_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

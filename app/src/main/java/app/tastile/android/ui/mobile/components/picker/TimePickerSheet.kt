@@ -5,30 +5,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
-// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-// m2-allow: m3-component
 import androidx.compose.material3.ModalBottomSheet
-// m2-allow: primitive
 import androidx.compose.material3.Text
-// m2-allow: m3-component
 import androidx.compose.material3.TimePicker
-// m2-allow: m3-component
 import androidx.compose.material3.rememberModalBottomSheetState
-// m2-allow: m3-component
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 
@@ -50,23 +42,22 @@ fun TimePickerSheet(
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(MobileSpacing.lg),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MobileSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(stringResource(titleRes), style = MaterialTheme.typography.titleMedium)
             TimePicker(state = timeState)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                AppTertiaryButton(
-                    text = stringResource(R.string.common_cancel),
+                NiaTextButton(
                     onClick = { scope.launch { sheetState.hide(); onDismiss() } },
                     modifier = Modifier.weight(1f),
+                    text = { Text(stringResource(R.string.common_cancel)) },
                 )
-                AppPrimaryButton(
-                    text = stringResource(R.string.common_confirm),
+                NiaButton(
                     onClick = {
                         scope.launch {
                             sheetState.hide()
@@ -74,6 +65,7 @@ fun TimePickerSheet(
                         }
                     },
                     modifier = Modifier.weight(1f),
+                    text = { Text(stringResource(R.string.common_confirm)) },
                 )
             }
         }
