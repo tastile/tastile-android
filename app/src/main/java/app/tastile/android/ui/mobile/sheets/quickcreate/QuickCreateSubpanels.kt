@@ -166,23 +166,36 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         Row { listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life").forEach { type -> TextButton(onClick = { onChange(node.copy(term = defaultTermValue(type))) }, modifier = Modifier.testTag("condition-$path-term-$type")) { Text(type) } } }
         val term = node.term?.jsonObjectOrEmpty() ?: JsonObject(emptyMap())
         when (term.string("kind")) {
-            "calendar" -> CalendarTermFields(term) { value -> onChange(node.copy(term = value)) }
-            "moment" -> MomentTermFields(term) { value -> onChange(node.copy(term = value)) }
+            "calendar" -> CalendarTermFields(term, path) { value -> onChange(node.copy(term = value)) }
+            "moment" -> MomentTermFields(term, path) { value -> onChange(node.copy(term = value)) }
+            "relation" -> RelationTermFields(term) { value -> onChange(node.copy(term = value)) }
+            "task" -> TaskTermFields(term) { value -> onChange(node.copy(term = value)) }
         }
     }
     else { node.children.forEachIndexed { index, child -> ConditionControls(child, { updated -> onChange(node.copy(children = node.children.replace(index, updated))) }, "$path-$index"); TextButton(onClick = { onChange(node.copy(children = node.children.filterIndexed { item, _ -> item != index })) }) { Text("Remove") } }; TextButton(onClick = { onChange(node.copy(children = node.children + QuickCreateConditionNode(3, term = JsonObject(mapOf("kind" to JsonPrimitive("calendar")))))) }) { Text("Add condition") } }
 }
 
-@Composable private fun CalendarTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
-    OutlinedTextField(term.string("weekdayMask", "0"), { value -> onChange(term.with("weekdayMask", value.toIntOrNull() ?: 0)) }, label = { Text("Weekday mask") }, modifier = Modifier.testTag("condition-calendar-weekday-mask"))
-    OutlinedTextField(term.string("offsetMin", "0"), { value -> onChange(term.with("offsetMin", value.toIntOrNull() ?: 0)) }, label = { Text("Offset minutes") }, modifier = Modifier.testTag("condition-calendar-offset"))
+@Composable private fun CalendarTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
+    OutlinedTextField(term.string("weekdayMask", "0"), { value -> onChange(term.with("weekdayMask", value.toIntOrNull() ?: 0)) }, label = { Text("Weekday mask") }, modifier = Modifier.testTag("condition-$path-calendar-weekday-mask"))
+    OutlinedTextField(term.string("offsetMin", "0"), { value -> onChange(term.with("offsetMin", value.toIntOrNull() ?: 0)) }, label = { Text("Offset minutes") }, modifier = Modifier.testTag("condition-$path-calendar-offset"))
     OutlinedTextField(term.string("timeStart"), { value -> onChange(term.with("timeStart", value.ifBlank { null })) }, label = { Text("Time start") }, modifier = Modifier.testTag("condition-calendar-start"))
     OutlinedTextField(term.string("timeEnd"), { value -> onChange(term.with("timeEnd", value.ifBlank { null })) }, label = { Text("Time end") }, modifier = Modifier.testTag("condition-calendar-end"))
 }
 
-@Composable private fun MomentTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
+@Composable private fun MomentTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     OutlinedTextField(term.string("referenceId"), { value -> onChange(term.with("referenceId", value.ifBlank { null })) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("condition-moment-reference"))
     OutlinedTextField(term.string("offsetMs", "0"), { value -> onChange(term.with("offsetMs", value.toLongOrNull() ?: 0L)) }, label = { Text("Offset ms") }, modifier = Modifier.testTag("condition-moment-offset"))
+}
+
+@Composable private fun RelationTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
+    OutlinedTextField(term.string("referenceId"), { value -> onChange(term.with("referenceId", value)) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("condition-relation-reference"))
+    OutlinedTextField(term.string("relation", "0"), { value -> onChange(term.with("relation", value.toIntOrNull() ?: 0)) }, label = { Text("Relation") }, modifier = Modifier.testTag("condition-relation-kind"))
+    OutlinedTextField(term.string("windowKind", "0"), { value -> onChange(term.with("windowKind", value.toIntOrNull() ?: 0)) }, label = { Text("Window kind") }, modifier = Modifier.testTag("condition-relation-window"))
+}
+
+@Composable private fun TaskTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
+    OutlinedTextField(term.string("taskId"), { value -> onChange(term.with("taskId", value)) }, label = { Text("Task ID") }, modifier = Modifier.testTag("condition-task-id"))
+    OutlinedTextField(term.string("state", "0"), { value -> onChange(term.with("state", value.toIntOrNull() ?: 0)) }, label = { Text("State") }, modifier = Modifier.testTag("condition-task-state"))
 }
 
 private fun defaultTermValue(kind: String): JsonObject = JsonObject(mapOf("kind" to JsonPrimitive(kind), "weekdayMask" to JsonPrimitive(0), "offsetMin" to JsonPrimitive(0), "timeStart" to JsonNull, "timeEnd" to JsonNull, "referenceId" to JsonNull, "offsetMs" to JsonPrimitive(0)))

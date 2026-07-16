@@ -8,8 +8,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
 import org.junit.Rule
@@ -103,7 +105,7 @@ class QuickCreatePanelsTest {
         rule.onNodeWithText("Back").performScrollTo().performClick()
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
-        rule.onNodeWithText("Add condition").performClick()
+        rule.onNodeWithText("Add condition").performScrollTo().performClick()
         assertTrue(store.state.value.plan.completion.root.children.isNotEmpty())
     }
 
@@ -147,9 +149,12 @@ class QuickCreatePanelsTest {
         val store = QuickCreateStateStore()
         rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
         rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
-        rule.onNodeWithText("Add condition").performClick()
-        rule.onNodeWithTag("condition-calendar-weekday-mask").performTextReplacement("31")
-        rule.onNodeWithTag("condition-calendar-offset").performTextReplacement("15")
+        rule.onNodeWithText("Add condition").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitForIdle()
+        assertTrue(store.state.value.plan.completion.root.children.size == 2)
+        assertTrue(store.state.value.plan.completion.root.children[1].term?.jsonObject?.get("kind")?.jsonPrimitive?.content == "calendar")
+        rule.onNodeWithTag("condition-root-1-calendar-weekday-mask").performTextReplacement("31")
+        rule.onNodeWithTag("condition-root-1-calendar-offset").performTextReplacement("15")
         rule.onNodeWithTag("condition-root-0-term-moment").performClick()
         rule.onNodeWithTag("condition-moment-reference").performTextReplacement("tile-1")
         rule.onNodeWithTag("condition-moment-offset").performTextReplacement("60000")
