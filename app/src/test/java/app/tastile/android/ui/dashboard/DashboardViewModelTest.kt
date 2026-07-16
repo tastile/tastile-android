@@ -84,7 +84,8 @@ class DashboardViewModelTest {
 
         viewModel.handleCardAction(CardAction.TriggerPrompt("tile-1"))
 
-        coVerify(atLeast = 1) { tileRepository.requestPrompt("tile-1") }
+        assertEquals("tile-1", viewModel.requestPromptTileId.value)
+        coVerify(exactly = 0) { tileRepository.requestPrompt(any()) }
     }
 
     @Test
