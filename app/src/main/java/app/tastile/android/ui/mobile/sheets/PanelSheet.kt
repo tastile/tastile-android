@@ -32,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
@@ -71,7 +70,7 @@ internal fun PanelSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = colors.surfaceContainerLow,
-        scrimColor = Color.Black.copy(alpha = 0.28f),
+        scrimColor = colors.scrim.copy(alpha = 0.28f),
     ) {
         Column(
             modifier = modifier
