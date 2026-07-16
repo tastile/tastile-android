@@ -323,6 +323,7 @@ private fun updateTimeRequirement(
             "requirement" -> RequirementTermFields(term, path) { value -> onChange(node.copy(term = value)) }
             "fact" -> ScalarTermFields(term, path, "fact", "factId") { value -> onChange(node.copy(term = value)) }
             "metric" -> ScalarTermFields(term, path, "metric", "metricId") { value -> onChange(node.copy(term = value)) }
+            "feedback" -> ScalarTermFields(term, path, "feedback", "feedbackTxnId") { value -> onChange(node.copy(term = value)) }
             "life" -> LifeTermFields(term, path) { value -> onChange(node.copy(term = value)) }
         }
     }
@@ -413,6 +414,7 @@ private fun defaultTermValue(kind: String): JsonObject = when (kind) {
     "requirement" -> termValue(kind, mapOf("requirementId" to JsonPrimitive(""), "state" to JsonPrimitive(0)))
     "fact" -> termValue(kind, mapOf("factId" to JsonPrimitive(""), "op" to JsonPrimitive(0), "value" to JsonNull))
     "metric" -> termValue(kind, mapOf("metricId" to JsonPrimitive(""), "op" to JsonPrimitive(0), "value" to JsonNull))
+    "feedback" -> termValue(kind, mapOf("feedbackTxnId" to JsonPrimitive(""), "op" to JsonPrimitive(0), "value" to JsonNull))
     "life" -> termValue(kind, mapOf("target" to JsonPrimitive(""), "state" to JsonPrimitive(0)))
     "task" -> termValue(kind, mapOf("taskId" to JsonPrimitive(""), "state" to JsonPrimitive(0)))
     else -> defaultTermValue("calendar")

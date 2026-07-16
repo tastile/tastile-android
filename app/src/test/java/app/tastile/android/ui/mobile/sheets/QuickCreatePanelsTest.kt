@@ -14,6 +14,10 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.runtime.mutableStateOf
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -178,6 +182,41 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-completion-clear").performScrollTo().performClick()
         assertEquals(0, store.state.value.plan.completion.root.kind)
         assertTrue(store.state.value.plan.completion.root.children.isEmpty())
+    }
+
+    @Test
+    fun `feedback conditions retain the Web default shape and edit scalar values without appearing in the picker`() {
+        val feedbackTerm = buildJsonObject {
+            put("kind", JsonPrimitive("feedback"))
+            put("value", buildJsonObject {
+                put("feedbackTxnId", JsonPrimitive(""))
+                put("op", JsonPrimitive(0))
+                put("value", JsonNull)
+            })
+        }
+        val store = QuickCreateStateStore(
+            QuickCreateDraftState(
+                plan = QuickCreatePlan(
+                    completion = QuickCreatePlanCompletion(
+                        root = QuickCreateConditionNode(kind = 3, term = feedbackTerm),
+                    ),
+                ),
+            ),
+        )
+        rule.setContent { QuickCreatePanelContent(store, {}, projects) }
+
+        rule.onNodeWithTag("quick-create-tasks-header").performScrollTo().performClick()
+        rule.onNodeWithTag("condition-root-feedback-id").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag("condition-root-feedback-op").performTextReplacement("4")
+        rule.onNodeWithTag("condition-root-feedback-value").performTextReplacement("12.5")
+
+        val term = store.state.value.plan.completion.root.term!!.jsonObject
+        val value = term["value"]!!.jsonObject
+        assertEquals("feedback", term["kind"]!!.jsonPrimitive.content)
+        assertEquals("", value["feedbackTxnId"]!!.jsonPrimitive.content)
+        assertEquals("4", value["op"]!!.jsonPrimitive.content)
+        assertEquals("12.5", value["value"]!!.jsonPrimitive.content)
+        assertTrue(rule.onAllNodesWithTag("condition-root-term-feedback").fetchSemanticsNodes().isEmpty())
     }
 }
 
