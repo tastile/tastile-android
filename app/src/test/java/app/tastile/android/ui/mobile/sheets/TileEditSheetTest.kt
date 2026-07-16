@@ -9,6 +9,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
@@ -24,6 +26,7 @@ import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,17 +44,20 @@ class TileEditSheetTest {
     val rule = createAndroidComposeRule<ComponentActivity>()
 
     private val viewModels = mutableListOf<DashboardViewModel>()
+    private val tileRepositories = mutableListOf<TileRepository>()
 
     @After
     fun tearDown() {
         viewModels.forEach { it.viewModelScope.cancel() }
         viewModels.clear()
+        tileRepositories.clear()
     }
 
     private fun newDashboardViewModel(): DashboardViewModel {
         val authRepo = mockk<AuthRepository>(relaxed = true)
         val profileRepo = mockk<ProfileRepository>(relaxed = true)
         val tileRepo = mockk<TileRepository>(relaxed = true)
+        tileRepositories.add(tileRepo)
         val userSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
         val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { userSettingsRepo.getLocale() } returns AppLocale.EN
@@ -136,5 +142,43 @@ class TileEditSheetTest {
 
         rule.onAllNodesWithTag("tile-edit-save-details").assertCountEquals(1)
         rule.onNodeWithText("Quick Create").assertDoesNotExist()
+    }
+
+    @Test
+    fun `TileEditSheet closing a calendar occurrence closes only its placement`() {
+        val overlay = OverlayViewModel()
+        val vm = newDashboardViewModel()
+        vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Standup", lifecycle = "Ready")))
+        vm.selectTile("tile-1")
+
+        rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
+        rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "tile-1", placementId = "placement-1")) }
+        rule.waitForIdle()
+
+        rule.onNodeWithText("Delete occurrence").performSemanticsAction(SemanticsActions.OnClick) { action ->
+            action?.invoke()
+        }
+        rule.waitForIdle()
+        rule.onNodeWithText("Delete occurrence?").assertIsDisplayed()
+        rule.onNodeWithText("Delete").performClick()
+        rule.waitForIdle()
+
+        coVerify(exactly = 1) { tileRepositories.last().closePlacement("placement-1") }
+        coVerify(exactly = 0) { tileRepositories.last().deleteTile(any()) }
+    }
+
+    @Test
+    fun `TileEditSheet started tile shows Pause instead of Resume`() {
+        val overlay = OverlayViewModel()
+        val vm = newDashboardViewModel()
+        vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")))
+        vm.selectTile("tile-1")
+
+        rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
+        rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "tile-1")) }
+        rule.waitForIdle()
+
+        rule.onNodeWithText("Pause").assertIsDisplayed()
+        rule.onNodeWithText("Resume").assertDoesNotExist()
     }
 }

@@ -12,6 +12,8 @@ import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.repository.UserSettingsRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -90,5 +92,36 @@ class DashboardViewModelSelectedTileTest {
 
         vm.clearSelectedTile()
         assertNull(vm.selectedTile.first())
+    }
+
+    @Test
+    fun `prompt request waits for confirmation and rejected request shows error without refresh`() = runTest {
+        val authRepository = mockk<AuthRepository>(relaxed = true)
+        val profileRepository = mockk<ProfileRepository>(relaxed = true)
+        val tileRepository = mockk<TileRepository>(relaxed = true)
+        val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
+        val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
+        every { authRepository.currentSession } returns null
+        every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
+        every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
+        every { userSettingsRepository.getLocale() } returns AppLocale.JA
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
+        coEvery { tileRepository.requestPrompt("tile-1") } returns false
+        val vm = DashboardViewModel(
+            authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore,
+        ).also { viewModels.add(it) }
+
+        clearMocks(tileRepository, answers = false)
+        vm.setPromptTileCandidate("tile-1")
+        coVerify(exactly = 0) { tileRepository.requestPrompt(any()) }
+
+        vm.confirmPromptTile()
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { tileRepository.requestPrompt("tile-1") }
+        coVerify(exactly = 0) { tileRepository.getTiles(any()) }
+        assertEquals("Prompt request was rejected", vm.error.value)
+        assertNull(vm.lastActionMessage.value)
     }
 }

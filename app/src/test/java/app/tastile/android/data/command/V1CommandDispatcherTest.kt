@@ -136,6 +136,16 @@ class V1CommandDispatcherTest {
     // --- DeleteTile ----------------------------------------------------
 
     @Test
+    fun dispatchPlacementClose_postsCloseEndpointAndAccepts204() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.postCommandNoResponse("/v1/placements/p-1/close", any<Any>(), any<KSerializer<Any>>()) } returns Unit
+        val ack = V1CommandDispatcher(apiClient).dispatchPlacementClose("p-1")
+        assertNotNull(ack)
+        assertTrue(ack!!.accepted)
+        coVerify { apiClient.postCommandNoResponse("/v1/placements/p-1/close", any<Any>(), any<KSerializer<Any>>()) }
+    }
+
+    @Test
     fun dispatchTileDelete_callsDeleteEndpoint() = runTest {
         val apiClient = newApiClient()
         coEvery {
