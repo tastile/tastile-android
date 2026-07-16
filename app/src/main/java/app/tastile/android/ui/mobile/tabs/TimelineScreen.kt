@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -196,6 +197,10 @@ fun TimelineScreen(
                         day = pageDay,
                         zoom = dayZoom,
                         onZoomChange = { dayZoom = it },
+                        onCreateAt = { hour, minute ->
+                            val start = pageDay.atTime(hour, minute).atZone(zone).toInstant()
+                            overlay.show(Overlay.QuickCreateAt(start.toString(), start.plusSeconds(60 * 60).toString()))
+                        },
                     )
                 }
             }
@@ -327,6 +332,7 @@ private fun DayGrid(
     day: LocalDate,
     zoom: Float,
     onZoomChange: (Float) -> Unit,
+    onCreateAt: (hour: Int, minute: Int) -> Unit,
 ) {
     val scrollState = rememberScrollState()
     val latestZoom by rememberUpdatedState(zoom)
@@ -502,6 +508,7 @@ private fun DayGrid(
                         showNowLine = showNowLine,
                         nowMin = nowMin,
                         canvasWidth = canvasWidth,
+                        onCreateAt = onCreateAt,
                     )
                 }
             }
@@ -519,8 +526,19 @@ private fun DayContentLayer(
     showNowLine: Boolean,
     nowMin: Int,
     canvasWidth: Dp,
+    onCreateAt: (hour: Int, minute: Int) -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    val localDensity = LocalDensity.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(pxPerMin, startHour) {
+                detectTapGestures { tap ->
+                    val minute = ((tap.y / localDensity.density) / pxPerMin).toInt().coerceIn(0, 1439)
+                    onCreateAt(minute / 60, (minute % 60 / 15) * 15)
+                }
+            },
+    ) {
         // Layer 1: hour grid lines (background). pxPerMin is in dp/min; the
         // Canvas DrawScope uses raw pixels, so multiply by density. This
         // matches the gutter's drawText and the block Modifier.offset so

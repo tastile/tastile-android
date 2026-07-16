@@ -14,6 +14,7 @@ import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateSubmissionViewModel
+import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,9 +34,18 @@ fun QuickCreateSheetMobile(
         .distinct()
         .sortedBy { it.lowercase() }
 
-    if (current is Overlay.QuickCreate) {
+    if (current is Overlay.QuickCreate || current is Overlay.QuickCreateAt) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        val quickCreateStore = remember { QuickCreateStateStore() }
+        val initialDraft = (current as? Overlay.QuickCreateAt)?.let { slot ->
+            QuickCreateDraftState(
+                time = QuickCreateTime(
+                    span = QuickCreateSpan(slot.startIso, slot.endIso),
+                    whenMode = QuickCreateWhenMode.Range,
+                    timeOfDayMode = QuickCreateTimeOfDayMode.Range,
+                ),
+            )
+        } ?: QuickCreateDraftState()
+        val quickCreateStore = remember(current) { QuickCreateStateStore(initialDraft) }
         LaunchedEffect(submission.createdTileId) {
             if (submission.createdTileId != null) {
                 quickCreateStore.reset()

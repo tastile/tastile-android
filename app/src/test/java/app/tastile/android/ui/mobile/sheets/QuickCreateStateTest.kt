@@ -13,6 +13,23 @@ import java.time.Instant
 class QuickCreateStateTest {
 
     @Test
+    fun calendar_slot_draft_preserves_the_selected_one_hour_range() {
+        val store = QuickCreateStateStore(
+            QuickCreateDraftState(
+                time = QuickCreateTime(
+                    span = QuickCreateSpan("2026-07-16T09:15:00Z", "2026-07-16T10:15:00Z"),
+                    whenMode = QuickCreateWhenMode.Range,
+                    timeOfDayMode = QuickCreateTimeOfDayMode.Range,
+                ),
+            ),
+        )
+
+        assertEquals("2026-07-16T09:15:00Z", store.state.value.time.span.start)
+        assertEquals("2026-07-16T10:15:00Z", store.state.value.time.span.end)
+        assertEquals(QuickCreateWhenMode.Range, store.state.value.time.whenMode)
+    }
+
+    @Test
     fun `web defaults use a non-vacuous completion and timestamped recurring life`() {
         val draft = QuickCreateDraftState()
 

@@ -3,6 +3,8 @@ package app.tastile.android.ui.mobile
 sealed interface Overlay {
     data object Hidden : Overlay
     data object QuickCreate : Overlay
+    /** Opens the normal Quick Create panel with the selected calendar slot. */
+    data class QuickCreateAt(val startIso: String, val endIso: String) : Overlay
     data class TileEdit(val tileId: String) : Overlay
     data object Search : Overlay
     data object Notifications : Overlay
