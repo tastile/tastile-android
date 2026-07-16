@@ -13,8 +13,7 @@ import app.tastile.android.data.repository.ThemeMode
 
 /**
  * Maps [ThemeMode] to a boolean flag suitable for `NiaTheme(darkTheme = …)`.
- * SYSTEM follows the platform; LIGHT/DARK are explicit; GRAY follows the platform
- * but will be paired with `disableDynamicTheming = true` at the call site.
+ * SYSTEM follows the platform; LIGHT/DARK are explicit overrides.
  */
 @Composable
 fun resolveDarkTheme(themeMode: ThemeMode): Boolean = when (themeMode) {

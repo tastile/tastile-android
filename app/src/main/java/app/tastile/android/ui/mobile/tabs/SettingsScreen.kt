@@ -173,15 +173,15 @@ private fun ThemeSection(
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
             ) { Text(stringResource(R.string.settings_theme_light)) }
             NiaSegmentedButton(
-                selected = current == ThemeMode.GRAY,
-                onClick = { onPick(ThemeMode.GRAY) },
-                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
-            ) { Text(stringResource(R.string.settings_theme_gray)) }
-            NiaSegmentedButton(
                 selected = current == ThemeMode.DARK,
                 onClick = { onPick(ThemeMode.DARK) },
-                shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
             ) { Text(stringResource(R.string.settings_theme_dark)) }
+            NiaSegmentedButton(
+                selected = current == ThemeMode.SYSTEM,
+                onClick = { onPick(ThemeMode.SYSTEM) },
+                shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
+            ) { Text(stringResource(R.string.settings_theme_system)) }
         }
     }
 }
@@ -340,9 +340,8 @@ private fun localeLabel(l: AppLocale): String = when (l) {
 
 private fun themeLabel(t: ThemeMode): String = when (t) {
     ThemeMode.LIGHT -> "Light"
-    ThemeMode.GRAY -> "Gray"
     ThemeMode.DARK -> "Dark"
-    ThemeMode.SYSTEM -> "System"
+    ThemeMode.SYSTEM -> "Device"
 }
 
 private fun canPostNotifications(context: android.content.Context): Boolean {

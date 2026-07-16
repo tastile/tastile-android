@@ -76,8 +76,8 @@
     <!-- Settings (C9 — web→android parity sweep) -->
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_light">Light</string>
-    <string name="settings_theme_gray">Gray</string>
     <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_system">Device</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_ja">日本語</string>
     <string name="settings_language_en">English</string>

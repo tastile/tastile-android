@@ -109,18 +109,16 @@ object SecurityLockPolicy {
 enum class ThemeMode(val value: String) {
     SYSTEM("system"),    // follow system: light or dark
     LIGHT("light"),
-    DARK("dark"),
-    GRAY("gray");         // M3 baseline palette regardless of system (gray = "no dynamic")
+    DARK("dark");
 
     companion object {
         fun from(value: String): ThemeMode = when (value) {
             SYSTEM.value -> SYSTEM
             LIGHT.value -> LIGHT
             DARK.value -> DARK
-            GRAY.value -> GRAY
-            // legacy "brand" values now map to SYSTEM (forward compat for existing installs
-            // that had BRAND persisted before it was purged in M1A)
-            "brand" -> SYSTEM
+            // legacy "brand"/"gray" values now map to SYSTEM (forward compat for existing installs
+            // that had BRAND or GRAY persisted before they were purged)
+            "brand", "gray" -> SYSTEM
             else -> SYSTEM   // unknown persisted value → default to SYSTEM (new users, upgrades)
         }
     }
