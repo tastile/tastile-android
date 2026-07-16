@@ -40,6 +40,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -134,9 +135,12 @@ private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateState
 private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     TextButton(onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references + QuickCreatePlanReference(UUID.randomUUID().toString(), JsonNull, JsonNull))) }, modifier = Modifier.testTag("quick-create-add-reference")) { Text("Add reference") }
     draft.plan.references.forEachIndexed { index, reference ->
-        OutlinedTextField(reference.id, { value -> store.updatePlan(draft.plan.copy(references = draft.plan.references.replace(index, reference.copy(id = value)))) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("quick-create-reference-id-$index"))
-        JsonEditor("Reference target", reference.target) { value -> store.updatePlan(draft.plan.copy(references = draft.plan.references.replace(index, reference.copy(target = value)))) }
-        JsonEditor("Reference pick", reference.pick) { value -> store.updatePlan(draft.plan.copy(references = draft.plan.references.replace(index, reference.copy(pick = value)))) }
+        val target = reference.target.jsonObjectOrEmpty()
+        val pick = reference.pick.jsonObjectOrEmpty()
+        OutlinedTextField(target.string("referenceId"), { value -> updateReference(draft, store, index, reference.copy(target = target.with("referenceId", value.ifBlank { null }))) }, label = { Text("Target") }, modifier = Modifier.testTag("quick-create-reference-id-$index"))
+        Text("Relation")
+        Row { listOf(4, 3, 1, 2, 0).forEach { relation -> TextButton(onClick = { updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) }) { Text(relation.toString()) } } }
+        OutlinedTextField(pick.string("momentId", "10"), { value -> value.toIntOrNull()?.coerceIn(5, 120)?.let { minutes -> updateReference(draft, store, index, reference.copy(pick = pick.with("momentId", minutes.toString()))) } }, label = { Text("Interval (minutes)") })
         TextButton(onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references.filterIndexed { item, _ -> item != index })) }) { Text("Remove reference") }
     }
 }
@@ -198,6 +202,11 @@ private fun JsonEditor(label: String, value: JsonElement, tag: String? = null, o
 }
 
 private fun <T> List<T>.replace(index: Int, value: T): List<T> = toMutableList().also { it[index] = value }
+
+private fun JsonElement.jsonObjectOrEmpty(): JsonObject = this as? JsonObject ?: JsonObject(emptyMap())
+private fun JsonObject.string(key: String, fallback: String = ""): String = this[key]?.jsonPrimitive?.content?.takeUnless { it == "null" } ?: fallback
+private fun JsonObject.with(key: String, value: Any?): JsonObject = JsonObject(toMutableMap().also { map -> map[key] = when (value) { null -> JsonNull; is Int -> JsonPrimitive(value); else -> JsonPrimitive(value.toString()) } })
+private fun updateReference(draft: QuickCreateDraftState, store: QuickCreateStateStore, index: Int, reference: QuickCreatePlanReference) = store.updatePlan(draft.plan.copy(references = draft.plan.references.replace(index, reference)))
 
 private fun updateTask(draft: QuickCreateDraftState, store: QuickCreateStateStore, index: Int, task: QuickCreateTaskDefinition) {
     store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.replace(index, task))))
