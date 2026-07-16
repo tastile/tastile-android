@@ -17,14 +17,17 @@
 package app.tastile.android.core.designsystem.component
 
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet as MaterialModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberModalBottomSheetState as materialRememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /**
  * Tastile modal bottom sheet. Wraps Material 3
@@ -69,3 +72,39 @@ fun NiaModalBottomSheet(
 fun NiaRememberModalBottomSheetState(
     skipPartiallyExpanded: Boolean = false,
 ): SheetState = materialRememberModalBottomSheetState(skipPartiallyExpanded = skipPartiallyExpanded)
+
+/**
+ * Tastile side-anchored variant of [NiaModalBottomSheet]. Same visual language
+ * as the bottom sheet (M3 scrim + opaque surface) but capped at
+ * [NiaSideSheetMaxWidth] so it reads as a narrow side panel on tablets and
+ * foldables (≥ 600.dp). On narrower phones, prefer [NiaModalBottomSheet]
+ * (full-bleed bottom sheet) instead.
+ *
+ * @param onDismissRequest Called when the user tries to dismiss the sheet.
+ * @param sheetState State of the sheet.
+ * @param modifier Modifier applied to the sheet container.
+ * @param content Sheet content.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NiaSideSheet(
+    onDismissRequest: () -> Unit,
+    sheetState: SheetState = NiaRememberModalBottomSheetState(),
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    MaterialModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        modifier = modifier.widthIn(max = NiaSideSheetMaxWidth),
+        sheetMaxWidth = NiaSideSheetMaxWidth,
+        containerColor = colors.surfaceContainerLow,
+        scrimColor = colors.scrim.copy(alpha = 0.28f),
+        content = content,
+    )
+}
+
+/** Maximum width of a [NiaSideSheet] — wide enough for two columns of
+ *  chips, narrow enough to leave parent context visible on ≥ 600.dp screens. */
+val NiaSideSheetMaxWidth: Dp = 480.dp
