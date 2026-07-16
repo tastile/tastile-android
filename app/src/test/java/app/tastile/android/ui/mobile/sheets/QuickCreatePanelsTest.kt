@@ -41,16 +41,10 @@ class QuickCreatePanelsTest {
     }
 
     @Test
-    fun `recurrence inputs are visible only for recurring tiles and validation blocks invalid drafts`() {
+    fun `recurrence mirrors Web controls and validation blocks invalid drafts`() {
         val store = QuickCreateStateStore()
         rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
 
-        rule.onNodeWithTag("quick-create-row-4").performClick()
-        assertTrue(rule.onAllNodesWithTag("quick-create-recurring-controls").fetchSemanticsNodes().isEmpty())
-        rule.onNodeWithText("Back").performClick()
-        rule.onNodeWithTag("quick-create-row-0").performClick()
-        rule.onNodeWithText("Recurring").performClick()
-        rule.onNodeWithText("Back").performClick()
         rule.onNodeWithTag("quick-create-row-4").performClick()
         rule.onNodeWithTag("quick-create-recurring-controls").assertIsDisplayed()
 
@@ -59,12 +53,9 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-title").performTextReplacement(" ")
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithTag("quick-create-row-2").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-when-range").performClick()
         rule.onNodeWithTag("quick-create-start").performTextReplacement("2026-07-16T11:00:00Z")
         rule.onNodeWithTag("quick-create-end").performTextReplacement("2026-07-16T09:00:00Z")
-        rule.onNodeWithText("Back").performClick()
-        rule.onNodeWithTag("quick-create-row-3").performScrollTo().performClick()
-        rule.onNodeWithTag("quick-create-duration-min").performTextReplacement("90")
-        rule.onNodeWithTag("quick-create-duration-max").performTextReplacement("30")
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithTag("quick-create-validation-error").performScrollTo().assertIsDisplayed()
         assertTrue(rule.onNodeWithText("Create").fetchSemanticsNode().config.contains(SemanticsProperties.Disabled))
@@ -120,6 +111,7 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-title").performTextReplacement("Plan review")
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithTag("quick-create-row-2").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-when-day").performClick()
         rule.onNodeWithTag("quick-create-start").performTextReplacement("2026-07-16T09:00:00+09:00")
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithTag("quick-create-row-0").performScrollTo().performClick()
@@ -134,6 +126,7 @@ class QuickCreatePanelsTest {
         val store = QuickCreateStateStore(QuickCreateDraftState(identity = QuickCreateIdentity(title = "Ready")))
         rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
         rule.onNodeWithTag("quick-create-row-2").performClick()
+        rule.onNodeWithTag("quick-create-when-range").performClick()
         rule.onNodeWithTag("quick-create-start").performTextReplacement("2026-7-6T09:00:00+09:00")
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithTag("quick-create-validation-error").performScrollTo().assertIsDisplayed()
@@ -250,5 +243,91 @@ class QuickCreatePanelsTest {
         val required = requirement.required.jsonObject
         assertTrue(observation["scope"]?.jsonPrimitive?.content == "1")
         assertTrue(required["minMs"]?.jsonPrimitive?.content == "2700000")
+    }
+
+    @Test
+    fun `time panel mirrors Web conditional modes and clears only the Web none fields`() {
+        val store = QuickCreateStateStore(
+            QuickCreateDraftState(
+                time = QuickCreateTime(
+                    span = QuickCreateSpan("2026-07-16", "2026-07-17"),
+                    timeOfDayMode = QuickCreateTimeOfDayMode.Range,
+                    timeOfDayStart = "09:00",
+                    timeOfDayEnd = "18:00",
+                ),
+            ),
+        )
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-2").performClick()
+
+        rule.onNodeWithTag("quick-create-when-none").assertIsDisplayed().performClick()
+        assertTrue(store.state.value.time.whenMode == QuickCreateWhenMode.None)
+        assertTrue(store.state.value.time.span == QuickCreateSpan())
+        assertTrue(store.state.value.time.timeOfDayMode == QuickCreateTimeOfDayMode.Unspecified)
+        assertTrue(rule.onAllNodesWithTag("quick-create-calendar").fetchSemanticsNodes().isEmpty())
+        assertTrue(rule.onAllNodesWithTag("quick-create-time-of-day").fetchSemanticsNodes().isEmpty())
+
+        rule.onNodeWithTag("quick-create-when-day").performClick()
+        rule.onNodeWithTag("quick-create-calendar").assertIsDisplayed()
+        assertTrue(rule.onAllNodesWithTag("quick-create-reference-id").fetchSemanticsNodes().isEmpty())
+        rule.onNodeWithTag("quick-create-when-reference").performClick()
+        rule.onNodeWithTag("quick-create-reference-id").assertIsDisplayed()
+        assertTrue(rule.onAllNodesWithTag("quick-create-calendar").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun `time range exposes range-only time controls and quick selections`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-2").performClick()
+        rule.onNodeWithTag("quick-create-when-range").performClick()
+        rule.onNodeWithTag("quick-create-time-of-day-range").performClick()
+        rule.onNodeWithTag("quick-create-time-of-day-start").assertIsDisplayed()
+        rule.onNodeWithTag("quick-create-time-quick-midday").performClick()
+        assertTrue(store.state.value.time.timeOfDayStart == "09:00")
+        assertTrue(store.state.value.time.timeOfDayEnd == "18:00")
+    }
+
+    @Test
+    fun `duration mirrors Web single bounded minutes control and none card`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-3").performClick()
+        rule.onNodeWithTag("quick-create-duration-minutes").performTextReplacement("999")
+        assertTrue(store.state.value.time.durationMinMax == QuickCreateDurationRange(720 * 60_000L, 720 * 60_000L))
+        assertTrue(rule.onAllNodesWithTag("quick-create-duration-min").fetchSemanticsNodes().isEmpty())
+        rule.onNodeWithTag("quick-create-duration-completion-link").assertIsDisplayed()
+        rule.onNodeWithTag("quick-create-duration-none").performClick()
+        assertTrue(store.state.value.time.durationMinMax == QuickCreateDurationRange())
+    }
+
+    @Test
+    fun `window mirrors Web conditional reference and hides internal v1 fields`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-2").performClick()
+        rule.onNodeWithTag("quick-create-add-window").performClick()
+        assertTrue(rule.onAllNodesWithTag("quick-create-window-0-reference").fetchSemanticsNodes().isEmpty())
+        assertTrue(rule.onAllNodesWithTag("quick-create-window-id-0").fetchSemanticsNodes().isEmpty())
+        rule.onNodeWithTag("quick-create-window-0-kind-2").performClick()
+        rule.onNodeWithTag("quick-create-window-0-reference").performTextReplacement("parent-span")
+        assertTrue(store.state.value.windows.single().kind == 2)
+        assertTrue(store.state.value.windows.single().referenceId == "parent-span")
+    }
+
+    @Test
+    fun `recurrence promotes tile kind and conditionally enables weekday and end controls`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-4").performClick()
+        rule.onNodeWithTag("quick-create-repeat-daily").performClick()
+        assertTrue(store.state.value.identity.kind == QuickCreateTileKind.Recurring)
+        assertTrue(rule.onAllNodesWithTag("quick-create-weekday-0").fetchSemanticsNodes().isNotEmpty())
+        rule.onNodeWithTag("quick-create-repeat-weekly").performClick()
+        rule.onNodeWithTag("quick-create-weekday-0").performClick()
+        assertTrue(store.state.value.recurring.weekdayMask and 1 == 0)
+        assertTrue(rule.onAllNodesWithTag("quick-create-recurring-end-date").fetchSemanticsNodes().isEmpty())
+        rule.onNodeWithTag("quick-create-recurring-end-switch").performClick()
+        rule.onNodeWithTag("quick-create-recurring-end-date").assertIsDisplayed()
     }
 }

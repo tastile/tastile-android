@@ -29,6 +29,8 @@ import app.tastile.android.ui.mobile.sheets.QuickCreatePlanReference
 import app.tastile.android.ui.mobile.sheets.QuickCreateTaskContent
 import app.tastile.android.ui.mobile.sheets.QuickCreateTaskDefinition
 import app.tastile.android.ui.mobile.sheets.QuickCreateTimeRequirement
+import app.tastile.android.ui.mobile.sheets.QuickCreateTimeOfDayMode
+import app.tastile.android.ui.mobile.sheets.QuickCreateWhenMode
 import app.tastile.android.ui.mobile.sheets.QuickCreateWindow
 import app.tastile.android.ui.mobile.sheets.QuickCreateFrameGenerator
 import app.tastile.android.ui.mobile.sheets.QuickCreateFrameRule
@@ -47,6 +49,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import java.time.LocalDate
 import java.util.UUID
 
 @Composable
@@ -83,28 +86,49 @@ private fun IntentPanel(draft: QuickCreateDraftState, store: QuickCreateStateSto
 
 @Composable
 private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    OutlinedTextField(draft.time.span.start, { store.updateTime(draft.time.copy(span = draft.time.span.copy(start = it))) }, label = { Text("Start") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-start"))
-    OutlinedTextField(draft.time.span.end, { store.updateTime(draft.time.copy(span = draft.time.span.copy(end = it))) }, label = { Text("End") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-end"))
+    fun setWhen(mode: QuickCreateWhenMode) {
+        val time = draft.time
+        store.updateTime(when (mode) {
+            QuickCreateWhenMode.None -> time.copy(whenMode = mode, span = app.tastile.android.ui.mobile.sheets.QuickCreateSpan(), timeOfDayMode = QuickCreateTimeOfDayMode.Unspecified, timeOfDayStart = "", timeOfDayEnd = "")
+            QuickCreateWhenMode.Day -> time.copy(whenMode = mode, span = time.span.copy(end = ""))
+            QuickCreateWhenMode.Range -> time.copy(whenMode = mode)
+            QuickCreateWhenMode.Reference -> time.copy(whenMode = mode, span = app.tastile.android.ui.mobile.sheets.QuickCreateSpan())
+        })
+    }
+    TextButton(onClick = { setWhen(QuickCreateWhenMode.None) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-when-none")) { Text("No date or time") }
     Text("When")
-    Row { app.tastile.android.ui.mobile.sheets.QuickCreateWhenMode.entries.forEach { mode -> TextButton(onClick = { store.updateTime(draft.time.copy(whenMode = mode)) }) { Text(mode.name) } } }
-    Text("Time of day")
-    Row { app.tastile.android.ui.mobile.sheets.QuickCreateTimeOfDayMode.entries.forEach { mode -> TextButton(onClick = { store.updateTime(draft.time.copy(timeOfDayMode = mode)) }) { Text(mode.name) } } }
-    OutlinedTextField(draft.time.timeOfDayStart, { store.updateTime(draft.time.copy(timeOfDayStart = it)) }, label = { Text("Time of day start") }, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(draft.time.timeOfDayEnd, { store.updateTime(draft.time.copy(timeOfDayEnd = it)) }, label = { Text("Time of day end") }, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(draft.time.referenceId.orEmpty(), { store.updateTime(draft.time.copy(referenceId = it.ifBlank { null })) }, label = { Text("Reference ID") })
-    OutlinedTextField(draft.time.referenceLabel, { store.updateTime(draft.time.copy(referenceLabel = it)) }, label = { Text("Reference label") })
+    Row { listOf(QuickCreateWhenMode.Day, QuickCreateWhenMode.Range, QuickCreateWhenMode.Reference).forEach { mode -> TextButton(onClick = { setWhen(mode) }, modifier = Modifier.testTag("quick-create-when-${mode.name.lowercase()}")) { Text(mode.name) } } }
+    if (draft.time.whenMode == QuickCreateWhenMode.Day || draft.time.whenMode == QuickCreateWhenMode.Range) Column(Modifier.testTag("quick-create-calendar")) {
+        OutlinedTextField(draft.time.span.start, { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(start = value))) }, label = { Text("Date") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-start"))
+        if (draft.time.whenMode == QuickCreateWhenMode.Range) OutlinedTextField(draft.time.span.end, { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }, label = { Text("End date") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-end"))
+    }
+    if (draft.time.whenMode == QuickCreateWhenMode.Reference) Column(Modifier.testTag("quick-create-reference-catalog")) {
+        Text("Reference range")
+        OutlinedTextField(draft.time.referenceId.orEmpty(), { value -> store.updateTime(draft.time.copy(referenceId = value.ifBlank { null })) }, label = { Text("Reference ID") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-id"))
+        OutlinedTextField(draft.time.referenceLabel, { value -> store.updateTime(draft.time.copy(referenceLabel = value)) }, label = { Text("Reference label") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-label"))
+    }
+    if (draft.time.whenMode != QuickCreateWhenMode.None) {
+        Text("Time of day")
+        Row { QuickCreateTimeOfDayMode.entries.forEach { mode -> TextButton(onClick = {
+            store.updateTime(if (mode == QuickCreateTimeOfDayMode.Range) draft.time.copy(timeOfDayMode = mode, timeOfDayStart = draft.time.timeOfDayStart.ifBlank { "09:00" }, timeOfDayEnd = draft.time.timeOfDayEnd.ifBlank { "18:00" }) else draft.time.copy(timeOfDayMode = mode, timeOfDayStart = "", timeOfDayEnd = ""))
+        }, modifier = Modifier.testTag("quick-create-time-of-day-${mode.name.lowercase()}")) { Text(mode.name) } } }
+        if (draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range) {
+            OutlinedTextField(draft.time.timeOfDayStart, { value -> store.updateTime(draft.time.copy(timeOfDayStart = value)) }, label = { Text("Start time") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-time-of-day-start"))
+            OutlinedTextField(draft.time.timeOfDayEnd, { value -> store.updateTime(draft.time.copy(timeOfDayEnd = value)) }, label = { Text("End time") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-time-of-day-end"))
+            Row { listOf("morning" to ("06:00" to "10:00"), "midday" to ("09:00" to "18:00"), "night" to ("18:00" to "24:00")).forEach { (label, range) -> TextButton(onClick = { store.updateTime(draft.time.copy(timeOfDayMode = QuickCreateTimeOfDayMode.Range, timeOfDayStart = range.first, timeOfDayEnd = range.second)) }, modifier = Modifier.testTag("quick-create-time-quick-$label")) { Text(label) } } }
+        }
+    }
     TextButton(onClick = { store.updateWindows(draft.windows + QuickCreateWindow(UUID.randomUUID().toString(), "self", 0, app.tastile.android.ui.mobile.sheets.QuickCreateSpan())) }, modifier = Modifier.testTag("quick-create-add-window")) { Text("Add window") }
     draft.windows.forEachIndexed { index, window ->
-        OutlinedTextField(window.id, { value -> store.updateWindows(draft.windows.replace(index, window.copy(id = value))) }, label = { Text("Window ID") }, modifier = Modifier.testTag("quick-create-window-id-$index"))
-        OutlinedTextField(window.owner, { value -> store.updateWindows(draft.windows.replace(index, window.copy(owner = value))) }, label = { Text("Owner") })
-        OutlinedTextField(window.kind.toString(), { value -> store.updateWindows(draft.windows.replace(index, window.copy(kind = value.toIntOrNull() ?: 0))) }, label = { Text("Kind") })
+        Text("Window ${index + 1}")
+        Row { listOf(0, 1, 2, 3).forEach { kind -> TextButton(onClick = { store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) }, modifier = Modifier.testTag("quick-create-window-$index-kind-$kind")) { Text("Kind $kind") } } }
         OutlinedTextField(window.bounds.start, { value ->
             store.updateWindows(draft.windows.replace(index, window.copy(bounds = window.bounds.copy(start = value))))
-        }, label = { Text("Window start") })
+        }, label = { Text("Window start") }, modifier = Modifier.testTag("quick-create-window-$index-start"))
         OutlinedTextField(window.bounds.end, { value ->
             store.updateWindows(draft.windows.replace(index, window.copy(bounds = window.bounds.copy(end = value))))
-        }, label = { Text("Window end") })
-        OutlinedTextField(window.referenceId.orEmpty(), { value -> store.updateWindows(draft.windows.replace(index, window.copy(referenceId = value.ifBlank { null }))) }, label = { Text("Window reference") })
+        }, label = { Text("Window end") }, modifier = Modifier.testTag("quick-create-window-$index-end"))
+        if (window.kind in 1..3) OutlinedTextField(window.referenceId.orEmpty(), { value -> store.updateWindows(draft.windows.replace(index, window.copy(referenceId = value.ifBlank { null }))) }, label = { Text("Window reference") }, modifier = Modifier.testTag("quick-create-window-$index-reference"))
         TextButton(onClick = { store.updateWindows(draft.windows.filterIndexed { item, _ -> item != index }) }) { Text("Remove window") }
     }
 }
@@ -112,23 +136,30 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
 @Composable
 private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     val duration = draft.time.durationMinMax
-    OutlinedTextField(duration.minMs?.toString().orEmpty(), { value -> store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(value.toLongOrNull(), duration.maxMs))) }, label = { Text("Minimum duration (ms)") }, modifier = Modifier.testTag("quick-create-duration-min"))
-    OutlinedTextField(duration.maxMs?.toString().orEmpty(), { value -> store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(duration.minMs, value.toLongOrNull()))) }, label = { Text("Maximum duration (ms)") }, modifier = Modifier.testTag("quick-create-duration-max"))
+    TextButton(onClick = { store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange())) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none")) { Text("No duration") }
+    OutlinedTextField(
+        value = duration.minMs?.div(60_000L)?.toString() ?: "90",
+        onValueChange = { value -> value.toLongOrNull()?.let { minutes ->
+            val milliseconds = minutes.coerceIn(10L, 720L) * 60_000L
+            store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(milliseconds, milliseconds)))
+        } },
+        label = { Text("Duration (minutes)") },
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-minutes"),
+    )
+    Text("Use for completion", modifier = Modifier.testTag("quick-create-duration-completion-link"))
 }
 
 @Composable
 private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    if (draft.identity.kind != QuickCreateTileKind.Recurring) {
-        Text("Choose Recurring in Base to configure repetition.")
-        return
-    }
     Column(Modifier.testTag("quick-create-recurring-controls")) {
-        Row { QuickCreateRepeatMode.entries.forEach { value -> TextButton(onClick = { store.updateRecurring(draft.recurring.copy(repeatMode = value)) }) { Text(value.name) } } }
-        OutlinedTextField(draft.recurring.weekdayMask.toString(), { value -> store.updateRecurring(draft.recurring.copy(weekdayMask = value.toIntOrNull() ?: 0)) }, label = { Text("Weekday mask") })
-        OutlinedTextField(draft.recurring.endDate, { value -> store.updateRecurring(draft.recurring.copy(endDate = value)) }, label = { Text("End date") })
-        OutlinedTextField(draft.recurring.life.active.startDate, { value -> store.updateRecurring(draft.recurring.copy(life = draft.recurring.life.copy(active = draft.recurring.life.active.copy(startDate = value)))) }, label = { Text("Active from") })
-        OutlinedTextField(draft.recurring.life.active.endDate, { value -> store.updateRecurring(draft.recurring.copy(life = draft.recurring.life.copy(active = draft.recurring.life.active.copy(endDate = value)))) }, label = { Text("Active until") })
-        if (draft.recurring.frameRules.isNotEmpty() || draft.recurring.rules.isNotEmpty()) Text("Advanced recurrence details are preserved.")
+        Row { QuickCreateRepeatMode.entries.forEach { value -> TextButton(onClick = {
+            store.updateRecurring(draft.recurring.copy(repeatMode = value))
+            if (value != QuickCreateRepeatMode.Once) store.updateIdentity(draft.identity.copy(kind = QuickCreateTileKind.Recurring))
+        }, modifier = Modifier.testTag("quick-create-repeat-${value.name.lowercase()}")) { Text(value.name) } } }
+        Text(if (draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly) "Weekdays" else "Weekdays (weekly only)")
+        Row { (0..6).forEach { bit -> TextButton(onClick = { store.updateRecurring(draft.recurring.copy(weekdayMask = draft.recurring.weekdayMask xor (1 shl bit))) }, enabled = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly, modifier = Modifier.testTag("quick-create-weekday-$bit")) { Text(bit.toString()) } } }
+        TextButton(onClick = { store.updateRecurring(draft.recurring.copy(endDate = if (draft.recurring.endDate.isBlank()) LocalDate.now().toString() else "")) }, modifier = Modifier.testTag("quick-create-recurring-end-switch")) { Text("End date") }
+        if (draft.recurring.endDate.isNotBlank()) OutlinedTextField(draft.recurring.endDate, { value -> store.updateRecurring(draft.recurring.copy(endDate = value)) }, label = { Text("End date") }, modifier = Modifier.testTag("quick-create-recurring-end-date"))
     }
 }
 
