@@ -2,8 +2,6 @@ package app.tastile.android.ui.mobile
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,9 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.DropdownMenu
@@ -33,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -47,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.ui.dashboard.TimelineScale
 import app.tastile.android.ui.designsystem.AppAvatar
+import app.tastile.android.ui.mobile.designsystem.AppPickerButtonCompact
 import app.tastile.android.ui.mobile.designsystem.MobileTokens
 
 @Composable
@@ -117,30 +113,12 @@ private fun ScaleDropdown(
     onScaleChange: (TimelineScale) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val pillShape = RoundedCornerShape(50)
     Box {
-        Row(
-            modifier = Modifier
-                .clip(pillShape)
-                .border(1.dp, MaterialTheme.colorScheme.outline, pillShape)
-                .clickable(onClick = { expanded = true })
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .semantics { contentDescription = "Scale: ${scale.name}" },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = scale.name,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Icon(
-                imageVector = Icons.Outlined.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(18.dp),
-            )
-        }
+        AppPickerButtonCompact(
+            label = scale.name,
+            onClick = { expanded = true },
+            modifier = Modifier.semantics { contentDescription = "Scale: ${scale.name}" },
+        )
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
