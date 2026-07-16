@@ -300,7 +300,7 @@ private fun QuickCreateBaseComposition(
             trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { store.openSubpanel(QuickCreatePanel.Meta) }
+                .clickable { store.openSubpanel(QuickCreatePanel.Behavior) }
                 .testTag("quick-create-behavior-card"),
             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )

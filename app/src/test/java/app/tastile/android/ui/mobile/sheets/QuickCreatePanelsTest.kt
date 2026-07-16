@@ -51,7 +51,7 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-essential-duration").performClick()
         rule.onNodeWithTag("quick-create-subpanel-Duration").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
-        rule.onNodeWithTag("quick-create-essential-repeat").performClick()
+        rule.onNodeWithTag("quick-create-essential-repeat").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-subpanel-Recurring").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
         rule.waitForIdle()
@@ -61,8 +61,8 @@ class QuickCreatePanelsTest {
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-behavior-card").performScrollTo().performClick()
         rule.waitForIdle()
-        assertEquals(QuickCreatePanel.Meta, store.state.value.activePanel)
-        rule.onNodeWithTag("behavior-role").performScrollTo().assertIsDisplayed()
+        assertEquals(QuickCreatePanel.Behavior, store.state.value.activePanel)
+        rule.onNodeWithTag("behavior-role-label").performScrollTo().assertIsDisplayed()
         assertTrue(rule.onAllNodesWithTag("quick-create-row-0").fetchSemanticsNodes().isEmpty())
     }
 

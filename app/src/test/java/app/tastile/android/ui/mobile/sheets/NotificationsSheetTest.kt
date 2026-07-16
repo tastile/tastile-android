@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import app.tastile.android.R
 import app.tastile.android.notifications.NotificationItem
 import app.tastile.android.notifications.NotificationRepository
 import app.tastile.android.ui.mobile.Overlay
@@ -35,7 +36,7 @@ class NotificationsSheetTest {
         }
         rule.runOnUiThread { overlay.show(Overlay.Notifications) }
         rule.waitForIdle()
-        rule.onNodeWithText("No notifications").assertIsDisplayed()
+        rule.onNodeWithText(rule.activity.getString(R.string.empty_tiles_title)).assertIsDisplayed()
     }
 
     @Test

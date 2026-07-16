@@ -44,7 +44,9 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.theme.NiaTheme
@@ -112,7 +114,10 @@ fun NiaLoadingWheel(
             .size(48.dp)
             .padding(8.dp)
             .graphicsLayer { rotationZ = rotationAnim }
-            .semantics { contentDescription = contentDesc }
+            .semantics(mergeDescendants = true) {
+                contentDescription = contentDesc
+                progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate
+            }
             .testTag("loadingWheel"),
     ) {
         repeat(NUM_OF_LINES) { index ->
