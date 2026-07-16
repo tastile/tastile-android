@@ -26,6 +26,7 @@ import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
 import app.tastile.android.ui.mobile.sheets.QuickCreateStateStore
 import app.tastile.android.ui.mobile.sheets.QuickCreateTileKind
+import java.time.OffsetDateTime
 
 private val panelOrder = listOf(
     QuickCreatePanel.Base,
@@ -118,7 +119,9 @@ private fun QuickCreateBaseDetails(
         OutlinedTextField(draft.identity.title, { onUpdate(draft.identity.copy(title = it)) }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-title"))
         OutlinedTextField(draft.identity.description.orEmpty(), { onUpdate(draft.identity.copy(description = it.ifBlank { null })) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QuickCreateTileKind.entries.forEach { kind -> TextButton(onClick = { onUpdate(draft.identity.copy(kind = kind)) }) { Text(kind.name) } }
+            listOf(QuickCreateTileKind.Placement, QuickCreateTileKind.Recurring).forEach { kind ->
+                TextButton(onClick = { onUpdate(draft.identity.copy(kind = kind)) }, modifier = Modifier.testTag("quick-create-kind-${kind.name}")) { Text(kind.name) }
+            }
         }
         OutlinedTextField(draft.identity.visual.color, { onUpdate(draft.identity.copy(visual = draft.identity.visual.copy(color = it))) }, label = { Text("Color") })
         OutlinedTextField(draft.identity.visual.icon, { onUpdate(draft.identity.copy(visual = draft.identity.visual.copy(icon = it))) }, label = { Text("Icon") })
@@ -133,10 +136,20 @@ data class QuickCreateValidation(val isValid: Boolean)
 
 fun quickCreateValidation(draft: QuickCreateDraftState): QuickCreateValidation {
     val duration = draft.time.durationMinMax
-    val validSpan = draft.time.span.start.isBlank() || draft.time.span.end.isBlank() || draft.time.span.end > draft.time.span.start
+    val start = draft.time.span.start.parseOffsetDateTimeOrNull()
+    val end = draft.time.span.end.parseOffsetDateTimeOrNull()
+    val validSpan = when {
+        draft.time.span.start.isBlank() && draft.time.span.end.isBlank() -> true
+        draft.time.span.start.isBlank() -> end != null
+        draft.time.span.end.isBlank() -> start != null
+        start == null || end == null -> false
+        else -> end.isAfter(start)
+    }
     val validDuration = duration.minMs == null || duration.maxMs == null || duration.minMs <= duration.maxMs
     return QuickCreateValidation(draft.identity.title.isNotBlank() && validSpan && validDuration)
 }
 
 @Composable
 internal fun BackHeader(onBack: () -> Unit) { TextButton(onClick = onBack) { Text("Back") } }
+
+private fun String.parseOffsetDateTimeOrNull(): OffsetDateTime? = runCatching { OffsetDateTime.parse(this) }.getOrNull()

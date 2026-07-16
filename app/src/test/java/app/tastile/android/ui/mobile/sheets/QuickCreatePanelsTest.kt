@@ -119,4 +119,39 @@ class QuickCreatePanelsTest {
         assertTrue(store.state.value.plan.completion.tasks.single().complete.term == kotlinx.serialization.json.JsonPrimitive("done"))
         assertTrue(store.state.value.plan.completion.tasks.single().order.size == 1)
     }
+
+    @Test
+    fun `base exposes only Web tile kinds and retains title with a time field`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-0").performClick()
+        rule.onNodeWithText("Placement").assertIsDisplayed()
+        rule.onNodeWithText("Recurring").assertIsDisplayed()
+        assertTrue(rule.onAllNodesWithTag("quick-create-kind-Execution").fetchSemanticsNodes().isEmpty())
+        rule.onNodeWithTag("quick-create-title").performTextReplacement("Plan review")
+        rule.onNodeWithText("Back").performClick()
+        rule.onNodeWithTag("quick-create-row-2").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-start").performTextReplacement("2026-07-16T09:00:00+09:00")
+        rule.onNodeWithText("Back").performClick()
+        rule.onNodeWithTag("quick-create-row-0").performScrollTo().performClick()
+        rule.onNodeWithText("Plan review").assertIsDisplayed()
+        rule.onNodeWithText("Back").performClick()
+        rule.onNodeWithTag("quick-create-row-2").performScrollTo().performClick()
+        rule.onNodeWithText("2026-07-16T09:00:00+09:00").assertIsDisplayed()
+    }
+
+    @Test
+    fun `malformed non-padded and reversed offset spans disable Create`() {
+        val store = QuickCreateStateStore(QuickCreateDraftState(identity = QuickCreateIdentity(title = "Ready")))
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-2").performClick()
+        rule.onNodeWithTag("quick-create-start").performTextReplacement("2026-7-6T09:00:00+09:00")
+        rule.onNodeWithText("Back").performClick()
+        rule.onNodeWithTag("quick-create-validation-error").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag("quick-create-row-2").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-start").performTextReplacement("2026-07-16T10:00:00+09:00")
+        rule.onNodeWithTag("quick-create-end").performTextReplacement("2026-07-16T00:30:00Z")
+        rule.onNodeWithText("Back").performClick()
+        assertTrue(rule.onNodeWithText("Create").fetchSemanticsNode().config.contains(SemanticsProperties.Disabled))
+    }
 }
