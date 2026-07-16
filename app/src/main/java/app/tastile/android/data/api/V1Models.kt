@@ -255,3 +255,23 @@ data class V1PlacementListItem(
     @SerialName("span_start") val spanStart: String? = null,
     @SerialName("span_end") val spanEnd: String? = null
 )
+
+/** Current execution attached to the user's currently running tile. */
+@Serializable
+data class ActiveTileView(
+    @SerialName("tile_id") val tileId: String,
+    @SerialName("placement_id") val placementId: String,
+    @SerialName("execution_id") val executionId: String? = null,
+    val title: String = "",
+    @SerialName("span_start") val spanStart: String? = null,
+    @SerialName("span_end") val spanEnd: String? = null,
+)
+
+/** Minimal authoritative projection from GET /v1/executions/{id}. */
+@Serializable
+data class ExecutionView(
+    val id: String,
+    @SerialName("tile_id") val tileId: String,
+    val state: Int,
+    @SerialName("placement_id") val placementId: String? = null,
+)

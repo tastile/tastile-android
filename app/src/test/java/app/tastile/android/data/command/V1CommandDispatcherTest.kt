@@ -56,7 +56,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = "CreateTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -76,7 +76,7 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = "CreateTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -90,7 +90,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = "CreateTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -112,7 +112,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = "CreateTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -154,7 +154,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/update",
-                commandKind = "UpdateTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -172,7 +172,7 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/update",
-                commandKind = "UpdateTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -188,7 +188,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/defer",
-                commandKind = "SetTileLifecycle",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -202,7 +202,7 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/defer",
-                commandKind = "SetTileLifecycle",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -213,10 +213,30 @@ class V1CommandDispatcherTest {
     @Test
     fun dispatchTileComplete_buildsSetTileLifecycleWithState2() = runTest {
         val apiClient = newApiClient()
+        coEvery { apiClient.getActiveTile() } returns app.tastile.android.data.api.ActiveTileView(
+            tileId = "t-123",
+            placementId = "pl-1",
+            executionId = "ex-1",
+        )
+        coEvery { apiClient.readExecution("ex-1") } returns app.tastile.android.data.api.ExecutionView(
+            id = "ex-1",
+            tileId = "t-123",
+            state = 0,
+            placementId = "pl-1",
+        )
+        coEvery {
+            apiClient.postCommand(
+                path = "/v1/executions/ex-1/finish",
+                commandKind = null,
+                payload = any<Any>(),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>(),
+            )
+        } returns okResponse("ex-1")
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/complete",
-                commandKind = "SetTileLifecycle",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -234,7 +254,7 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/complete",
-                commandKind = "SetTileLifecycle",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -256,7 +276,7 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 0) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/extend-phase",
-                commandKind = "SetTileLifecycle",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -272,7 +292,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/memos",
-                commandKind = "AttachMemo",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -286,7 +306,7 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/memos",
-                commandKind = "AttachMemo",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -302,7 +322,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = "CreateTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -331,7 +351,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = "CreateTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -369,12 +389,23 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/start",
-                commandKind = "StartTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
             )
         } returns okResponse("t-123")
+        coEvery {
+            apiClient.postCommand(
+                path = "/v1/placements/t-123/executions",
+                commandKind = null,
+                payload = any<Any>(),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>(),
+            )
+        } returns okResponse("ex-123").copy(
+            aggregate = AggregateRef(V1NumericConstants.AggregateKind.EXECUTION, "ex-123"),
+        )
 
         val dispatcher = V1CommandDispatcher(apiClient)
         val ack = dispatcher.dispatchTileStart("t-123")
@@ -384,10 +415,19 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/start",
-                commandKind = "StartTile",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
+            )
+        }
+        coVerify(exactly = 1) {
+            apiClient.postCommand(
+                path = "/v1/placements/t-123/executions",
+                commandKind = null,
+                payload = any<Any>(),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>(),
             )
         }
     }
@@ -428,8 +468,7 @@ class V1CommandDispatcherTest {
     @Test
     fun dispatchTilePause_throwsWhenNoActiveExecution() = runTest {
         val apiClient = newApiClient()
-        // listPlacements returns empty — findActiveExecutionIdForTile returns null.
-        coEvery { apiClient.listPlacements() } returns emptyList()
+        coEvery { apiClient.getActiveTile() } returns null
 
         val dispatcher = V1CommandDispatcher(apiClient)
         try {
@@ -443,12 +482,9 @@ class V1CommandDispatcherTest {
     @Test
     fun dispatchTilePause_returnsNullOnV1Error_network() = runTest {
         val apiClient = newApiClient()
-        coEvery { apiClient.listPlacements() } throws V1Error.Network(IOException("boom"))
+        coEvery { apiClient.getActiveTile() } throws V1Error.Network(IOException("boom"))
 
         val dispatcher = V1CommandDispatcher(apiClient)
-        // Step 5: the lookup helper swallows network errors via runCatching
-        // and returns null. The throw is only raised when the helper itself
-        // concludes "no execution". So this test asserts the network path.
         val ack = dispatcher.dispatchTilePause("t-123")
         assertNull(ack)
     }
@@ -458,7 +494,7 @@ class V1CommandDispatcherTest {
     @Test
     fun dispatchTileContinue_throwsWhenNoActiveExecution() = runTest {
         val apiClient = newApiClient()
-        coEvery { apiClient.listPlacements() } returns emptyList()
+        coEvery { apiClient.getActiveTile() } returns null
 
         val dispatcher = V1CommandDispatcher(apiClient)
         try {
@@ -467,6 +503,31 @@ class V1CommandDispatcherTest {
         } catch (e: IllegalStateException) {
             assertTrue(e.message!!.contains("no active execution"))
         }
+    }
+
+    @Test
+    fun executionLifecycle_usesActiveTileReadModelForPauseAndCachedExecutionForResume() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.getActiveTile() } returns app.tastile.android.data.api.ActiveTileView(
+            tileId = "t-123", placementId = "pl-1", executionId = "ex-1"
+        )
+        coEvery { apiClient.readExecution("ex-1") } returns app.tastile.android.data.api.ExecutionView(
+            id = "ex-1", tileId = "t-123", state = 0, placementId = "pl-1"
+        )
+        coEvery {
+            apiClient.postNullCommand("/v1/executions/ex-1/pause", any<KSerializer<Any>>())
+        } returns okResponse("ex-1")
+        coEvery {
+            apiClient.postNullCommand("/v1/executions/ex-1/resume", any<KSerializer<Any>>())
+        } returns okResponse("ex-1")
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+        assertNotNull(dispatcher.dispatchTilePause("t-123"))
+        assertNotNull(dispatcher.dispatchTileContinue("t-123"))
+
+        coVerify(exactly = 1) { apiClient.getActiveTile() }
+        coVerify(exactly = 1) { apiClient.postNullCommand("/v1/executions/ex-1/pause", any<KSerializer<Any>>()) }
+        coVerify(exactly = 1) { apiClient.postNullCommand("/v1/executions/ex-1/resume", any<KSerializer<Any>>()) }
     }
 
     // --- Step 5: tile.reschedule ----------------------------------------
@@ -499,7 +560,7 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/placements/pl-1/changes",
-                commandKind = "AppendChanges",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -516,7 +577,7 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/placements/pl-1/changes",
-                commandKind = "AppendChanges",
+                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()

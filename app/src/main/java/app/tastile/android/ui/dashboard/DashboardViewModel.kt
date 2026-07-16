@@ -567,6 +567,28 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun pauseTile(tileId: String) {
+        viewModelScope.launch {
+            try {
+                tileRepository.pauseTile(tileId)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to pause execution"
+            }
+        }
+    }
+
+    fun resumeTile(tileId: String) {
+        viewModelScope.launch {
+            try {
+                tileRepository.continueTile(tileId)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to resume execution"
+            }
+        }
+    }
+
     fun deferTile(tileId: String) {
         viewModelScope.launch {
             try {

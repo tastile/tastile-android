@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -48,6 +49,7 @@ fun ExecuteScreen(
 ) {
     val tiles by viewModel.tiles.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     if (loading && tiles.isEmpty()) {
         AppCenteredLoading()
@@ -63,6 +65,9 @@ fun ExecuteScreen(
     var deleteCandidate by remember { mutableStateOf<String?>(null) }
 
     AppPageColumn {
+        error?.let { message ->
+            Text(text = message, color = AppTheme.colors.error)
+        }
         active?.let { ActiveTileHero(tile = it, viewModel = viewModel) }
 
         AppSectionHeader(text = if (showable.isEmpty()) "Nothing to do — create a tile" else "Today and ready")
@@ -83,7 +88,7 @@ fun ExecuteScreen(
                     },
                     onStart = { viewModel.startTile(tile.id) },
                     onComplete = { viewModel.completeTile(tile.id) },
-                    onDefer = { viewModel.deferTile(tile.id) },
+                    onPause = { viewModel.pauseTile(tile.id) },
                     onDelete = { deleteCandidate = tile.id },
                 )
             }
@@ -124,7 +129,7 @@ private fun ActiveTileHero(tile: Tile, viewModel: DashboardViewModel) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
             Button(onClick = { viewModel.completeTile(tile.id) }) { Text("Complete") }
-            OutlinedButton(onClick = { viewModel.deferTile(tile.id) }) { Text("Defer") }
+            OutlinedButton(onClick = { viewModel.pauseTile(tile.id) }) { Text("Pause") }
         }
     }
 }
@@ -135,7 +140,7 @@ private fun TileActionRow(
     onTap: () -> Unit,
     onStart: () -> Unit,
     onComplete: () -> Unit,
-    onDefer: () -> Unit,
+    onPause: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val lifecycle = TileLifecycle.fromString(tile.lifecycle)
@@ -156,19 +161,24 @@ private fun TileActionRow(
                     Icon(Icons.Outlined.MoreVert, contentDescription = "More actions")
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(
-                        text = { Text("Start") },
-                        leadingIcon = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
-                        onClick = { menuOpen = false; onStart() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Complete") },
-                        onClick = { menuOpen = false; onComplete() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Defer") },
-                        onClick = { menuOpen = false; onDefer() },
-                    )
+                    if (lifecycle == TileLifecycle.READY) {
+                        DropdownMenuItem(
+                            text = { Text("Start") },
+                            leadingIcon = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
+                            onClick = { menuOpen = false; onStart() },
+                        )
+                    }
+                    if (lifecycle == TileLifecycle.STARTED) {
+                        DropdownMenuItem(
+                            text = { Text("Complete") },
+                            onClick = { menuOpen = false; onComplete() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Pause") },
+                            leadingIcon = { Icon(Icons.Outlined.Pause, contentDescription = null) },
+                            onClick = { menuOpen = false; onPause() },
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text("Delete") },
                         leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },

@@ -166,7 +166,8 @@ class TileRepository @Inject constructor(
         // Step 5: tile.start now requires plan_id from v1. The dispatcher
         // throws IllegalStateException with a clear message if the backend
         // hasn't attached a plan to the tile. We propagate the throw.
-        val ack = v1CommandDispatcher.dispatchTileStart(tileId)
+        val targetWorkMinutes = latestCloudTiles.firstOrNull { it.id == tileId }?.targetWorkMin
+        val ack = v1CommandDispatcher.dispatchTileStart(tileId, targetWorkMinutes)
             ?: throw IllegalStateException("Cloud command rejected: start tile")
         refreshCloudCacheAfterCommand(ack)
         return findSnapshotTile(tileId) ?: readCloudTileById(tileId)

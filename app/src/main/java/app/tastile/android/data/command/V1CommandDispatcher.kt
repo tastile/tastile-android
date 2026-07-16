@@ -7,11 +7,13 @@ import app.tastile.android.data.api.AppendChangesPayload
 import app.tastile.android.data.api.ArchiveTilePayload
 import app.tastile.android.data.api.AttachMemoPayload
 import app.tastile.android.data.api.CommandResponse
+import app.tastile.android.data.api.ExecutionFinishPayload
 import app.tastile.android.data.api.CreatePromptRequestPayload
 import app.tastile.android.data.api.CreateTilePayload
 import app.tastile.android.data.api.SetTileLifecyclePayload
 import app.tastile.android.data.api.StartTileBaseline
 import app.tastile.android.data.api.StartTilePayload
+import app.tastile.android.data.api.StartExecutionPayload
 import app.tastile.android.data.api.PlacementSpanPayload
 import app.tastile.android.data.api.SourceRefPayload
 import app.tastile.android.data.api.UpdateTilePayload
@@ -53,6 +55,13 @@ import javax.inject.Singleton
 class V1CommandDispatcher @Inject constructor(
     private val v1ApiClient: V1ApiClient
 ) {
+    /**
+     * Kept only to bridge the paused-execution hole in the current read API.
+     * A resumed process revalidates it through GET /v1/executions/{id}; after
+     * process death the backend currently exposes only active (not paused)
+     * executions via /v1/active-tile.
+     */
+    private val executionIdsByTile = mutableMapOf<String, String>()
     suspend fun dispatchTileCreate(
         v0Payload: JsonObject,
         userId: String
@@ -138,6 +147,15 @@ class V1CommandDispatcher @Inject constructor(
     ): CoreCommandAck? {
         if (effectiveTileId.isNullOrBlank()) return null
         return runCatching {
+            val executionId = findExecutionIdForTile(effectiveTileId)
+                ?: throw IllegalStateException("tile.complete: no active execution for tile $effectiveTileId")
+            val finish = v1ApiClient.postCommand(
+                path = "/v1/executions/$executionId/finish",
+                payload = ExecutionFinishPayload(),
+                payloadSerializer = ExecutionFinishPayload.serializer(),
+                responseSerializer = CommandResponse.serializer()
+            )
+            if (!finish.toCoreAck().accepted) return@runCatching null
             val payload = SetTileLifecyclePayload(
                 tileId = effectiveTileId,
                 state = 2.toShort(),
@@ -229,28 +247,38 @@ class V1CommandDispatcher @Inject constructor(
      * the v1 backend's PlanCompletion resolver will compute the canonical
      * span once a Plan exists, so this is only the wire bootstrap.
      */
-    suspend fun dispatchTileStart(tileId: String): CoreCommandAck? {
+    suspend fun dispatchTileStart(tileId: String, targetWorkMinutes: Long? = null): CoreCommandAck? {
         return runCatching {
             val tile = v1ApiClient.readTile(tileId)
             val planId = tile.planId
                 ?: throw IllegalStateException("tile.start requires plan_id; v1 backend did not return one for tile $tileId")
-            val now = Instant.now().toString()
+            val start = Instant.now()
+            val end = start.plusSeconds((targetWorkMinutes ?: 25L).coerceAtLeast(1L) * 60)
             val payload = StartTilePayload(
                 tileId = tileId,
                 planId = planId,
                 source = V1NumericConstants.PlacementSource.MANUAL,
                 sourceRef = SourceRefPayload.empty(),
-                baseline = StartTileBaseline(
-                    span = PlacementSpanPayload(start = now, end = now),
-                )
+                baseline = StartTileBaseline(span = PlacementSpanPayload(start = start.toString(), end = end.toString()))
             )
-            val response = v1ApiClient.postCommand(
+            val placement = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/start",
                 payload = payload,
                 payloadSerializer = StartTilePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
             )
-            response.toCoreAck()
+            val placementId = placement.aggregate?.id
+                ?: throw IllegalStateException("tile.start response missing placement aggregate for tile $tileId")
+            val execution = v1ApiClient.postCommand(
+                path = "/v1/placements/$placementId/executions",
+                payload = StartExecutionPayload(placementId),
+                payloadSerializer = StartExecutionPayload.serializer(),
+                responseSerializer = CommandResponse.serializer()
+            )
+            val executionId = execution.aggregate?.id
+                ?: throw IllegalStateException("start execution response missing execution aggregate for tile $tileId")
+            executionIdsByTile[tileId] = executionId
+            execution.toCoreAck()
         }.recover { error ->
             if (error is IllegalStateException) throw error
             logFailure("tile.start", error)
@@ -268,7 +296,7 @@ class V1CommandDispatcher @Inject constructor(
      */
     suspend fun dispatchTilePause(tileId: String): CoreCommandAck? {
         return runCatching {
-            val executionId = findActiveExecutionIdForTile(tileId)
+            val executionId = findExecutionIdForTile(tileId)
                 ?: throw IllegalStateException("tile.pause: no active execution for tile $tileId")
             val response = v1ApiClient.postNullCommand(
                 path = "/v1/executions/$executionId/pause",
@@ -289,7 +317,7 @@ class V1CommandDispatcher @Inject constructor(
      */
     suspend fun dispatchTileContinue(tileId: String): CoreCommandAck? {
         return runCatching {
-            val executionId = findActiveExecutionIdForTile(tileId)
+            val executionId = findExecutionIdForTile(tileId)
                 ?: throw IllegalStateException("tile.continue: no active execution for tile $tileId")
             val response = v1ApiClient.postNullCommand(
                 path = "/v1/executions/$executionId/resume",
@@ -472,25 +500,18 @@ class V1CommandDispatcher @Inject constructor(
         return placements.firstOrNull { it.tileId == tileId }
     }
 
-    /**
-     * Find the active execution for [tileId]. Macro Step 5 has NO v1
-     * endpoint that maps a tile_id to an execution_id:
-     *   - `listPlacements()` returns `PlacementListItem` (no execution field).
-     *   - `getTimeline()` returns `TimelineItem` (placement_id only, no
-     *     execution_id).
-     *   - `readExecution(executionId)` requires the id we don't have.
-     *
-     * So this helper always returns `null`. The dispatcher callers throw
-     * `IllegalStateException("tile.{pause,continue}: no active execution for
-     * tile $tileId")` per the Step 5 spec. Future work: add a
-     * `GET /v1/tiles/{id}/executions` lookup endpoint, then plumb the
-     * execution_id into this helper.
-     */
-    private suspend fun findActiveExecutionIdForTile(tileId: String): String? {
-        // Confirm at least one placement exists for the tile (otherwise the
-        // throw message is misleading), then bail.
-        findPlacementForTile(tileId)
-        return null
+    private suspend fun findExecutionIdForTile(tileId: String): String? {
+        executionIdsByTile[tileId]?.let { cached ->
+            val execution = v1ApiClient.readExecution(cached)
+            if (execution.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES) return cached
+            executionIdsByTile.remove(tileId)
+        }
+        val active = v1ApiClient.getActiveTile()
+        val executionId = active?.takeIf { it.tileId == tileId }?.executionId ?: return null
+        val execution = v1ApiClient.readExecution(executionId)
+        return executionId.takeIf {
+            execution.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES
+        }?.also { executionIdsByTile[tileId] = it }
     }
 
     private fun buildChangeSpan(
@@ -553,5 +574,6 @@ class V1CommandDispatcher @Inject constructor(
 
     private companion object {
         private const val TAG = "V1CommandDispatcher"
+        private val ACTIVE_EXECUTION_STATES = setOf(0, 1)
     }
 }

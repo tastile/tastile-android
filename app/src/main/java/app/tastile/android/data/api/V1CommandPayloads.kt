@@ -212,6 +212,15 @@ data class StartTileBaseline(
     val inside: kotlinx.serialization.json.JsonObject? = null,
 )
 
+@Serializable
+data class StartExecutionPayload(@SerialName("placement_id") val placementId: String)
+
+@Serializable
+data class ExecutionFinishPayload(
+    val kind: Int = 0,
+    val note: String? = null,
+)
+
 /**
  * `domain::AppendChangesPayload`. The full Rust `ChangeSet` is intentionally
  * NOT mirrored here — the only field Step 5 needs to set for `tile.reschedule`

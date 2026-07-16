@@ -109,6 +109,13 @@ class V1ApiClient @Inject constructor(
     suspend fun listPlacements(): List<V1PlacementListItem> =
         get("/v1/placements")
 
+    /** Returns null when the account has no running execution. */
+    suspend fun getActiveTile(): ActiveTileView? =
+        get("/v1/active-tile")
+
+    suspend fun readExecution(executionId: String): ExecutionView =
+        get("/v1/executions/$executionId")
+
     suspend fun getTimeline(start: Instant, end: Instant): V1TimelineResponse {
         return get(V1Endpoints.timeline(start, end))
     }
