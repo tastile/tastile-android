@@ -381,6 +381,7 @@ fun AppInlineError(
  * in `titleSmall` and [hint] (if any) in `bodySmall`; otherwise [message]
  * is rendered in `bodyMedium` and [title]/[hint] are ignored.
  */
+@Stable
 @Composable
 fun AppEmptyState(
     message: String = "",
@@ -568,6 +569,7 @@ fun AppListRow(
  * Compact list item mirroring the legacy `AppListItem(headline, leading,
  * trailing, onClick, modifier)`.
  */
+@Stable
 @Composable
 fun AppListItem(
     headline: String,
@@ -599,6 +601,7 @@ fun AppListItem(
  * Compact picker dropdown trigger button. Backward-compatible signature used
  * by project create/edit forms (`ui.mobile.panels.projects`).
  */
+@Stable
 @Composable
 fun AppPickerButton(
     label: String,

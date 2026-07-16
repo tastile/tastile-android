@@ -80,7 +80,7 @@ class LoginViewModelTest {
     ) : AuthRepositoryContract {
         private val auth = MutableStateFlow<TastileAuthState>(TastileAuthState.Unauthenticated)
 
-        override val getAuthStateStream: StateFlow<TastileAuthState> = auth
+        override val authState: StateFlow<TastileAuthState> = auth
 
         override suspend fun signInWithCognito(context: Context) {
             signInError?.let { throw it }

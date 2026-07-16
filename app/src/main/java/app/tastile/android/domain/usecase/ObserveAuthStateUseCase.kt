@@ -16,5 +16,5 @@ import javax.inject.Inject
 class ObserveAuthStateUseCase @Inject constructor(
     private val authRepository: AuthRepository,
 ) {
-    operator fun invoke(): Flow<TastileAuthState> = authRepository.getAuthStateStream
+    operator fun invoke(): Flow<TastileAuthState> = authRepository.authState
 }

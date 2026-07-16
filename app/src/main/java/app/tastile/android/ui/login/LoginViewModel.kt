@@ -17,7 +17,7 @@ import javax.inject.Inject
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepositoryContract
 ) : ViewModel() {
-    val authState: StateFlow<TastileAuthState> = authRepository.getAuthStateStream
+    val authState: StateFlow<TastileAuthState> = authRepository.authState
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     private val _isSigningIn = MutableStateFlow(false)
