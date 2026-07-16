@@ -75,6 +75,7 @@ import androidx.compose.material3.MaterialTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.panels.ProjectsViewModel
+import app.tastile.android.ui.mobile.calendar.GridConstants
 
 import java.time.Instant
 import java.time.LocalDate
@@ -84,14 +85,11 @@ import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val TIME_GUTTER_WIDTH = 48.dp
 private val MIN_EVENT_HEIGHT_DP = 22.dp
 private val WEEK_HEADER_HEIGHT = 52.dp
 private const val PAGER_CENTER = 365
 private const val PAGER_TOTAL = 731
 private const val INITIAL_ZOOM = 1.5f  // day is 1.5× screen → always scrollable
-private const val ZOOM_MIN = 1f        // floor: 24h fit on screen
-private const val ZOOM_MAX = 6f        // ceiling: ~4h fit on screen for detail
 
 // Total top-bar height the table-control rows must clear:
 //   status bar + 56dp content (56.dp).
@@ -484,7 +482,7 @@ private fun DayGrid(
                                 } else {
                                     // Compute new zoom from the absolute anchor.
                                     val rawFactor = currentDistance / initialDistance
-                                    val newZoom = (initialZoom * rawFactor).coerceIn(ZOOM_MIN, ZOOM_MAX)
+                                    val newZoom = (initialZoom * rawFactor).coerceIn(GridConstants.ZOOM_MIN, GridConstants.ZOOM_MAX)
                                     val targetScroll = anchoredZoomScrollTarget(
                                         currentScrollPx = initialScroll,
                                         anchorYpx = initialCentroidY,
@@ -526,7 +524,7 @@ private fun DayGrid(
             ) {
                 Column(
                     modifier = Modifier
-                        .width(TIME_GUTTER_WIDTH)
+                        .width(GridConstants.TIME_GUTTER_WIDTH)
                         .height(totalHeight),
                 ) {
                     TimeGutterContent(startHour, endHour, pxPerHour, totalHeight)
@@ -781,7 +779,7 @@ private fun WeekView(
                 .background(MaterialTheme.colorScheme.background),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Spacer(modifier = Modifier.width(TIME_GUTTER_WIDTH))
+            Spacer(modifier = Modifier.width(GridConstants.TIME_GUTTER_WIDTH))
             for (offset in 0L until 7L) {
                 val day = weekStart.plusDays(offset)
                 val isToday = day == today
@@ -876,7 +874,7 @@ private fun WeekView(
                                         pinchTranslationY = 0f
                                     } else {
                                         val rawFactor = currentDistance / initialDistance
-                                        val newZoom = (initialZoom * rawFactor).coerceIn(ZOOM_MIN, ZOOM_MAX)
+                                        val newZoom = (initialZoom * rawFactor).coerceIn(GridConstants.ZOOM_MIN, GridConstants.ZOOM_MAX)
                                         val targetScroll = anchoredZoomScrollTarget(
                                             currentScrollPx = initialScroll,
                                             anchorYpx = initialCentroidY,
@@ -908,7 +906,7 @@ private fun WeekView(
                 // Time gutter (scrolls with body)
                 Column(
                     modifier = Modifier
-                        .width(TIME_GUTTER_WIDTH)
+                        .width(GridConstants.TIME_GUTTER_WIDTH)
                         .height(totalHeight),
                 ) {
                     WeekTimeGutter(
