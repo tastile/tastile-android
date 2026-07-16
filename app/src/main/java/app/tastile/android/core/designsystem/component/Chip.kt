@@ -119,35 +119,6 @@ fun ChipPreview() {
 }
 
 /**
- * Tastile filter chip with click-style handler. Wraps Material 3 [FilterChip]
- * for callers whose selection model is "the chip is selected iff the user
- * clicked it" — i.e. the underlying Boolean is owned by the caller and the
- * chip reports the click as a unit event rather than a toggled value.
- *
- * @param selected Whether the chip is currently checked.
- * @param onClick Called when the user taps the chip.
- * @param modifier Modifier applied to the chip.
- * @param enabled Controls the enabled state of the chip.
- * @param label The text label content.
- */
-@Composable
-fun NiaFilterChip(
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    label: @Composable () -> Unit,
-) {
-    NiaFilterChip(
-        selected = selected,
-        onSelectedChange = { onClick() },
-        modifier = modifier,
-        enabled = enabled,
-        label = label,
-    )
-}
-
-/**
  * Tastile chip default values.
  */
 object NiaChipDefaults {

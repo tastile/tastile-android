@@ -6,11 +6,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.tastile.android.core.designsystem.component.NiaOutlinedCard
 import app.tastile.android.ui.dashboard.DashboardViewModel
 
 /**
@@ -39,7 +39,7 @@ fun IntegrationsScreen(viewModel: DashboardViewModel) {
             style = MaterialTheme.typography.bodyMedium,
         )
 
-        NiaOutlinedCard(
+        OutlinedCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(

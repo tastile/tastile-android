@@ -9,16 +9,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaListItem
-import app.tastile.android.core.designsystem.component.NiaModalBottomSheet
-import app.tastile.android.core.designsystem.component.NiaRememberModalBottomSheetState
 
 data class ReferenceOption(val id: String, val label: String)
 
@@ -29,9 +30,9 @@ fun ReferencePickerSheet(
     onSelect: (ReferenceOption) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = NiaRememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    NiaModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -45,11 +46,12 @@ fun ReferencePickerSheet(
                 )
             } else {
                 references.forEach { ref ->
-                    NiaListItem(
+                    ListItem(
                         headlineContent = { Text(ref.label) },
                         supportingContent = { Text(ref.id, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingContent = { Icon(Icons.Outlined.Tag, contentDescription = null) },
                         modifier = Modifier.clickable { onSelect(ref) },
+                        colors = ListItemDefaults.colors(),
                     )
                 }
             }
