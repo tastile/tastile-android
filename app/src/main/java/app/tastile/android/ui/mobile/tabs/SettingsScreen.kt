@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.DarkMode
@@ -101,7 +103,7 @@ fun SettingsScreen(
         )
     }
 
-    Scaffold(
+Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
@@ -120,19 +122,20 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-        ThemeSection(
-            current = theme,
-            onPick = { viewModel.setThemeMode(it) },
-        )
-        LanguageSection(
-            current = locale,
-            onPick = { viewModel.setLocale(it) },
-        )
-        SecurityLockSection(
+            ThemeSection(
+                current = theme,
+                onPick = { viewModel.setThemeMode(it) },
+            )
+            LanguageSection(
+                current = locale,
+                onPick = { viewModel.setLocale(it) },
+            )
+            SecurityLockSection(
             enabled = securityLockEnabled,
             timeoutMinutes = timeoutMin,
             onToggle = { viewModel.setSecurityLockEnabled(it) },

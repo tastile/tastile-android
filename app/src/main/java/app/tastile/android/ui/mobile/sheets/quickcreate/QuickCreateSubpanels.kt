@@ -1,6 +1,7 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -1236,6 +1237,7 @@ internal fun <T> LocalSelectList(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable { onSelect(option) }
                     .then(
                         if (testTag != null) Modifier.testTag(testTag(option)) else Modifier,
                     ),

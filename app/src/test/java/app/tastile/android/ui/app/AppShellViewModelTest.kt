@@ -43,7 +43,9 @@ class AppShellViewModelTest {
         vm.setTopBarVisible(true)
 
         assertTrue(vm.uiState.value.isTopBarVisible)
-        assertEquals(1, vm.uiState.value.isTopBarVisible.compareTo(true))
+        // Boolean.compareTo returns 0 for equal values — no-op assignment is
+        // verified by the state still being true.
+        assertEquals(0, vm.uiState.value.isTopBarVisible.compareTo(true))
     }
 
     @Test

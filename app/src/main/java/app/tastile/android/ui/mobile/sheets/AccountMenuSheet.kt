@@ -2,6 +2,7 @@ package app.tastile.android.ui.mobile.sheets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
@@ -113,7 +115,12 @@ fun AccountMenuSheet(
         AlertDialog(
             onDismissRequest = { showSignOutConfirm = false },
             title = { Text(stringResource(R.string.nav_account_sign_out)) },
-            text = { Text(stringResource(R.string.shell_account_sign_out_confirm)) },
+            text = {
+                Text(
+                    stringResource(R.string.shell_account_sign_out_confirm),
+                    modifier = Modifier.semantics(mergeDescendants = false) { },
+                )
+            },
             confirmButton = {
                 NiaButton(
                     onClick = {
@@ -121,12 +128,18 @@ fun AccountMenuSheet(
                         overlay.dismiss()
                         viewModel.signOut()
                     },
+                    modifier = Modifier
+                        .semantics(mergeDescendants = false) { }
+                        .testTag("account_menu_sign_out_confirm"),
                     text = { Text(stringResource(R.string.nav_account_sign_out)) },
                 )
             },
             dismissButton = {
                 NiaTextButton(
                     onClick = { showSignOutConfirm = false },
+                    modifier = Modifier
+                        .semantics(mergeDescendants = false) { }
+                        .testTag("account_menu_sign_out_cancel"),
                     text = { Text(stringResource(R.string.dashboard_tiles_delete_dialog_cancel)) },
                 )
             },
@@ -141,13 +154,17 @@ private fun AccountMenuRow(
     testTag: String,
     onClick: () -> Unit,
 ) {
+    // Apply clickable + testTag directly to the ListItem (mirrors the working
+    // pattern in `QuickCreateBasePanel.kt`'s essential card). Wrapping in an
+    // outer Box breaks ModalBottomSheet click dispatch under Robolectric.
     ListItem(
         headlineContent = { Text(label, style = MaterialTheme.typography.bodyLarge) },
         leadingContent = { Icon(icon, contentDescription = null) },
         trailingContent = { Icon(Icons.Outlined.ChevronRight, contentDescription = null) },
         modifier = Modifier
-            .testTag(testTag)
-            .clickable(onClick = onClick),
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .testTag(testTag),
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     )
 }
