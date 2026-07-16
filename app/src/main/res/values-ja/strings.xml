@@ -73,6 +73,7 @@
     <string name="panels_references_label_hint">ラベル</string>
 
     <!-- Settings (C9 — web→android parity sweep) -->
+    <string name="settings_title">環境設定</string>
     <string name="settings_theme">テーマ</string>
     <string name="settings_theme_light">ライト</string>
     <string name="settings_theme_dark">ダーク</string>
