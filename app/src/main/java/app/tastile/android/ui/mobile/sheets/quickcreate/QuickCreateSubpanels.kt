@@ -46,6 +46,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import java.util.UUID
 
 @Composable
@@ -150,14 +151,72 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     Text("Logic")
     Row { listOf(0 to "ALL", 1 to "ANY", 2 to "NOT").forEach { (kind, label) -> TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = draft.plan.completion.root.copy(kind = kind, term = null)))) }) { Text(label) } } }
     ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) })
-    TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements + QuickCreateTimeRequirement(UUID.randomUUID().toString(), JsonNull, JsonNull)))) }) { Text("Add time requirement") }
+    TextButton(
+        onClick = {
+            store.updatePlan(
+                draft.plan.copy(
+                    completion = draft.plan.completion.copy(
+                        timeRequirements = draft.plan.completion.timeRequirements + webTimeRequirement(
+                            draft.time.durationMinMax.minMs,
+                        ),
+                    ),
+                ),
+            )
+        },
+        modifier = Modifier.testTag("quick-create-add-time-requirement"),
+    ) { Text("Add time requirement") }
     draft.plan.completion.timeRequirements.forEachIndexed { index, requirement ->
-        OutlinedTextField(requirement.id, { value ->
-            store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements.replace(index, requirement.copy(id = value)))))
-        }, label = { Text("Requirement ID") })
-        Text("${requirement.required.jsonObjectOrEmpty().string("minMs")} ms")
-        TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(timeRequirements = draft.plan.completion.timeRequirements.filterIndexed { item, _ -> item != index }))) }) { Text("Remove time requirement") }
+        val required = requirement.required.jsonObjectOrEmpty()
+        val minimumMinutes = required.long("minMs")?.div(60_000L)?.toString().orEmpty()
+        OutlinedTextField(
+            value = minimumMinutes,
+            onValueChange = { input ->
+                val minutes = input.toLongOrNull()
+                val nextRequired = when {
+                    input.isBlank() -> required.with("minMs", null)
+                    minutes == null -> required
+                    else -> required.with("minMs", minutes.coerceAtLeast(5L) * 60_000L)
+                }
+                updateTimeRequirement(draft, store, index, requirement.copy(required = nextRequired))
+            },
+            label = { Text("Minutes") },
+            modifier = Modifier.testTag("time-requirement-$index-required-minutes"),
+        )
+        Text("minutes")
+        TextButton(
+            onClick = {
+                store.updatePlan(
+                    draft.plan.copy(
+                        completion = draft.plan.completion.copy(
+                            timeRequirements = draft.plan.completion.timeRequirements.filterIndexed { item, _ -> item != index },
+                        ),
+                    ),
+                )
+            },
+            modifier = Modifier.testTag("time-requirement-$index-remove"),
+        ) { Text("Remove time requirement") }
     }
+}
+
+private fun webTimeRequirement(durationMinimumMs: Long?): QuickCreateTimeRequirement = QuickCreateTimeRequirement(
+    id = UUID.randomUUID().toString(),
+    observation = JsonObject(mapOf("scope" to JsonPrimitive(0))),
+    required = JsonObject(mapOf("minMs" to JsonPrimitive(durationMinimumMs ?: 60 * 60_000L))),
+)
+
+private fun updateTimeRequirement(
+    draft: QuickCreateDraftState,
+    store: QuickCreateStateStore,
+    index: Int,
+    requirement: QuickCreateTimeRequirement,
+) {
+    store.updatePlan(
+        draft.plan.copy(
+            completion = draft.plan.completion.copy(
+                timeRequirements = draft.plan.completion.timeRequirements.replace(index, requirement),
+            ),
+        ),
+    )
 }
 
 @Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit, path: String = "root") {
@@ -302,6 +361,7 @@ private fun <T> List<T>.replace(index: Int, value: T): List<T> = toMutableList()
 
 private fun JsonElement.jsonObjectOrEmpty(): JsonObject = this as? JsonObject ?: JsonObject(emptyMap())
 private fun JsonObject.string(key: String, fallback: String = ""): String = this[key]?.jsonPrimitive?.content?.takeUnless { it == "null" } ?: fallback
+private fun JsonObject.long(key: String): Long? = this[key]?.jsonPrimitive?.longOrNull
 private fun JsonObject.with(key: String, value: Any?): JsonObject = JsonObject(toMutableMap().also { map -> map[key] = when (value) {
     null -> JsonNull
     is JsonElement -> value

@@ -207,4 +207,29 @@ class QuickCreatePanelsTest {
         assertTrue(gap["value"]?.jsonObject?.get("leftAnchor")?.jsonObject?.containsKey("referenceId") == true)
         assertTrue(gap["value"]?.jsonObject?.get("size")?.jsonObject?.containsKey("minMs") == true)
     }
+
+    @Test
+    fun `time requirement editor adds edits minimum minutes removes and retains state across panels`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+
+        rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
+        rule.onNodeWithTag("time-requirement-0-required-minutes").performScrollTo().performTextReplacement("45")
+        rule.onNodeWithTag("quick-create-add-time-requirement").performScrollTo().performClick()
+        val added = store.state.value.plan.completion.timeRequirements[1]
+        assertTrue(added.observation.jsonObject["scope"]?.jsonPrimitive?.content == "0")
+        assertTrue(added.required.jsonObject["minMs"]?.jsonPrimitive?.content == "1800000")
+        rule.onNodeWithTag("time-requirement-1-remove").performScrollTo().performClick()
+
+        rule.onNodeWithText("Back").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-row-2").performScrollTo().performClick()
+        rule.onNodeWithText("Back").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
+
+        val requirement = store.state.value.plan.completion.timeRequirements.single()
+        val observation = requirement.observation.jsonObject
+        val required = requirement.required.jsonObject
+        assertTrue(observation["scope"]?.jsonPrimitive?.content == "1")
+        assertTrue(required["minMs"]?.jsonPrimitive?.content == "2700000")
+    }
 }
