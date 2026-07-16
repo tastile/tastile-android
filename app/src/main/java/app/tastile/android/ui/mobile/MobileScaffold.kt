@@ -65,6 +65,7 @@ fun MobileScaffold(
             TimelineScale.Day -> selectedDay.format(dayFormatter)
             TimelineScale.Week -> "${weekStart.format(weekShortFormatter)} – ${weekEnd.format(weekShortFormatter)}"
             TimelineScale.Month -> monthStart.format(monthFormatter)
+            TimelineScale.List -> "All events"
         }
     }
 

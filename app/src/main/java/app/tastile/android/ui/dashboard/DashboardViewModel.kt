@@ -41,7 +41,7 @@ import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
-enum class TimelineScale { Day, Week, Month }
+enum class TimelineScale { Day, Week, Month, List }
 
 /**
  * Sub-tab selector for the mobile Tiles tab. Independent from
@@ -192,6 +192,32 @@ class DashboardViewModel @Inject constructor(
     val scale: StateFlow<TimelineScale> = _scale.asStateFlow()
     fun setScale(scale: TimelineScale) {
         _scale.value = scale
+    }
+
+    private val _calendarMode = MutableStateFlow(CalendarMode.Scope)
+    val calendarMode: StateFlow<CalendarMode> = _calendarMode.asStateFlow()
+
+    private val _calendarMinimumDurationMinutes = MutableStateFlow(0)
+    val calendarMinimumDurationMinutes: StateFlow<Int> = _calendarMinimumDurationMinutes.asStateFlow()
+
+    fun setCalendarMode(mode: CalendarMode) {
+        _calendarMode.value = mode
+        if (mode != CalendarMode.Scope) _selectedDay.value = LocalDate.now()
+    }
+
+    fun setCalendarMinimumDuration(minutes: Int) {
+        _calendarMinimumDurationMinutes.value = minutes.coerceAtLeast(0)
+        refreshTimeline()
+    }
+
+    fun moveCalendar(delta: Long) {
+        if (!canNavigateCalendar(_calendarMode.value)) return
+        _selectedDay.value = shiftCalendarAnchor(_selectedDay.value, _scale.value, delta)
+    }
+
+    fun goToCalendarToday() {
+        _calendarMode.value = CalendarMode.Scope
+        _selectedDay.value = LocalDate.now()
     }
 
     private val _statsDiagnostics = MutableStateFlow("n/a")
@@ -449,7 +475,9 @@ class DashboardViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(_selectedDay, _scale) { d, s -> computeTimelineRange(d, s) }
+            combine(_selectedDay, _scale, _calendarMode) { d, s, m ->
+                calendarRange(d, s, m)
+            }
                 .distinctUntilChanged()
                 .collect { range ->
                     _timelineRange.value = range
@@ -490,7 +518,10 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoadingTimeline.value = true
             try {
-                _timeline.value = tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds)
+                _timeline.value = filterCalendarByMinimumDuration(
+                    tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds),
+                    _calendarMinimumDurationMinutes.value,
+                )
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load timeline"
             } finally {
@@ -513,7 +544,10 @@ class DashboardViewModel @Inject constructor(
                     _profile.value = profileRepository.getProfile(userId)
                     _avatarUrl.value = metadataAvatar ?: _profile.value?.avatarUrl
                     val (tlStart, tlEnd) = _timelineRange.value
-                    _timeline.value = tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds)
+                    _timeline.value = filterCalendarByMinimumDuration(
+                        tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds),
+                        _calendarMinimumDurationMinutes.value,
+                    )
                 } else {
                     _timeline.value = emptyList()
                     _profile.value = null
@@ -859,23 +893,7 @@ private fun parseIsoOrNull(value: String?): Instant? {
 }
 
 internal fun computeTimelineRange(day: LocalDate, scale: TimelineScale): Pair<Instant, Instant> {
-    val zone = ZoneId.systemDefault()
-    return when (scale) {
-        TimelineScale.Day -> {
-            val start = day.atStartOfDay(zone).toInstant()
-            start to start.plusSeconds(24L * 3600L)
-        }
-        TimelineScale.Week -> {
-            val monday = day.minusDays((day.dayOfWeek.value - 1).toLong())
-            val start = monday.atStartOfDay(zone).toInstant()
-            start to start.plusSeconds(7L * 24L * 3600L)
-        }
-        TimelineScale.Month -> {
-            val ym = YearMonth.from(day)
-            val start = ym.atDay(1).atStartOfDay(zone).toInstant()
-            start to ym.atEndOfMonth().plusDays(1).atStartOfDay(zone).toInstant()
-        }
-    }
+    return calendarRange(day, scale, CalendarMode.Scope)
 }
 
 private fun snapByZoom(zoomScale: Float): Long {

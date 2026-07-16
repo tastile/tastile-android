@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -72,6 +73,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -112,6 +114,8 @@ fun TimelineScreen(
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val selectedDay by viewModel.selectedDay.collectAsStateWithLifecycle()
     val scale by viewModel.scale.collectAsStateWithLifecycle()
+    val calendarMode by viewModel.calendarMode.collectAsStateWithLifecycle()
+    val minimumDuration by viewModel.calendarMinimumDurationMinutes.collectAsStateWithLifecycle()
 
     val today = remember { LocalDate.now() }
     val zone = remember { ZoneId.systemDefault() }
@@ -143,6 +147,18 @@ fun TimelineScreen(
             pagerState.scrollToPage(PAGER_CENTER)
         }
     }
+    LaunchedEffect(selectedDay, scale) {
+        val pageOffset = when (scale) {
+            TimelineScale.Day, TimelineScale.List -> ChronoUnit.DAYS.between(today, selectedDay)
+            TimelineScale.Week -> ChronoUnit.WEEKS.between(
+                today.minusDays((today.dayOfWeek.value - 1).toLong()),
+                selectedDay.minusDays((selectedDay.dayOfWeek.value - 1).toLong()),
+            )
+            TimelineScale.Month -> ChronoUnit.MONTHS.between(today.withDayOfMonth(1), selectedDay.withDayOfMonth(1))
+        }
+        val target = (PAGER_CENTER + pageOffset.toInt()).coerceIn(0, PAGER_TOTAL - 1)
+        if (scale != TimelineScale.List && pagerState.currentPage != target) pagerState.scrollToPage(target)
+    }
     // Map current page → selectedDay so the header title reflects the visible range.
     LaunchedEffect(pagerState.currentPage, scale, today) {
         val offset = (pagerState.currentPage - PAGER_CENTER).toLong()
@@ -153,6 +169,7 @@ fun TimelineScreen(
                 ref.minusDays((ref.dayOfWeek.value - 1).toLong())
             }
             TimelineScale.Month -> today.plusMonths(offset)
+            TimelineScale.List -> today.plusDays(offset)
         }
         if (target != selectedDay) viewModel.setSelectedDay(target)
     }
@@ -216,8 +233,22 @@ fun TimelineScreen(
                     )
                 }
             }
+            scale == TimelineScale.List -> TimelineListView(activeTimeline, zone)
             else -> EmptyState(scale)
         }
+
+        CalendarToolbar(
+            mode = calendarMode,
+            minimumDuration = minimumDuration,
+            onPrevious = { viewModel.moveCalendar(-1) },
+            onNext = { viewModel.moveCalendar(1) },
+            onToday = viewModel::goToCalendarToday,
+            onMode = viewModel::setCalendarMode,
+            onMinimumDuration = viewModel::setCalendarMinimumDuration,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = topBarTotalHeight()),
+        )
 
         // Quick-create FAB: bottom-right round + button. Sits on top of every
         // scale (Day / Week / Month) so the entry point is always discoverable
@@ -238,6 +269,54 @@ fun TimelineScreen(
                 contentDescription = "Create",
                 modifier = Modifier.size(MobileTokens.iconVisualSize),
             )
+        }
+    }
+}
+
+@Composable
+private fun CalendarToolbar(
+    mode: app.tastile.android.ui.dashboard.CalendarMode,
+    minimumDuration: Int,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onToday: () -> Unit,
+    onMode: (app.tastile.android.ui.dashboard.CalendarMode) -> Unit,
+    onMinimumDuration: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val navigationEnabled = app.tastile.android.ui.dashboard.canNavigateCalendar(mode)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(AppTheme.colors.background.copy(alpha = 0.94f))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("‹", modifier = Modifier.testTag("calendar-previous").clickable(enabled = navigationEnabled, onClick = onPrevious))
+            Text("Today", modifier = Modifier.testTag("calendar-today").clickable(onClick = onToday))
+            Text("›", modifier = Modifier.testTag("calendar-next").clickable(enabled = navigationEnabled, onClick = onNext))
+            app.tastile.android.ui.dashboard.CalendarMode.entries.forEach { candidate ->
+                Text(
+                    text = candidate.name,
+                    color = if (candidate == mode) AppTheme.colors.primary else AppTheme.colors.onSurfaceVariant,
+                    modifier = Modifier
+                        .testTag("calendar-mode-${candidate.name.lowercase()}")
+                        .clickable { onMode(candidate) },
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Min", color = AppTheme.colors.onSurfaceVariant)
+            listOf(0, 5, 15, 30).forEach { minutes ->
+                Text(
+                    text = if (minutes == 0) "Any" else "${minutes}m",
+                    color = if (minutes == minimumDuration) AppTheme.colors.primary else AppTheme.colors.onSurfaceVariant,
+                    modifier = Modifier
+                        .testTag("calendar-min-$minutes")
+                        .clickable { onMinimumDuration(minutes) },
+                )
+            }
         }
     }
 }
@@ -1120,6 +1199,37 @@ private fun filterForScale(
                 val start = parseInstantOrNull(item.startAt) ?: return@filter false
                 val end = parseInstantOrNull(item.endAt) ?: start
                 start.isBefore(monthEnd) && end.isAfter(monthStart)
+            }
+        }
+        TimelineScale.List -> items.sortedBy { it.startAt }
+    }
+}
+
+@Composable
+private fun TimelineListView(items: List<CoreTimelineItem>, zone: ZoneId) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = topBarTotalHeight(), start = 16.dp, end = 16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items.sortedBy { it.startAt }.forEach { item ->
+            val start = parseInstantOrNull(item.startAt)?.atZone(zone)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(AppTheme.colors.surfaceVariant)
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = start?.format(DateTimeFormatter.ofPattern("MMM d HH:mm", Locale.getDefault())) ?: "—",
+                    style = AppTheme.typography.labelMedium,
+                    color = AppTheme.colors.onSurfaceVariant,
+                )
+                Text(item.title, style = AppTheme.typography.bodyMedium, color = AppTheme.colors.onSurface)
             }
         }
     }
