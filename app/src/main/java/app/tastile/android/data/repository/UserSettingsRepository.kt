@@ -93,16 +93,20 @@ object SecurityLockPolicy {
 }
 
 enum class ThemeMode(val value: String) {
+    SYSTEM("system"),    // follow system: light or dark
     LIGHT("light"),
-    GRAY("gray"),
-    DARK("dark");
+    DARK("dark"),
+    GRAY("gray"),         // zinc-toned palette regardless of system
+    BRAND("brand");       // Tastile brand palette regardless of system
 
     companion object {
         fun from(value: String): ThemeMode = when (value) {
+            SYSTEM.value -> SYSTEM
             LIGHT.value -> LIGHT
-            GRAY.value -> GRAY
             DARK.value -> DARK
-            else -> DARK
+            GRAY.value -> GRAY
+            BRAND.value -> BRAND
+            else -> SYSTEM   // unknown persisted value → default to SYSTEM (new users, upgrades)
         }
     }
 }
