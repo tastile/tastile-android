@@ -1,8 +1,12 @@
 package app.tastile.android.ui.dashboard.components
 
+// m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

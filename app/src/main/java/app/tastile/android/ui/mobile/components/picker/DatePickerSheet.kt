@@ -3,11 +3,17 @@ package app.tastile.android.ui.mobile.components.picker
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+// m2-allow: m3-component
 import androidx.compose.material3.DatePicker
+// m2-allow: m3-component
 import androidx.compose.material3.DatePickerDialog
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier

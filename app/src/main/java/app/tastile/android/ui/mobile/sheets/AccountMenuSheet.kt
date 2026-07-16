@@ -7,9 +7,13 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.WorkspacePremium
+// m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

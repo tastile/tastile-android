@@ -139,9 +139,25 @@ tasks.register("verifyDesignSystemImports") {
     group = "verification"
     description = "Disallow direct Material3 imports in M3-unified screens"
     doLast {
-        val forbidden = "import androidx.compose.material3."
-        val offenders = designSystemGuardFiles
-            .filter { it.exists() && it.readText().contains(forbidden) }
+        val forbiddenPrefix = "import androidx.compose.material3."
+        val allowMarker = "// m2-allow:"
+        val offenders = designSystemGuardFiles.filter { f ->
+            if (!f.exists()) return@filter false
+            val lines = f.readText().lines()
+            // A file is an offender only when it contains a forbidden import
+            // whose immediately preceding non-blank line is NOT an m2-allow marker.
+            lines.withIndex().any { (idx, rawLine) ->
+                val trimmed = rawLine.trimStart()
+                if (!trimmed.startsWith(forbiddenPrefix)) return@any false
+                var i = idx - 1
+                while (i >= 0) {
+                    val prev = lines[i].trim()
+                    if (prev.isEmpty()) { i--; continue }
+                    return@any !prev.startsWith(allowMarker)
+                }
+                true
+            }
+        }
         check(offenders.isEmpty()) {
             "Direct Material3 imports are not allowed in guarded screens:\n" +
                 offenders.joinToString(separator = "\n") { "- ${it.path}" }

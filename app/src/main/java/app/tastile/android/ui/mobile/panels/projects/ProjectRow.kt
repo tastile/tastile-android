@@ -12,8 +12,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Folder
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.IconButton
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

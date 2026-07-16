@@ -9,12 +9,19 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Timer
+// m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
+// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButton
+// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButtonDefaults
+// m2-allow: m3-component
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

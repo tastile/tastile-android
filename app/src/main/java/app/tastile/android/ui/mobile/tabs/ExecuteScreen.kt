@@ -14,13 +14,21 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
+// m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: m3-component
 import androidx.compose.material3.Button
+// m2-allow: m3-component
 import androidx.compose.material3.DropdownMenu
+// m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.IconButton
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedButton
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

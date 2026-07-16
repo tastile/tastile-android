@@ -18,19 +18,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
+// m2-allow: m3-component
 import androidx.compose.material3.Button
+// m2-allow: m3-component
 import androidx.compose.material3.Card
+// m2-allow: m3-component
 import androidx.compose.material3.CardDefaults
+// m2-allow: primitive
 import androidx.compose.material3.CircularProgressIndicator
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.IconButton
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedButton
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
+// m2-allow: m3-component
 import androidx.compose.material3.SnackbarHost
+// m2-allow: m3-component
 import androidx.compose.material3.SnackbarHostState
+// m2-allow: m3-component
 import androidx.compose.material3.Surface
+// m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

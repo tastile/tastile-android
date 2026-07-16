@@ -12,27 +12,48 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Schedule
+// m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: m3-component
 import androidx.compose.material3.Button
+// m2-allow: m3-component
 import androidx.compose.material3.DatePicker
+// m2-allow: m3-component
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: m3-component
 import androidx.compose.material3.FilterChip
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.IconButton
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
+// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButtonDefaults
+// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButton
+// m2-allow: m3-component
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+// m2-allow: m3-component
 import androidx.compose.material3.Switch
+// m2-allow: m3-component
 import androidx.compose.material3.Tab
+// m2-allow: m3-component
 import androidx.compose.material3.TabRow
+// m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
 import androidx.compose.material3.TextButton
+// m2-allow: m3-component
 import androidx.compose.material3.TimePicker
+// m2-allow: m3-component
 import androidx.compose.material3.rememberDatePickerState
+// m2-allow: m3-component
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

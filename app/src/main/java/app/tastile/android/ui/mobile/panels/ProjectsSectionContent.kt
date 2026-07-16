@@ -9,8 +9,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+// m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
 import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton

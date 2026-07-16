@@ -1,6 +1,5 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,16 +20,23 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Tune
+// m2-allow: m3-component
 import androidx.compose.material3.FilterChip
+// m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import app.tastile.android.ui.mobile.designsystem.AppDismissButton
@@ -38,6 +44,8 @@ import app.tastile.android.ui.mobile.designsystem.AppListItem
 import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
 import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
 import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlan
@@ -83,17 +91,17 @@ private fun QuickCreateBaseComposition(
     val projectName = projects.firstOrNull { it.id == draft.meta.ownerSubjectId }?.displayName
         ?: draft.meta.ownerSubjectId
     Column(
-        Modifier.testTag("quick-create-base").verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        Modifier.testTag("quick-create-base").verticalScroll(rememberScrollState()).padding(MobileSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
     ) {
-        Text("Create tile")
+        SectionHeader(title = "Create tile")
         OutlinedTextField(
             draft.identity.title,
             { store.updateIdentity(draft.identity.copy(title = it)) },
             label = { Text("Title") },
             modifier = Modifier.fillMaxWidth().testTag("quick-create-title"),
         )
-        FlowRow(Modifier.testTag("quick-create-organize-row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FlowRow(modifier = Modifier.fillMaxWidth().testTag("quick-create-organize-row"), horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
             if (projectName != null) FilterChip(true, { store.openSubpanel(QuickCreatePanel.Meta) }, { Text(projectName) })
             draft.meta.tags.forEach { tag -> FilterChip(true, { store.openSubpanel(QuickCreatePanel.Meta) }, { Text("#$tag") }) }
             AppTertiaryButton(
@@ -103,15 +111,21 @@ private fun QuickCreateBaseComposition(
                 leadingIcon = Icons.Outlined.Tune,
             )
         }
-        Row(Modifier.testTag("quick-create-tile-kind"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().testTag("quick-create-tile-kind"), verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs)) {
             QuickCreateTileKind.entries.forEach { kind ->
-                FilterChip(draft.identity.kind == kind, { store.updateIdentity(draft.identity.copy(kind = kind)) }, { Text(kind.name) }, Modifier.testTag("quick-create-kind-${kind.name}"))
+                AppListItem(
+                    headline = kind.name,
+                    selected = draft.identity.kind == kind,
+                    trailing = if (draft.identity.kind == kind) Icons.Outlined.Check else null,
+                    onClick = { store.updateIdentity(draft.identity.copy(kind = kind)) },
+                    modifier = Modifier.fillMaxWidth().testTag("quick-create-kind-${kind.name}"),
+                )
             }
         }
         HorizontalDivider()
-        EssentialRow("Time", timeSummary(draft), "quick-create-essential-time") { store.openSubpanel(QuickCreatePanel.Time) }
-        EssentialRow("Duration", durationSummary(draft), "quick-create-essential-duration") { store.openSubpanel(QuickCreatePanel.Duration) }
-        EssentialRow("Repeat", repeatSummary(draft), "quick-create-essential-repeat") { store.openSubpanel(QuickCreatePanel.Recurring) }
+        EssentialRow("Time", timeSummary(draft), "quick-create-essential-time", Icons.Outlined.Schedule) { store.openSubpanel(QuickCreatePanel.Time) }
+        EssentialRow("Duration", durationSummary(draft), "quick-create-essential-duration", Icons.Outlined.Timer) { store.openSubpanel(QuickCreatePanel.Duration) }
+        EssentialRow("Repeat", repeatSummary(draft), "quick-create-essential-repeat", Icons.Outlined.Repeat) { store.openSubpanel(QuickCreatePanel.Recurring) }
         HorizontalDivider()
         AppListItem(
             headline = "Completion logic",
@@ -136,14 +150,17 @@ private fun QuickCreateBaseComposition(
             modifier = Modifier.testTag("quick-create-tasks-header"),
         )
         draft.plan.completion.tasks.forEachIndexed { index, task ->
-            Row(Modifier.fillMaxWidth().testTag("quick-create-task-row-$index"), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.fillMaxWidth().testTag("quick-create-task-row-$index"), verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
                 AppListItem(
                     headline = task.content.title.ifBlank { "Untitled" },
                     leading = Icons.Outlined.CheckBox,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     onClick = { /* tap to focus task */ },
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+                ) {
                     AppTertiaryButton(
                         text = "Move up",
                         onClick = {
@@ -172,21 +189,21 @@ private fun QuickCreateBaseComposition(
                         enabled = index < draft.plan.completion.tasks.lastIndex,
                         modifier = Modifier.testTag("quick-create-task-move-down-$index"),
                     )
-                }
-                AppSecondaryButton(
-                    text = "Remove",
-                    onClick = {
-                        store.updatePlan(
-                            draft.plan.copy(
-                                completion = draft.plan.completion.copy(
-                                    tasks = draft.plan.completion.tasks.filterIndexed { item, _ -> item != index },
+                    AppSecondaryButton(
+                        text = "Remove",
+                        onClick = {
+                            store.updatePlan(
+                                draft.plan.copy(
+                                    completion = draft.plan.completion.copy(
+                                        tasks = draft.plan.completion.tasks.filterIndexed { item, _ -> item != index },
+                                    ),
                                 ),
-                            ),
-                        )
-                    },
-                    modifier = Modifier.testTag("quick-create-task-remove-$index"),
-                    leadingIcon = Icons.Outlined.Delete,
-                )
+                            )
+                        },
+                        modifier = Modifier.testTag("quick-create-task-remove-$index"),
+                        leadingIcon = Icons.Outlined.Delete,
+                    )
+                }
             }
         }
         AppTertiaryButton(
@@ -222,7 +239,7 @@ private fun QuickCreateBaseComposition(
         val submissionValidation = quickCreateSubmissionValidation(draft)
         if (!submissionValidation.isValid) Text(submissionValidation.message ?: "Fix required fields", Modifier.testTag("quick-create-validation-error"))
         submitError?.let { Text(it, Modifier.testTag("quick-create-submit-error")) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MobileSpacing.sm)) {
             AppTertiaryButton(
                 text = "Cancel",
                 onClick = onClose,
@@ -249,8 +266,15 @@ internal fun BackHeader(onBack: () -> Unit) {
     )
 }
 
-@Composable private fun EssentialRow(label: String, summary: String, tag: String, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).testTag(tag).padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(label); Text(summary) }
+@Composable private fun EssentialRow(label: String, summary: String, tag: String, leadingIcon: ImageVector, onClick: () -> Unit) {
+    AppListItem(
+        headline = label,
+        supporting = summary,
+        leading = leadingIcon,
+        trailing = Icons.Outlined.ChevronRight,
+        onClick = onClick,
+        modifier = Modifier.testTag(tag),
+    )
 }
 
 private fun timeSummary(draft: QuickCreateDraftState): String = when {

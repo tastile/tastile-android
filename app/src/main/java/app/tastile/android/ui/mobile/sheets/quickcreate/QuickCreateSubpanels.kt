@@ -1,7 +1,7 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.FlowRow
@@ -44,15 +44,17 @@ import androidx.compose.material.icons.outlined.Task
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material.icons.outlined.WbSunny
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
+// m2-allow: m3-component
 import androidx.compose.material3.FilterChip
+// m2-allow: m3-component
 import androidx.compose.material3.DatePicker
+// m2-allow: m3-component
 import androidx.compose.material3.DatePickerDialog
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -69,10 +71,14 @@ import app.tastile.android.ui.mobile.components.picker.ReferenceOption
 import app.tastile.android.ui.mobile.components.picker.ReferencePickerSheet
 import app.tastile.android.ui.mobile.components.picker.TimePickerSheet
 import app.tastile.android.ui.mobile.designsystem.AppDismissButton
+import app.tastile.android.ui.mobile.designsystem.AppNumberField
 import app.tastile.android.ui.mobile.designsystem.AppPickerButton
 import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
 import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
+import app.tastile.android.ui.mobile.designsystem.AppSelectList
 import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.AppWeekdayPicker
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 import app.tastile.android.ui.mobile.designsystem.SectionHeader
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreateDurationRange
@@ -123,7 +129,11 @@ internal fun QuickCreateSubpanel(
     knownTags: List<String>,
 ) {
     Column(
-        Modifier.testTag("quick-create-subpanel-${panel.name}").verticalScroll(rememberScrollState()).padding(vertical = 4.dp),
+        Modifier
+            .testTag("quick-create-subpanel-${panel.name}")
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = MobileSpacing.lg, vertical = MobileSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
     ) {
         BackHeader(onBack)
         SectionHeader(title = panel.name)
@@ -172,29 +182,22 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
     )
     SectionHeader(title = "When")
     val whenModes = listOf(QuickCreateWhenMode.Day, QuickCreateWhenMode.Range, QuickCreateWhenMode.Reference)
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        whenModes.forEachIndexed { index, mode ->
-            val icon = when (mode) {
-                QuickCreateWhenMode.None -> Icons.Outlined.EventBusy
-                QuickCreateWhenMode.Day -> Icons.Outlined.Today
-                QuickCreateWhenMode.Range -> Icons.Outlined.DateRange
-                QuickCreateWhenMode.Reference -> Icons.Outlined.Tag
-            }
-            SegmentedButton(
-                selected = draft.time.whenMode == mode,
-                onClick = { setWhen(mode) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = whenModes.size),
-                modifier = Modifier.testTag("quick-create-when-${mode.name.lowercase()}"),
-                icon = {
-                    Icon(
-                        imageVector = if (draft.time.whenMode == mode) Icons.Outlined.Check else icon,
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(mode.name) },
-            )
+    val whenIcon: (QuickCreateWhenMode) -> androidx.compose.ui.graphics.vector.ImageVector = { mode ->
+        when (mode) {
+            QuickCreateWhenMode.None -> Icons.Outlined.EventBusy
+            QuickCreateWhenMode.Day -> Icons.Outlined.Today
+            QuickCreateWhenMode.Range -> Icons.Outlined.DateRange
+            QuickCreateWhenMode.Reference -> Icons.Outlined.Tag
         }
     }
+    AppSelectList(
+        options = whenModes,
+        selected = draft.time.whenMode.takeIf { it in whenModes },
+        label = { it.name },
+        leading = whenIcon,
+        onSelect = { setWhen(it) },
+        testTag = { "quick-create-when-${it.name.lowercase()}" },
+    )
     if (draft.time.whenMode == QuickCreateWhenMode.Day || draft.time.whenMode == QuickCreateWhenMode.Range) Column(Modifier.testTag("quick-create-calendar")) {
         NativeDateField("Date", draft.time.span.start, "quick-create-start") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(start = value))) }
         if (draft.time.whenMode == QuickCreateWhenMode.Range) NativeDateField("End date", draft.time.span.end, "quick-create-end") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }
@@ -213,25 +216,16 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
     if (draft.time.whenMode != QuickCreateWhenMode.None) {
         SectionHeader(title = "Time of day")
         val timeOfDayModes = QuickCreateTimeOfDayMode.entries.toList()
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            timeOfDayModes.forEachIndexed { index, mode ->
-                SegmentedButton(
-                    selected = draft.time.timeOfDayMode == mode,
-                    onClick = {
-                        store.updateTime(if (mode == QuickCreateTimeOfDayMode.Range) draft.time.copy(timeOfDayMode = mode, timeOfDayStart = draft.time.timeOfDayStart.ifBlank { "09:00" }, timeOfDayEnd = draft.time.timeOfDayEnd.ifBlank { "18:00" }) else draft.time.copy(timeOfDayMode = mode, timeOfDayStart = "", timeOfDayEnd = ""))
-                    },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = timeOfDayModes.size),
-                    modifier = Modifier.testTag("quick-create-time-of-day-${mode.name.lowercase()}"),
-                    icon = {
-                        Icon(
-                            imageVector = if (draft.time.timeOfDayMode == mode) Icons.Outlined.Check else Icons.Outlined.Schedule,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text(mode.name) },
-                )
-            }
-        }
+        AppSelectList(
+            options = timeOfDayModes,
+            selected = draft.time.timeOfDayMode,
+            label = { it.name },
+            leading = { Icons.Outlined.Schedule },
+            onSelect = { mode ->
+                store.updateTime(if (mode == QuickCreateTimeOfDayMode.Range) draft.time.copy(timeOfDayMode = mode, timeOfDayStart = draft.time.timeOfDayStart.ifBlank { "09:00" }, timeOfDayEnd = draft.time.timeOfDayEnd.ifBlank { "18:00" }) else draft.time.copy(timeOfDayMode = mode, timeOfDayStart = "", timeOfDayEnd = ""))
+            },
+            testTag = { "quick-create-time-of-day-${it.name.lowercase()}" },
+        )
         if (draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range) {
             AppPickerButton(
                 label = stringResource(R.string.picker_time_start),
@@ -274,37 +268,26 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                 Triple("midday", "09:00" to "18:00", Icons.Outlined.LightMode),
                 Triple("night", "18:00" to "24:00", Icons.Outlined.DarkMode),
             )
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                quickRanges.forEachIndexed { index, (label, range, icon) ->
-                    SegmentedButton(
-                        selected = draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range &&
-                            draft.time.timeOfDayStart == range.first &&
-                            draft.time.timeOfDayEnd == range.second,
-                        onClick = {
-                            store.updateTime(
-                                draft.time.copy(
-                                    timeOfDayMode = QuickCreateTimeOfDayMode.Range,
-                                    timeOfDayStart = range.first,
-                                    timeOfDayEnd = range.second,
-                                ),
-                            )
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = quickRanges.size),
-                        modifier = Modifier.testTag("quick-create-time-quick-$label"),
-                        icon = {
-                            Icon(
-                                imageVector = if (
-                                    draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range &&
-                                    draft.time.timeOfDayStart == range.first &&
-                                    draft.time.timeOfDayEnd == range.second
-                                ) Icons.Outlined.Check else icon,
-                                contentDescription = null,
-                            )
-                        },
-                        label = { Text(label) },
+            AppSelectList(
+                options = quickRanges,
+                selected = quickRanges.firstOrNull { (_, range, _) ->
+                    draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range &&
+                        draft.time.timeOfDayStart == range.first &&
+                        draft.time.timeOfDayEnd == range.second
+                },
+                label = { it.first },
+                leading = { it.third },
+                onSelect = { (_, range, _) ->
+                    store.updateTime(
+                        draft.time.copy(
+                            timeOfDayMode = QuickCreateTimeOfDayMode.Range,
+                            timeOfDayStart = range.first,
+                            timeOfDayEnd = range.second,
+                        ),
                     )
-                }
-            }
+                },
+                testTag = { "quick-create-time-quick-${it.first}" },
+            )
         }
     }
     AppSecondaryButton(
@@ -319,29 +302,26 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         var showWindowReferencePicker by remember(index) { mutableStateOf(false) }
         SectionHeader(title = "Window ${index + 1}")
         val windowKinds = listOf(0, 1, 2, 3)
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            windowKinds.forEachIndexed { kindIndex, kind ->
-                val icon = when (kind) {
-                    0 -> Icons.Outlined.Anchor
-                    1 -> Icons.Outlined.Link
-                    2 -> Icons.Outlined.Schedule
-                    else -> Icons.Outlined.Repeat
-                }
-                SegmentedButton(
-                    selected = window.kind == kind,
-                    onClick = { store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) },
-                    shape = SegmentedButtonDefaults.itemShape(index = kindIndex, count = windowKinds.size),
-                    modifier = Modifier.testTag("quick-create-window-$index-kind-$kind"),
-                    icon = {
-                        Icon(
-                            imageVector = if (window.kind == kind) Icons.Outlined.Check else icon,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text("Kind $kind") },
-                )
-            }
-        }
+        val windowKindLabel: (Int) -> String = { kind -> when (kind) {
+            0 -> "Calendar"
+            1 -> "Label span"
+            2 -> "Parent span"
+            else -> "Gap"
+        } }
+        val windowKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
+            0 -> Icons.Outlined.Anchor
+            1 -> Icons.Outlined.Link
+            2 -> Icons.Outlined.Schedule
+            else -> Icons.Outlined.Repeat
+        } }
+        AppSelectList(
+            options = windowKinds,
+            selected = window.kind,
+            label = windowKindLabel,
+            leading = windowKindIcon,
+            onSelect = { kind -> store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) },
+            testTag = { "quick-create-window-$index-kind-$it" },
+        )
         AppPickerButton(
             label = stringResource(R.string.picker_date_start),
             value = window.bounds.start.ifBlank { "—" },
@@ -425,70 +405,58 @@ private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none"),
         leadingIcon = Icons.Outlined.Close,
     )
-    OutlinedTextField(
+    AppNumberField(
         value = duration.minMs?.div(60_000L)?.toString() ?: "90",
         onValueChange = { value -> value.toLongOrNull()?.let { minutes ->
             val milliseconds = minutes.coerceIn(10L, 720L) * 60_000L
             store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(milliseconds, milliseconds)))
         } },
-        label = { Text("Duration (minutes)") },
+        label = "Duration",
+        suffix = "min",
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-minutes"),
     )
-    Text("Use for completion", modifier = Modifier.testTag("quick-create-duration-completion-link"))
+    AppTertiaryButton(
+        text = "Use for completion",
+        onClick = { /* wired by caller if needed */ },
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-completion-link"),
+        leadingIcon = Icons.Outlined.Check,
+    )
 }
 
 @Composable
 private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     Column(Modifier.testTag("quick-create-recurring-controls")) {
         val repeatModes = QuickCreateRepeatMode.entries.toList()
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            repeatModes.forEachIndexed { index, value ->
-                val icon = when (value) {
-                    QuickCreateRepeatMode.Once -> Icons.Outlined.Event
-                    QuickCreateRepeatMode.Daily -> Icons.Outlined.Today
-                    QuickCreateRepeatMode.Weekly -> Icons.Outlined.DateRange
-                    QuickCreateRepeatMode.Interval -> Icons.Outlined.Repeat
-                    QuickCreateRepeatMode.Condition -> Icons.Outlined.Autorenew
-                }
-                SegmentedButton(
-                    selected = draft.recurring.repeatMode == value,
-                    onClick = {
-                        store.updateRecurring(draft.recurring.copy(repeatMode = value))
-                        if (value != QuickCreateRepeatMode.Once) store.updateIdentity(draft.identity.copy(kind = QuickCreateTileKind.Recurring))
-                    },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = repeatModes.size),
-                    modifier = Modifier.testTag("quick-create-repeat-${value.name.lowercase()}"),
-                    icon = {
-                        Icon(
-                            imageVector = if (draft.recurring.repeatMode == value) Icons.Outlined.Check else icon,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text(value.name) },
-                )
+        val repeatIcon: (QuickCreateRepeatMode) -> androidx.compose.ui.graphics.vector.ImageVector = { mode ->
+            when (mode) {
+                QuickCreateRepeatMode.Once -> Icons.Outlined.Event
+                QuickCreateRepeatMode.Daily -> Icons.Outlined.Today
+                QuickCreateRepeatMode.Weekly -> Icons.Outlined.DateRange
+                QuickCreateRepeatMode.Interval -> Icons.Outlined.Repeat
+                QuickCreateRepeatMode.Condition -> Icons.Outlined.Autorenew
             }
         }
-        Text(if (draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly) "Weekdays" else "Weekdays (weekly only)")
-        val weekdays = (0..6).toList()
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            weekdays.forEachIndexed { index, bit ->
-                val selected = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly && (draft.recurring.weekdayMask shr bit) and 1 == 1
-                SegmentedButton(
-                    selected = selected,
-                    enabled = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly,
-                    onClick = { store.updateRecurring(draft.recurring.copy(weekdayMask = draft.recurring.weekdayMask xor (1 shl bit))) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = weekdays.size),
-                    modifier = Modifier.testTag("quick-create-weekday-$bit"),
-                    icon = {
-                        Icon(
-                            imageVector = if (selected) Icons.Outlined.Check else Icons.Outlined.CalendarToday,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text(bit.toString()) },
-                )
-            }
-        }
+        AppSelectList(
+            options = repeatModes,
+            selected = draft.recurring.repeatMode,
+            label = { it.name },
+            leading = repeatIcon,
+            onSelect = { value ->
+                store.updateRecurring(draft.recurring.copy(repeatMode = value))
+                if (value != QuickCreateRepeatMode.Once) store.updateIdentity(draft.identity.copy(kind = QuickCreateTileKind.Recurring))
+            },
+            testTag = { "quick-create-repeat-${it.name.lowercase()}" },
+        )
+        SectionHeader(
+            title = "Weekdays",
+            subtitle = if (draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly) null else "Weekly only",
+        )
+        AppWeekdayPicker(
+            selectedMask = draft.recurring.weekdayMask,
+            onToggle = { bit -> store.updateRecurring(draft.recurring.copy(weekdayMask = draft.recurring.weekdayMask xor (1 shl bit))) },
+            enabled = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly,
+            testTag = { "quick-create-weekday-$it" },
+        )
         AppTertiaryButton(
             text = "End date",
             onClick = { store.updateRecurring(draft.recurring.copy(endDate = if (draft.recurring.endDate.isBlank()) LocalDate.now().toString() else "")) },
@@ -513,47 +481,45 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         OutlinedTextField(reference.id, { value -> updateReference(draft, store, index, reference.copy(id = value)) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("quick-create-reference-record-id-$index"))
         OutlinedTextField(target.string("referenceId"), { value -> updateReference(draft, store, index, reference.copy(target = target.with("referenceId", value.ifBlank { null }))) }, label = { Text("Target reference") }, modifier = Modifier.testTag("quick-create-reference-id-$index"))
         val targetKinds = listOf(0, 1, 2)
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            targetKinds.forEachIndexed { kindIndex, kind ->
-                val currentKind = target["kind"]?.jsonPrimitive?.content?.toIntOrNull()
-                val icon = when (kind) {
-                    0 -> Icons.Outlined.Tag
-                    else -> Icons.Outlined.Link
-                }
-                SegmentedButton(
-                    selected = currentKind == kind,
-                    onClick = { updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) },
-                    shape = SegmentedButtonDefaults.itemShape(index = kindIndex, count = targetKinds.size),
-                    icon = {
-                        Icon(
-                            imageVector = if (currentKind == kind) Icons.Outlined.Check else icon,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text("Target kind $kind") },
-                )
-            }
-        }
+        val targetKindLabel: (Int) -> String = { kind -> when (kind) {
+            0 -> "Exact"
+            1 -> "Series"
+            else -> "Filter"
+        } }
+        val targetKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> if (kind == 0) Icons.Outlined.Tag else Icons.Outlined.Link }
+        AppSelectList(
+            options = targetKinds,
+            selected = target["kind"]?.jsonPrimitive?.content?.toIntOrNull(),
+            label = targetKindLabel,
+            leading = targetKindIcon,
+            onSelect = { kind -> updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) },
+            testTag = { "quick-create-reference-record-$index-target-kind-$it" },
+        )
         SectionHeader(title = "Relation")
         val relations = listOf(4, 3, 1, 2, 0)
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            relations.forEachIndexed { relIndex, relation ->
-                val currentRelation = pick["kind"]?.jsonPrimitive?.content?.toIntOrNull()
-                SegmentedButton(
-                    selected = currentRelation == relation,
-                    onClick = { updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) },
-                    shape = SegmentedButtonDefaults.itemShape(index = relIndex, count = relations.size),
-                    icon = {
-                        Icon(
-                            imageVector = if (currentRelation == relation) Icons.Outlined.Check else Icons.Outlined.Link,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text(relation.toString()) },
-                )
-            }
-        }
-        OutlinedTextField(pick.string("momentId", "10"), { value -> value.toIntOrNull()?.coerceIn(5, 120)?.let { minutes -> updateReference(draft, store, index, reference.copy(pick = pick.with("momentId", minutes.toString()))) } }, label = { Text("Interval (minutes)") })
+        val relationLabel: (Int) -> String = { relation -> when (relation) {
+            0 -> "Touch"
+            1 -> "Inside"
+            2 -> "Overlap"
+            3 -> "Before"
+            else -> "After"
+        } }
+        val relationIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { Icons.Outlined.Link }
+        AppSelectList(
+            options = relations,
+            selected = pick["kind"]?.jsonPrimitive?.content?.toIntOrNull(),
+            label = relationLabel,
+            leading = relationIcon,
+            onSelect = { relation -> updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) },
+            testTag = { "quick-create-reference-record-$index-relation-$it" },
+        )
+        AppNumberField(
+            value = pick.string("momentId", "10"),
+            onValueChange = { value -> value.toIntOrNull()?.coerceIn(5, 120)?.let { minutes -> updateReference(draft, store, index, reference.copy(pick = pick.with("momentId", minutes.toString()))) } },
+            label = "Interval",
+            suffix = "min",
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-record-$index-interval"),
+        )
         AppSecondaryButton(
             text = "Remove reference",
             onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references.filterIndexed { item, _ -> item != index })) },
@@ -628,32 +594,25 @@ private fun NativeDateField(label: String, value: String, tag: String, onSelecte
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     SectionHeader(title = "Logic")
     val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT")
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        logicKinds.forEachIndexed { index, (kind, label) ->
-            val icon = when (kind) {
-                0 -> Icons.Outlined.PlaylistAddCheck
-                1 -> Icons.Outlined.PlaylistAdd
-                else -> Icons.Outlined.Block
-            }
-            SegmentedButton(
-                selected = draft.plan.completion.root.kind == kind,
-                onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = draft.plan.completion.root.copy(kind = kind, term = null)))) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = logicKinds.size),
-                icon = {
-                    Icon(
-                        imageVector = if (draft.plan.completion.root.kind == kind) Icons.Outlined.Check else icon,
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(label) },
-            )
-        }
-    }
+    val logicIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
+        0 -> Icons.Outlined.PlaylistAddCheck
+        1 -> Icons.Outlined.PlaylistAdd
+        else -> Icons.Outlined.Block
+    } }
+    AppSelectList(
+        options = logicKinds,
+        selected = logicKinds.firstOrNull { it.first == draft.plan.completion.root.kind },
+        label = { it.second },
+        leading = { logicIcon(it.first) },
+        onSelect = { (kind, _) -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = draft.plan.completion.root.copy(kind = kind, term = null)))) },
+        testTag = { "quick-create-completion-logic-${it.second.lowercase()}" },
+    )
     ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }, allowTermKind = false)
-    Row {
+    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
         AppSecondaryButton(
             text = "Task",
             onClick = { addCompletionTerm(draft, store, "task") },
@@ -692,7 +651,7 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     draft.plan.completion.timeRequirements.forEachIndexed { index, requirement ->
         val required = requirement.required.jsonObjectOrEmpty()
         val minimumMinutes = required.long("minMs")?.div(60_000L)?.toString().orEmpty()
-        OutlinedTextField(
+        AppNumberField(
             value = minimumMinutes,
             onValueChange = { input ->
                 val minutes = input.toLongOrNull()
@@ -703,10 +662,10 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
                 }
                 updateTimeRequirement(draft, store, index, requirement.copy(required = nextRequired))
             },
-            label = { Text("Minutes") },
-            modifier = Modifier.testTag("time-requirement-$index-required-minutes"),
+            label = "Minutes",
+            suffix = "min",
+            modifier = Modifier.fillMaxWidth().testTag("time-requirement-$index-required-minutes"),
         )
-        Text("minutes")
         AppSecondaryButton(
             text = "Remove time requirement",
             onClick = {
@@ -762,60 +721,42 @@ private fun updateTimeRequirement(
 
 @Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit, path: String = "root", allowTermKind: Boolean = true) {
     val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").filter { allowTermKind || it.first != 3 }
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        logicKinds.forEachIndexed { index, (kind, label) ->
-            val icon = when (kind) {
-                0 -> Icons.Outlined.PlaylistAddCheck
-                1 -> Icons.Outlined.PlaylistAdd
-                2 -> Icons.Outlined.Block
-                else -> Icons.Outlined.TextFields
-            }
-            SegmentedButton(
-                selected = node.kind == kind,
-                onClick = { onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) defaultTermValue("calendar") else null)) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = logicKinds.size),
-                icon = {
-                    Icon(
-                        imageVector = if (node.kind == kind) Icons.Outlined.Check else icon,
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(label) },
-            )
-        }
-    }
+    val logicIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
+        0 -> Icons.Outlined.PlaylistAddCheck
+        1 -> Icons.Outlined.PlaylistAdd
+        2 -> Icons.Outlined.Block
+        else -> Icons.Outlined.TextFields
+    } }
+    AppSelectList(
+        options = logicKinds,
+        selected = logicKinds.firstOrNull { it.first == node.kind },
+        label = { it.second },
+        leading = { logicIcon(it.first) },
+        onSelect = { (kind, _) -> onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) defaultTermValue("calendar") else null)) },
+        testTag = { "condition-$path-logic-${it.second.lowercase()}" },
+    )
     if (node.kind == 3) {
         val termTypes = listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life")
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            termTypes.forEachIndexed { index, type ->
-                val icon = when (type) {
-                    "calendar" -> Icons.Outlined.CalendarMonth
-                    "moment" -> Icons.Outlined.Schedule
-                    "relation" -> Icons.Outlined.Link
-                    "gap" -> Icons.Outlined.HorizontalRule
-                    "requirement" -> Icons.Outlined.Check
-                    "task" -> Icons.Outlined.Task
-                    "fact" -> Icons.Filled.Lightbulb
-                    "metric" -> Icons.Outlined.BarChart
-                    "life" -> Icons.Outlined.Favorite
-                    else -> Icons.Outlined.TextFields
-                }
-                val currentKind = node.term?.jsonObjectOrEmpty()?.string("kind")
-                SegmentedButton(
-                    selected = currentKind == type,
-                    onClick = { onChange(node.copy(term = defaultTermValue(type))) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = termTypes.size),
-                    modifier = Modifier.testTag("condition-$path-term-$type"),
-                    icon = {
-                        Icon(
-                            imageVector = if (currentKind == type) Icons.Outlined.Check else icon,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text(type) },
-                )
-            }
-        }
+        val termIcon: (String) -> androidx.compose.ui.graphics.vector.ImageVector = { type -> when (type) {
+            "calendar" -> Icons.Outlined.CalendarMonth
+            "moment" -> Icons.Outlined.Schedule
+            "relation" -> Icons.Outlined.Link
+            "gap" -> Icons.Outlined.HorizontalRule
+            "requirement" -> Icons.Outlined.Check
+            "task" -> Icons.Outlined.Task
+            "fact" -> Icons.Filled.Lightbulb
+            "metric" -> Icons.Outlined.BarChart
+            "life" -> Icons.Outlined.Favorite
+            else -> Icons.Outlined.TextFields
+        } }
+        AppSelectList(
+            options = termTypes,
+            selected = node.term?.jsonObjectOrEmpty()?.string("kind"),
+            label = { it },
+            leading = termIcon,
+            onSelect = { type -> onChange(node.copy(term = defaultTermValue(type))) },
+            testTag = { "condition-$path-term-$it" },
+        )
         val term = node.term?.jsonObjectOrEmpty() ?: JsonObject(emptyMap())
         when (term.string("kind")) {
             "calendar" -> CalendarTermFields(term, path) { value -> onChange(node.copy(term = value)) }
@@ -851,29 +792,82 @@ private fun updateTimeRequirement(
 
 @Composable private fun CalendarTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
-    OutlinedTextField(value.string("weekdayMask", "0"), { input -> onChange(term.withValue("weekdayMask", input.toIntOrNull() ?: 0)) }, label = { Text("Weekday mask") }, modifier = Modifier.testTag("condition-$path-calendar-weekday-mask"))
-    OutlinedTextField(value.string("offsetMin", "0"), { input -> onChange(term.withValue("offsetMin", input.toIntOrNull() ?: 0)) }, label = { Text("Offset minutes") }, modifier = Modifier.testTag("condition-$path-calendar-offset"))
-    OutlinedTextField(value.string("timeStart"), { input -> onChange(term.withValue("timeStart", input.ifBlank { null })) }, label = { Text("Time start") }, modifier = Modifier.testTag("condition-calendar-start"))
-    OutlinedTextField(value.string("timeEnd"), { input -> onChange(term.withValue("timeEnd", input.ifBlank { null })) }, label = { Text("Time end") }, modifier = Modifier.testTag("condition-calendar-end"))
+    AppNumberField(
+        value = value.string("weekdayMask", "0"),
+        onValueChange = { input -> onChange(term.withValue("weekdayMask", input.toIntOrNull() ?: 0)) },
+        label = "Weekday mask",
+        suffix = "0–127",
+        modifier = Modifier.fillMaxWidth().testTag("condition-$path-calendar-weekday-mask"),
+    )
+    AppNumberField(
+        value = value.string("offsetMin", "0"),
+        onValueChange = { input -> onChange(term.withValue("offsetMin", input.toIntOrNull() ?: 0)) },
+        label = "Offset minutes",
+        suffix = "min",
+        modifier = Modifier.fillMaxWidth().testTag("condition-$path-calendar-offset"),
+    )
+    OutlinedTextField(value.string("timeStart"), { input -> onChange(term.withValue("timeStart", input.ifBlank { null })) }, label = { Text("Time start") }, modifier = Modifier.fillMaxWidth().testTag("condition-calendar-start"))
+    OutlinedTextField(value.string("timeEnd"), { input -> onChange(term.withValue("timeEnd", input.ifBlank { null })) }, label = { Text("Time end") }, modifier = Modifier.fillMaxWidth().testTag("condition-calendar-end"))
 }
 
 @Composable private fun MomentTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
-    OutlinedTextField(value.string("referenceId"), { input -> onChange(term.withValue("referenceId", input.ifBlank { null })) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("condition-moment-reference"))
-    OutlinedTextField(value.string("offsetMs", "0"), { input -> onChange(term.withValue("offsetMs", input.toLongOrNull() ?: 0L)) }, label = { Text("Offset ms") }, modifier = Modifier.testTag("condition-moment-offset"))
+    OutlinedTextField(value.string("referenceId"), { input -> onChange(term.withValue("referenceId", input.ifBlank { null })) }, label = { Text("Reference ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-moment-reference"))
+    AppNumberField(
+        value = value.string("offsetMs", "0"),
+        onValueChange = { input -> onChange(term.withValue("offsetMs", input.toLongOrNull() ?: 0L)) },
+        label = "Offset ms",
+        suffix = "ms",
+        modifier = Modifier.fillMaxWidth().testTag("condition-moment-offset"),
+    )
 }
 
 @Composable private fun RelationTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
-    OutlinedTextField(value.string("referenceId"), { input -> onChange(term.withValue("referenceId", input)) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("condition-relation-reference"))
-    OutlinedTextField(value.string("relation", "0"), { input -> onChange(term.withValue("relation", input.toIntOrNull() ?: 0)) }, label = { Text("Relation") }, modifier = Modifier.testTag("condition-relation-kind"))
-    OutlinedTextField(value.string("windowKind", "0"), { input -> onChange(term.withValue("windowKind", input.toIntOrNull() ?: 0)) }, label = { Text("Window kind") }, modifier = Modifier.testTag("condition-relation-window"))
+    OutlinedTextField(value.string("referenceId"), { input -> onChange(term.withValue("referenceId", input)) }, label = { Text("Reference ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-relation-reference"))
+    val relations = listOf(0, 1, 2, 3, 4)
+    val relationLabel: (Int) -> String = { r -> when (r) {
+        0 -> "Touch"
+        1 -> "Inside"
+        2 -> "Overlap"
+        3 -> "Before"
+        else -> "After"
+    } }
+    AppSelectList(
+        options = relations,
+        selected = value.string("relation", "0").toIntOrNull(),
+        label = relationLabel,
+        leading = { Icons.Outlined.Link },
+        onSelect = { relation -> onChange(term.withValue("relation", relation)) },
+        testTag = { "condition-relation-kind-$it" },
+    )
+    val windowKinds = listOf(0, 1, 2, 3)
+    val windowKindLabel: (Int) -> String = { k -> when (k) {
+        0 -> "Calendar"
+        1 -> "Label span"
+        2 -> "Parent span"
+        else -> "Gap"
+    } }
+    AppSelectList(
+        options = windowKinds,
+        selected = value.string("windowKind", "0").toIntOrNull(),
+        label = windowKindLabel,
+        leading = { Icons.Outlined.Schedule },
+        onSelect = { kind -> onChange(term.withValue("windowKind", kind)) },
+        testTag = { "condition-relation-window-$it" },
+    )
 }
 
 @Composable private fun TaskTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
-    OutlinedTextField(value.string("taskId"), { input -> onChange(term.withValue("taskId", input)) }, label = { Text("Task ID") }, modifier = Modifier.testTag("condition-task-id"))
-    OutlinedTextField(value.string("state", "0"), { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) }, label = { Text("State") }, modifier = Modifier.testTag("condition-task-state"))
+    OutlinedTextField(value.string("taskId"), { input -> onChange(term.withValue("taskId", input)) }, label = { Text("Task ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-task-id"))
+    AppNumberField(
+        value = value.string("state", "0"),
+        onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
+        label = "State",
+        suffix = "0–N",
+        modifier = Modifier.fillMaxWidth().testTag("condition-task-state"),
+    )
 }
 
 @Composable private fun GapTermFields(path: String) {
@@ -885,10 +879,14 @@ private fun updateTimeRequirement(
     val value = term.valueObject()
     OutlinedTextField(value.string("requirementId"), { input ->
         onChange(term.withValue("requirementId", input))
-    }, label = { Text("Requirement ID") }, modifier = Modifier.testTag("condition-$path-requirement-id"))
-    OutlinedTextField(value.string("state", "0"), { input ->
-        onChange(term.withValue("state", input.toIntOrNull() ?: 0))
-    }, label = { Text("State") }, modifier = Modifier.testTag("condition-$path-requirement-state"))
+    }, label = { Text("Requirement ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-requirement-id"))
+    AppNumberField(
+        value = value.string("state", "0"),
+        onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
+        label = "State",
+        suffix = "0–N",
+        modifier = Modifier.fillMaxWidth().testTag("condition-$path-requirement-state"),
+    )
 }
 
 @Composable private fun ScalarTermFields(
@@ -901,23 +899,30 @@ private fun updateTimeRequirement(
     val value = term.valueObject()
     OutlinedTextField(value.string(idKey), { input ->
         onChange(term.withValue(idKey, input))
-    }, label = { Text("ID") }, modifier = Modifier.testTag("condition-$path-$kind-id"))
-    OutlinedTextField(value.string("op", "0"), { input ->
-        onChange(term.withValue("op", input.toIntOrNull() ?: 0))
-    }, label = { Text("Operator") }, modifier = Modifier.testTag("condition-$path-$kind-op"))
+    }, label = { Text("ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-id"))
+    AppNumberField(
+        value = value.string("op", "0"),
+        onValueChange = { input -> onChange(term.withValue("op", input.toIntOrNull() ?: 0)) },
+        label = "Operator",
+        modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-op"),
+    )
     OutlinedTextField(value.string("value"), { input ->
         onChange(term.withValue("value", scalarValue(input)))
-    }, label = { Text("Value") }, modifier = Modifier.testTag("condition-$path-$kind-value"))
+    }, label = { Text("Value") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-value"))
 }
 
 @Composable private fun LifeTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
     OutlinedTextField(value.string("target"), { input ->
         onChange(term.withValue("target", input))
-    }, label = { Text("Target") }, modifier = Modifier.testTag("condition-$path-life-target"))
-    OutlinedTextField(value.string("state", "0"), { input ->
-        onChange(term.withValue("state", input.toIntOrNull() ?: 0))
-    }, label = { Text("State") }, modifier = Modifier.testTag("condition-$path-life-state"))
+    }, label = { Text("Target") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-life-target"))
+    AppNumberField(
+        value = value.string("state", "0"),
+        onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
+        label = "State",
+        suffix = "0–N",
+        modifier = Modifier.fillMaxWidth().testTag("condition-$path-life-state"),
+    )
 }
 
 private fun defaultTermValue(kind: String): JsonObject = when (kind) {
@@ -958,17 +963,6 @@ private fun MetaPanel(
     knownTags: List<String>,
     onBack: () -> Unit,
 ) {
-    SectionHeader(title = "Behavior")
-    Row(Modifier.testTag("behavior-role")) {
-        QuickCreatePlanRole.entries.forEach { value ->
-            FilterChip(
-                selected = draft.plan.role == value,
-                onClick = { store.updateBehavior(value) },
-                label = { Text(value.name) },
-                modifier = Modifier.testTag("behavior-role-${value.name.lowercase()}"),
-            )
-        }
-    }
     SectionHeader(title = "Project")
     Column(Modifier.testTag("meta-project-catalog")) {
         FilterChip(
@@ -1008,7 +1002,7 @@ private fun MetaPanel(
         leadingIcon = Icons.Outlined.Add,
     )
     OutlinedTextField(draft.meta.memo, { value -> store.updateMeta(draft.meta.copy(memo = value)) }, label = { Text("Memo") }, modifier = Modifier.fillMaxWidth().testTag("meta-memo"))
-    Row {
+    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
         AppTertiaryButton(
             text = "Clear",
             onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null, tags = emptyList(), memo = "")) },
@@ -1033,28 +1027,20 @@ private fun MetaPanel(
 @Composable
 private fun BehaviorPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     val planRoles = QuickCreatePlanRole.entries.toList()
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        planRoles.forEachIndexed { index, value ->
-            val icon = when (index) {
-                0 -> Icons.Outlined.Flag
-                1 -> Icons.Outlined.Repeat
-                2 -> Icons.Outlined.PlayArrow
-                else -> Icons.Outlined.HelpOutline
-            }
-            SegmentedButton(
-                selected = draft.plan.role == value,
-                onClick = { store.updateBehavior(value) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = planRoles.size),
-                icon = {
-                    Icon(
-                        imageVector = if (draft.plan.role == value) Icons.Outlined.Check else icon,
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(value.name) },
-            )
+    val roleIcon: (QuickCreatePlanRole) -> androidx.compose.ui.graphics.vector.ImageVector = { role ->
+        when (role) {
+            QuickCreatePlanRole.Label -> Icons.Outlined.Flag
+            QuickCreatePlanRole.Executable -> Icons.Outlined.PlayArrow
         }
     }
+    AppSelectList(
+        options = planRoles,
+        selected = draft.plan.role,
+        label = { it.name },
+        leading = roleIcon,
+        onSelect = { store.updateBehavior(it) },
+        testTag = { "behavior-role-${it.name.lowercase()}" },
+    )
 }
 
 @Composable

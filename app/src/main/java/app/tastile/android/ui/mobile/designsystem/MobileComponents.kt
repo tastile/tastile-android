@@ -14,26 +14,49 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.Check
+// m2-allow: m3-component
 import androidx.compose.material3.AssistChip
+// m2-allow: m3-component
 import androidx.compose.material3.AssistChipDefaults
+// m2-allow: m3-component
 import androidx.compose.material3.Button
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: m3-component
 import androidx.compose.material3.FilledTonalButton
+// m2-allow: m3-component
+import androidx.compose.material3.FilterChip
+// m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.ListItem
+// m2-allow: m3-component
 import androidx.compose.material3.ListItemDefaults
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedButton
+// m2-allow: m3-component
+import androidx.compose.material3.OutlinedTextField
+// m2-allow: m3-component
 import androidx.compose.material3.Surface
+// m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
 /**
@@ -255,4 +278,93 @@ fun AppEmptyState(
         Box(Modifier.size(MobileSpacing.xs))
         Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+/**
+ * Vertical single-select list. Each option is a tappable [AppListItem]; the
+ * selected row is highlighted and shows a trailing check. Unlike a full-width
+ * [SingleChoiceSegmentedButtonRow] crammed with many long-labelled items, this
+ * never overflows the screen width — it grows downward instead.
+ */
+@Composable
+fun <T> AppSelectList(
+    options: List<T>,
+    selected: T?,
+    label: (T) -> String,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    leading: (T) -> ImageVector? = { null },
+    testTag: (T) -> String? = { null },
+) {
+    Column(modifier.fillMaxWidth()) {
+        options.forEach { option ->
+            val isSelected = option == selected
+            val rowModifier = testTag(option)?.let { Modifier.testTag(it) } ?: Modifier
+            AppListItem(
+                headline = label(option),
+                leading = leading(option),
+                trailing = if (isSelected) Icons.Outlined.Check else null,
+                selected = isSelected,
+                onClick = { onSelect(option) },
+                modifier = rowModifier,
+            )
+        }
+    }
+}
+
+/**
+ * Compact weekday multi-select: seven single-character toggle chips sharing the
+ * row width equally. Single characters never overflow, so this stays legible on
+ * a phone where a word-labelled 7-item segmented row would collapse.
+ */
+@Composable
+fun AppWeekdayPicker(
+    selectedMask: Int,
+    onToggle: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    testTag: (Int) -> String? = { null },
+) {
+    val labels = listOf("S", "M", "T", "W", "T", "F", "S")
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+    ) {
+        labels.forEachIndexed { bit, char ->
+            val isSelected = (selectedMask shr bit) and 1 == 1
+            val chipModifier = Modifier.weight(1f).then(testTag(bit)?.let { Modifier.testTag(it) } ?: Modifier)
+            FilterChip(
+                selected = isSelected,
+                enabled = enabled,
+                onClick = { onToggle(bit) },
+                label = { Text(char, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                modifier = chipModifier,
+            )
+        }
+    }
+}
+
+/**
+ * Numeric text field: number keyboard, single line, optional trailing unit.
+ * Replaces the bare [OutlinedTextField] used for minutes / offset / mask / state
+ * inputs (which defaulted to a text keyboard) and folds the old dangling unit
+ * labels (e.g. a separate `Text("minutes")`) into the [suffix].
+ */
+@Composable
+fun AppNumberField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    suffix: String? = null,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        suffix = suffix?.let { { Text(it) } },
+        modifier = modifier.fillMaxWidth(),
+    )
 }

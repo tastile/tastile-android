@@ -16,12 +16,19 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
+// m2-allow: m3-component
 import androidx.compose.material3.Button
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButton
+// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButtonDefaults
+// m2-allow: m3-component
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+// m2-allow: m3-component
 import androidx.compose.material3.Switch
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

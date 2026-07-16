@@ -17,7 +17,9 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Tune
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

@@ -4,10 +4,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChangeHistory
 import androidx.compose.material.icons.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.Timeline
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButton
+// m2-allow: m3-component
 import androidx.compose.material3.SegmentedButtonDefaults
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier

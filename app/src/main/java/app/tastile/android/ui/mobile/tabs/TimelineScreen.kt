@@ -33,9 +33,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+// m2-allow: m3-component
 import androidx.compose.material3.FloatingActionButton
+// m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

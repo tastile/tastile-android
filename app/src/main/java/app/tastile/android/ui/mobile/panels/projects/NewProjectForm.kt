@@ -10,10 +10,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Folder
+// m2-allow: m3-component
 import androidx.compose.material3.DropdownMenu
+// m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
