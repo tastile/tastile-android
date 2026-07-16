@@ -202,9 +202,9 @@ private fun PagerDots(
 }
 
 /**
- * Tastile single-tap navigation row — replaces the deleted [AppListRow] for
- * the side-panel tab list. Inset card with 6dp rounded corners and a subtle
- * surface tint that intensifies when the row is selected.
+ * Tastile single-tap navigation row used in the side-panel tab list. Inset
+ * card with 6dp rounded corners and a subtle surface tint that intensifies
+ * when the row is selected.
  */
 @Composable
 private fun SidePanelTabRow(

@@ -14,6 +14,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.Icon
 // m2-allow: m3-component
 import androidx.compose.material3.ListItem
 // m2-allow: m3-component
