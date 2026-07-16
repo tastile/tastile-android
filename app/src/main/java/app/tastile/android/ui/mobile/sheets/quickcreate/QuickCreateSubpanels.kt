@@ -34,6 +34,8 @@ import app.tastile.android.ui.mobile.sheets.QuickCreateFrameGenerator
 import app.tastile.android.ui.mobile.sheets.QuickCreateFrameRule
 import app.tastile.android.ui.mobile.sheets.QuickCreateRecurringRule
 import app.tastile.android.ui.mobile.sheets.QuickCreateConditionNode
+import app.tastile.android.ui.mobile.sheets.QuickCreateWindowRule
+import app.tastile.android.ui.mobile.sheets.QuickCreateDateRange
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -101,6 +103,9 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             store.updateWindows(draft.windows.replace(index, window.copy(bounds = window.bounds.copy(end = value))))
         }, label = { Text("Window end") })
         OutlinedTextField(window.referenceId.orEmpty(), { value -> store.updateWindows(draft.windows.replace(index, window.copy(referenceId = value.ifBlank { null }))) }, label = { Text("Window reference") })
+        JsonEditor("Window rules", windowRulesToJson(window.rules), "quick-create-window-rules-$index") { value ->
+            windowRulesFromJson(value)?.let { rules -> store.updateWindows(draft.windows.replace(index, window.copy(rules = rules))) }
+        }
         TextButton(onClick = { store.updateWindows(draft.windows.filterIndexed { item, _ -> item != index }) }) { Text("Remove window") }
     }
 }
@@ -184,6 +189,9 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         OutlinedTextField(task.id, { value -> updateTask(draft, store, index, task.copy(id = value)) }, label = { Text("Task ID") })
         OutlinedTextField(task.content.title, { value -> updateTask(draft, store, index, task.copy(content = task.content.copy(title = value))) }, label = { Text("Task title") })
         OutlinedTextField(task.content.note.orEmpty(), { value -> updateTask(draft, store, index, task.copy(content = task.content.copy(note = value.ifBlank { null }))) }, label = { Text("Task note") })
+        JsonEditor("Show", task.show ?: JsonNull, "quick-create-task-show-$index") { value -> updateTask(draft, store, index, task.copy(show = value)) }
+        JsonEditor("Complete condition", conditionToJson(task.complete), "quick-create-task-complete-$index") { value -> conditionFromJson(value)?.let { complete -> updateTask(draft, store, index, task.copy(complete = complete)) } }
+        JsonEditor("Order", task.order, "quick-create-task-order-$index") { value -> (value as? kotlinx.serialization.json.JsonArray)?.let { order -> updateTask(draft, store, index, task.copy(order = order)) } }
         TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.filterIndexed { item, _ -> item != index }))) }) { Text("Remove completion task") }
     }
 }
@@ -201,7 +209,7 @@ private fun BehaviorPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
 }
 
 @Composable
-private fun JsonEditor(label: String, value: JsonElement, onValidValue: (JsonElement) -> Unit) {
+private fun JsonEditor(label: String, value: JsonElement, tag: String? = null, onValidValue: (JsonElement) -> Unit) {
     val encoded = Json.encodeToString(JsonElement.serializer(), value)
     var text by remember(encoded) { mutableStateOf(encoded) }
     OutlinedTextField(
@@ -211,7 +219,7 @@ private fun JsonEditor(label: String, value: JsonElement, onValidValue: (JsonEle
             runCatching { Json.parseToJsonElement(candidate) }.getOrNull()?.let(onValidValue)
         },
         label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().then(if (tag == null) Modifier else Modifier.testTag(tag)),
     )
 }
 
@@ -234,4 +242,22 @@ private fun conditionFromJson(value: JsonElement): QuickCreateConditionNode? = r
         children = objectValue["children"]?.jsonArray?.mapNotNull(::conditionFromJson) ?: emptyList(),
         term = objectValue["term"].takeUnless { it == null || it is JsonNull },
     )
+}.getOrNull()
+
+private fun windowRulesToJson(rules: List<QuickCreateWindowRule>): JsonElement = buildJsonArray {
+    rules.forEach { rule -> add(buildJsonObject {
+        put("id", JsonPrimitive(rule.id)); put("weekdayMask", rule.weekdayMask?.let(::JsonPrimitive) ?: JsonNull)
+        put("timeStart", rule.timeStart?.let(::JsonPrimitive) ?: JsonNull); put("timeEnd", rule.timeEnd?.let(::JsonPrimitive) ?: JsonNull)
+        put("holidayKind", rule.holidayKind?.let(::JsonPrimitive) ?: JsonNull)
+        put("dateStart", rule.dateRange?.startDate?.let(::JsonPrimitive) ?: JsonNull); put("dateEnd", rule.dateRange?.endDate?.let(::JsonPrimitive) ?: JsonNull)
+        put("when", rule.`when`?.let(::conditionToJson) ?: JsonNull)
+    }) }
+}
+
+private fun windowRulesFromJson(value: JsonElement): List<QuickCreateWindowRule>? = runCatching {
+    value.jsonArray.map { element ->
+        val item = element.jsonObject
+        fun string(name: String) = item[name]?.jsonPrimitive?.content?.takeUnless { it == "null" }
+        QuickCreateWindowRule(string("id") ?: UUID.randomUUID().toString(), string("weekdayMask")?.toIntOrNull(), string("timeStart"), string("timeEnd"), string("holidayKind")?.toIntOrNull(), string("dateStart")?.let { QuickCreateDateRange(it, string("dateEnd").orEmpty()) }, item["when"]?.let(::conditionFromJson))
+    }
 }.getOrNull()

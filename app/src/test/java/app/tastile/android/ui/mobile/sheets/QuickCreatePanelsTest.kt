@@ -99,4 +99,24 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-frame-rule-id-0").performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag("quick-create-recurring-rule-id-0").performScrollTo().assertIsDisplayed()
     }
+
+    @Test
+    fun `window rules and completion task v1 fields round trip from UI`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-2").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-add-window").performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("quick-create-window-rules-0").performScrollTo().performTextReplacement("[{\"id\":\"rule-1\"}]")
+        assertTrue(store.state.value.windows.single().rules.single().id == "rule-1")
+        rule.onNodeWithText("Back").performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-task-show-0").performScrollTo().performTextReplacement("true")
+        rule.onNodeWithTag("quick-create-task-complete-0").performScrollTo().performTextReplacement("{\"kind\":3,\"children\":[],\"term\":\"done\"}")
+        rule.onNodeWithTag("quick-create-task-order-0").performScrollTo().performTextReplacement("[\"first\"]")
+        assertTrue(store.state.value.plan.completion.tasks.single().show == kotlinx.serialization.json.JsonPrimitive(true))
+        assertTrue(store.state.value.plan.completion.tasks.single().complete.term == kotlinx.serialization.json.JsonPrimitive("done"))
+        assertTrue(store.state.value.plan.completion.tasks.single().order.size == 1)
+    }
 }
