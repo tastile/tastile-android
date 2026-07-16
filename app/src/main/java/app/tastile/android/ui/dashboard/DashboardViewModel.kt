@@ -688,6 +688,24 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    /** Updates only fields the Android tile list can read and prefill. */
+    fun updateTileTitle(tileId: String, title: String) {
+        val trimmed = title.trim()
+        if (trimmed.isBlank()) {
+            _error.value = "Title is required"
+            return
+        }
+        viewModelScope.launch {
+            try {
+                tileRepository.updateTile(tileId, buildJsonObject { put("title", JsonPrimitive(trimmed)) })
+                _lastActionMessage.value = "Changes saved"
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to update tile"
+            }
+        }
+    }
+
     fun updateDisplayName(name: String) {
         val trimmed = name.trim()
         if (trimmed.isBlank()) return

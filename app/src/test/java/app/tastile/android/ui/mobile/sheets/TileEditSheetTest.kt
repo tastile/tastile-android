@@ -2,8 +2,13 @@ package app.tastile.android.ui.mobile.sheets
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
@@ -84,7 +89,7 @@ class TileEditSheetTest {
             overlay.show(Overlay.TileEdit(tileId = "abc"))
         }
         rule.waitForIdle()
-        rule.onNodeWithText("Write spec").assertIsDisplayed()
+        rule.onAllNodesWithText("Write spec").assertCountEquals(2)
     }
 
     @Test
@@ -100,5 +105,36 @@ class TileEditSheetTest {
         }
 
         rule.onNodeWithText("Write spec").assertDoesNotExist()
+    }
+
+    @Test
+    fun `TileEditSheet composes delete confirmation for its selected tile`() {
+        val overlay = OverlayViewModel()
+        val vm = newDashboardViewModel()
+        vm.replaceTilesForTest(listOf(Tile(id = "abc", title = "Write spec", lifecycle = "Ready")))
+        vm.selectTile("abc")
+
+        rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
+        rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "abc")) }
+        rule.waitForIdle()
+        rule.runOnUiThread { vm.setDeleteTileCandidate("abc") }
+        rule.waitForIdle()
+
+        rule.onNodeWithTag("tiles-delete-dialog").assertIsDisplayed()
+    }
+
+    @Test
+    fun `TileEditSheet saves a prefilled title through update flow rather than Quick Create`() {
+        val overlay = OverlayViewModel()
+        val vm = newDashboardViewModel()
+        vm.replaceTilesForTest(listOf(Tile(id = "abc", title = "Write spec", lifecycle = "Ready")))
+        vm.selectTile("abc")
+
+        rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
+        rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "abc")) }
+        rule.waitForIdle()
+
+        rule.onAllNodesWithTag("tile-edit-save-details").assertCountEquals(1)
+        rule.onNodeWithText("Quick Create").assertDoesNotExist()
     }
 }
