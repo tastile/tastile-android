@@ -14,9 +14,18 @@ data class CommandResponse(
     @SerialName("command_id") val commandId: String,
     @SerialName("accepted_at") val acceptedAt: String,
     val aggregate: AggregateRef? = null,
+    @SerialName("aggregate_meta") val aggregateMeta: AggregateMeta? = null,
     val revision: Long? = null,
     val result: Byte,
     val pending: List<PendingWork> = emptyList()
+)
+
+@Serializable
+data class AggregateMeta(
+    @SerialName("tile_id") val tileId: String? = null,
+    @SerialName("plan_id") val planId: String? = null,
+    @SerialName("recurring_id") val recurringId: String? = null,
+    @SerialName("frame_rule_id") val frameRuleId: String? = null,
 )
 
 @Serializable
