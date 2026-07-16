@@ -10,7 +10,11 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
@@ -22,6 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlan
@@ -92,15 +99,23 @@ private fun QuickCreateBaseComposition(
         EssentialRow("Duration", durationSummary(draft), "quick-create-essential-duration") { store.openSubpanel(QuickCreatePanel.Duration) }
         EssentialRow("Repeat", repeatSummary(draft), "quick-create-essential-repeat") { store.openSubpanel(QuickCreatePanel.Recurring) }
         HorizontalDivider()
-        Row(Modifier.fillMaxWidth().clickable { store.openSubpanel(QuickCreatePanel.Completion) }.testTag("quick-create-condition-card"), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Completion logic")
-            Text(conditionSummary(draft.plan.completion.root.kind))
-        }
+        AppListItem(
+            headline = "Completion logic",
+            supporting = conditionSummary(draft.plan.completion.root.kind),
+            leading = Icons.Outlined.Checklist,
+            trailing = Icons.Outlined.ChevronRight,
+            onClick = { store.openSubpanel(QuickCreatePanel.Completion) },
+            modifier = Modifier.testTag("quick-create-condition-card"),
+        )
         TextButton({ store.openSubpanel(QuickCreatePanel.Intent) }, Modifier.testTag("quick-create-condition-add")) { Text("Add condition or group") }
-        Row(Modifier.fillMaxWidth().clickable { store.openSubpanel(QuickCreatePanel.Completion) }.testTag("quick-create-tasks-header"), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Completion requires")
-            Text("${draft.plan.completion.tasks.size} item(s)")
-        }
+        AppListItem(
+            headline = "Completion requires",
+            supporting = "${draft.plan.completion.tasks.size} item(s)",
+            leading = Icons.Outlined.PlayArrow,
+            trailing = Icons.Outlined.ChevronRight,
+            onClick = { store.openSubpanel(QuickCreatePanel.Completion) },
+            modifier = Modifier.testTag("quick-create-tasks-header"),
+        )
         draft.plan.completion.tasks.forEachIndexed { index, task ->
             Row(Modifier.fillMaxWidth().testTag("quick-create-task-row-$index"), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(task.content.title.ifBlank { "Untitled" })
@@ -122,17 +137,26 @@ private fun QuickCreateBaseComposition(
             Modifier.testTag("quick-create-add-task"),
         ) { Text("Add task") }
         HorizontalDivider()
-        Row(Modifier.fillMaxWidth().clickable { store.openSubpanel(QuickCreatePanel.Meta) }.testTag("quick-create-behavior-card"), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column { Text("Behavior"); Text(if (draft.plan.role.name == "Label") "Label" else "Executable") }
-            Text("Edit")
-        }
+        AppListItem(
+            headline = "Behavior",
+            supporting = if (draft.plan.role.name == "Label") "Label" else "Executable",
+            leading = Icons.Outlined.Tune,
+            trailing = Icons.Outlined.ChevronRight,
+            onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
+            modifier = Modifier.testTag("quick-create-behavior-card"),
+        )
         TextButton({ store.openSubpanel(QuickCreatePanel.References) }, Modifier.testTag("quick-create-references-link")) { Text("References") }
         val submissionValidation = quickCreateSubmissionValidation(draft)
         if (!submissionValidation.isValid) Text(submissionValidation.message ?: "Fix required fields", Modifier.testTag("quick-create-validation-error"))
         submitError?.let { Text(it, Modifier.testTag("quick-create-submit-error")) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onClose, enabled = !isSubmitting) { Text("Cancel") }
-            Button(onClick = { onSubmit(draft) }, enabled = submissionValidation.isValid && !isSubmitting, modifier = Modifier.testTag("quick-create-submit")) { Text(if (isSubmitting) "Creating…" else "Create") }
+            AppTertiaryButton(text = "Cancel", onClick = onClose, enabled = !isSubmitting)
+            AppPrimaryButton(
+                text = if (isSubmitting) "Creating…" else "Create",
+                onClick = { onSubmit(draft) },
+                enabled = submissionValidation.isValid && !isSubmitting,
+                modifier = Modifier.testTag("quick-create-submit"),
+            )
         }
     }
 }

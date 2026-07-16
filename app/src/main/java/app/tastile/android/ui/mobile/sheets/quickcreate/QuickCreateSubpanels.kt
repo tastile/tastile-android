@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.DatePicker
@@ -22,7 +26,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
+import app.tastile.android.ui.mobile.components.picker.DatePickerSheet
+import app.tastile.android.ui.mobile.components.picker.ReferenceOption
+import app.tastile.android.ui.mobile.components.picker.ReferencePickerSheet
+import app.tastile.android.ui.mobile.components.picker.TimePickerSheet
+import app.tastile.android.ui.mobile.designsystem.AppPickerButton
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreateDurationRange
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
@@ -56,8 +67,10 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.Instant
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @Composable
@@ -99,6 +112,18 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             QuickCreateWhenMode.Reference -> time.copy(whenMode = mode, span = app.tastile.android.ui.mobile.sheets.QuickCreateSpan())
         })
     }
+    var showStartTime by remember { mutableStateOf(false) }
+    var showEndTime by remember { mutableStateOf(false) }
+    var showReferencePicker by remember { mutableStateOf(false) }
+    val timeFmt = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    val dateFmt = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+    val referenceOptions = remember(draft.plan.references) {
+        draft.plan.references.map { ref ->
+            val targetObj = ref.target.jsonObjectOrEmpty()
+            val refId = targetObj["referenceId"]?.jsonPrimitive?.content?.takeUnless { it == "null" } ?: ref.id
+            ReferenceOption(id = refId, label = ref.id.ifBlank { refId })
+        }
+    }
     TextButton(onClick = { setWhen(QuickCreateWhenMode.None) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-when-none")) { Text("No date or time") }
     Text("When")
     Row { listOf(QuickCreateWhenMode.Day, QuickCreateWhenMode.Range, QuickCreateWhenMode.Reference).forEach { mode -> TextButton(onClick = { setWhen(mode) }, modifier = Modifier.testTag("quick-create-when-${mode.name.lowercase()}")) { Text(mode.name) } } }
@@ -108,7 +133,13 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
     }
     if (draft.time.whenMode == QuickCreateWhenMode.Reference) Column(Modifier.testTag("quick-create-reference-catalog")) {
         Text("Reference range")
-        OutlinedTextField(draft.time.referenceId.orEmpty(), { value -> store.updateTime(draft.time.copy(referenceId = value.ifBlank { null })) }, label = { Text("Reference ID") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-id"))
+        AppPickerButton(
+            label = stringResource(R.string.picker_reference_label),
+            value = draft.time.referenceId.orEmpty().ifBlank { "—" },
+            onClick = { showReferencePicker = true },
+            leadingIcon = Icons.Outlined.Tag,
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-id"),
+        )
         OutlinedTextField(draft.time.referenceLabel, { value -> store.updateTime(draft.time.copy(referenceLabel = value)) }, label = { Text("Reference label") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-label"))
     }
     if (draft.time.whenMode != QuickCreateWhenMode.None) {
@@ -117,23 +148,118 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             store.updateTime(if (mode == QuickCreateTimeOfDayMode.Range) draft.time.copy(timeOfDayMode = mode, timeOfDayStart = draft.time.timeOfDayStart.ifBlank { "09:00" }, timeOfDayEnd = draft.time.timeOfDayEnd.ifBlank { "18:00" }) else draft.time.copy(timeOfDayMode = mode, timeOfDayStart = "", timeOfDayEnd = ""))
         }, modifier = Modifier.testTag("quick-create-time-of-day-${mode.name.lowercase()}")) { Text(mode.name) } } }
         if (draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range) {
-            OutlinedTextField(draft.time.timeOfDayStart, { value -> store.updateTime(draft.time.copy(timeOfDayStart = value)) }, label = { Text("Start time") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-time-of-day-start"))
-            OutlinedTextField(draft.time.timeOfDayEnd, { value -> store.updateTime(draft.time.copy(timeOfDayEnd = value)) }, label = { Text("End time") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-time-of-day-end"))
+            AppPickerButton(
+                label = stringResource(R.string.picker_time_start),
+                value = draft.time.timeOfDayStart.ifBlank { "—" },
+                onClick = { showStartTime = true },
+                leadingIcon = Icons.Outlined.AccessTime,
+                modifier = Modifier.fillMaxWidth().testTag("quick-create-time-of-day-start"),
+            )
+            if (showStartTime) {
+                TimePickerSheet(
+                    initial = runCatching { LocalTime.parse(draft.time.timeOfDayStart, timeFmt) }.getOrElse { LocalTime.of(9, 0) },
+                    onConfirm = { time ->
+                        store.updateTime(draft.time.copy(timeOfDayStart = time.format(timeFmt)))
+                        showStartTime = false
+                    },
+                    onDismiss = { showStartTime = false },
+                    titleRes = R.string.picker_time_start,
+                )
+            }
+            AppPickerButton(
+                label = stringResource(R.string.picker_time_end),
+                value = draft.time.timeOfDayEnd.ifBlank { "—" },
+                onClick = { showEndTime = true },
+                leadingIcon = Icons.Outlined.AccessTime,
+                modifier = Modifier.fillMaxWidth().testTag("quick-create-time-of-day-end"),
+            )
+            if (showEndTime) {
+                TimePickerSheet(
+                    initial = runCatching { LocalTime.parse(draft.time.timeOfDayEnd, timeFmt) }.getOrElse { LocalTime.of(18, 0) },
+                    onConfirm = { time ->
+                        store.updateTime(draft.time.copy(timeOfDayEnd = time.format(timeFmt)))
+                        showEndTime = false
+                    },
+                    onDismiss = { showEndTime = false },
+                    titleRes = R.string.picker_time_end,
+                )
+            }
             Row { listOf("morning" to ("06:00" to "10:00"), "midday" to ("09:00" to "18:00"), "night" to ("18:00" to "24:00")).forEach { (label, range) -> TextButton(onClick = { store.updateTime(draft.time.copy(timeOfDayMode = QuickCreateTimeOfDayMode.Range, timeOfDayStart = range.first, timeOfDayEnd = range.second)) }, modifier = Modifier.testTag("quick-create-time-quick-$label")) { Text(label) } } }
         }
     }
     TextButton(onClick = { store.updateWindows(draft.windows + QuickCreateWindow(UUID.randomUUID().toString(), "self", 0, app.tastile.android.ui.mobile.sheets.QuickCreateSpan())) }, modifier = Modifier.testTag("quick-create-add-window")) { Text("Add window") }
     draft.windows.forEachIndexed { index, window ->
+        var showWindowStartDate by remember(index) { mutableStateOf(false) }
+        var showWindowEndDate by remember(index) { mutableStateOf(false) }
+        var showWindowReferencePicker by remember(index) { mutableStateOf(false) }
         Text("Window ${index + 1}")
         Row { listOf(0, 1, 2, 3).forEach { kind -> TextButton(onClick = { store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) }, modifier = Modifier.testTag("quick-create-window-$index-kind-$kind")) { Text("Kind $kind") } } }
-        OutlinedTextField(window.bounds.start, { value ->
-            store.updateWindows(draft.windows.replace(index, window.copy(bounds = window.bounds.copy(start = value))))
-        }, label = { Text("Window start") }, modifier = Modifier.testTag("quick-create-window-$index-start"))
-        OutlinedTextField(window.bounds.end, { value ->
-            store.updateWindows(draft.windows.replace(index, window.copy(bounds = window.bounds.copy(end = value))))
-        }, label = { Text("Window end") }, modifier = Modifier.testTag("quick-create-window-$index-end"))
-        if (window.kind in 1..3) OutlinedTextField(window.referenceId.orEmpty(), { value -> store.updateWindows(draft.windows.replace(index, window.copy(referenceId = value.ifBlank { null }))) }, label = { Text("Window reference") }, modifier = Modifier.testTag("quick-create-window-$index-reference"))
+        AppPickerButton(
+            label = stringResource(R.string.picker_date_start),
+            value = window.bounds.start.ifBlank { "—" },
+            onClick = { showWindowStartDate = true },
+            leadingIcon = Icons.Outlined.CalendarToday,
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-window-$index-start"),
+        )
+        if (showWindowStartDate) {
+            DatePickerSheet(
+                initial = runCatching { LocalDate.parse(window.bounds.start, dateFmt) }.getOrElse { LocalDate.now() },
+                onConfirm = { date ->
+                    store.updateWindows(draft.windows.replace(index, window.copy(bounds = window.bounds.copy(start = date.format(dateFmt)))))
+                    showWindowStartDate = false
+                },
+                onDismiss = { showWindowStartDate = false },
+                titleRes = R.string.picker_date_start,
+            )
+        }
+        AppPickerButton(
+            label = stringResource(R.string.picker_date_end),
+            value = window.bounds.end.ifBlank { "—" },
+            onClick = { showWindowEndDate = true },
+            leadingIcon = Icons.Outlined.CalendarToday,
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-window-$index-end"),
+        )
+        if (showWindowEndDate) {
+            DatePickerSheet(
+                initial = runCatching { LocalDate.parse(window.bounds.end, dateFmt) }.getOrElse { LocalDate.now() },
+                onConfirm = { date ->
+                    store.updateWindows(draft.windows.replace(index, window.copy(bounds = window.bounds.copy(end = date.format(dateFmt)))))
+                    showWindowEndDate = false
+                },
+                onDismiss = { showWindowEndDate = false },
+                titleRes = R.string.picker_date_end,
+            )
+        }
+        if (window.kind in 1..3) {
+            AppPickerButton(
+                label = stringResource(R.string.picker_reference_label),
+                value = window.referenceId.orEmpty().ifBlank { "—" },
+                onClick = { showWindowReferencePicker = true },
+                leadingIcon = Icons.Outlined.Tag,
+                modifier = Modifier.fillMaxWidth().testTag("quick-create-window-$index-reference"),
+            )
+            if (showWindowReferencePicker) {
+                ReferencePickerSheet(
+                    references = referenceOptions,
+                    onSelect = { option ->
+                        store.updateWindows(draft.windows.replace(index, window.copy(referenceId = option.id)))
+                        showWindowReferencePicker = false
+                    },
+                    onDismiss = { showWindowReferencePicker = false },
+                )
+            }
+        }
         TextButton(onClick = { store.updateWindows(draft.windows.filterIndexed { item, _ -> item != index }) }) { Text("Remove window") }
+    }
+    if (showReferencePicker) {
+        ReferencePickerSheet(
+            references = referenceOptions,
+            onSelect = { option ->
+                store.updateTime(draft.time.copy(referenceId = option.id))
+                showReferencePicker = false
+            },
+            onDismiss = { showReferencePicker = false },
+        )
     }
 }
 
