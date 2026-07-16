@@ -7,21 +7,27 @@ class WrapperParameterOrderDetectorTest : LintDetectorTest() {
     override fun getDetector() = WrapperParameterOrderDetector()
     override fun getIssues() = listOf(WrapperParameterOrderDetector.ISSUE)
 
-    // Compose runtime + Modifier types aren't on the test classpath, so the
-    // Lint test client is told to ignore the unresolved imports. The detector
-    // only reads parameter NAMES from the raw PSI tree, so unresolved types
-    // never affect the C1/C2 assertions.
-
-    fun testModifierFirstReportsPositiveWhenModifierIsNotFirst() {
+    fun testCoreDesignSystemWrapperReportsWhenModifierIsNotFirst() {
         lint().allowCompilationErrors().files(kotlin(
             """
-            package app.tastile.android.ui.designsystem
+            package app.tastile.android.core.designsystem
             import androidx.compose.runtime.Composable
             import androidx.compose.ui.Modifier
             @Composable
-            fun Wrong(text: String, modifier: Modifier = Modifier) {}
+            fun Wrong(text: String = "", modifier: Modifier = Modifier) {}
             """.trimIndent()
         )).run().expectWarningCount(1)
+    }
+
+    fun testCoreDesignSystemScreenIsIgnoredWhenItHasOnlyRequiredParameters() {
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.core.designsystem
+            import androidx.compose.runtime.Composable
+            @Composable
+            fun MyScreen(required: Int, onAction: () -> Unit) {}
+            """.trimIndent()
+        )).run().expectWarningCount(0)
     }
 
     fun testModifierFirstReportsNegativeWhenModifierIsFirst() {
@@ -36,16 +42,40 @@ class WrapperParameterOrderDetectorTest : LintDetectorTest() {
         )).run().expectWarningCount(0)
     }
 
-    fun testEnabledLastReportsPositiveWhenEnabledIsNotLast() {
+    fun testModifierFirstDoesNotReportWhenFirstParameterIsRequired() {
         lint().allowCompilationErrors().files(kotlin(
             """
             package app.tastile.android.ui.designsystem
             import androidx.compose.runtime.Composable
             import androidx.compose.ui.Modifier
             @Composable
-            fun Wrong(modifier: Modifier = Modifier, enabled: Boolean = true, text: String) {}
+            fun Screen(text: String, modifier: Modifier = Modifier) {}
+            """.trimIndent()
+        )).run().expectWarningCount(0)
+    }
+
+    fun testEnabledReportsWhenDefaultedParameterFollows() {
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.ui.designsystem
+            import androidx.compose.runtime.Composable
+            import androidx.compose.ui.Modifier
+            @Composable
+            fun Wrong(modifier: Modifier = Modifier, enabled: Boolean = true, selected: Boolean = false) {}
             """.trimIndent()
         )).run().expectWarningCount(1)
+    }
+
+    fun testEnabledDoesNotReportWhenRequiredParameterFollows() {
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.ui.designsystem
+            import androidx.compose.runtime.Composable
+            import androidx.compose.ui.Modifier
+            @Composable
+            fun Right(modifier: Modifier = Modifier, enabled: Boolean = true, text: String) {}
+            """.trimIndent()
+        )).run().expectWarningCount(0)
     }
 
     fun testEnabledLastReportsNegativeWhenEnabledIsLast() {
@@ -67,7 +97,7 @@ class WrapperParameterOrderDetectorTest : LintDetectorTest() {
             import androidx.compose.runtime.Composable
             import androidx.compose.ui.Modifier
             @Composable
-            fun Wrong(text: String, modifier: Modifier = Modifier) {}
+            fun Wrong(text: String = "", modifier: Modifier = Modifier) {}
             """.trimIndent()
         )).run().expectWarningCount(0)
     }

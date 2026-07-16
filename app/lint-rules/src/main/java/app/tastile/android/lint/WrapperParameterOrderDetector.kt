@@ -7,9 +7,9 @@ import com.android.tools.lint.detector.api.Implementation
 import com.android.tools.lint.detector.api.Issue
 import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Severity
-import com.intellij.psi.PsiMethod
 import org.jetbrains.uast.UElement
 import org.jetbrains.uast.UMethod
+import org.jetbrains.uast.UParameter
 
 class WrapperParameterOrderDetector : Detector(), Detector.UastScanner {
     override fun getApplicableUastTypes(): List<Class<out UElement>> = listOf(UMethod::class.java)
@@ -17,39 +17,35 @@ class WrapperParameterOrderDetector : Detector(), Detector.UastScanner {
     override fun createUastHandler(context: JavaContext): UElementHandler =
         object : UElementHandler() {
             override fun visitMethod(node: UMethod) {
-                System.err.println("[WPD-DEBUG] enter visitMethod name=${node.name}")
-                val isComposable = node.isComposable()
-                val inDesignSystem = isInDesignSystemPackage(context)
-                System.err.println("[WPD-DEBUG] composable=$isComposable inDesignSystem=$inDesignSystem")
-                if (!isComposable) return
-                if (!inDesignSystem) return
+                if (!node.isComposable()) return
+                if (!isInDesignSystemPackage(context)) return
 
-                val psi = node.sourcePsi as? PsiMethod ?: run {
-                    System.err.println("[WPD-DEBUG] psi is not PsiMethod: ${node.sourcePsi}")
-                    return
-                }
-                val params = psi.parameterList.parameters
-                System.err.println("[WPD-DEBUG] paramCount=${params.size} paramNames=${params.joinToString { it.name }}")
-                if (params.size < 2) return
+                // Use UParameter list (UAST-level) so the detector works on
+                // Kotlin source where the PSI element is a KtNamedFunction
+                // rather than a Java PsiMethod.
+                val uastParams = node.uastParameters
+                if (uastParams.size < 2) return
+                if (isNonWrapper(uastParams)) return
 
-                // Rule C1: Modifier must be the first parameter.
-                val firstParamName = params.firstOrNull()?.name
-                if (firstParamName != "modifier") {
+                // Rule C1: configurable wrapper slots require modifier first.
+                val firstParam = uastParams.firstOrNull()
+                if (firstParam?.name != "modifier" && firstParam?.hasDefaultValue() == true) {
                     context.report(
                         ISSUE,
                         node,
                         context.getLocation(node),
                         "L0 C1: a wrapper's first parameter must be `modifier: Modifier` " +
-                            "(found `${firstParamName ?: "<none>"}`)",
+                            "(found `${firstParam.name}`)",
                     )
                     return
                 }
 
-                // Rule C2: `enabled` must be the LAST optional parameter.
-                // If any other parameter appears AFTER `enabled`, that's a C2 violation.
-                val enabledIndex = params.indexOfFirst { it.name == "enabled" }
-                if (enabledIndex >= 0 && enabledIndex < params.size - 1) {
-                    val afterEnabled = params.drop(enabledIndex + 1).firstOrNull()?.name ?: "?"
+                // Rule C2: `enabled` must be the last optional parameter.
+                val enabledIndex = uastParams.indexOfFirst { it.name == "enabled" }
+                if (enabledIndex >= 0 && uastParams.drop(enabledIndex + 1)
+                        .any { it.hasDefaultValue() }) {
+                    val afterEnabled = uastParams.drop(enabledIndex + 1)
+                        .first { it.hasDefaultValue() }.name
                     context.report(
                         ISSUE,
                         node,
@@ -61,21 +57,31 @@ class WrapperParameterOrderDetector : Detector(), Detector.UastScanner {
             }
         }
 
-    private fun UMethod.isComposable(): Boolean =
-        annotations.any { ann ->
-            val q = ann.qualifiedName
-            // When the test client runs with `allowCompilationErrors()`, the
-            // qualified name for an unresolved annotation comes back as null.
-            // Match by qualified name when available, else fall back to the
-            // simple-name of the annotation.
-            q == "androidx.compose.runtime.Composable" ||
-                (q == null && ann.name == "Composable")
+    private fun isNonWrapper(params: List<UParameter>): Boolean =
+        params.none { it.name == "modifier" } &&
+            params.none { it.name == "enabled" && it.hasDefaultValue() } &&
+            params.none { it.hasDefaultValue() }
+
+    private fun UParameter.hasDefaultValue(): Boolean =
+        sourcePsi?.text?.contains("=") == true
+
+    private fun UMethod.isComposable(): Boolean {
+        // First, use UAnnotation.qualifiedName when the annotation resolves.
+        if (annotations.any { it.qualifiedName == "androidx.compose.runtime.Composable" }) {
+            return true
         }
+        // Fallback for unresolved annotations (e.g. when the test client runs
+        // with `allowCompilationErrors()`): check the raw PSI text. Kotlin
+        // source uses `@Composable(...)`, `@Composable` (no args).
+        val psi = this.sourcePsi ?: return false
+        return psi.text.contains("@Composable")
+    }
 
     private fun isInDesignSystemPackage(context: JavaContext): Boolean {
         val pkg = context.uastFile?.packageName ?: return false
         return pkg == "app.tastile.android.ui.designsystem" ||
-            pkg == "app.tastile.android.ui.mobile.designsystem"
+            pkg == "app.tastile.android.ui.mobile.designsystem" ||
+            pkg == "app.tastile.android.core.designsystem"
     }
 
     companion object {
