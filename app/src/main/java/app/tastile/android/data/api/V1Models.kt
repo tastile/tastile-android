@@ -73,6 +73,7 @@ data class ResolutionInfoView(
 @Serializable
 data class TimelineItem(
     @SerialName("placement_id") val placementId: String,
+    @SerialName("tile_id") val tileId: String,
     val revision: Long,
     val content: TileContentView,
     val visual: TileVisualView,
@@ -158,11 +159,6 @@ data class V1ListTilesResponse(
     val tiles: List<TileListView> = emptyList(),
     @SerialName("next_actionable_tile_id") val nextActionableTileId: String? = null,
     @SerialName("next_actionable_start_at") val nextActionableStartAt: String? = null
-)
-
-@Serializable
-data class V1TimelineResponse(
-    val items: List<TimelineItem> = emptyList()
 )
 
 @Serializable

@@ -209,6 +209,23 @@ class V1ApiClientTest {
     }
 
     @Test
+    fun timeline_item_decodes_the_core_array_shape_and_preserves_tile_id() {
+        val payload = """
+            [{
+              "placement_id":"placement-1", "tile_id":"tile-1", "revision":1,
+              "content":{"title":"Planning"}, "visual":{"color":"#3b82f6"},
+              "role":0, "span":{"start_at":"2026-07-01T09:00:00Z","end_at":"2026-07-01T10:00:00Z"},
+              "source":{"value":0}, "resolution":{"state":0}
+            }]
+        """.trimIndent()
+
+        val items = Json { ignoreUnknownKeys = true }.decodeFromString<List<TimelineItem>>(payload)
+
+        assertEquals("tile-1", items.single().tileId)
+        assertEquals("placement-1", items.single().placementId)
+    }
+
+    @Test
     fun workspace_patch_wire_matches_web_edit_fields_including_parent() {
         val body = V1WorkspaceWire.updateBody(
             UpdateWorkspaceInput(

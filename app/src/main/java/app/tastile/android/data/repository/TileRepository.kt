@@ -327,8 +327,8 @@ class TileRepository @Inject constructor(
         if (token.isNullOrBlank()) return null
         return try {
             val response = v1ApiClient.getTimeline(start, end, ownerIds)
-            val mapped = response.items.mapNotNull { it.toCoreTimelineItem(start, end) }
-            android.util.Log.d("TileRepository", "v1 timeline: ${response.items.size} items, mapped=${mapped.size}")
+            val mapped = response.mapNotNull { it.toCoreTimelineItem(start, end) }
+            android.util.Log.d("TileRepository", "v1 timeline: ${response.size} items, mapped=${mapped.size}")
             mapped
         } catch (e: V1Error) {
             android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)
@@ -353,7 +353,7 @@ class TileRepository @Inject constructor(
         if (startInstant.isBefore(rangeStart) || !startInstant.isBefore(rangeEnd)) return null
         return CoreTimelineItem(
             id = placementId,
-            tileId = null,
+            tileId = tileId,
             title = content.title.ifBlank { "Untitled" },
             type = role.toRoleName(),
             status = resolution.state.toStatusName(),

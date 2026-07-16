@@ -130,7 +130,8 @@ class V1ApiClient @Inject constructor(
     suspend fun readExecution(executionId: String): ExecutionView =
         get("/v1/executions/$executionId")
 
-    suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): V1TimelineResponse {
+    /** `/v1/timeline` returns a bare TimelineItem array, not an `{ items }` envelope. */
+    suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): List<TimelineItem> {
         return get(V1Endpoints.timeline(start, end, ownerIds))
     }
 
