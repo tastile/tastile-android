@@ -4,12 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,14 +17,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
+import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.data.model.TileLifecycle
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
@@ -73,7 +77,7 @@ fun TileEditSheet(
                 }
                 (current as Overlay.TileEdit).placementId?.let { placementId ->
                     Text(
-                        text = "Occurrence: $placementId",
+                        text = stringResource(R.string.tile_occurrence_label, placementId),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -88,32 +92,64 @@ fun TileEditSheet(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
-                    TextButton(
+                    AppPrimaryButton(
+                        text = "Save changes",
                         onClick = { confirmSave = true },
                         enabled = editedTitle.isNotBlank(),
                         modifier = Modifier.testTag("tile-edit-save-details"),
-                    ) { Text("Save changes") }
+                    )
                     if (lifecycle == TileLifecycle.READY) {
-                        TextButton(onClick = { viewModel.startTile(selected.id) }) { Text("Start") }
-                        TextButton(onClick = { viewModel.setDeferTileCandidate(selected.id) }) { Text("Defer") }
-                        TextButton(onClick = { viewModel.setPromptTileCandidate(selected.id) }) { Text("Request prompt") }
+                        AppSecondaryButton(
+                            text = "Start",
+                            onClick = { viewModel.startTile(selected.id) },
+                        )
+                        AppSecondaryButton(
+                            text = "Defer",
+                            onClick = { viewModel.setDeferTileCandidate(selected.id) },
+                        )
+                        AppSecondaryButton(
+                            text = "Request prompt",
+                            onClick = { viewModel.setPromptTileCandidate(selected.id) },
+                        )
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
-                        TextButton(onClick = { viewModel.completeTile(selected.id) }) { Text("Complete") }
+                        AppSecondaryButton(
+                            text = "Complete",
+                            onClick = { viewModel.completeTile(selected.id) },
+                        )
                         when (executionStates[selected.id]) {
-                            ExecutionControlState.Active -> TextButton(onClick = { viewModel.pauseTile(selected.id) }, enabled = selected.id !in executionControlsInFlight) { Text("Pause") }
-                            ExecutionControlState.Paused -> TextButton(onClick = { viewModel.resumeTile(selected.id) }, enabled = selected.id !in executionControlsInFlight) { Text("Resume") }
-                            null -> TextButton(onClick = { confirmExecutionAction = true }, enabled = selected.id !in executionControlsInFlight) { Text("Start execution") }
+                            ExecutionControlState.Active -> AppSecondaryButton(
+                                text = "Pause",
+                                onClick = { viewModel.pauseTile(selected.id) },
+                                enabled = selected.id !in executionControlsInFlight,
+                            )
+                            ExecutionControlState.Paused -> AppSecondaryButton(
+                                text = "Resume",
+                                onClick = { viewModel.resumeTile(selected.id) },
+                                enabled = selected.id !in executionControlsInFlight,
+                            )
+                            null -> AppSecondaryButton(
+                                text = "Start execution",
+                                onClick = { confirmExecutionAction = true },
+                                enabled = selected.id !in executionControlsInFlight,
+                            )
                         }
                         if (executionStates[selected.id] != null) {
-                            TextButton(onClick = { confirmExecutionAction = false }, enabled = selected.id !in executionControlsInFlight) { Text("Finish execution") }
+                            AppSecondaryButton(
+                                text = "Finish execution",
+                                onClick = { confirmExecutionAction = false },
+                                enabled = selected.id !in executionControlsInFlight,
+                            )
                         }
                     }
-                    TextButton(onClick = {
-                        val placementId = (current as Overlay.TileEdit).placementId
-                        if (placementId != null) viewModel.setClosePlacementCandidate(placementId)
-                        else viewModel.setDeleteTileCandidate(selected.id)
-                    }) { Text(if ((current as Overlay.TileEdit).placementId != null) "Delete occurrence" else "Delete") }
+                    AppSecondaryButton(
+                        text = if ((current as Overlay.TileEdit).placementId != null) "Delete occurrence" else "Delete",
+                        onClick = {
+                            val placementId = (current as Overlay.TileEdit).placementId
+                            if (placementId != null) viewModel.setClosePlacementCandidate(placementId)
+                            else viewModel.setDeleteTileCandidate(selected.id)
+                        },
+                    )
                 }
             }
         }
@@ -126,7 +162,23 @@ fun TileEditSheet(
             )
         }
         closePlacementCandidate?.takeIf { (current as Overlay.TileEdit).placementId == it }?.let {
-            AlertDialog(onDismissRequest = { viewModel.setClosePlacementCandidate(null) }, title = { Text("Delete occurrence?") }, text = { Text("Only this calendar occurrence will be removed.") }, confirmButton = { TextButton(onClick = viewModel::confirmClosePlacement) { Text("Delete") } }, dismissButton = { TextButton(onClick = { viewModel.setClosePlacementCandidate(null) }) { Text("Cancel") } })
+            AlertDialog(
+                onDismissRequest = { viewModel.setClosePlacementCandidate(null) },
+                title = { Text("Delete occurrence?") },
+                text = { Text("Only this calendar occurrence will be removed.") },
+                confirmButton = {
+                    AppPrimaryButton(
+                        text = "Delete",
+                        onClick = viewModel::confirmClosePlacement,
+                    )
+                },
+                dismissButton = {
+                    AppTertiaryButton(
+                        text = "Cancel",
+                        onClick = { viewModel.setClosePlacementCandidate(null) },
+                    )
+                },
+            )
         }
         deferCandidate?.takeIf { it == selected?.id }?.let {
             DeferTileDialog(
@@ -147,11 +199,21 @@ fun TileEditSheet(
                 onDismissRequest = { confirmExecutionAction = null },
                 title = { Text(if (start) "Start execution?" else "Finish execution?") },
                 text = { Text(if (start) "Start work on this occurrence." else "Finish this execution without completing the tile.") },
-                confirmButton = { TextButton(onClick = {
-                    if (start) viewModel.startExecution(selected!!.id) else viewModel.finishExecution(selected!!.id)
-                    confirmExecutionAction = null
-                }) { Text(if (start) "Start" else "Finish") } },
-                dismissButton = { TextButton(onClick = { confirmExecutionAction = null }) { Text("Cancel") } },
+                confirmButton = {
+                    AppPrimaryButton(
+                        text = if (start) "Start" else "Finish",
+                        onClick = {
+                            if (start) viewModel.startExecution(selected!!.id) else viewModel.finishExecution(selected!!.id)
+                            confirmExecutionAction = null
+                        },
+                    )
+                },
+                dismissButton = {
+                    AppTertiaryButton(
+                        text = "Cancel",
+                        onClick = { confirmExecutionAction = null },
+                    )
+                },
             )
         }
         if (confirmSave && selected != null) {
@@ -160,12 +222,20 @@ fun TileEditSheet(
                 title = { Text("Save tile changes?") },
                 text = { Text("Update ${selected.title} to $editedTitle.") },
                 confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.updateTileTitle(selected.id, editedTitle)
-                        confirmSave = false
-                    }) { Text("Save") }
+                    AppPrimaryButton(
+                        text = "Save",
+                        onClick = {
+                            viewModel.updateTileTitle(selected.id, editedTitle)
+                            confirmSave = false
+                        },
+                    )
                 },
-                dismissButton = { TextButton(onClick = { confirmSave = false }) { Text("Cancel") } },
+                dismissButton = {
+                    AppTertiaryButton(
+                        text = "Cancel",
+                        onClick = { confirmSave = false },
+                    )
+                },
             )
         }
     }

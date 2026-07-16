@@ -5,13 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Key
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,16 +28,18 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.data.repository.AccountTokenView
-import app.tastile.android.ui.designsystem.AppListRow
-import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
 import app.tastile.android.ui.mobile.sheets.PanelSheet
 
 /**
@@ -80,8 +80,8 @@ private fun TokensBody(viewModel: AccountViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+            .padding(bottom = MobileSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
     ) {
         Text(
             text = stringResource(R.string.account_tokens_description),
@@ -116,12 +116,7 @@ private fun TokensBody(viewModel: AccountViewModel) {
             },
         )
 
-        Text(
-            text = stringResource(R.string.account_tokens_issued_heading),
-            style = AppTheme.typography.titleSmall,
-            color = AppTheme.colors.onSurface,
-            modifier = Modifier.padding(top = AppSpacing.sm),
-        )
+        SectionHeader(title = stringResource(R.string.account_tokens_issued_heading))
 
         when {
             state.loading -> Text(
@@ -129,12 +124,12 @@ private fun TokensBody(viewModel: AccountViewModel) {
                 style = AppTheme.typography.bodySmall,
                 color = AppTheme.colors.onSurfaceVariant,
             )
-            state.tokens.isEmpty() -> Text(
-                text = stringResource(R.string.account_tokens_empty),
-                style = AppTheme.typography.bodySmall,
-                color = AppTheme.colors.onSurfaceVariant,
+            state.tokens.isEmpty() -> AppEmptyState(
+                icon = Icons.Outlined.Key,
+                title = stringResource(R.string.account_tokens_empty),
+                hint = "",
             )
-            else -> Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+            else -> Column(verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs)) {
                 state.tokens.forEach { token ->
                     TokenRow(
                         token = token,
@@ -157,8 +152,8 @@ private fun CreateTokenForm(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.xs),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            .padding(vertical = MobileSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
     ) {
         OutlinedTextField(
             value = name,
@@ -167,13 +162,12 @@ private fun CreateTokenForm(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        Button(
+        AppPrimaryButton(
+            text = stringResource(R.string.account_tokens_issue),
             onClick = onSubmit,
             enabled = !submitting && name.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.account_tokens_issue))
-        }
+        )
     }
 }
 
@@ -188,8 +182,8 @@ private fun CreatedTokenDisclosure(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.xs),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs),
+            .padding(vertical = MobileSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -217,7 +211,8 @@ private fun CreatedTokenDisclosure(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
-                        contentDescription = stringResource(R.string.account_tokens_revoke),
+                        // TODO i18n: dismiss disclosure a11y label
+                        contentDescription = "Dismiss",
                         tint = AppTheme.colors.onSurfaceVariant,
                     )
                 }
@@ -242,33 +237,30 @@ private fun TokenRow(
     submitting: Boolean,
     onRevoke: () -> Unit,
 ) {
-    AppListRow(
-        label = token.displayName.ifBlank { stringResource(R.string.account_tokens_issued_heading) },
-        meta = buildString {
-            append(token.tokenPrefix)
-            if (token.tokenPrefix.isNotBlank()) append("...")
-            if (token.isRevoked) {
-                append(" · ")
-                append("revoked")
-            }
-        },
-        leading = {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppListItem(
+            headline = token.displayName.ifBlank { stringResource(R.string.account_tokens_issued_heading) },
+            supporting = buildString {
+                append(token.tokenPrefix)
+                if (token.tokenPrefix.isNotBlank()) append("...")
+                if (token.isRevoked) {
+                    append(" · ")
+                    append(stringResource(R.string.account_tokens_revoked))
+                }
+            },
+            leading = Icons.Outlined.Key,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onRevoke, enabled = !token.isRevoked && !submitting) {
             Icon(
-                imageVector = Icons.Outlined.Key,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                imageVector = Icons.Outlined.Delete,
+                contentDescription = stringResource(R.string.account_tokens_revoke),
+                tint = if (token.isRevoked) AppTheme.colors.onSurfaceVariant
+                else MaterialTheme.colorScheme.error,
             )
-        },
-        trailing = {
-            IconButton(onClick = onRevoke, enabled = !token.isRevoked && !submitting) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = stringResource(R.string.account_tokens_revoke),
-                    tint = if (token.isRevoked) AppTheme.colors.onSurfaceVariant
-                    else MaterialTheme.colorScheme.error,
-                )
-            }
-        },
-        onClick = { /* row click = no-op on mobile (web has inline rename) */ },
-    )
+        }
+    }
 }

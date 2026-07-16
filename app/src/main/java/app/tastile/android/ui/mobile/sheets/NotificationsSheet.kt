@@ -1,23 +1,24 @@
 package app.tastile.android.ui.mobile.sheets
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.notifications.NotificationRepository
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,30 +32,26 @@ fun NotificationsSheet(
     if (current is Overlay.Notifications) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         PanelSheet(
-            title = "Notifications",
+            title = stringResource(R.string.mobile_top_notifications),
             sheetState = sheetState,
             onDismiss = { overlay.dismiss() },
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (items.isEmpty()) {
-                    Text(
-                        "No notifications",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        items.forEach {
-                            Text(it.label, style = MaterialTheme.typography.bodyMedium)
-                        }
+            if (items.isEmpty()) {
+                AppEmptyState(
+                    icon = Icons.Outlined.Notifications,
+                    title = stringResource(R.string.empty_tiles_title),
+                    hint = stringResource(R.string.empty_tiles_hint),
+                )
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs),
+                ) {
+                    items.forEach {
+                        AppListItem(
+                            headline = it.label,
+                            leading = Icons.Outlined.Notifications,
+                        )
                     }
                 }
             }

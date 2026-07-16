@@ -1,17 +1,15 @@
 package app.tastile.android.ui.mobile.sheets
 
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,17 +17,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.designsystem.AppComponentSize
-import app.tastile.android.ui.designsystem.AppListRow
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 
 /**
  * Account dropdown mirroring the web account menu (`src/app/app/account-menu.tsx`).
@@ -104,18 +103,20 @@ fun AccountMenuSheet(
             title = { Text(stringResource(R.string.nav_account_sign_out)) },
             text = { Text(stringResource(R.string.shell_account_sign_out_confirm)) },
             confirmButton = {
-                TextButton(onClick = {
-                    showSignOutConfirm = false
-                    overlay.dismiss()
-                    viewModel.signOut()
-                }) {
-                    Text(stringResource(R.string.nav_account_sign_out))
-                }
+                AppPrimaryButton(
+                    text = stringResource(R.string.nav_account_sign_out),
+                    onClick = {
+                        showSignOutConfirm = false
+                        overlay.dismiss()
+                        viewModel.signOut()
+                    },
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showSignOutConfirm = false }) {
-                    Text(stringResource(R.string.dashboard_tiles_delete_dialog_cancel))
-                }
+                AppTertiaryButton(
+                    text = stringResource(R.string.dashboard_tiles_delete_dialog_cancel),
+                    onClick = { showSignOutConfirm = false },
+                )
             },
         )
     }
@@ -124,20 +125,14 @@ fun AccountMenuSheet(
 @Composable
 private fun AccountMenuRow(
     label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     testTag: String,
     onClick: () -> Unit,
 ) {
-    AppListRow(
-        label = label,
-        leading = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(AppComponentSize.listRowGlyphSize),
-            )
-        },
-        role = Role.Button,
+    AppListItem(
+        headline = label,
+        leading = icon,
+        trailing = Icons.Outlined.ChevronRight,
         onClick = onClick,
         modifier = Modifier.testTag(testTag),
     )

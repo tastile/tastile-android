@@ -6,18 +6,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Shield
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -27,18 +25,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.ui.designsystem.AppListRow
-import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
 import app.tastile.android.ui.mobile.sheets.PanelSheet
 
 /**
@@ -78,8 +76,8 @@ internal fun AccountSheetBody(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+            .padding(bottom = MobileSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
     ) {
         ProfileHeading()
         AccountPanel(state = state, onRefresh = viewModel::loadProfile)
@@ -96,7 +94,7 @@ internal fun AccountSheetBody(
 
 @Composable
 private fun ProfileHeading() {
-    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs)) {
         Text(
             text = stringResource(R.string.preferences_account_profile_heading),
             style = AppTheme.typography.titleMedium,
@@ -118,18 +116,17 @@ private fun AccountPanel(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            .padding(vertical = MobileSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = stringResource(R.string.preferences_account_account_heading),
-                style = AppTheme.typography.titleSmall,
-                color = AppTheme.colors.onSurface,
+            SectionHeader(
+                title = stringResource(R.string.preferences_account_account_heading),
+                modifier = Modifier.weight(1f),
             )
             IconButton(onClick = onRefresh) {
                 Icon(
@@ -159,61 +156,33 @@ private fun AccountPanel(
 
 @Composable
 private fun EmailRow(email: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = stringResource(R.string.preferences_account_email),
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
-        )
-        Text(
-            text = email.ifBlank { "-" },
-            style = AppTheme.typography.bodyMedium,
-            color = AppTheme.colors.onSurface,
-        )
-    }
+    AppListItem(
+        headline = stringResource(R.string.preferences_account_email),
+        supporting = email.ifBlank { "-" },
+        leading = Icons.Outlined.Mail,
+    )
 }
 
 @Composable
 private fun EmailVerificationRow(verified: Boolean) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = stringResource(R.string.preferences_account_email_verified),
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
-        )
-        Text(
-            text = stringResource(
-                if (verified) R.string.preferences_account_verified
-                else R.string.preferences_account_unverified,
-            ),
-            style = AppTheme.typography.bodyMedium,
-            color = if (verified) AppTheme.colors.primary else AppTheme.colors.onSurface,
-        )
-    }
+    AppListItem(
+        headline = stringResource(R.string.preferences_account_email_verified),
+        supporting = stringResource(
+            if (verified) R.string.preferences_account_verified
+            else R.string.preferences_account_unverified,
+        ),
+        leading = Icons.Outlined.Verified,
+    )
 }
 
 @Composable
 private fun AccountIdRow(sub: String, fallback: String) {
     val display = sub.takeIf { it.isNotBlank() } ?: fallback.takeIf { it.isNotBlank() } ?: "-"
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = stringResource(R.string.preferences_account_account_id),
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
-        )
-        Text(
-            text = display,
-            style = AppTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-            color = AppTheme.colors.onSurface,
-            modifier = Modifier.padding(top = AppSpacing.xxs),
-        )
-    }
+    AppListItem(
+        headline = stringResource(R.string.preferences_account_account_id),
+        supporting = display,
+        leading = Icons.Outlined.AccountCircle,
+    )
 }
 
 @Composable
@@ -227,17 +196,13 @@ private fun ChangeEmailPanel(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            .padding(vertical = MobileSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
     ) {
-        Text(
-            text = stringResource(R.string.preferences_account_change_email_heading),
-            style = AppTheme.typography.titleSmall,
-            color = AppTheme.colors.onSurface,
-        )
+        SectionHeader(title = stringResource(R.string.preferences_account_change_email_heading))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
@@ -247,16 +212,15 @@ private fun ChangeEmailPanel(
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
-            Button(
+            AppPrimaryButton(
+                text = stringResource(R.string.preferences_account_send_code),
                 onClick = onSendCode,
                 enabled = !state.submitting && state.pendingEmail.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.preferences_account_send_code))
-            }
+            )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
@@ -267,12 +231,11 @@ private fun ChangeEmailPanel(
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
-            OutlinedButton(
+            AppPrimaryButton(
+                text = stringResource(R.string.preferences_account_verify_code),
                 onClick = onVerify,
                 enabled = !state.submitting && state.verificationCode.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.preferences_account_verify_code))
-            }
+            )
         }
     }
 }
@@ -283,23 +246,13 @@ private fun LoginMethodsPanel() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+            .padding(vertical = MobileSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
     ) {
-        Text(
-            text = stringResource(R.string.preferences_account_login_methods),
-            style = AppTheme.typography.titleSmall,
-            color = AppTheme.colors.onSurface,
-        )
-        AppListRow(
-            label = stringResource(R.string.preferences_account_passkey),
-            leading = {
-                Icon(
-                    imageVector = Icons.Outlined.Shield,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
-            },
+        SectionHeader(title = stringResource(R.string.preferences_account_login_methods))
+        AppListItem(
+            headline = stringResource(R.string.preferences_account_passkey),
+            leading = Icons.Outlined.Shield,
             onClick = {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
@@ -308,15 +261,9 @@ private fun LoginMethodsPanel() {
                 context.startActivity(intent)
             },
         )
-        AppListRow(
-            label = stringResource(R.string.preferences_account_email_otp_relogin),
-            leading = {
-                Icon(
-                    imageVector = Icons.Outlined.Mail,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
-            },
+        AppListItem(
+            headline = stringResource(R.string.preferences_account_email_otp_relogin),
+            leading = Icons.Outlined.Mail,
             onClick = {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
