@@ -37,7 +37,7 @@ class SettingsScreenTest {
     @Test
     fun `renders all 5 settings rows with icon and label`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm())
+            SettingsScreen(viewModel = stubVm(), onBack = {})
         }
 
         rule.onAllNodesWithText("Locale", substring = true).onFirst().performScrollTo().assertIsDisplayed()
@@ -50,7 +50,7 @@ class SettingsScreenTest {
     @Test
     fun `locale value reflects current AppLocale`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm(locale = AppLocale.JA))
+            SettingsScreen(viewModel = stubVm(locale = AppLocale.JA), onBack = {})
         }
         rule.onAllNodesWithText("日本語", substring = true).onFirst().assertIsDisplayed()
     }
@@ -58,7 +58,7 @@ class SettingsScreenTest {
     @Test
     fun `row tap opens locale picker dialog`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm())
+            SettingsScreen(viewModel = stubVm(), onBack = {})
         }
         rule.onAllNodesWithText("Locale", substring = true).onFirst().performClick()
 

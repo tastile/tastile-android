@@ -9,19 +9,28 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 // m2-allow: primitive
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: primitive
+import androidx.compose.material3.IconButton
 // m2-allow: state-holder
 import androidx.compose.material3.ListItemDefaults
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
+import androidx.compose.material3.Scaffold
 // m2-allow: state-holder
 import androidx.compose.material3.SegmentedButtonDefaults
 // m2-allow: primitive
@@ -58,9 +67,11 @@ private const val TIMEOUT_MIN = 1
 private const val TIMEOUT_MAX = 240
 private const val TEST_NOTIFICATION_ID = 491
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: DashboardViewModel,
+    onBack: () -> Unit,
 ) {
     val locale by viewModel.locale.collectAsStateWithLifecycle()
     val theme by viewModel.themeMode.collectAsStateWithLifecycle()
@@ -89,12 +100,29 @@ fun SettingsScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.settings_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
         ThemeSection(
             current = theme,
             onPick = { viewModel.setThemeMode(it) },
@@ -142,6 +170,7 @@ fun SettingsScreen(
                 }
             },
         )
+        }
     }
 }
 

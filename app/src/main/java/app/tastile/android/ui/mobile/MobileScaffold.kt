@@ -72,19 +72,23 @@ fun MobileScaffold(
 
     Scaffold(
         topBar = {
-            MobileTopBar(
-                title = title,
-                scale = scale,
-                onScaleChange = { dashboardViewModel.setScale(it) },
-                onMenu = { overlayViewModel.show(Overlay.SidePanel(sectionForRoute(currentRoute))) },
-                onNotifications = { overlayViewModel.show(Overlay.Notifications) },
-                onAvatar = { overlayViewModel.show(Overlay.AccountMenu) },
-                avatarUrl = avatarUrl,
-                avatarFallback = profile?.displayName?.firstOrNull()?.toString()
-                    ?: email.firstOrNull()?.toString()
-                    ?: "U",
-                showScale = currentRoute == "timeline",
-            )
+            // Settings is a full-screen drill-down with its own CenterAlignedTopAppBar,
+            // so the shell top bar is suppressed on that route.
+            if (currentRoute != "settings") {
+                MobileTopBar(
+                    title = title,
+                    scale = scale,
+                    onScaleChange = { dashboardViewModel.setScale(it) },
+                    onMenu = { overlayViewModel.show(Overlay.SidePanel(sectionForRoute(currentRoute))) },
+                    onNotifications = { overlayViewModel.show(Overlay.Notifications) },
+                    onAvatar = { overlayViewModel.show(Overlay.AccountMenu) },
+                    avatarUrl = avatarUrl,
+                    avatarFallback = profile?.displayName?.firstOrNull()?.toString()
+                        ?: email.firstOrNull()?.toString()
+                        ?: "U",
+                    showScale = currentRoute == "timeline",
+                )
+            }
         },
         // Edge-to-edge: main content fills the whole screen so the transparent
         // top-bar gradient can show the timeline peeking through.
@@ -117,9 +121,10 @@ fun MobileScaffold(
                     }
                 }
                 composable("settings") {
-                    Box(modifier = Modifier.padding(top = topPad)) {
-                        SettingsScreen(viewModel = dashboardViewModel)
-                    }
+                    SettingsScreen(
+                        viewModel = dashboardViewModel,
+                        onBack = { navController.popBackStack() },
+                    )
                 }
             }
             OverlayLayer(
