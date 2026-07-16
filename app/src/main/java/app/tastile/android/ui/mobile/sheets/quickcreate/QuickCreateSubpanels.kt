@@ -181,6 +181,7 @@ internal fun QuickCreateSubpanel(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     fun setWhen(mode: QuickCreateWhenMode) {
@@ -220,14 +221,23 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             QuickCreateWhenMode.Reference -> Icons.Outlined.Tag
         }
     }
-    LocalSelectList(
-        options = whenModes,
-        selected = draft.time.whenMode.takeIf { it in whenModes },
-        label = { it.name },
-        leading = whenIcon,
-        onSelect = { setWhen(it) },
-        testTag = { "quick-create-when-${it.name.lowercase()}" },
-    )
+    // M3 Phase 4b: when-modes are single-choice — render as FilterChip group
+    // in a FlowRow so selection state is visible without scrolling. Per-option
+    // tags (`quick-create-when-day` etc.) are preserved verbatim for tests.
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-when-chips"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        whenModes.forEach { mode ->
+            FilterChip(
+                selected = draft.time.whenMode == mode,
+                onClick = { setWhen(mode) },
+                label = { Text(mode.name) },
+                leadingIcon = { Icon(whenIcon(mode), contentDescription = null) },
+                modifier = Modifier.testTag("quick-create-when-${mode.name.lowercase()}"),
+            )
+        }
+    }
     if (draft.time.whenMode == QuickCreateWhenMode.Day || draft.time.whenMode == QuickCreateWhenMode.Range) Column(Modifier.testTag("quick-create-calendar")) {
         NativeDateField("Date", draft.time.span.start, "quick-create-start") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(start = value))) }
         if (draft.time.whenMode == QuickCreateWhenMode.Range) NativeDateField("End date", draft.time.span.end, "quick-create-end") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }
@@ -246,16 +256,33 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
     if (draft.time.whenMode != QuickCreateWhenMode.None) {
         LocalSectionHeader(title = "Time of day")
         val timeOfDayModes = QuickCreateTimeOfDayMode.entries.toList()
-        LocalSelectList(
-            options = timeOfDayModes,
-            selected = draft.time.timeOfDayMode,
-            label = { it.name },
-            leading = { Icons.Outlined.Schedule },
-            onSelect = { mode ->
-                store.updateTime(if (mode == QuickCreateTimeOfDayMode.Range) draft.time.copy(timeOfDayMode = mode, timeOfDayStart = draft.time.timeOfDayStart.ifBlank { "09:00" }, timeOfDayEnd = draft.time.timeOfDayEnd.ifBlank { "18:00" }) else draft.time.copy(timeOfDayMode = mode, timeOfDayStart = "", timeOfDayEnd = ""))
-            },
-            testTag = { "quick-create-time-of-day-${it.name.lowercase()}" },
-        )
+        // M3 Phase 4b: single-choice time-of-day → FilterChip group.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-time-of-day-chips"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            timeOfDayModes.forEach { mode ->
+                FilterChip(
+                    selected = draft.time.timeOfDayMode == mode,
+                    onClick = {
+                        store.updateTime(
+                            if (mode == QuickCreateTimeOfDayMode.Range) draft.time.copy(
+                                timeOfDayMode = mode,
+                                timeOfDayStart = draft.time.timeOfDayStart.ifBlank { "09:00" },
+                                timeOfDayEnd = draft.time.timeOfDayEnd.ifBlank { "18:00" },
+                            ) else draft.time.copy(
+                                timeOfDayMode = mode,
+                                timeOfDayStart = "",
+                                timeOfDayEnd = "",
+                            ),
+                        )
+                    },
+                    label = { Text(mode.name) },
+                    leadingIcon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
+                    modifier = Modifier.testTag("quick-create-time-of-day-${mode.name.lowercase()}"),
+                )
+            }
+        }
         if (draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range) {
             LocalPickerField(
                 label = stringResource(R.string.picker_time_start),
@@ -457,6 +484,7 @@ private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     Column(Modifier.testTag("quick-create-recurring-controls")) {
@@ -470,17 +498,24 @@ private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateState
                 QuickCreateRepeatMode.Condition -> Icons.Outlined.Autorenew
             }
         }
-        LocalSelectList(
-            options = repeatModes,
-            selected = draft.recurring.repeatMode,
-            label = { it.name },
-            leading = repeatIcon,
-            onSelect = { value ->
-                store.updateRecurring(draft.recurring.copy(repeatMode = value))
-                if (value != QuickCreateRepeatMode.Once) store.updateIdentity(draft.identity.copy(kind = QuickCreateTileKind.Recurring))
-            },
-            testTag = { "quick-create-repeat-${it.name.lowercase()}" },
-        )
+        // M3 Phase 4b: single-choice repeat-mode → FilterChip group.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-repeat-chips"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            repeatModes.forEach { mode ->
+                FilterChip(
+                    selected = draft.recurring.repeatMode == mode,
+                    onClick = {
+                        store.updateRecurring(draft.recurring.copy(repeatMode = mode))
+                        if (mode != QuickCreateRepeatMode.Once) store.updateIdentity(draft.identity.copy(kind = QuickCreateTileKind.Recurring))
+                    },
+                    label = { Text(mode.name) },
+                    leadingIcon = { Icon(repeatIcon(mode), contentDescription = null) },
+                    modifier = Modifier.testTag("quick-create-repeat-${mode.name.lowercase()}"),
+                )
+            }
+        }
         LocalSectionHeader(
             title = "Weekdays",
             subtitle = if (draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly) null else "Weekly only",
@@ -501,6 +536,7 @@ private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateState
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     FilledTonalButton(
@@ -523,14 +559,21 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             else -> "Filter"
         } }
         val targetKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> if (kind == 0) Icons.Outlined.Tag else Icons.Outlined.Link }
-        LocalSelectList(
-            options = targetKinds,
-            selected = target["kind"]?.jsonPrimitive?.content?.toIntOrNull(),
-            label = targetKindLabel,
-            leading = targetKindIcon,
-            onSelect = { kind -> updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) },
-            testTag = { "quick-create-reference-record-$index-target-kind-$it" },
-        )
+        // M3 Phase 4b: single-choice target-kind → FilterChip group.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-reference-record-$index-target-kind-chips"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            targetKinds.forEach { kind ->
+                FilterChip(
+                    selected = target["kind"]?.jsonPrimitive?.content?.toIntOrNull() == kind,
+                    onClick = { updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) },
+                    label = { Text(targetKindLabel(kind)) },
+                    leadingIcon = { Icon(targetKindIcon(kind), contentDescription = null) },
+                    modifier = Modifier.testTag("quick-create-reference-record-$index-target-kind-$kind"),
+                )
+            }
+        }
         LocalSectionHeader(title = "Relation")
         val relations = listOf(4, 3, 1, 2, 0)
         val relationLabel: (Int) -> String = { relation -> when (relation) {
@@ -540,15 +583,21 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             3 -> "Before"
             else -> "After"
         } }
-        val relationIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { Icons.Outlined.Link }
-        LocalSelectList(
-            options = relations,
-            selected = pick["kind"]?.jsonPrimitive?.content?.toIntOrNull(),
-            label = relationLabel,
-            leading = relationIcon,
-            onSelect = { relation -> updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) },
-            testTag = { "quick-create-reference-record-$index-relation-$it" },
-        )
+        // M3 Phase 4b: single-choice relation → FilterChip group.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-reference-record-$index-relation-chips"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            relations.forEach { relation ->
+                FilterChip(
+                    selected = pick["kind"]?.jsonPrimitive?.content?.toIntOrNull() == relation,
+                    onClick = { updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) },
+                    label = { Text(relationLabel(relation)) },
+                    leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
+                    modifier = Modifier.testTag("quick-create-reference-record-$index-relation-$relation"),
+                )
+            }
+        }
         LocalNumberField(
             value = pick.string("momentId", "10"),
             onValueChange = { value -> value.toIntOrNull()?.coerceIn(5, 120)?.let { minutes -> updateReference(draft, store, index, reference.copy(pick = pick.with("momentId", minutes.toString()))) } },
@@ -641,14 +690,29 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         1 -> Icons.Outlined.PlaylistAdd
         else -> Icons.Outlined.Block
     } }
-    LocalSelectList(
-        options = logicKinds,
-        selected = logicKinds.firstOrNull { it.first == draft.plan.completion.root.kind },
-        label = { it.second },
-        leading = { logicIcon(it.first) },
-        onSelect = { (kind, _) -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = draft.plan.completion.root.copy(kind = kind, term = null)))) },
-        testTag = { "quick-create-completion-logic-${it.second.lowercase()}" },
-    )
+    // M3 Phase 4b: single-choice completion logic → FilterChip group.
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-completion-logic-chips"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        logicKinds.forEach { (kind, label) ->
+            FilterChip(
+                selected = draft.plan.completion.root.kind == kind,
+                onClick = {
+                    store.updatePlan(
+                        draft.plan.copy(
+                            completion = draft.plan.completion.copy(
+                                root = draft.plan.completion.root.copy(kind = kind, term = null),
+                            ),
+                        ),
+                    )
+                },
+                label = { Text(label) },
+                leadingIcon = { Icon(logicIcon(kind), contentDescription = null) },
+                modifier = Modifier.testTag("quick-create-completion-logic-${label.lowercase()}"),
+            )
+        }
+    }
     ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }, allowTermKind = false)
     FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         NiaFilledTonalButton(
@@ -757,6 +821,7 @@ private fun updateTimeRequirement(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit, path: String = "root", allowTermKind: Boolean = true) {
     val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").filter { allowTermKind || it.first != 3 }
     val logicIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
@@ -787,14 +852,21 @@ private fun updateTimeRequirement(
             "life" -> Icons.Outlined.Favorite
             else -> Icons.Outlined.TextFields
         } }
-        LocalSelectList(
-            options = termTypes,
-            selected = node.term?.jsonObjectOrEmpty()?.string("kind"),
-            label = { it },
-            leading = termIcon,
-            onSelect = { type -> onChange(node.copy(term = defaultTermValue(type))) },
-            testTag = { "condition-$path-term-$it" },
-        )
+        // M3 Phase 4b: single-choice term-type → FilterChip group.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("condition-$path-term-chips"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            termTypes.forEach { type ->
+                FilterChip(
+                    selected = node.term?.jsonObjectOrEmpty()?.string("kind") == type,
+                    onClick = { onChange(node.copy(term = defaultTermValue(type))) },
+                    label = { Text(type) },
+                    leadingIcon = { Icon(termIcon(type), contentDescription = null) },
+                    modifier = Modifier.testTag("condition-$path-term-$type"),
+                )
+            }
+        }
         val term = node.term?.jsonObjectOrEmpty() ?: JsonObject(emptyMap())
         when (term.string("kind")) {
             "calendar" -> CalendarTermFields(term, path) { value -> onChange(node.copy(term = value)) }
@@ -860,6 +932,7 @@ private fun updateTimeRequirement(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable private fun RelationTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
     OutlinedTextField(value.string("referenceId"), { input -> onChange(term.withValue("referenceId", input)) }, label = { Text("Reference ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-relation-reference"))
@@ -871,14 +944,21 @@ private fun updateTimeRequirement(
         3 -> "Before"
         else -> "After"
     } }
-    LocalSelectList(
-        options = relations,
-        selected = value.string("relation", "0").toIntOrNull(),
-        label = relationLabel,
-        leading = { Icons.Outlined.Link },
-        onSelect = { relation -> onChange(term.withValue("relation", relation)) },
-        testTag = { "condition-relation-kind-$it" },
-    )
+    // M3 Phase 4b: single-choice relation → FilterChip group.
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("condition-relation-kind-chips"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        relations.forEach { relation ->
+            FilterChip(
+                selected = value.string("relation", "0").toIntOrNull() == relation,
+                onClick = { onChange(term.withValue("relation", relation)) },
+                label = { Text(relationLabel(relation)) },
+                leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
+                modifier = Modifier.testTag("condition-relation-kind-$relation"),
+            )
+        }
+    }
     val windowKinds = listOf(0, 1, 2, 3)
     val windowKindLabel: (Int) -> String = { k -> when (k) {
         0 -> "Calendar"
@@ -886,14 +966,21 @@ private fun updateTimeRequirement(
         2 -> "Parent span"
         else -> "Gap"
     } }
-    LocalSelectList(
-        options = windowKinds,
-        selected = value.string("windowKind", "0").toIntOrNull(),
-        label = windowKindLabel,
-        leading = { Icons.Outlined.Schedule },
-        onSelect = { kind -> onChange(term.withValue("windowKind", kind)) },
-        testTag = { "condition-relation-window-$it" },
-    )
+    // M3 Phase 4b: single-choice window-kind → FilterChip group.
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("condition-relation-window-chips"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        windowKinds.forEach { kind ->
+            FilterChip(
+                selected = value.string("windowKind", "0").toIntOrNull() == kind,
+                onClick = { onChange(term.withValue("windowKind", kind)) },
+                label = { Text(windowKindLabel(kind)) },
+                leadingIcon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
+                modifier = Modifier.testTag("condition-relation-window-$kind"),
+            )
+        }
+    }
 }
 
 @Composable private fun TaskTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
