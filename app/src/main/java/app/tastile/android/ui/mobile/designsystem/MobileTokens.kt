@@ -19,6 +19,20 @@ object MobileTokens {
     val iconVisualSize = 24.dp
 
     /**
+     * Canonical spacing scale. Replace ad-hoc .dp literals (4/6/8/12/16/24)
+     * with these constants so the UI speaks one vocabulary.
+     */
+    object Spacing {
+        val xxs = 2.dp
+        val xs = 4.dp
+        val sm = 8.dp
+        val md = 12.dp
+        val lg = 16.dp
+        val xl = 24.dp
+        val xxl = 32.dp
+    }
+
+    /**
      * Surface tint alphas. Every colored surface in the app picks one from
      * this table (or `Color.Transparent`) instead of an ad-hoc alpha — the
      * pre-unification values were 0.10 / 0.18 / 0.20 / 0.35 / 0.45 / 0.55 /
