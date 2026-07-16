@@ -125,9 +125,15 @@ gradle.taskGraph.whenReady {
     }
 }
 
-val designSystemGuardFiles = listOf(
-    "app/src/main/java/app/tastile/android/ui/dashboard/ManagementScreens.kt"
+val designSystemGuardRoots = listOf(
+    "src/main/java/app/tastile/android/ui/dashboard",
+    "src/main/java/app/tastile/android/ui/mobile",
+    "src/main/java/app/tastile/android/ui/account",
 )
+val designSystemGuardFiles: List<File> =
+    designSystemGuardRoots.flatMap { root ->
+        project.fileTree(root) { include("**/*.kt") }.files
+    }
 
 tasks.register("verifyDesignSystemImports") {
     group = "verification"
@@ -135,7 +141,6 @@ tasks.register("verifyDesignSystemImports") {
     doLast {
         val forbidden = "import androidx.compose.material3."
         val offenders = designSystemGuardFiles
-            .map { project.file(it) }
             .filter { it.exists() && it.readText().contains(forbidden) }
         check(offenders.isEmpty()) {
             "Direct Material3 imports are not allowed in guarded screens:\n" +
