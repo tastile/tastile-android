@@ -36,20 +36,23 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 
 /**
  * Shared bottom-sheet wrapper used by every panel sheet. Lays out the M3
  * baseline (opaque `surfaceContainerLow` background, scrim `0.28` black)
  * and a uniform top bar:
  *
- *   [Close X]   [title slot]   [Submit ✓?]
+ *   [Close X]   [title slot]   [Submit label+icon?]
  *
  * - `title` is the default middle content (static `Text`). Pass `null`
  *   when no title is desired.
  * - `headerContent` overrides `title` when supplied (e.g. QuickCreate uses
  *   a BasicTextField with underline style for the editable tile title).
- * - `onSubmit` enables the right-side Submit icon. When `submitEnabled`
- *   is `false`, the icon is rendered disabled.
+ * - `onSubmit` enables the right-side FilledTonalButton (`submitLabel` + `submitIcon`).
+ *   When `submitEnabled` is `false`, the button is rendered disabled.
+ * - The header row sits flush against the M3 drag handle (no vertical padding)
+ *   so the submit affordance is the topmost element after the handle.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +64,7 @@ internal fun PanelSheet(
     onSubmit: (() -> Unit)? = null,
     submitEnabled: Boolean = true,
     submitIcon: ImageVector = Icons.Outlined.Check,
+    submitLabel: String = "Submit",
     submitTestTag: String? = null,
     headerContent: (@Composable BoxScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -81,7 +85,7 @@ internal fun PanelSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                    .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onDismiss) {
@@ -109,13 +113,18 @@ internal fun PanelSheet(
                     val submitModifier = if (submitTestTag != null) {
                         Modifier.testTag(submitTestTag)
                     } else Modifier
-                    IconButton(onClick = onSubmit, enabled = submitEnabled, modifier = submitModifier) {
-                        Icon(
-                            imageVector = submitIcon,
-                            contentDescription = "Submit",
-                            tint = if (submitEnabled) colors.primary else colors.onSurfaceVariant,
-                        )
-                    }
+                    NiaFilledTonalButton(
+                        onClick = onSubmit,
+                        modifier = submitModifier,
+                        text = { Text(submitLabel) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = submitIcon,
+                                contentDescription = null,
+                                tint = if (submitEnabled) colors.primary else colors.onSurfaceVariant,
+                            )
+                        },
+                    )
                 } else {
                     Spacer(Modifier.width(48.dp))
                 }

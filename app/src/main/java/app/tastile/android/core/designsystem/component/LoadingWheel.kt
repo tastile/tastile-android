@@ -54,6 +54,7 @@ import kotlinx.coroutines.launch
 fun NiaLoadingWheel(
     contentDesc: String,
     modifier: Modifier = Modifier,
+    wheelSize: androidx.compose.ui.unit.Dp = 48.dp,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "wheel transition")
 
@@ -109,7 +110,7 @@ fun NiaLoadingWheel(
     // Draws out the LoadingWheel Canvas composable and sets the animations
     Canvas(
         modifier = modifier
-            .size(48.dp)
+            .size(wheelSize)
             .padding(8.dp)
             .graphicsLayer { rotationZ = rotationAnim }
             .semantics { contentDescription = contentDesc }

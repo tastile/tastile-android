@@ -67,6 +67,7 @@ fun QuickCreateSheetMobile(
             onDismiss = { overlay.dismiss() },
             onSubmit = { resolvedSubmissionViewModel.submit(draft) },
             submitEnabled = canSubmit,
+            submitLabel = "Create",
             submitTestTag = "quick-create-submit",
         ) {
             QuickCreatePanelContent(

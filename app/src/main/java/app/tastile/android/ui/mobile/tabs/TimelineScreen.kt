@@ -76,6 +76,7 @@ import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.panels.ProjectsViewModel
 import app.tastile.android.ui.mobile.calendar.GridConstants
+import app.tastile.android.ui.mobile.calendar.NowIndicator
 
 import java.time.Instant
 import java.time.LocalDate
@@ -85,8 +86,6 @@ import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val MIN_EVENT_HEIGHT_DP = 22.dp
-private val WEEK_HEADER_HEIGHT = 52.dp
 private const val PAGER_CENTER = 365
 private const val PAGER_TOTAL = 731
 private const val INITIAL_ZOOM = 1.5f  // day is 1.5× screen → always scrollable
@@ -394,8 +393,7 @@ private fun DayGrid(
     // 15 min of empty space above and below the labeled 0–24 range so the day has
     // a small scrollable buffer at the min zoom floor (otherwise totalHeight ==
     // availableHeight and maxScroll = 0).
-    val SCROLL_BUFFER_MIN = 15
-    val totalMinutes = 24 * 60 + SCROLL_BUFFER_MIN * 2
+    val totalMinutes = 24 * 60 + GridConstants.SCROLL_BUFFER_MIN * 2
 
     val isToday = day == LocalDate.now()
     val nowMin = if (isToday) LocalTime.now().hour * 60 + LocalTime.now().minute else -1
@@ -412,7 +410,6 @@ private fun DayGrid(
         // Floor: 24h fit on screen. pxPerMin never drops below this.
         val minPxPerMin: Float = pxPerMinBase
         val outlineColor = MaterialTheme.colorScheme.outlineVariant
-        val nowLineColor = Color(0xFFEF5350)
 
         val effectiveZoom = pinchZoom ?: zoom
         val pxPerMin: Float = (pxPerMinBase * effectiveZoom).coerceAtLeast(minPxPerMin)
@@ -541,9 +538,7 @@ private fun DayGrid(
                         startHour = startHour,
                         pxPerMin = pxPerMin,
                         outlineColor = outlineColor,
-                        nowLineColor = nowLineColor,
                         showNowLine = showNowLine,
-                        nowMin = nowMin,
                         canvasWidth = canvasWidth,
                         onCreateAt = onCreateAt,
                         onEditEvent = onEditEvent,
@@ -560,9 +555,7 @@ private fun DayContentLayer(
     startHour: Int,
     pxPerMin: Float,
     outlineColor: Color,
-    nowLineColor: Color,
     showNowLine: Boolean,
-    nowMin: Int,
     canvasWidth: Dp,
     onCreateAt: (hour: Int, minute: Int) -> Unit,
     onEditEvent: (CoreTimelineItem) -> Unit,
@@ -600,7 +593,7 @@ private fun DayContentLayer(
         blocks.forEach { b ->
             val topDp: Dp = ((b.startMinutes - startHour * 60) * pxPerMin).dp
             val heightDp: Dp = ((b.endMinutes - b.startMinutes) * pxPerMin)
-                .coerceAtLeast(MIN_EVENT_HEIGHT_DP.value).dp
+                .coerceAtLeast(GridConstants.MIN_EVENT_HEIGHT_DP.value).dp
             val laneWidth = canvasWidth / b.laneCount.coerceAtLeast(1)
             val laneX = laneWidth * b.laneIndex
             Box(
@@ -616,20 +609,12 @@ private fun DayContentLayer(
 
         // Layer 3: now-line (drawn ON TOP of tiles)
         if (showNowLine) {
-            val elapsed = nowMin - startHour * 60
-            val nowY: Dp = (elapsed * pxPerMin).dp
-            Box(
-                modifier = Modifier
-                    .offset(x = 8.dp, y = nowY - 5.dp)
-                    .size(10.dp)
-                    .background(nowLineColor, CircleShape),
-            )
-            Box(
-                modifier = Modifier
-                    .offset(y = nowY - 1.dp)
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(nowLineColor),
+            NowIndicator(
+                nowProvider = { java.time.Instant.now() },
+                pxPerMin = pxPerMin,
+                dayRangeStartHour = startHour,
+                dayRangeEndHour = GridConstants.DAY_END_HOUR,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -740,8 +725,7 @@ private fun WeekView(
     val endHourGlobal = 24
     // 15 min of empty buffer above and below the labeled 0–24 range so the
     // body has a small scroll cushion at the min-zoom floor (mirrors DayGrid).
-    val SCROLL_BUFFER_MIN = 15
-    val totalMinutesGlobal = endHourGlobal * 60 + SCROLL_BUFFER_MIN * 2
+    val totalMinutesGlobal = endHourGlobal * 60 + GridConstants.SCROLL_BUFFER_MIN * 2
 
     // Pre-compute per-day blocks at the same composition level so all columns share one body row.
     val blocksByDay: List<List<PlacedBlock>> = remember(items, weekStart) {
@@ -775,7 +759,7 @@ private fun WeekView(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(WEEK_HEADER_HEIGHT)
+                .height(GridConstants.WEEK_HEADER_HEIGHT)
                 .background(MaterialTheme.colorScheme.background),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -1006,7 +990,7 @@ private fun WeekDayColumn(
         blocks.forEach { b ->
             val topDp: Dp = (b.startMinutes * pxPerMin).dp
             val heightDp: Dp = ((b.endMinutes - b.startMinutes) * pxPerMin)
-                .coerceAtLeast(MIN_EVENT_HEIGHT_DP.value).dp
+                .coerceAtLeast(GridConstants.MIN_EVENT_HEIGHT_DP.value).dp
             // Full-width (no lane split on mobile; single column per day)
             Box(
                 modifier = Modifier

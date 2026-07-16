@@ -1,12 +1,14 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -37,12 +39,16 @@ import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
-import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -51,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaListItem
+import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
@@ -109,17 +116,23 @@ private fun QuickCreateBaseComposition(
             },
         )
         FlowRow(
-            modifier = Modifier.fillMaxWidth().testTag("quick-create-organize-row"),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .testTag("quick-create-organize-row"),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             if (projectName != null) {
-                AssistChip(
+                FilterChip(
+                    selected = false,
                     onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
                     label = { Text(projectName) },
                 )
             }
             draft.meta.tags.forEach { tag ->
-                AssistChip(
+                FilterChip(
+                    selected = false,
                     onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
                     label = { Text("#$tag") },
                 )
@@ -145,7 +158,7 @@ private fun QuickCreateBaseComposition(
                         .fillMaxWidth()
                         .clickable { store.updateIdentity(draft.identity.copy(kind = kind)) }
                         .testTag("quick-create-kind-${kind.name}"),
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
             }
         }
@@ -181,11 +194,14 @@ private fun QuickCreateBaseComposition(
                 .fillMaxWidth()
                 .clickable { store.openSubpanel(QuickCreatePanel.Completion) }
                 .testTag("quick-create-condition-card"),
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
         NiaOutlinedButton(
             onClick = { store.openSubpanel(QuickCreatePanel.Intent) },
-            modifier = Modifier.testTag("quick-create-condition-add"),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .testTag("quick-create-condition-add"),
             text = { Text("Add condition or group") },
             leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
@@ -198,7 +214,7 @@ private fun QuickCreateBaseComposition(
                 .fillMaxWidth()
                 .clickable { store.openSubpanel(QuickCreatePanel.Completion) }
                 .testTag("quick-create-tasks-header"),
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
         draft.plan.completion.tasks.forEachIndexed { index, task ->
             Column(
@@ -213,10 +229,12 @@ private fun QuickCreateBaseComposition(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { /* tap to focus task */ },
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
                 FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     NiaOutlinedButton(
@@ -283,7 +301,10 @@ private fun QuickCreateBaseComposition(
                     ),
                 )
             },
-            modifier = Modifier.testTag("quick-create-add-task"),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .testTag("quick-create-add-task"),
             text = { Text("Add task") },
             leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
@@ -299,7 +320,7 @@ private fun QuickCreateBaseComposition(
                 .fillMaxWidth()
                 .clickable { store.openSubpanel(QuickCreatePanel.Meta) }
                 .testTag("quick-create-behavior-card"),
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
         NiaOutlinedButton(
             onClick = { store.openSubpanel(QuickCreatePanel.References) },
@@ -311,15 +332,36 @@ private fun QuickCreateBaseComposition(
         if (!submissionValidation.isValid) {
             Text(
                 submissionValidation.message ?: "Fix required fields",
-                Modifier.testTag("quick-create-validation-error"),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .testTag("quick-create-validation-error"),
             )
         }
-        submitError?.let { Text(it, Modifier.testTag("quick-create-submit-error")) }
-        if (isSubmitting) {
+        submitError?.let {
             Text(
-                text = "Creating…",
-                modifier = Modifier.testTag("quick-create-submitting"),
+                it,
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .testTag("quick-create-submit-error"),
             )
+        }
+        if (isSubmitting) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .testTag("quick-create-submitting"),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NiaLoadingWheel(
+                    contentDesc = "Creating",
+                    wheelSize = 20.dp,
+                )
+                Text(text = "Creating…")
+            }
         }
     }
 }
@@ -350,7 +392,7 @@ private fun EssentialRow(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .testTag(tag),
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
 }
 
@@ -408,6 +450,10 @@ private fun String.parseOffsetDateTimeOrNull(): OffsetDateTime? =
  * appears; loses focus → fades to a faint on-surface divider. No enclosing
  * box (no rounded corners, no fill, no outline border), per the QuickCreate
  * redesign brief.
+ *
+ * Text is left-aligned (matches every other row in the panel), and the field
+ * requests focus as soon as it enters composition — the keyboard opens with
+ * the sheet so users can start typing the tile title immediately.
  */
 @Composable
 internal fun EditableTitleField(
@@ -419,18 +465,24 @@ internal fun EditableTitleField(
     val typography = MaterialTheme.typography
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+    LaunchedEffect(value) {
+        if (value.isEmpty()) focusRequester.requestFocus()
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(horizontal = 16.dp),
     ) {
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
             textStyle = typography.titleLarge.copy(
                 color = colors.onSurface,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
             ),
             singleLine = true,
             cursorBrush = SolidColor(colors.primary),
@@ -441,7 +493,7 @@ internal fun EditableTitleField(
                         text = "Tile title",
                         style = typography.titleLarge,
                         color = colors.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
+                        textAlign = TextAlign.Start,
                     )
                 } else {
                     innerTextField()
@@ -449,6 +501,7 @@ internal fun EditableTitleField(
             },
             modifier = Modifier
                 .fillMaxWidth()
+                .focusRequester(focusRequester)
                 .testTag("quick-create-title"),
         )
         HorizontalDivider(
