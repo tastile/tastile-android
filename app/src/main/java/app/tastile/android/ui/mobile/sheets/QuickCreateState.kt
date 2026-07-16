@@ -11,12 +11,11 @@ import kotlinx.serialization.json.JsonPrimitive
 import java.time.Instant
 import java.util.UUID
 
-/** The Web quick-create base panel and its eight subpanels. */
-enum class QuickCreatePanel { Base, Intent, Time, Duration, Recurring, References, Completion, Meta, Behavior }
+/** The Web quick-create base composition and its routed detail panels. */
+enum class QuickCreatePanel { Base, Time, Duration, Recurring, References, Completion, Meta, Behavior }
 
 enum class QuickCreateTileKind { Recurring, Placement }
 enum class QuickCreatePlanRole { Executable, Label }
-enum class QuickCreateIntent { FinishOnce, Recurring, MaximizeWithinInterval, LabelOnly }
 enum class QuickCreateWhenMode { None, Day, Range, Reference }
 enum class QuickCreateTimeOfDayMode { AllDay, Range, Unspecified }
 enum class QuickCreateRepeatMode { Once, Daily, Weekly, Interval, Condition }
@@ -70,7 +69,6 @@ data class QuickCreatePlanning(
 
 data class QuickCreatePlan(
     val role: QuickCreatePlanRole = QuickCreatePlanRole.Executable,
-    val intent: QuickCreateIntent = QuickCreateIntent.FinishOnce,
     val references: List<QuickCreatePlanReference> = emptyList(),
     val completion: QuickCreatePlanCompletion = QuickCreatePlanCompletion(),
     val planning: QuickCreatePlanning = QuickCreatePlanning(),
@@ -150,6 +148,9 @@ data class QuickCreateMeta(
     val tags: List<String> = emptyList(),
     val memo: String = "",
 )
+
+/** A workspace summary used by the Meta project's catalog. */
+data class QuickCreateProject(val id: String, val displayName: String)
 
 /**
  * UI-free Web-equivalent quick-create draft. Panels mutate this one StateFlow;

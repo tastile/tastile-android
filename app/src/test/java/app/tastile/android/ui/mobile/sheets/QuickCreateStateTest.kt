@@ -126,7 +126,6 @@ class QuickCreateStateTest {
             identity = QuickCreateIdentity(QuickCreateTileKind.Recurring, "Parity", "Description", "external", QuickCreateVisual("#123456", "rocket")),
             plan = QuickCreatePlan(
                 role = QuickCreatePlanRole.Label,
-                intent = QuickCreateIntent.MaximizeWithinInterval,
                 references = listOf(QuickCreatePlanReference("reference-1", JsonPrimitive("tile-1"), JsonPrimitive("selected"))),
                 completion = QuickCreatePlanCompletion(
                     root = root,

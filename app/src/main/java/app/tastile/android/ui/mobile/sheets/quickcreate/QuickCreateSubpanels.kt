@@ -4,9 +4,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -19,7 +22,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreateDurationRange
-import app.tastile.android.ui.mobile.sheets.QuickCreateIntent
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlanRole
 import app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode
@@ -38,6 +40,7 @@ import app.tastile.android.ui.mobile.sheets.QuickCreateRecurringRule
 import app.tastile.android.ui.mobile.sheets.QuickCreateConditionNode
 import app.tastile.android.ui.mobile.sheets.QuickCreateWindowRule
 import app.tastile.android.ui.mobile.sheets.QuickCreateDateRange
+import app.tastile.android.ui.mobile.sheets.QuickCreateProject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -58,6 +61,8 @@ internal fun QuickCreateSubpanel(
     draft: QuickCreateDraftState,
     store: QuickCreateStateStore,
     onBack: () -> Unit,
+    projects: List<QuickCreateProject>,
+    knownTags: List<String>,
 ) {
     Column(
         Modifier.testTag("quick-create-subpanel-${panel.name}").verticalScroll(rememberScrollState()).padding(vertical = 4.dp),
@@ -65,23 +70,16 @@ internal fun QuickCreateSubpanel(
         BackHeader(onBack)
         Text(panel.name)
         when (panel) {
-            QuickCreatePanel.Intent -> IntentPanel(draft, store)
             QuickCreatePanel.Time -> TimePanel(draft, store)
             QuickCreatePanel.Duration -> DurationPanel(draft, store)
             QuickCreatePanel.Recurring -> RecurringPanel(draft, store)
             QuickCreatePanel.References -> ReferencesPanel(draft, store)
             QuickCreatePanel.Completion -> CompletionPanel(draft, store)
-            QuickCreatePanel.Meta -> MetaPanel(draft, store)
+            QuickCreatePanel.Meta -> MetaPanel(draft, store, projects, knownTags, onBack)
             QuickCreatePanel.Behavior -> BehaviorPanel(draft, store)
             QuickCreatePanel.Base -> Unit
         }
     }
-}
-
-@Composable
-private fun IntentPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    Text("How should this tile be planned?")
-    Row { QuickCreateIntent.entries.forEach { value -> TextButton(onClick = { store.updatePlan(draft.plan.copy(intent = value)) }) { Text(value.name) } } }
 }
 
 @Composable
@@ -369,11 +367,54 @@ private fun scalarValue(input: String): Any? = when {
     else -> input
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MetaPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    OutlinedTextField(draft.meta.ownerSubjectId.orEmpty(), { value -> store.updateMeta(draft.meta.copy(ownerSubjectId = value.ifBlank { null })) }, label = { Text("Owner subject ID") })
-    OutlinedTextField(draft.meta.tags.joinToString(", "), { value -> store.updateMeta(draft.meta.copy(tags = value.split(',').map(String::trim).filter(String::isNotBlank))) }, label = { Text("Tags") })
-    OutlinedTextField(draft.meta.memo, { value -> store.updateMeta(draft.meta.copy(memo = value)) }, label = { Text("Memo") })
+private fun MetaPanel(
+    draft: QuickCreateDraftState,
+    store: QuickCreateStateStore,
+    projects: List<QuickCreateProject>,
+    knownTags: List<String>,
+    onBack: () -> Unit,
+) {
+    Text("Project")
+    Column(Modifier.testTag("meta-project-catalog")) {
+        FilterChip(
+            selected = draft.meta.ownerSubjectId == null,
+            onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null)) },
+            label = { Text("No project") },
+            modifier = Modifier.testTag("meta-project-none"),
+        )
+        projects.forEach { project ->
+            FilterChip(
+                selected = draft.meta.ownerSubjectId == project.id,
+                onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = project.id)) },
+                label = { Text(project.displayName) },
+                modifier = Modifier.testTag("meta-project-${project.id}"),
+            )
+        }
+    }
+    Text("Tags")
+    FlowRow(Modifier.testTag("meta-tag-chips")) {
+        knownTags.filterNot { it in draft.meta.tags }.forEach { tag ->
+            FilterChip(false, { store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag)) }, { Text("#$tag") }, Modifier.testTag("meta-tag-suggestion-$tag"))
+        }
+        draft.meta.tags.forEach { tag ->
+            FilterChip(true, { store.updateMeta(draft.meta.copy(tags = draft.meta.tags - tag)) }, { Text("#$tag ×") }, Modifier.testTag("meta-tag-selected-$tag"))
+        }
+    }
+    var tagDraft by remember { mutableStateOf("") }
+    OutlinedTextField(tagDraft, { tagDraft = it }, label = { Text("Add tag") }, modifier = Modifier.fillMaxWidth().testTag("meta-tag-input"))
+    TextButton(onClick = {
+        val tag = tagDraft.trim().removePrefix("#")
+        if (tag.isNotBlank() && tag !in draft.meta.tags) store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag))
+        tagDraft = ""
+    }, modifier = Modifier.testTag("meta-tag-add")) { Text("Add tag") }
+    OutlinedTextField(draft.meta.memo, { value -> store.updateMeta(draft.meta.copy(memo = value)) }, label = { Text("Memo") }, modifier = Modifier.fillMaxWidth().testTag("meta-memo"))
+    Row {
+        TextButton(onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null, tags = emptyList(), memo = "")) }, modifier = Modifier.testTag("meta-clear")) { Text("Clear") }
+        TextButton(onClick = onBack, modifier = Modifier.testTag("meta-cancel")) { Text("Cancel") }
+        TextButton(onClick = onBack, modifier = Modifier.testTag("meta-apply")) { Text("Apply") }
+    }
 }
 
 @Composable
