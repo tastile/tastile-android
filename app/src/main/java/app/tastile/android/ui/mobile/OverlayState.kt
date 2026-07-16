@@ -5,7 +5,8 @@ sealed interface Overlay {
     data object QuickCreate : Overlay
     /** Opens the normal Quick Create panel with the selected calendar slot. */
     data class QuickCreateAt(val startIso: String, val endIso: String) : Overlay
-    data class TileEdit(val tileId: String) : Overlay
+    /** Tile editor route. A placement id is retained for one-off calendar occurrences. */
+    data class TileEdit(val tileId: String?, val placementId: String? = null) : Overlay
     data object Search : Overlay
     data object Notifications : Overlay
     data object AccountMenu : Overlay

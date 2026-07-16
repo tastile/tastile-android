@@ -354,6 +354,7 @@ class TileRepository @Inject constructor(
         return CoreTimelineItem(
             id = placementId,
             tileId = tileId,
+            sourceKind = source.value.toInt(),
             title = content.title.ifBlank { "Untitled" },
             type = role.toRoleName(),
             status = resolution.state.toStatusName(),

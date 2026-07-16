@@ -123,9 +123,12 @@ class DashboardViewModel @Inject constructor(
 
     /** Applies the same owner_ids selection to tile lists and the calendar. */
     fun setOwnerFilter(ownerId: String?) {
-        _tileFilter.value = _tileFilter.value.copy(
-            ownerIds = ownerId?.takeIf { it.isNotBlank() }?.let(::listOf).orEmpty(),
-        )
+        setOwnerFilters(ownerId?.takeIf { it.isNotBlank() }?.let(::listOf).orEmpty())
+    }
+
+    /** Applies Calendar's checked workspace tree as the v1 `owner_ids` selection. */
+    fun setOwnerFilters(ownerIds: Collection<String>) {
+        _tileFilter.value = _tileFilter.value.copy(ownerIds = ownerIds.filter { it.isNotBlank() }.distinct())
         refreshTimeline()
     }
 

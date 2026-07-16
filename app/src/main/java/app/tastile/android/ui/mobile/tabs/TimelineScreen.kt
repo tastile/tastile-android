@@ -62,6 +62,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.navigation.compose.hiltViewModel
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
@@ -69,6 +70,7 @@ import app.tastile.android.ui.designsystem.AppLoading
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.panels.ProjectsViewModel
 import app.tastile.android.ui.mobile.designsystem.MobileTokens
 import java.time.Instant
 import java.time.LocalDate
@@ -97,6 +99,8 @@ private fun topBarTotalHeight(): Dp =
 
 private data class PlacedBlock(
     val id: String,
+    val tileId: String?,
+    val sourceKind: Int?,
     val title: String,
     val type: String,
     val status: String,
@@ -110,6 +114,7 @@ private data class PlacedBlock(
 fun TimelineScreen(
     viewModel: DashboardViewModel,
     overlay: OverlayViewModel,
+    projectsViewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     val timeline by viewModel.timeline.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
@@ -117,6 +122,8 @@ fun TimelineScreen(
     val scale by viewModel.scale.collectAsStateWithLifecycle()
     val calendarMode by viewModel.calendarMode.collectAsStateWithLifecycle()
     val minimumDuration by viewModel.calendarMinimumDurationMinutes.collectAsStateWithLifecycle()
+    val tileFilter by viewModel.tileFilter.collectAsStateWithLifecycle()
+    val projectsState by projectsViewModel.state.collectAsStateWithLifecycle()
 
     val today = remember { LocalDate.now() }
     val zone = remember { ZoneId.systemDefault() }
@@ -128,6 +135,18 @@ fun TimelineScreen(
     val onOpenDay: (LocalDate) -> Unit = { day ->
         viewModel.setSelectedDay(day)
         viewModel.setScale(TimelineScale.Day)
+    }
+    val onEditEvent: (CoreTimelineItem) -> Unit = { item ->
+        when (val target = calendarEventTarget(item)) {
+            is CalendarEventTarget.RecurringTile -> {
+                viewModel.selectTile(target.tileId)
+                overlay.show(Overlay.TileEdit(tileId = target.tileId))
+            }
+            is CalendarEventTarget.Placement -> {
+                target.tileId?.let(viewModel::selectTile)
+                overlay.show(Overlay.TileEdit(tileId = target.tileId, placementId = target.placementId))
+            }
+        }
     }
 
     // Per-scale zoom, hoisted above the HorizontalPager so swiping between
@@ -201,6 +220,7 @@ fun TimelineScreen(
                             val start = pageDay.atTime(hour, minute).atZone(zone).toInstant()
                             overlay.show(Overlay.QuickCreateAt(start.toString(), start.plusSeconds(60 * 60).toString()))
                         },
+                        onEditEvent = onEditEvent,
                     )
                 }
             }
@@ -219,6 +239,7 @@ fun TimelineScreen(
                         onOpenDay = onOpenDay,
                         zoom = weekZoom,
                         onZoomChange = { weekZoom = it },
+                        onEditEvent = onEditEvent,
                     )
                 }
             }
@@ -238,7 +259,7 @@ fun TimelineScreen(
                     )
                 }
             }
-            scale == TimelineScale.List -> TimelineListView(activeTimeline, zone)
+            scale == TimelineScale.List -> TimelineListView(activeTimeline, zone, onEditEvent)
             else -> EmptyState(scale)
         }
 
@@ -253,6 +274,19 @@ fun TimelineScreen(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = topBarTotalHeight()),
+        )
+
+        CalendarFilterPanel(
+            selectedDayLabel = selectedDay.toString(),
+            workspaces = projectsState.workspaces,
+            ownerIds = tileFilter.ownerIds,
+            onSelectDate = { value ->
+                runCatching { LocalDate.parse(value) }.getOrNull()?.let(viewModel::setSelectedDay)
+            },
+            onOwnerIdsChange = { ownerIds -> viewModel.setOwnerFilters(ownerIds) },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = topBarTotalHeight() + 76.dp),
         )
 
         // Quick-create FAB: bottom-right round + button. Sits on top of every
@@ -333,6 +367,7 @@ private fun DayGrid(
     zoom: Float,
     onZoomChange: (Float) -> Unit,
     onCreateAt: (hour: Int, minute: Int) -> Unit,
+    onEditEvent: (CoreTimelineItem) -> Unit,
 ) {
     val scrollState = rememberScrollState()
     val latestZoom by rememberUpdatedState(zoom)
@@ -509,6 +544,7 @@ private fun DayGrid(
                         nowMin = nowMin,
                         canvasWidth = canvasWidth,
                         onCreateAt = onCreateAt,
+                        onEditEvent = onEditEvent,
                     )
                 }
             }
@@ -527,6 +563,7 @@ private fun DayContentLayer(
     nowMin: Int,
     canvasWidth: Dp,
     onCreateAt: (hour: Int, minute: Int) -> Unit,
+    onEditEvent: (CoreTimelineItem) -> Unit,
 ) {
     val localDensity = LocalDensity.current
     Box(
@@ -571,7 +608,7 @@ private fun DayContentLayer(
                     .height(heightDp)
                     .padding(horizontal = 2.dp),
             ) {
-                EventChip(b)
+                EventChip(b, onEditEvent)
             }
         }
 
@@ -628,7 +665,7 @@ private fun TimeGutterContent(startHour: Int, endHour: Int, pxPerHour: Dp, total
 }
 
 @Composable
-private fun EventChip(b: PlacedBlock) {
+private fun EventChip(b: PlacedBlock, onEditEvent: (CoreTimelineItem) -> Unit) {
     val (bg, fg) = when (b.type.lowercase(Locale.ROOT)) {
         "work" -> AppTheme.colors.primary to AppTheme.colors.onPrimary
         "break" -> AppTheme.colors.tertiary to AppTheme.colors.onTertiary
@@ -652,6 +689,9 @@ private fun EventChip(b: PlacedBlock) {
             .fillMaxSize()
             .clip(RoundedCornerShape(4.dp))
             .background(bg)
+            .clickable {
+                onEditEvent(CoreTimelineItem(b.id, b.tileId, b.sourceKind, b.title, b.type, b.status, "", null))
+            }
             .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -691,6 +731,7 @@ private fun WeekView(
     onOpenDay: (LocalDate) -> Unit,
     zoom: Float,
     onZoomChange: (Float) -> Unit,
+    onEditEvent: (CoreTimelineItem) -> Unit,
 ) {
     val today = remember { LocalDate.now() }
     val eeeFormatter = remember { DateTimeFormatter.ofPattern("EEE", Locale.getDefault()) }
@@ -883,6 +924,7 @@ private fun WeekView(
                             .height(totalHeight),
                         isToday = day == today,
                         onOpenDay = { onOpenDay(day) },
+                        onEditEvent = onEditEvent,
                         pxPerMin = pxPerMin,
                         endHour = endHourGlobal,
                     )
@@ -928,6 +970,7 @@ private fun WeekDayColumn(
     modifier: Modifier = Modifier,
     isToday: Boolean,
     onOpenDay: () -> Unit,
+    onEditEvent: (CoreTimelineItem) -> Unit,
     pxPerMin: Float,
     endHour: Int,
 ) {
@@ -970,7 +1013,7 @@ private fun WeekDayColumn(
                     .height(heightDp)
                     .padding(horizontal = 1.dp),
             ) {
-                EventChip(b)
+                EventChip(b, onEditEvent)
             }
         }
         // Now-line (drawn last = on top)
@@ -1149,6 +1192,8 @@ private fun toDayBlocks(items: List<CoreTimelineItem>, day: LocalDate, zone: Zon
         val eMin = (eLocal.hour * 60 + eLocal.minute).coerceAtLeast(sMin + 15)
         PlacedBlock(
             id = item.id,
+            tileId = item.tileId,
+            sourceKind = item.sourceKind,
             title = item.title,
             type = item.type,
             status = item.status,
@@ -1224,7 +1269,7 @@ private fun filterForScale(
 }
 
 @Composable
-private fun TimelineListView(items: List<CoreTimelineItem>, zone: ZoneId) {
+private fun TimelineListView(items: List<CoreTimelineItem>, zone: ZoneId, onEditEvent: (CoreTimelineItem) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1239,6 +1284,7 @@ private fun TimelineListView(items: List<CoreTimelineItem>, zone: ZoneId) {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
                     .background(AppTheme.colors.surfaceVariant)
+                    .clickable { onEditEvent(item) }
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {

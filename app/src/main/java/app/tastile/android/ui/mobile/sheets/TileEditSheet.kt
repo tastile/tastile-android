@@ -46,6 +46,13 @@ fun TileEditSheet(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                (current as Overlay.TileEdit).placementId?.let { placementId ->
+                    Text(
+                        text = "Occurrence: $placementId",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

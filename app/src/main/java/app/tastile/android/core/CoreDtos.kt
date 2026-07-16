@@ -89,6 +89,9 @@ data class CorePromptQueueItem(
 data class CoreTimelineItem(
     val id: String,
     val tileId: String? = null,
+    /** v1 placement source kind; 1 identifies a recurring-source placement. */
+    @SerialName("source_kind")
+    val sourceKind: Int? = null,
     val title: String,
     val type: String,
     val status: String,
