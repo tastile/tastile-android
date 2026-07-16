@@ -7,10 +7,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -27,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -43,6 +46,8 @@ import app.tastile.android.ui.designsystem.AppSectionHeader
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
@@ -160,10 +165,12 @@ private fun ActiveTileHero(
             style = AppTheme.typography.titleMedium,
         )
         tile.nextAction?.takeIf { it.isNotBlank() }?.let { next ->
-            Text(
-                text = "Next: $next",
-                style = AppTheme.typography.bodySmall,
-                color = AppTheme.colors.onSurfaceVariant,
+            AppListItem(
+                headline = stringResource(R.string.execute_next_label, next),
+                leading = Icons.Outlined.PlayArrow,
+                trailing = Icons.Outlined.ChevronRight,
+                onClick = { /* start-execution for the active tile is wired above via the AppOutlinedPanel actions */ },
+                modifier = Modifier.padding(top = MobileSpacing.sm),
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {

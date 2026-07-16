@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,12 +24,14 @@ import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TilesTab
-import app.tastile.android.ui.designsystem.AppEmptyState
 import app.tastile.android.ui.designsystem.AppPageWithOverlay
 import app.tastile.android.ui.designsystem.AppScreenTitle
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.ui.mobile.designsystem.StatChip
 import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
@@ -166,11 +170,29 @@ private fun ListBody(
             .testTag("tiles-list-body"),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
     ) {
-        Text(
-            text = "Open: $tilesCount · Estimated: ${tilesCount * 30}m · Sections: ${grouped.size}",
-            style = AppTheme.typography.labelSmall,
-            color = AppTheme.colors.onSurfaceVariant,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(MobileSpacing.md),
+            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
+        ) {
+            StatChip(
+                label = stringResource(R.string.tiles_stat_open, tilesCount),
+                value = "",
+                background = MaterialTheme.colorScheme.secondaryContainer,
+                foreground = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            StatChip(
+                label = stringResource(R.string.tiles_stat_estimated, tilesCount * 30),
+                value = "",
+                background = MaterialTheme.colorScheme.tertiaryContainer,
+                foreground = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            StatChip(
+                label = stringResource(R.string.tiles_stat_sections, grouped.size),
+                value = "",
+                background = MaterialTheme.colorScheme.surfaceVariant,
+                foreground = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         TilesFilterBar(
             search = search,
             onSearchChange = { vm.setSearchTerm(it) },
@@ -186,7 +208,11 @@ private fun ListBody(
             onViewModeChange = { vm.setListViewMode(it) },
         )
         if (grouped.isEmpty()) {
-            AppEmptyState(message = stringResource(R.string.dashboard_tiles_empty_main))
+            AppEmptyState(
+                icon = Icons.Outlined.Inbox,
+                title = stringResource(R.string.empty_tiles_title),
+                hint = stringResource(R.string.empty_tiles_hint),
+            )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
                 grouped.forEach { section ->
