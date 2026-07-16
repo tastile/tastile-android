@@ -281,6 +281,8 @@ class DashboardViewModel @Inject constructor(
 
     private val _requestDeleteTileId = MutableStateFlow<String?>(null)
     val requestDeleteTileId: StateFlow<String?> = _requestDeleteTileId.asStateFlow()
+    private val _requestClosePlacementId = MutableStateFlow<String?>(null)
+    val requestClosePlacementId: StateFlow<String?> = _requestClosePlacementId.asStateFlow()
 
     /** User intent is held until the corresponding confirmation sheet submits. */
     private val _requestDeferTileId = MutableStateFlow<String?>(null)
@@ -444,6 +446,12 @@ class DashboardViewModel @Inject constructor(
         val id = _requestDeleteTileId.value ?: return
         _requestDeleteTileId.value = null
         deleteTile(id)
+    }
+    fun setClosePlacementCandidate(id: String?) { _requestClosePlacementId.value = id }
+    fun confirmClosePlacement() {
+        val id = _requestClosePlacementId.value ?: return
+        _requestClosePlacementId.value = null
+        viewModelScope.launch { try { tileRepository.closePlacement(id); refreshAll() } catch (e: Exception) { _error.value = e.message ?: "Failed to close occurrence" } }
     }
 
     fun setDeferTileCandidate(id: String?) { _requestDeferTileId.value = id }
@@ -751,9 +759,12 @@ class DashboardViewModel @Inject constructor(
     private fun triggerPrompt(tileId: String) {
         viewModelScope.launch {
             try {
-                tileRepository.requestPrompt(tileId)
-                _lastActionMessage.value = "Prompt requested"
-                refreshAll()
+                if (tileRepository.requestPrompt(tileId)) {
+                    _lastActionMessage.value = "Prompt requested"
+                    refreshAll()
+                } else {
+                    _error.value = "Prompt request was rejected"
+                }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to trigger prompt"
             }

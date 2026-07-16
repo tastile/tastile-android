@@ -7,6 +7,7 @@ import app.tastile.android.data.api.AppendChangesPayload
 import app.tastile.android.data.api.ArchiveTilePayload
 import app.tastile.android.data.api.AttachMemoPayload
 import app.tastile.android.data.api.CommandResponse
+import app.tastile.android.data.api.ClosePlacementPayload
 import app.tastile.android.data.api.ExecutionFinishPayload
 import app.tastile.android.data.api.CreatePromptRequestPayload
 import app.tastile.android.data.api.CreateTilePayload
@@ -57,6 +58,10 @@ import javax.inject.Singleton
 class V1CommandDispatcher @Inject constructor(
     private val v1ApiClient: V1ApiClient
 ) {
+    suspend fun dispatchPlacementClose(placementId: String): CoreCommandAck? = runCatching {
+        v1ApiClient.postCommandNoResponse("/v1/placements/$placementId/close", ClosePlacementPayload(placementId), ClosePlacementPayload.serializer())
+        CoreCommandResponse(true, null, null, emptyList(), buildJsonObject { put("placementId", JsonPrimitive(placementId)) }, null)
+    }.getOrNull()
     /**
      * Kept only to bridge the paused-execution hole in the current read API.
      * A resumed process revalidates it through GET /v1/executions/{id}; after

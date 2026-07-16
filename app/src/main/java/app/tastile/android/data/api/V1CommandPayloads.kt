@@ -216,6 +216,9 @@ data class StartTileBaseline(
 data class StartExecutionPayload(@SerialName("placement_id") val placementId: String)
 
 @Serializable
+data class ClosePlacementPayload(@SerialName("placement_id") val placementId: String)
+
+@Serializable
 data class ExecutionFinishPayload(
     val kind: Int = 0,
     val note: String? = null,

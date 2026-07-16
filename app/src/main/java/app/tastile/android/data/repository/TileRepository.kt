@@ -206,6 +206,12 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
+    suspend fun closePlacement(placementId: String) {
+        val ack = v1CommandDispatcher.dispatchPlacementClose(placementId)
+            ?: throw IllegalStateException("Cloud command rejected: close placement")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
     override suspend fun pauseTile(tileId: String) {
         val ack = v1CommandDispatcher.dispatchTilePause(tileId)
             ?: throw IllegalStateException("Cloud command rejected: pause tile")

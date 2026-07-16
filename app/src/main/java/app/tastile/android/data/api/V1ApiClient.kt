@@ -257,6 +257,23 @@ class V1ApiClient @Inject constructor(
         responseSerializer = responseSerializer,
     )
 
+    suspend fun <Req> postCommandNoResponse(path: String, payload: Req, payloadSerializer: KSerializer<Req>) = withContext(Dispatchers.IO) {
+        val token = tokenProvider()
+        if (token.isNullOrBlank()) throw V1Error.Auth()
+        val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"; doOutput = true; doInput = true
+            setRequestProperty("Authorization", "Bearer $token")
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Accept", "application/json")
+            connectTimeout = 15_000; readTimeout = 15_000
+        }
+        val envelope = V1Wire.commandEnvelope(json.encodeToJsonElement(payloadSerializer, payload))
+        connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+        val status = connection.responseCode
+        val body = (if (status in 200..299) connection.inputStream else connection.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+        if (status !in 200..299) throw V1Error.Unknown(status, body.take(200))
+    }
+
     /**
      * Issues a POST request whose body is sent verbatim (no CommandRequest
      * envelope). Used for endpoints that take a plain JSON payload — C5

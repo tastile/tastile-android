@@ -38,6 +38,7 @@ fun TileEditSheet(
     val current by overlay.current.collectAsStateWithLifecycle()
     val tile by viewModel.selectedTile.collectAsStateWithLifecycle()
     val deleteCandidate by viewModel.requestDeleteTileId.collectAsStateWithLifecycle()
+    val closePlacementCandidate by viewModel.requestClosePlacementId.collectAsStateWithLifecycle()
     val deferCandidate by viewModel.requestDeferTileId.collectAsStateWithLifecycle()
     val promptCandidate by viewModel.requestPromptTileId.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -96,9 +97,12 @@ fun TileEditSheet(
                     if (lifecycle == TileLifecycle.STARTED) {
                         TextButton(onClick = { viewModel.completeTile(selected.id) }) { Text("Complete") }
                         TextButton(onClick = { viewModel.pauseTile(selected.id) }) { Text("Pause") }
-                        TextButton(onClick = { viewModel.resumeTile(selected.id) }) { Text("Resume") }
                     }
-                    TextButton(onClick = { viewModel.setDeleteTileCandidate(selected.id) }) { Text("Delete") }
+                    TextButton(onClick = {
+                        val placementId = (current as Overlay.TileEdit).placementId
+                        if (placementId != null) viewModel.setClosePlacementCandidate(placementId)
+                        else viewModel.setDeleteTileCandidate(selected.id)
+                    }) { Text(if ((current as Overlay.TileEdit).placementId != null) "Delete occurrence" else "Delete") }
                 }
             }
         }
@@ -109,6 +113,9 @@ fun TileEditSheet(
                 onConfirm = viewModel::confirmDeleteTile,
                 onCancel = { viewModel.setDeleteTileCandidate(null) },
             )
+        }
+        closePlacementCandidate?.takeIf { (current as Overlay.TileEdit).placementId == it }?.let {
+            AlertDialog(onDismissRequest = { viewModel.setClosePlacementCandidate(null) }, title = { Text("Delete occurrence?") }, text = { Text("Only this calendar occurrence will be removed.") }, confirmButton = { TextButton(onClick = viewModel::confirmClosePlacement) { Text("Delete") } }, dismissButton = { TextButton(onClick = { viewModel.setClosePlacementCandidate(null) }) { Text("Cancel") } })
         }
         deferCandidate?.takeIf { it == selected?.id }?.let {
             DeferTileDialog(
