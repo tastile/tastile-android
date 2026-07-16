@@ -16,6 +16,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.assertTrue
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 @RunWith(AndroidJUnit4::class)
 class QuickCreatePanelsTest {
@@ -138,5 +140,20 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-end").performTextReplacement("2026-07-16T00:30:00Z")
         rule.onNodeWithText("Back").performClick()
         assertTrue(rule.onNodeWithText("Create").fetchSemanticsNode().config.contains(SemanticsProperties.Disabled))
+    }
+
+    @Test
+    fun `calendar and moment condition fields retain typed values`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
+        rule.onNodeWithText("Add condition").performClick()
+        rule.onNodeWithTag("condition-calendar-weekday-mask").performTextReplacement("31")
+        rule.onNodeWithTag("condition-calendar-offset").performTextReplacement("15")
+        rule.onNodeWithTag("condition-root-0-term-moment").performClick()
+        rule.onNodeWithTag("condition-moment-reference").performTextReplacement("tile-1")
+        rule.onNodeWithTag("condition-moment-offset").performTextReplacement("60000")
+        assertTrue(store.state.value.plan.completion.root.children.first().term?.jsonObject?.get("kind")?.jsonPrimitive?.content == "moment")
+        assertTrue(store.state.value.plan.completion.root.children.first().term?.jsonObject?.get("referenceId")?.jsonPrimitive?.content == "tile-1")
     }
 }
