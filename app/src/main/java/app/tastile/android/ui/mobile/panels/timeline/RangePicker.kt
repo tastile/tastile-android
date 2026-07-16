@@ -2,11 +2,11 @@ package app.tastile.android.ui.mobile.panels.timeline
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -18,12 +18,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.ui.dashboard.TimelineSubScale
-import app.tastile.android.ui.designsystem.AppCorner
-import app.tastile.android.ui.designsystem.AppSpacing
-import app.tastile.android.ui.designsystem.AppTheme
-import app.tastile.android.ui.mobile.designsystem.MobileTokens
 
 /**
  * 4-tab pill scale selector (Day / Week / Month / Custom) that mirrors
@@ -48,32 +45,31 @@ internal fun RangePicker(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(AppCorner.mediumShape)
+            .clip(RoundedCornerShape(8.dp))
             .background(
-                AppTheme.colors.surfaceVariant.copy(alpha = MobileTokens.SurfaceAlpha.selected),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
             )
-            .padding(AppSpacing.xxs),
+            .padding(2.dp),
     ) {
         items.forEach { (item, labelRes) ->
             val selected = item == current
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(AppCorner.smallShape)
+                    .clip(RoundedCornerShape(6.dp))
                     .background(
-                        if (selected) AppTheme.colors.surfaceVariant.copy(
-                            alpha = MobileTokens.SurfaceAlpha.strongSelected,
-                        ) else Color.Transparent,
+                        if (selected) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                        else Color.Transparent,
                     )
                     .clickable { onSelect(item) }
-                    .padding(vertical = AppSpacing.sm),
+                    .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = stringResource(labelRes),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (selected) AppTheme.colors.onSurface else AppTheme.colors.onSurfaceVariant,
+                    color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
