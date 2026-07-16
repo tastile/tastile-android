@@ -3,6 +3,7 @@ package app.tastile.android.ui.mobile.sheets
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.runtime.mutableStateOf
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
 import kotlinx.serialization.json.jsonPrimitive
@@ -93,7 +95,38 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-start").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithText("Plan review").assertIsDisplayed()
-        rule.onNodeWithText("Create").assertIsEnabled()
+        rule.onNodeWithText("Create").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `create dispatches only valid drafts and blocks duplicate submission`() {
+        val store = QuickCreateStateStore(
+            QuickCreateDraftState(
+                identity = QuickCreateIdentity(title = "Plan review"),
+                time = QuickCreateTime(span = QuickCreateSpan("2026-07-16T09:00:00Z", "2026-07-16T10:00:00Z")),
+            ),
+        )
+        var submitted: QuickCreateDraftState? = null
+        val submitting = mutableStateOf(false)
+        rule.setContent { QuickCreatePanelContent(store, {}, projects, onSubmit = { submitted = it }, isSubmitting = submitting.value) }
+
+        rule.onNodeWithTag("quick-create-submit").performScrollTo().assertIsEnabled().performClick()
+        assertEquals("Plan review", submitted?.identity?.title)
+
+        rule.runOnUiThread { submitting.value = true }
+        rule.onNodeWithTag("quick-create-submit").performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithText("Creating…").assertIsDisplayed()
+    }
+
+    @Test
+    fun `submission errors remain visible and invalid draft does not dispatch`() {
+        val store = QuickCreateStateStore()
+        var submits = 0
+        rule.setContent { QuickCreatePanelContent(store, {}, projects, onSubmit = { submits++ }, submitError = "Plan unavailable") }
+
+        rule.onNodeWithTag("quick-create-submit").performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithTag("quick-create-submit-error").assertIsDisplayed()
+        assertEquals(0, submits)
     }
 
     @Test

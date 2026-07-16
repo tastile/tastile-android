@@ -3,6 +3,7 @@ package app.tastile.android.ui.mobile.sheets
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -12,6 +13,7 @@ import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
+import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateSubmissionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,10 +21,12 @@ fun QuickCreateSheetMobile(
     overlay: OverlayViewModel,
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
     projectsViewModel: ProjectsViewModel = hiltViewModel(),
+    submissionViewModel: QuickCreateSubmissionViewModel = hiltViewModel(),
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
     val projectsState by projectsViewModel.state.collectAsStateWithLifecycle()
     val tiles by dashboardViewModel.tiles.collectAsStateWithLifecycle()
+    val submission by submissionViewModel.state.collectAsStateWithLifecycle()
     val knownTags = tiles.flatMap { it.labels }
         .filter { it.isNotBlank() && !it.startsWith("project:") }
         .map(String::trim)
@@ -32,6 +36,14 @@ fun QuickCreateSheetMobile(
     if (current is Overlay.QuickCreate) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val quickCreateStore = remember { QuickCreateStateStore() }
+        LaunchedEffect(submission.createdTileId) {
+            if (submission.createdTileId != null) {
+                quickCreateStore.reset()
+                dashboardViewModel.refreshAll()
+                submissionViewModel.consumeCreatedTile()
+                overlay.dismiss()
+            }
+        }
         PanelSheet(
             title = "Quick Create",
             sheetState = sheetState,
@@ -40,6 +52,9 @@ fun QuickCreateSheetMobile(
             QuickCreatePanelContent(
                 store = quickCreateStore,
                 onClose = { overlay.dismiss() },
+                onSubmit = submissionViewModel::submit,
+                isSubmitting = submission.isSubmitting,
+                submitError = submission.error,
                 projects = projectsState.workspaces.map { QuickCreateProject(it.id, it.displayName) },
                 knownTags = knownTags,
             )

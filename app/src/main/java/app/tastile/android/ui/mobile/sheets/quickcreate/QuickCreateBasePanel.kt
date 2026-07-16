@@ -40,13 +40,16 @@ fun QuickCreatePanelContent(
     onClose: () -> Unit,
     projects: List<QuickCreateProject> = emptyList(),
     knownTags: List<String> = emptyList(),
+    onSubmit: (QuickCreateDraftState) -> Unit = {},
+    isSubmitting: Boolean = false,
+    submitError: String? = null,
 ) {
     val draft by store.state.collectAsState()
     val active = draft.activePanel
     if (active != null && active != QuickCreatePanel.Base) {
         QuickCreateSubpanel(active, draft, store, store::backToBase, projects, knownTags)
     } else {
-        QuickCreateBaseComposition(draft, store, onClose, projects)
+        QuickCreateBaseComposition(draft, store, onClose, onSubmit, isSubmitting, submitError, projects)
     }
 }
 
@@ -56,6 +59,9 @@ private fun QuickCreateBaseComposition(
     draft: QuickCreateDraftState,
     store: QuickCreateStateStore,
     onClose: () -> Unit,
+    onSubmit: (QuickCreateDraftState) -> Unit,
+    isSubmitting: Boolean,
+    submitError: String?,
     projects: List<QuickCreateProject>,
 ) {
     val projectName = projects.firstOrNull { it.id == draft.meta.ownerSubjectId }?.displayName
@@ -121,10 +127,12 @@ private fun QuickCreateBaseComposition(
             Text("Edit")
         }
         TextButton({ store.openSubpanel(QuickCreatePanel.References) }, Modifier.testTag("quick-create-references-link")) { Text("References") }
-        if (!quickCreateValidation(draft).isValid) Text("Fix required fields", Modifier.testTag("quick-create-validation-error"))
+        val submissionValidation = quickCreateSubmissionValidation(draft)
+        if (!submissionValidation.isValid) Text(submissionValidation.message ?: "Fix required fields", Modifier.testTag("quick-create-validation-error"))
+        submitError?.let { Text(it, Modifier.testTag("quick-create-submit-error")) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onClose) { Text("Cancel") }
-            Button(onClick = { }, enabled = quickCreateValidation(draft).isValid) { Text("Create") }
+            TextButton(onClick = onClose, enabled = !isSubmitting) { Text("Cancel") }
+            Button(onClick = { onSubmit(draft) }, enabled = submissionValidation.isValid && !isSubmitting, modifier = Modifier.testTag("quick-create-submit")) { Text(if (isSubmitting) "Creating…" else "Create") }
         }
     }
 }

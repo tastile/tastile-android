@@ -177,6 +177,7 @@ class QuickCreateStateStore(initial: QuickCreateDraftState = QuickCreateDraftSta
 
     fun backToBase() = mutate { it.copy(activePanel = QuickCreatePanel.Base) }
     fun dismissPanel() = mutate { it.copy(activePanel = null) }
+    fun reset() { mutableState.value = QuickCreateDraftState() }
 
     // Whole-slice updates make nullable clears explicit instead of retaining stale values.
     fun updateIdentity(identity: QuickCreateIdentity) = mutate { it.copy(identity = identity) }

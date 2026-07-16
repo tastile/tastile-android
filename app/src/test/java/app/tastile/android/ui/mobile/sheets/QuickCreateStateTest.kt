@@ -115,6 +115,15 @@ class QuickCreateStateTest {
         assertEquals(populated.copy(activePanel = null), store.state.value)
     }
 
+    @Test
+    fun `reset clears submitted quick create state only after success handler requests it`() {
+        val store = QuickCreateStateStore(populatedDraft())
+        store.reset()
+        assertEquals("", store.state.value.identity.title)
+        assertEquals(QuickCreatePanel.Base, store.state.value.activePanel)
+        assertEquals(1, store.state.value.plan.completion.tasks.size)
+    }
+
     private fun populatedDraft(): QuickCreateDraftState {
         val term = JsonPrimitive("not")
         val root = QuickCreateConditionNode(
