@@ -82,20 +82,6 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         compose = true
         buildConfig = true
     }
-    // M3 baseline (2026-07-16): enable Compose Compiler Reports so the next
-    // successful Kotlin compile drops HTML stability reports under
-    // app/build/compose-reports/ and metrics under app/build/compose-metrics/.
-    // Captured baseline lives at docs/superpowers/m3/before-reports/.
-    composeOptions {
-        freeCompilerArgs += listOf(
-            "-P",
-            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
-                project.layout.projectDirectory.dir("build/compose-reports").asFile.absolutePath,
-            "-P",
-            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
-                project.layout.projectDirectory.dir("build/compose-metrics").asFile.absolutePath,
-        )
-    }
     lint {
         // OldTargetApi is suppressed deliberately: this box only has API 35 and 37 installed
         // (commit a2c508c). Bumping targetSdk to 36 is blocked until the missing SDK is
@@ -121,6 +107,16 @@ kotlin {
         // so they apply to both the value parameter and the backing field.
         freeCompilerArgs.addAll(
             "-Xannotation-default-target=param-property",
+            // M3 baseline (2026-07-16): enable Compose Compiler Reports so the next
+            // successful Kotlin compile drops HTML stability reports under
+            // app/build/compose-reports/ and metrics under app/build/compose-metrics/.
+            // Captured baseline lives at docs/superpowers/m3/before-reports/.
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+                project.layout.projectDirectory.dir("build/compose-reports").asFile.absolutePath,
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
+                project.layout.projectDirectory.dir("build/compose-metrics").asFile.absolutePath,
         )
     }
 }
@@ -151,21 +147,86 @@ val designSystemGuardRoots = listOf(
 )
 val designSystemGuardFiles: List<File> =
     designSystemGuardRoots.flatMap { root ->
-        project.fileTree(root) { include("**/*.kt") }.files
+        project.fileTree(root) {
+            include("**/*.kt")
+            // Exclude leftover .bak artifacts from the reverted M2 widening
+            // (commit 961ec37) so they can't re-introduce forbidden imports.
+            exclude("**/*.bak")
+        }.files
     }
 
 tasks.register("verifyDesignSystemImports") {
     group = "verification"
     description = "Disallow direct Material3 imports in M3-unified screens"
     doLast {
+        // Ratchet over M2 widening subsets:
+        //   * subset C (mobile sheets + tabs + pickers — the seven files
+        //     DatePickerSheet / ReferencePickerSheet / TimePickerSheet /
+        //     QuickCreateBasePanel / IntegrationsScreen / SettingsScreen /
+        //     TilesScreen) is fully wrapper-bound, so its files MUST NOT use
+        //     the `// m2-allow:` bypass marker AND every M3 import must appear
+        //     in the whitelist below.
+        //   * subsets A (dashboard), B (mobile panels + remaining sheets), and
+        //     D (account) still carry bypass markers from commit 961ec37. They
+        //     keep the legacy marker-aware check until their own subsets
+        //     migrate them. This staged enforcement is what makes "subset C
+        //     ships first" viable without bundling extra work.
+        val subsetCFilesRelative = setOf(
+            "src/main/java/app/tastile/android/ui/mobile/components/picker/DatePickerSheet.kt",
+            "src/main/java/app/tastile/android/ui/mobile/components/picker/ReferencePickerSheet.kt",
+            "src/main/java/app/tastile/android/ui/mobile/components/picker/TimePickerSheet.kt",
+            "src/main/java/app/tastile/android/ui/mobile/sheets/quickcreate/QuickCreateBasePanel.kt",
+            "src/main/java/app/tastile/android/ui/mobile/tabs/IntegrationsScreen.kt",
+            "src/main/java/app/tastile/android/ui/mobile/tabs/SettingsScreen.kt",
+            "src/main/java/app/tastile/android/ui/mobile/tabs/TilesScreen.kt",
+        )
+        val projectRoot = project.rootDir.path.replace("\\", "/")
+        fun File.isSubsetC(): Boolean {
+            val abs = this.path.replace("\\", "/")
+            val rel = if (abs.startsWith("$projectRoot/")) abs.substring(projectRoot.length + 1) else abs
+            return subsetCFilesRelative.any { rel == it || abs.endsWith("/$it") }
+        }
+        // Whitelist of M3 symbols cheap enough to keep at the call site
+        // (icons, typography, dividers, primitive defaults, state holders).
+        // Anything heavier (ListItem, ModalBottomSheet, DatePicker,
+        // SegmentedButton, etc.) MUST go through a NiaXxx wrapper under
+        // `core.designsystem.component`.
+        val allowedM3Names = setOf(
+            "androidx.compose.material3.Icon",
+            "androidx.compose.material3.Text",
+            "androidx.compose.material3.HorizontalDivider",
+            "androidx.compose.material3.VerticalDivider",
+            "androidx.compose.material3.CircularProgressIndicator",
+            "androidx.compose.material3.LinearProgressIndicator",
+            "androidx.compose.material3.MaterialTheme",
+            "androidx.compose.material3.ExperimentalMaterial3Api",
+            "androidx.compose.material3.ButtonDefaults",
+            "androidx.compose.material3.SheetState",
+            "androidx.compose.material3.SnackbarDuration",
+            "androidx.compose.material3.SnackbarResult",
+            "androidx.compose.material3.TabRowDefaults",
+            "androidx.compose.material3.TopAppBarDefaults",
+            "androidx.compose.material3.rememberDrawerState",
+            "androidx.compose.material3.DrawerValue",
+            "androidx.compose.material3.NavigationBarItem",
+            "androidx.compose.material3.NavigationBarItemDefaults",
+            "androidx.compose.material3.adaptive.currentWindowAdaptiveInfo",
+        )
         val forbiddenPrefix = "import androidx.compose.material3."
         val allowMarker = "// m2-allow:"
-        val offenders = designSystemGuardFiles.filter { f ->
-            if (!f.exists()) return@filter false
+        fun hasNonWhitelistedM3Import(f: File): Boolean {
+            if (!f.exists()) return false
+            return f.readText().lineSequence().any { rawLine ->
+                val trimmed = rawLine.trimStart()
+                if (!trimmed.startsWith(forbiddenPrefix)) return@any false
+                val name = trimmed.removePrefix(forbiddenPrefix).substringBefore(" ").substringBefore("\n")
+                !allowedM3Names.contains("androidx.compose.material3.$name")
+            }
+        }
+        fun hasUnmarkedForbiddenImport(f: File): Boolean {
+            if (!f.exists()) return false
             val lines = f.readText().lines()
-            // A file is an offender only when it contains a forbidden import
-            // whose immediately preceding non-blank line is NOT an m2-allow marker.
-            lines.withIndex().any { (idx, rawLine) ->
+            return lines.withIndex().any { (idx, rawLine) ->
                 val trimmed = rawLine.trimStart()
                 if (!trimmed.startsWith(forbiddenPrefix)) return@any false
                 var i = idx - 1
@@ -177,6 +238,14 @@ tasks.register("verifyDesignSystemImports") {
                 true
             }
         }
+        // Subset C: strict whitelist, no markers.
+        val subsetCFiles = designSystemGuardFiles.filter { it.isSubsetC() }
+        val subsetCOffenders = subsetCFiles.filter(::hasNonWhitelistedM3Import)
+        // Other subsets: legacy marker-aware check so they stay green until
+        // their own subsets migrate them.
+        val otherFiles = designSystemGuardFiles.filter { it !in subsetCFiles }
+        val otherOffenders = otherFiles.filter(::hasUnmarkedForbiddenImport)
+        val offenders = subsetCOffenders + otherOffenders
         check(offenders.isEmpty()) {
             "Direct Material3 imports are not allowed in guarded screens:\n" +
                 offenders.joinToString(separator = "\n") { "- ${it.path}" }

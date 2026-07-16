@@ -3,18 +3,18 @@ package app.tastile.android.ui.mobile.components.picker
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaDatePicker
+import app.tastile.android.core.designsystem.component.NiaDatePickerDialog
+import app.tastile.android.core.designsystem.component.NiaRememberDatePickerState
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import java.time.Instant
 import java.time.LocalDate
@@ -28,11 +28,11 @@ fun DatePickerSheet(
     onDismiss: () -> Unit,
     titleRes: Int = R.string.picker_date_start,
 ) {
-    val state = rememberDatePickerState(
+    val state = NiaRememberDatePickerState(
         initialSelectedDateMillis = initial.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli(),
     )
 
-    DatePickerDialog(
+    NiaDatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             NiaButton(
@@ -54,6 +54,6 @@ fun DatePickerSheet(
         Column(modifier = Modifier.padding(12.dp)) {
             Text(stringResource(titleRes), style = MaterialTheme.typography.titleMedium)
         }
-        DatePicker(state = state)
+        NiaDatePicker(state = state)
     }
 }

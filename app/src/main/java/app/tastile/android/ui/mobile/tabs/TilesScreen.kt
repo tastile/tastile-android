@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.tabs
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Inbox
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.NiaExtendedFloatingActionButton
 import app.tastile.android.data.model.Tile
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TilesTab
@@ -113,14 +114,14 @@ fun TilesScreen(
             }
         }
 
-        ExtendedFloatingActionButton(
+        NiaExtendedFloatingActionButton(
+            text = { Text("New") },
+            icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
             onClick = { overlay.show(Overlay.QuickCreate) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(TILES_SPACING_MD)
                 .testTag("tiles-fab-new"),
-            text = { Text("New") },
-            icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
     }
 
@@ -176,19 +177,19 @@ private fun ListBody(
             modifier = Modifier.fillMaxWidth().padding(TILES_SPACING_MD),
             horizontalArrangement = Arrangement.spacedBy(TILES_SPACING_SM),
         ) {
-            StatChip(
+            Text(
                 label = stringResource(R.string.tiles_stat_open, tilesCount),
                 value = "",
                 background = MaterialTheme.colorScheme.secondaryContainer,
                 foreground = MaterialTheme.colorScheme.onSecondaryContainer,
             )
-            StatChip(
+            Text(
                 label = stringResource(R.string.tiles_stat_estimated, tilesCount * 30),
                 value = "",
                 background = MaterialTheme.colorScheme.tertiaryContainer,
                 foreground = MaterialTheme.colorScheme.onTertiaryContainer,
             )
-            StatChip(
+            Text(
                 label = stringResource(R.string.tiles_stat_sections, grouped.size),
                 value = "",
                 background = MaterialTheme.colorScheme.surfaceVariant,
@@ -250,7 +251,7 @@ private fun ListBody(
 }
 
 @Composable
-private fun StatChip(
+private fun Text(
     label: String,
     value: String,
     background: androidx.compose.ui.graphics.Color,
@@ -263,27 +264,6 @@ private fun StatChip(
     ) {
         Text(label, color = foreground, style = MaterialTheme.typography.labelSmall)
     }
-}
-
-@Composable
-private fun androidx.compose.foundation.layout.Box(
-    modifier: Modifier = Modifier,
-    background: androidx.compose.ui.graphics.Color,
-    shape: androidx.compose.ui.graphics.Shape,
-    contentAlignment: Alignment = Alignment.TopStart,
-    propagateMinConstraints: Boolean = false,
-    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit,
-) {
-    androidx.compose.foundation.layout.Box(
-        modifier = modifier.then(
-            androidx.compose.foundation.background(background, shape).then(
-                Modifier,
-            ),
-        ),
-        contentAlignment = contentAlignment,
-        propagateMinConstraints = propagateMinConstraints,
-        content = content,
-    )
 }
 
 private const val INITIAL_SECTION_LIMIT = 8

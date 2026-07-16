@@ -17,3 +17,6 @@ app/src/main/jniLibs/
 *.keystore
 *.log
 reference/
+.build-logs/
+.tools/
+*.bak
