@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -206,7 +207,10 @@ private fun GenericDropdown(
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 items.forEach { (value, labelText) ->
-                    DropdownMenuItem(text = { Text(labelText) }, onClick = {
+                    DropdownMenuItem(
+                        text = { Text(labelText) },
+                        leadingIcon = { Icon(Icons.Outlined.FilterList, contentDescription = null) },
+                        onClick = {
                         @Suppress("UNCHECKED_CAST")
                         onPick(value as Any)
                         expanded = false

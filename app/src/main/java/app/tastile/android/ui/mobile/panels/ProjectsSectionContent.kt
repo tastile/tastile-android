@@ -5,10 +5,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -83,11 +88,11 @@ fun ProjectsSectionContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (!creating) {
-                TextButton(
+                AppTertiaryButton(
+                    text = stringResource(R.string.panels_projects_new_button),
                     onClick = projectsViewModel::openCreateForm,
-                ) {
-                    Text(stringResource(R.string.panels_projects_new_button))
-                }
+                    leadingIcon = Icons.Outlined.Check,
+                )
             }
         }
 
@@ -164,17 +169,21 @@ fun ProjectsSectionContent(
                 Text(stringResource(R.string.panels_projects_delete_confirm_body))
             },
             confirmButton = {
-                TextButton(onClick = {
-                    projectsViewModel.deleteWorkspace(target.id)
-                    deleteCandidate = null
-                }) {
-                    Text(stringResource(R.string.panels_projects_delete))
-                }
+                AppPrimaryButton(
+                    text = stringResource(R.string.panels_projects_delete),
+                    onClick = {
+                        projectsViewModel.deleteWorkspace(target.id)
+                        deleteCandidate = null
+                    },
+                    leadingIcon = Icons.Outlined.Delete,
+                )
             },
             dismissButton = {
-                TextButton(onClick = { deleteCandidate = null }) {
-                    Text(stringResource(R.string.panels_projects_cancel))
-                }
+                AppTertiaryButton(
+                    text = stringResource(R.string.panels_projects_cancel),
+                    onClick = { deleteCandidate = null },
+                    leadingIcon = Icons.Outlined.Close,
+                )
             },
         )
     }

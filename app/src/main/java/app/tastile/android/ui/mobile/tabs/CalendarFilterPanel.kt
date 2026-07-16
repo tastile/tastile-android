@@ -1,16 +1,21 @@
 package app.tastile.android.ui.mobile.tabs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -21,8 +26,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.data.api.Workspace
+import app.tastile.android.ui.mobile.designsystem.AppPickerButton
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
+import app.tastile.android.ui.mobile.designsystem.StatChip
 import app.tastile.android.ui.mobile.panels.projects.orderWorkspaceTree
 import app.tastile.android.ui.util.localDateFromEpochMillis
 
@@ -48,13 +62,34 @@ internal fun CalendarFilterPanel(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Calendar", modifier = Modifier.weight(1f))
-            TextButton(onClick = { showDatePicker = true }, modifier = Modifier.testTag("calendar-mini-date")) {
-                Text(selectedDayLabel)
-            }
+            SectionHeader(title = "Calendar", modifier = Modifier.weight(1f))
+            AppPickerButton(
+                label = "Date", // TODO i18n
+                value = selectedDayLabel.ifBlank { "—" },
+                onClick = { showDatePicker = true },
+                leadingIcon = Icons.Outlined.CalendarMonth,
+                modifier = Modifier.testTag("calendar-mini-date"),
+            )
         }
         if (workspaces.isNotEmpty()) {
-            Text("Projects ${selected.size}/${allIds.size}")
+            Row(
+                modifier = Modifier.clickable { onOwnerIdsChange(emptySet()) },
+                horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                StatChip(
+                    label = "Projects",
+                    value = "${selected.size}/${allIds.size}",
+                    background = MaterialTheme.colorScheme.secondaryContainer,
+                    foreground = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                AppSecondaryButton(
+                    text = "Projects",
+                    onClick = { onOwnerIdsChange(emptySet()) },
+                    leadingIcon = Icons.Outlined.FilterList,
+                )
+            }
+            SectionHeader(title = "Projects")
             orderWorkspaceTree(workspaces).forEach { entry ->
                 val state = projectCheckState(entry.workspace.id, selected, descendants)
                 Row(
@@ -78,9 +113,12 @@ internal fun CalendarFilterPanel(
                             modifier = Modifier.testTag("calendar-project-${entry.workspace.id}"),
                         )
                     }
-                    TextButton(
-                        onClick = { onOwnerIdsChange(normalizeOwnerSelection(toggleProjectCascade(selected, entry.workspace.id, descendants), allIds)) },
-                    ) { Text(entry.workspace.displayName) }
+                    AppSecondaryButton(
+                        text = entry.workspace.displayName,
+                        onClick = {
+                            onOwnerIdsChange(normalizeOwnerSelection(toggleProjectCascade(selected, entry.workspace.id, descendants), allIds))
+                        },
+                    )
                 }
             }
         }
@@ -90,12 +128,18 @@ internal fun CalendarFilterPanel(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { onSelectDate(localDateFromEpochMillis(it)) }
-                    showDatePicker = false
-                }) { Text("OK") }
+                AppPrimaryButton(
+                    text = "OK",
+                    onClick = {
+                        state.selectedDateMillis?.let { onSelectDate(localDateFromEpochMillis(it)) }
+                        showDatePicker = false
+                    },
+                    leadingIcon = Icons.Outlined.Check,
+                )
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } },
+            dismissButton = {
+                AppTertiaryButton(text = "Cancel", onClick = { showDatePicker = false })
+            },
         ) { DatePicker(state = state) }
     }
 }

@@ -6,12 +6,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountTree
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +26,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.R
+import app.tastile.android.ui.mobile.designsystem.AppPickerButton
 import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
 import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import app.tastile.android.ui.mobile.designsystem.MobileSpacing
@@ -89,15 +93,23 @@ fun NewProjectForm(
             modifier = Modifier.fillMaxWidth().testTag("project-create-color"),
         )
         Box(modifier = Modifier.fillMaxWidth()) {
-            TextButton(
+            AppPickerButton(
+                label = "Parent",
+                value = workspaces.firstOrNull { it.id == parentId }?.displayName ?: "Top level",
                 onClick = { parentMenuOpen = true },
+                leadingIcon = Icons.Outlined.AccountTree,
                 modifier = Modifier.testTag("project-create-parent"),
-            ) { Text("Parent project: " + (workspaces.firstOrNull { it.id == parentId }?.displayName ?: "Top level")) }
+            )
             DropdownMenu(expanded = parentMenuOpen, onDismissRequest = { parentMenuOpen = false }) {
-                DropdownMenuItem(text = { Text("Top level") }, onClick = { parentId = null; parentMenuOpen = false })
+                DropdownMenuItem(
+                    text = { Text("Top level") },
+                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.AccountTree, contentDescription = null) },
+                    onClick = { parentId = null; parentMenuOpen = false },
+                )
                 ordered.forEach { entry ->
                     DropdownMenuItem(
                         text = { Text("  ".repeat(entry.depth) + entry.workspace.displayName) },
+                        leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Folder, contentDescription = null) },
                         onClick = { parentId = entry.workspace.id; parentMenuOpen = false },
                     )
                 }
@@ -114,6 +126,7 @@ fun NewProjectForm(
                 else stringResource(R.string.panels_projects_create),
                 onClick = { onSubmit(name, slug.ifBlank { null }, color.ifBlank { null }, parentId) },
                 enabled = !busy && name.isNotBlank(),
+                leadingIcon = Icons.Outlined.Check,
                 modifier = Modifier.testTag("project-create-submit"),
             )
             AppTertiaryButton(

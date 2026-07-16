@@ -9,11 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +39,8 @@ import app.tastile.android.ui.designsystem.AppSectionHeader
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineSubScale
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import app.tastile.android.ui.mobile.designsystem.MobileTokens
 
 /**
@@ -170,13 +174,21 @@ private fun DateRangeRow(
         DatePickerDialog(
             onDismissRequest = { showStartPicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    onChange(pickerState.selectedDateMillis?.let(::isoFromMillis), endIso)
-                    showStartPicker = false
-                }) { Text("OK") }
+                AppPrimaryButton(
+                    text = "OK",
+                    leadingIcon = Icons.Outlined.Check,
+                    onClick = {
+                        onChange(pickerState.selectedDateMillis?.let(::isoFromMillis), endIso)
+                        showStartPicker = false
+                    },
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showStartPicker = false }) { Text("Cancel") }
+                AppTertiaryButton(
+                    text = "Cancel",
+                    leadingIcon = Icons.Outlined.Close,
+                    onClick = { showStartPicker = false },
+                )
             },
         ) { androidx.compose.material3.DatePicker(state = pickerState) }
     }
@@ -185,13 +197,21 @@ private fun DateRangeRow(
         DatePickerDialog(
             onDismissRequest = { showEndPicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    onChange(startIso, pickerState.selectedDateMillis?.let(::isoFromMillis))
-                    showEndPicker = false
-                }) { Text("OK") }
+                AppPrimaryButton(
+                    text = "OK",
+                    leadingIcon = Icons.Outlined.Check,
+                    onClick = {
+                        onChange(startIso, pickerState.selectedDateMillis?.let(::isoFromMillis))
+                        showEndPicker = false
+                    },
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showEndPicker = false }) { Text("Cancel") }
+                AppTertiaryButton(
+                    text = "Cancel",
+                    leadingIcon = Icons.Outlined.Close,
+                    onClick = { showEndPicker = false },
+                )
             },
         ) { androidx.compose.material3.DatePicker(state = pickerState) }
     }
