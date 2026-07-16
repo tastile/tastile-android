@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -138,7 +139,7 @@ private fun TabsPage(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         tabs.forEachIndexed { index, spec ->
             SidePanelTabRow(
                 label = spec.label,
@@ -146,7 +147,7 @@ private fun TabsPage(
                     Icon(
                         imageVector = spec.icon,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                 },
                 selected = selectedIndex == index,
@@ -215,27 +216,28 @@ private fun SidePanelTabRow(
     onClick: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    val containerAlpha = if (selected) 0.55f else 0.10f
+    val containerColor = if (selected) colors.surfaceVariant.copy(alpha = 0.55f) else colors.surface
     val contentColor = if (selected) colors.onSurface else colors.onSurfaceVariant
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(colors.surface.copy(alpha = containerAlpha))
+            .clip(RoundedCornerShape(12.dp))
+            .background(containerColor)
             .clickable(role = role, onClick = onClick)
             .heightIn(min = 56.dp)
-            .padding(vertical = 8.dp, horizontal = 8.dp)
+            .padding(vertical = 12.dp, horizontal = 16.dp)
             .semantics(mergeDescendants = true) {
                 contentDescription = label
                 this.role = role
             },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         leading()
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = contentColor,
             modifier = Modifier.weight(1f),
         )

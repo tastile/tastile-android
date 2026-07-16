@@ -148,7 +148,7 @@ private fun QuickCreateBaseComposition(
                         .fillMaxWidth()
                         .clickable { store.updateIdentity(draft.identity.copy(kind = kind)) }
                         .testTag("quick-create-kind-${kind.name}"),
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                 )
             }
         }
@@ -216,7 +216,7 @@ private fun QuickCreateBaseComposition(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { /* tap to focus task */ },
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                 )
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),

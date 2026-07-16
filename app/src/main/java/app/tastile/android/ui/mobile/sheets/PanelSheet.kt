@@ -35,8 +35,8 @@ internal fun PanelSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = colors.background.copy(alpha = 0.55f),
-        scrimColor = Color.Black.copy(alpha = 0.45f),
+        containerColor = colors.surfaceContainerLow,
+        scrimColor = Color.Black.copy(alpha = 0.28f),
     ) {
         Column(
             modifier = modifier
