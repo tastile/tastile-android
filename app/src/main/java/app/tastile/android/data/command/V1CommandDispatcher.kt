@@ -54,6 +54,13 @@ import javax.inject.Singleton
  *     overwrite this if domain invariants demand a different timestamp.
  *   - memo.attach: v0 `text` → v1 `body`.
  */
+sealed interface ExecutionStateLookup {
+    data class Found(val state: Int) : ExecutionStateLookup
+    data object NoActiveExecution : ExecutionStateLookup
+    /** The claimed execution was missing, terminal, mismatched, or unreadable. */
+    data object InvalidExecution : ExecutionStateLookup
+}
+
 @Singleton
 class V1CommandDispatcher @Inject constructor(
     private val v1ApiClient: V1ApiClient
@@ -69,6 +76,10 @@ class V1CommandDispatcher @Inject constructor(
      * executions via /v1/active-tile.
      */
     private val executionIdsByTile = mutableMapOf<String, String>()
+
+    fun clearExecutionCacheForTile(tileId: String) {
+        executionIdsByTile.remove(tileId)
+    }
     suspend fun dispatchTileCreate(
         v0Payload: JsonObject,
         userId: String
@@ -529,12 +540,37 @@ class V1CommandDispatcher @Inject constructor(
      * readable through its execution id; callers must not infer Resume when
      * this returns null.
      */
-    suspend fun executionStateForTile(tileId: String): Int? = runCatching {
-        val executionId = findExecutionIdForTile(tileId) ?: return@runCatching null
-        v1ApiClient.readExecution(executionId)
-            .takeIf { it.tileId == tileId }
-            ?.state
-    }.getOrNull()
+    suspend fun executionStateForTile(tileId: String): Int? =
+        (executionStateLookupForTile(tileId) as? ExecutionStateLookup.Found)?.state
+
+    /**
+     * Unlike [executionStateForTile], this preserves why no state is available.
+     * Callers must never treat [ExecutionStateLookup.InvalidExecution] as a
+     * paused execution that can be resumed.
+     */
+    suspend fun executionStateLookupForTile(tileId: String): ExecutionStateLookup {
+        val cachedId = executionIdsByTile[tileId]
+        if (cachedId != null) {
+            val execution = runCatching { v1ApiClient.readExecution(cachedId) }.getOrNull()
+            if (execution?.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES) {
+                return ExecutionStateLookup.Found(execution.state)
+            }
+            executionIdsByTile.remove(tileId)
+            return ExecutionStateLookup.InvalidExecution
+        }
+
+        val active = runCatching { v1ApiClient.getActiveTile() }.getOrNull()
+            ?: return ExecutionStateLookup.NoActiveExecution
+        val executionId = active.takeIf { it.tileId == tileId }?.executionId
+            ?: return ExecutionStateLookup.NoActiveExecution
+        val execution = runCatching { v1ApiClient.readExecution(executionId) }.getOrNull()
+            ?: return ExecutionStateLookup.InvalidExecution
+        if (execution.tileId != tileId || execution.state !in ACTIVE_EXECUTION_STATES) {
+            return ExecutionStateLookup.InvalidExecution
+        }
+        executionIdsByTile[tileId] = executionId
+        return ExecutionStateLookup.Found(execution.state)
+    }
 
     private fun buildInstantChange(
         placementId: String,

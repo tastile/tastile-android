@@ -587,8 +587,18 @@ class V1CommandDispatcherTest {
         val dispatcher = V1CommandDispatcher(apiClient)
         assertNotNull(dispatcher.dispatchTilePause("t-123"))
 
-        assertNull(dispatcher.executionStateForTile("t-123"))
-        coVerify(exactly = 2) { apiClient.getActiveTile() }
+        assertEquals(ExecutionStateLookup.InvalidExecution, dispatcher.executionStateLookupForTile("t-123"))
+        coVerify(exactly = 1) { apiClient.getActiveTile() }
+    }
+
+    @Test
+    fun executionStateLookup_distinguishesNoActiveExecutionFromInvalidClaim() = runTest {
+        val apiClient = newApiClient()
+        coEvery { apiClient.getActiveTile() } returns null
+
+        val dispatcher = V1CommandDispatcher(apiClient)
+
+        assertEquals(ExecutionStateLookup.NoActiveExecution, dispatcher.executionStateLookupForTile("t-123"))
     }
 
     // --- Step 5: tile.reschedule ----------------------------------------

@@ -44,6 +44,7 @@ fun TileEditSheet(
     val promptCandidate by viewModel.requestPromptTileId.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val executionStates by viewModel.executionControlStates.collectAsStateWithLifecycle()
+    val executionControlsInFlight by viewModel.executionControlInFlightTileIds.collectAsStateWithLifecycle()
 
     if (current is Overlay.TileEdit) {
         var editedTitle by remember(tile?.id) { mutableStateOf(tile?.title.orEmpty()) }
@@ -99,8 +100,8 @@ fun TileEditSheet(
                     if (lifecycle == TileLifecycle.STARTED) {
                         TextButton(onClick = { viewModel.completeTile(selected.id) }) { Text("Complete") }
                         when (executionStates[selected.id]) {
-                            ExecutionControlState.Active -> TextButton(onClick = { viewModel.pauseTile(selected.id) }) { Text("Pause") }
-                            ExecutionControlState.Paused -> TextButton(onClick = { viewModel.resumeTile(selected.id) }) { Text("Resume") }
+                            ExecutionControlState.Active -> TextButton(onClick = { viewModel.pauseTile(selected.id) }, enabled = selected.id !in executionControlsInFlight) { Text("Pause") }
+                            ExecutionControlState.Paused -> TextButton(onClick = { viewModel.resumeTile(selected.id) }, enabled = selected.id !in executionControlsInFlight) { Text("Resume") }
                             null -> Unit
                         }
                     }

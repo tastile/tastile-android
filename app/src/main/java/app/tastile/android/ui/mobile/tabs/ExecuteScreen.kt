@@ -60,6 +60,7 @@ fun ExecuteScreen(
     val promptCandidate by viewModel.requestPromptTileId.collectAsStateWithLifecycle()
     val actionMessage by viewModel.lastActionMessage.collectAsStateWithLifecycle()
     val executionStates by viewModel.executionControlStates.collectAsStateWithLifecycle()
+    val executionControlsInFlight by viewModel.executionControlInFlightTileIds.collectAsStateWithLifecycle()
 
     if (loading && tiles.isEmpty()) {
         AppCenteredLoading()
@@ -77,7 +78,14 @@ fun ExecuteScreen(
             Text(text = message, color = AppTheme.colors.error)
         }
         actionMessage?.let { message -> Text(text = message, color = AppTheme.colors.primary) }
-        active?.let { ActiveTileHero(tile = it, executionState = executionStates[it.id], viewModel = viewModel) }
+        active?.let {
+            ActiveTileHero(
+                tile = it,
+                executionState = executionStates[it.id],
+                executionControlInFlight = it.id in executionControlsInFlight,
+                viewModel = viewModel,
+            )
+        }
 
         AppSectionHeader(text = if (showable.isEmpty()) "Nothing to do — create a tile" else "Today and ready")
 
@@ -98,6 +106,7 @@ fun ExecuteScreen(
                     onStart = { viewModel.startTile(tile.id) },
                     onComplete = { viewModel.completeTile(tile.id) },
                     executionState = executionStates[tile.id],
+                    executionControlInFlight = tile.id in executionControlsInFlight,
                     onPause = { viewModel.pauseTile(tile.id) },
                     onResume = { viewModel.resumeTile(tile.id) },
                     onDelete = { viewModel.setDeleteTileCandidate(tile.id) },
@@ -123,6 +132,7 @@ fun ExecuteScreen(
 private fun ActiveTileHero(
     tile: Tile,
     executionState: ExecutionControlState?,
+    executionControlInFlight: Boolean,
     viewModel: DashboardViewModel,
 ) {
     AppOutlinedPanel {
@@ -142,10 +152,12 @@ private fun ActiveTileHero(
             when (executionState) {
                 ExecutionControlState.Active -> OutlinedButton(
                     onClick = { viewModel.pauseTile(tile.id) },
+                    enabled = !executionControlInFlight,
                     modifier = Modifier.testTag("execute-pause-${tile.id}"),
                 ) { Text("Pause") }
                 ExecutionControlState.Paused -> OutlinedButton(
                     onClick = { viewModel.resumeTile(tile.id) },
+                    enabled = !executionControlInFlight,
                     modifier = Modifier.testTag("execute-resume-${tile.id}"),
                 ) { Text("Resume") }
                 null -> Unit
@@ -161,6 +173,7 @@ private fun TileActionRow(
     onStart: () -> Unit,
     onComplete: () -> Unit,
     executionState: ExecutionControlState?,
+    executionControlInFlight: Boolean,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onDelete: () -> Unit,
@@ -204,11 +217,13 @@ private fun TileActionRow(
                                 text = { Text("Pause") },
                                 leadingIcon = { Icon(Icons.Outlined.Pause, contentDescription = null) },
                                 onClick = { menuOpen = false; onPause() },
+                                enabled = !executionControlInFlight,
                             )
                             ExecutionControlState.Paused -> DropdownMenuItem(
                                 text = { Text("Resume") },
                                 leadingIcon = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
                                 onClick = { menuOpen = false; onResume() },
+                                enabled = !executionControlInFlight,
                             )
                             null -> Unit
                         }

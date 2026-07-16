@@ -6,6 +6,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -48,6 +49,7 @@ class ExecuteScreenTest {
         every { vm.requestPromptTileId } returns MutableStateFlow(null)
         every { vm.lastActionMessage } returns MutableStateFlow(null)
         every { vm.executionControlStates } returns MutableStateFlow(emptyMap())
+        every { vm.executionControlInFlightTileIds } returns MutableStateFlow(emptySet())
         every { vm.locale } returns MutableStateFlow(app.tastile.android.data.repository.AppLocale.EN)
         return vm
     }
@@ -125,6 +127,18 @@ class ExecuteScreenTest {
         rule.onNodeWithTag("execute-resume-t1").performClick()
         rule.onAllNodesWithText("Pause").assertCountEquals(0)
         verify(exactly = 1) { vm.resumeTile("t1") }
+    }
+
+    @Test
+    fun `in flight execution control disables the corresponding lifecycle action`() {
+        val active = Tile(id = "t1", title = "Code review", lifecycle = TileLifecycle.STARTED.value)
+        val vm = stubVm(listOf(active))
+        every { vm.executionControlStates } returns MutableStateFlow(mapOf("t1" to ExecutionControlState.Active))
+        every { vm.executionControlInFlightTileIds } returns MutableStateFlow(setOf("t1"))
+
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onNodeWithTag("execute-pause-t1").assertIsNotEnabled()
     }
 
     @Test

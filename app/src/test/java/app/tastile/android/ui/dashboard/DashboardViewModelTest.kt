@@ -12,18 +12,23 @@ import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.ui.dashboard.ListGroupingMode
 import androidx.lifecycle.viewModelScope
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -210,7 +215,7 @@ class DashboardViewModelTest {
             )
             Tile(id = "tile-1", title = "Focus", lifecycle = "Started")
         }
-        coEvery { tileRepository.executionStateForTile("tile-1") } returns 0
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.Found(0)
 
         val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
@@ -233,7 +238,7 @@ class DashboardViewModelTest {
             null,
             null,
         )
-        coEvery { tileRepository.executionStateForTile("tile-1") } returns null
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.NoActiveExecution
 
         val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
@@ -254,7 +259,10 @@ class DashboardViewModelTest {
             null,
             null,
         )
-        coEvery { tileRepository.executionStateForTile("tile-1") } returnsMany listOf(1, 0)
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returnsMany listOf(
+            ExecutionStateLookup.Found(1),
+            ExecutionStateLookup.Found(0),
+        )
         val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
         viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
@@ -266,6 +274,80 @@ class DashboardViewModelTest {
         viewModel.resumeTile("tile-1")
         coVerify(exactly = 1) { tileRepository.continueTile("tile-1") }
         assertEquals(ExecutionControlState.Active, viewModel.executionControlStates.value["tile-1"])
+    }
+
+    @Test
+    fun pausedGrace_expiresAfterFiveSecondsWithoutAnotherRefresh() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.pauseTile("tile-1") } returns Unit
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")), null, null,
+        )
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.NoActiveExecution
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
+
+        viewModel.pauseTile("tile-1")
+        assertEquals(ExecutionControlState.Paused, viewModel.executionControlStates.value["tile-1"])
+
+        advanceTimeBy(4_999)
+        runCurrent()
+        assertEquals(ExecutionControlState.Paused, viewModel.executionControlStates.value["tile-1"])
+        advanceTimeBy(1)
+        runCurrent()
+
+        assertEquals(null, viewModel.executionControlStates.value["tile-1"])
+        verify(exactly = 1) { tileRepository.clearExecutionCacheForTile("tile-1") }
+    }
+
+    @Test
+    fun invalidExecutionLookup_neverKeepsResumeDuringPauseGrace() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.pauseTile("tile-1") } returns Unit
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")), null, null,
+        )
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.InvalidExecution
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
+
+        viewModel.pauseTile("tile-1")
+
+        assertEquals(null, viewModel.executionControlStates.value["tile-1"])
+    }
+
+    @Test
+    fun resumeFailure_clearsStaleResumeControl() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.continueTile("tile-1") } throws IllegalStateException("execution is terminal")
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Paused))
+
+        viewModel.resumeTile("tile-1")
+
+        assertEquals(null, viewModel.executionControlStates.value["tile-1"])
+        assertTrue(viewModel.executionControlInFlightTileIds.value.isEmpty())
+    }
+
+    @Test
+    fun pauseTile_ignoresRepeatedCallWhilePauseIsInFlight() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val pauseGate = CompletableDeferred<Unit>()
+        coEvery { tileRepository.pauseTile("tile-1") } coAnswers { pauseGate.await() }
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+
+        viewModel.pauseTile("tile-1")
+        viewModel.pauseTile("tile-1")
+
+        assertTrue("tile-1" in viewModel.executionControlInFlightTileIds.value)
+        coVerify(exactly = 1) { tileRepository.pauseTile("tile-1") }
+        pauseGate.complete(Unit)
+        runCurrent()
+        assertTrue(viewModel.executionControlInFlightTileIds.value.isEmpty())
     }
 
     @Test

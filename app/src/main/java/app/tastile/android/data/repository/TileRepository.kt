@@ -9,6 +9,7 @@ import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.toTiles
 import app.tastile.android.data.command.V1CommandDispatcher
+import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
@@ -247,6 +248,14 @@ class TileRepository @Inject constructor(
     /** v1 execution state for a visible started tile; null means unknown, not paused. */
     suspend fun executionStateForTile(tileId: String): Int? =
         v1CommandDispatcher.executionStateForTile(tileId)
+
+    /** Preserves a failed cached-execution validation separately from no active execution. */
+    suspend fun executionStateLookupForTile(tileId: String): ExecutionStateLookup =
+        v1CommandDispatcher.executionStateLookupForTile(tileId)
+
+    fun clearExecutionCacheForTile(tileId: String) {
+        v1CommandDispatcher.clearExecutionCacheForTile(tileId)
+    }
 
     suspend fun deferTile(tileId: String, deferredUntil: String) {
         val ack = v1CommandDispatcher.dispatchTileDefer(

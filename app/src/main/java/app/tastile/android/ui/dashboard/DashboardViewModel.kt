@@ -17,6 +17,7 @@ import app.tastile.android.data.repository.TileFilter
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.data.util.formatIsoDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -123,6 +125,8 @@ class DashboardViewModel @Inject constructor(
 
     private val _executionControlStates = MutableStateFlow<Map<String, ExecutionControlState>>(emptyMap())
     val executionControlStates: StateFlow<Map<String, ExecutionControlState>> = _executionControlStates.asStateFlow()
+    private val _executionControlInFlightTileIds = MutableStateFlow<Set<String>>(emptySet())
+    val executionControlInFlightTileIds: StateFlow<Set<String>> = _executionControlInFlightTileIds.asStateFlow()
 
     /**
      * The v1 active-tile endpoint deliberately omits paused executions. Keep
@@ -667,21 +671,27 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun pauseTile(tileId: String) {
+        if (!beginExecutionControl(tileId)) return
         viewModelScope.launch {
             try {
                 tileRepository.pauseTile(tileId)
                 _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Paused)
-                recentlyPausedUntilElapsedMs[tileId] = SystemClock.elapsedRealtime() + JUST_PAUSED_GRACE_MS
+                val expiresAt = SystemClock.elapsedRealtime() + JUST_PAUSED_GRACE_MS
+                recentlyPausedUntilElapsedMs[tileId] = expiresAt
+                schedulePausedExpiry(tileId, expiresAt)
                 reloadVisibleTilesAndExecutionControls(_tileFilter.value)
                 _lastActionMessage.value = "Paused"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to pause execution"
+            } finally {
+                endExecutionControl(tileId)
             }
         }
     }
 
     fun resumeTile(tileId: String) {
+        if (!beginExecutionControl(tileId)) return
         viewModelScope.launch {
             try {
                 tileRepository.continueTile(tileId)
@@ -691,8 +701,35 @@ class DashboardViewModel @Inject constructor(
                 _lastActionMessage.value = "Resumed"
                 refreshAll()
             } catch (e: Exception) {
+                // A resume failure can mean that the locally cached paused
+                // execution has become terminal or no longer belongs to this
+                // tile. Do not leave a stale Resume affordance on screen.
+                recentlyPausedUntilElapsedMs.remove(tileId)
+                _executionControlStates.value = _executionControlStates.value - tileId
                 _error.value = e.message ?: "Failed to resume execution"
+            } finally {
+                endExecutionControl(tileId)
             }
+        }
+    }
+
+    private fun beginExecutionControl(tileId: String): Boolean {
+        if (tileId in _executionControlInFlightTileIds.value) return false
+        _executionControlInFlightTileIds.value = _executionControlInFlightTileIds.value + tileId
+        return true
+    }
+
+    private fun endExecutionControl(tileId: String) {
+        _executionControlInFlightTileIds.value = _executionControlInFlightTileIds.value - tileId
+    }
+
+    private fun schedulePausedExpiry(tileId: String, expiresAt: Long) {
+        viewModelScope.launch {
+            delay(JUST_PAUSED_GRACE_MS)
+            if (recentlyPausedUntilElapsedMs[tileId] != expiresAt) return@launch
+            recentlyPausedUntilElapsedMs.remove(tileId)
+            tileRepository.clearExecutionCacheForTile(tileId)
+            _executionControlStates.value = _executionControlStates.value - tileId
         }
     }
 
@@ -712,19 +749,27 @@ class DashboardViewModel @Inject constructor(
             _executionControlStates.value = emptyMap()
             return
         }
-        val refreshed = startedIds.mapNotNull { tileId ->
-            when (tileRepository.executionStateForTile(tileId)) {
-                0 -> tileId to ExecutionControlState.Active
-                1 -> tileId to ExecutionControlState.Paused
-                else -> null
+        val lookups = startedIds.associateWith { tileRepository.executionStateLookupForTile(it) }
+        val refreshed = lookups.mapNotNull { (tileId, lookup) ->
+            when (lookup) {
+                is ExecutionStateLookup.Found -> when (lookup.state) {
+                    0 -> tileId to ExecutionControlState.Active
+                    1 -> tileId to ExecutionControlState.Paused
+                    else -> null
+                }
+                ExecutionStateLookup.NoActiveExecution, ExecutionStateLookup.InvalidExecution -> null
             }
         }.toMap()
         val now = SystemClock.elapsedRealtime()
         val justPaused = recentlyPausedUntilElapsedMs
-            .filter { (tileId, expiresAt) -> tileId in startedIds && expiresAt > now }
+            .filter { (tileId, expiresAt) ->
+                tileId in startedIds &&
+                    expiresAt > now &&
+                    lookups[tileId] == ExecutionStateLookup.NoActiveExecution
+            }
             .keys
         recentlyPausedUntilElapsedMs.entries.removeAll { (tileId, expiresAt) ->
-            tileId !in startedIds || expiresAt <= now
+            tileId !in startedIds || expiresAt <= now || lookups[tileId] == ExecutionStateLookup.InvalidExecution
         }
         _executionControlStates.value = refreshed + justPaused
             .filter { it !in refreshed }
