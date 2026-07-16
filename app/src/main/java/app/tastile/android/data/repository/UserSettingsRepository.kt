@@ -96,8 +96,7 @@ enum class ThemeMode(val value: String) {
     SYSTEM("system"),    // follow system: light or dark
     LIGHT("light"),
     DARK("dark"),
-    GRAY("gray"),         // zinc-toned palette regardless of system
-    BRAND("brand");       // Tastile brand palette regardless of system
+    GRAY("gray");         // M3 baseline palette regardless of system (gray = "no dynamic")
 
     companion object {
         fun from(value: String): ThemeMode = when (value) {
@@ -105,7 +104,9 @@ enum class ThemeMode(val value: String) {
             LIGHT.value -> LIGHT
             DARK.value -> DARK
             GRAY.value -> GRAY
-            BRAND.value -> BRAND
+            // legacy "brand" values now map to SYSTEM (forward compat for existing installs
+            // that had BRAND persisted before it was purged in M1A)
+            "brand" -> SYSTEM
             else -> SYSTEM   // unknown persisted value → default to SYSTEM (new users, upgrades)
         }
     }

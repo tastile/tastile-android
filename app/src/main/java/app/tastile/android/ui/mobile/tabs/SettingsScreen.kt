@@ -323,7 +323,6 @@ private fun themeLabel(t: ThemeMode): String = when (t) {
     ThemeMode.GRAY -> "Gray"
     ThemeMode.DARK -> "Dark"
     ThemeMode.SYSTEM -> "System"
-    ThemeMode.BRAND -> "Brand"
 }
 
 private fun canPostNotifications(context: android.content.Context): Boolean {
