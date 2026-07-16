@@ -12,7 +12,7 @@ import java.time.Instant
 import java.util.UUID
 
 /** The Web quick-create base composition and its routed detail panels. */
-enum class QuickCreatePanel { Base, Time, Duration, Recurring, References, Completion, Meta, Behavior }
+enum class QuickCreatePanel { Base, Intent, Time, Duration, Recurring, References, Completion, Meta, Behavior }
 
 enum class QuickCreateTileKind { Recurring, Placement }
 enum class QuickCreatePlanRole { Executable, Label }
@@ -181,6 +181,11 @@ class QuickCreateStateStore(initial: QuickCreateDraftState = QuickCreateDraftSta
     // Whole-slice updates make nullable clears explicit instead of retaining stale values.
     fun updateIdentity(identity: QuickCreateIdentity) = mutate { it.copy(identity = identity) }
     fun updatePlan(plan: QuickCreatePlan) = mutate { it.copy(plan = plan) }
+    fun appendCompletionTerm(term: JsonElement) = mutate { draft ->
+        val completion = draft.plan.completion
+        val root = completion.root
+        draft.copy(plan = draft.plan.copy(completion = completion.copy(root = root.copy(children = root.children + QuickCreateConditionNode(3, term = term)))))
+    }
     fun updateTime(time: QuickCreateTime) = mutate { it.copy(time = time) }
     fun updateWindows(windows: List<QuickCreateWindow>) = mutate { it.copy(windows = windows) }
     fun updateRecurring(recurring: QuickCreateRecurring) = mutate { it.copy(recurring = recurring) }

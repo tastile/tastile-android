@@ -12,7 +12,9 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -46,13 +48,15 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-essential-repeat").performClick()
         rule.onNodeWithTag("quick-create-subpanel-Recurring").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
-        rule.onNodeWithTag("quick-create-tasks-header").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("quick-create-tasks-header").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-subpanel-Completion").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-behavior-card").performScrollTo().performClick()
         rule.waitForIdle()
-        assertEquals(QuickCreatePanel.Behavior, store.state.value.activePanel)
+        assertEquals(QuickCreatePanel.Meta, store.state.value.activePanel)
+        rule.onNodeWithTag("behavior-role").performScrollTo().assertIsDisplayed()
         assertTrue(rule.onAllNodesWithTag("quick-create-row-0").fetchSemanticsNodes().isEmpty())
     }
 
@@ -65,11 +69,9 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-subpanel-Meta").assertIsDisplayed()
         rule.onNodeWithTag("meta-project-workspace-focus").performScrollTo().performClick()
         rule.onNodeWithTag("meta-tag-suggestion-health").performClick()
-        rule.onNodeWithTag("meta-tag-input").performTextReplacement("deep work")
-        rule.onNodeWithTag("meta-tag-add").performClick()
         rule.onNodeWithTag("meta-memo").performTextReplacement("Protect this focus block")
         assertEquals("workspace-focus", store.state.value.meta.ownerSubjectId)
-        assertEquals(listOf("health", "deep work"), store.state.value.meta.tags)
+        assertEquals(listOf("health"), store.state.value.meta.tags)
         rule.onNodeWithTag("meta-clear").performScrollTo().performClick()
         rule.waitForIdle()
         assertEquals(null, store.state.value.meta.ownerSubjectId)
@@ -88,10 +90,62 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-title").performTextReplacement("Plan review")
         rule.onNodeWithTag("quick-create-essential-time").performClick()
         rule.onNodeWithTag("quick-create-when-day").performClick()
-        rule.onNodeWithTag("quick-create-start").performTextReplacement("2026-07-16T09:00:00+09:00")
+        rule.onNodeWithTag("quick-create-start").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithText("Plan review").assertIsDisplayed()
-        rule.onNodeWithText("2026-07-16T09:00:00+09:00").assertIsDisplayed()
         rule.onNodeWithText("Create").assertIsEnabled()
     }
+
+    @Test
+    fun `base condition card routes through intent and intent routes to Web panels`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store, {}, projects) }
+
+        rule.onNodeWithTag("quick-create-condition-add").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-subpanel-Intent").assertIsDisplayed()
+        rule.onNodeWithTag("quick-create-intent-time").performClick()
+        rule.onNodeWithTag("quick-create-subpanel-Time").assertIsDisplayed()
+        rule.onNodeWithText("Back").performClick()
+        rule.onNodeWithTag("quick-create-condition-add").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-intent-completion").performClick()
+        rule.onNodeWithTag("quick-create-subpanel-Completion").assertIsDisplayed()
+    }
+
+    @Test
+    fun `duration none references and completion quick adds preserve Web v1 state`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store, {}, projects) }
+
+        rule.onNodeWithTag("quick-create-essential-duration").performClick()
+        rule.onNodeWithTag("quick-create-duration-none").performClick()
+        assertNull(store.state.value.time.durationMinMax.minMs)
+        assertNull(store.state.value.time.durationMinMax.maxMs)
+        rule.onNodeWithText("Back").performClick()
+
+        rule.onNodeWithTag("quick-create-references-link").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-add-reference").performClick()
+        val reference = store.state.value.plan.references.single()
+        assertEquals("", reference.id)
+        assertEquals("0", reference.target.jsonObjectOrEmptyForTest().getValue("kind").jsonPrimitive.content)
+        assertEquals("4", reference.pick.jsonObjectOrEmptyForTest().getValue("kind").jsonPrimitive.content)
+        assertEquals("10", reference.pick.jsonObjectOrEmptyForTest().getValue("momentId").jsonPrimitive.content)
+        rule.onNodeWithText("Back").performClick()
+        rule.waitForIdle()
+
+        rule.onNodeWithTag("quick-create-tasks-header").performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("quick-create-completion-add-task").performScrollTo().assertIsDisplayed().performClick()
+        rule.waitForIdle()
+        assertEquals(2, store.state.value.plan.completion.root.children.size)
+        rule.onNodeWithTag("quick-create-completion-add-relation").performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("quick-create-completion-add-metric").performScrollTo().performClick()
+        rule.waitForIdle()
+        assertEquals(4, store.state.value.plan.completion.root.children.size)
+        rule.onNodeWithTag("quick-create-completion-clear").performScrollTo().performClick()
+        assertEquals(0, store.state.value.plan.completion.root.kind)
+        assertTrue(store.state.value.plan.completion.root.children.isEmpty())
+    }
 }
+
+private fun kotlinx.serialization.json.JsonElement.jsonObjectOrEmptyForTest() = this as kotlinx.serialization.json.JsonObject

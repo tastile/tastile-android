@@ -10,6 +10,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,6 +56,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import java.time.LocalDate
+import java.time.Instant
+import java.time.ZoneOffset
 import java.util.UUID
 
 @Composable
@@ -70,6 +75,7 @@ internal fun QuickCreateSubpanel(
         BackHeader(onBack)
         Text(panel.name)
         when (panel) {
+            QuickCreatePanel.Intent -> IntentPanel(store)
             QuickCreatePanel.Time -> TimePanel(draft, store)
             QuickCreatePanel.Duration -> DurationPanel(draft, store)
             QuickCreatePanel.Recurring -> RecurringPanel(draft, store)
@@ -97,8 +103,8 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
     Text("When")
     Row { listOf(QuickCreateWhenMode.Day, QuickCreateWhenMode.Range, QuickCreateWhenMode.Reference).forEach { mode -> TextButton(onClick = { setWhen(mode) }, modifier = Modifier.testTag("quick-create-when-${mode.name.lowercase()}")) { Text(mode.name) } } }
     if (draft.time.whenMode == QuickCreateWhenMode.Day || draft.time.whenMode == QuickCreateWhenMode.Range) Column(Modifier.testTag("quick-create-calendar")) {
-        OutlinedTextField(draft.time.span.start, { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(start = value))) }, label = { Text("Date") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-start"))
-        if (draft.time.whenMode == QuickCreateWhenMode.Range) OutlinedTextField(draft.time.span.end, { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }, label = { Text("End date") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-end"))
+        NativeDateField("Date", draft.time.span.start, "quick-create-start") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(start = value))) }
+        if (draft.time.whenMode == QuickCreateWhenMode.Range) NativeDateField("End date", draft.time.span.end, "quick-create-end") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }
     }
     if (draft.time.whenMode == QuickCreateWhenMode.Reference) Column(Modifier.testTag("quick-create-reference-catalog")) {
         Text("Reference range")
@@ -134,7 +140,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
 @Composable
 private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     val duration = draft.time.durationMinMax
-    TextButton(onClick = { store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange())) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none")) { Text("No duration") }
+    TextButton(onClick = { store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(null, null))) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none")) { Text("No duration") }
     OutlinedTextField(
         value = duration.minMs?.div(60_000L)?.toString() ?: "90",
         onValueChange = { value -> value.toLongOrNull()?.let { minutes ->
@@ -157,17 +163,19 @@ private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateState
         Text(if (draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly) "Weekdays" else "Weekdays (weekly only)")
         Row { (0..6).forEach { bit -> TextButton(onClick = { store.updateRecurring(draft.recurring.copy(weekdayMask = draft.recurring.weekdayMask xor (1 shl bit))) }, enabled = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly, modifier = Modifier.testTag("quick-create-weekday-$bit")) { Text(bit.toString()) } } }
         TextButton(onClick = { store.updateRecurring(draft.recurring.copy(endDate = if (draft.recurring.endDate.isBlank()) LocalDate.now().toString() else "")) }, modifier = Modifier.testTag("quick-create-recurring-end-switch")) { Text("End date") }
-        if (draft.recurring.endDate.isNotBlank()) OutlinedTextField(draft.recurring.endDate, { value -> store.updateRecurring(draft.recurring.copy(endDate = value)) }, label = { Text("End date") }, modifier = Modifier.testTag("quick-create-recurring-end-date"))
+        if (draft.recurring.endDate.isNotBlank()) NativeDateField("End date", draft.recurring.endDate, "quick-create-recurring-end-date") { value -> store.updateRecurring(draft.recurring.copy(endDate = value)) }
     }
 }
 
 @Composable
 private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    TextButton(onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references + QuickCreatePlanReference(UUID.randomUUID().toString(), JsonNull, JsonNull))) }, modifier = Modifier.testTag("quick-create-add-reference")) { Text("Add reference") }
+    TextButton(onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references + defaultPlanReference())) }, modifier = Modifier.testTag("quick-create-add-reference")) { Text("Add reference") }
     draft.plan.references.forEachIndexed { index, reference ->
         val target = reference.target.jsonObjectOrEmpty()
         val pick = reference.pick.jsonObjectOrEmpty()
-        OutlinedTextField(target.string("referenceId"), { value -> updateReference(draft, store, index, reference.copy(target = target.with("referenceId", value.ifBlank { null }))) }, label = { Text("Target") }, modifier = Modifier.testTag("quick-create-reference-id-$index"))
+        OutlinedTextField(reference.id, { value -> updateReference(draft, store, index, reference.copy(id = value)) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("quick-create-reference-record-id-$index"))
+        OutlinedTextField(target.string("referenceId"), { value -> updateReference(draft, store, index, reference.copy(target = target.with("referenceId", value.ifBlank { null }))) }, label = { Text("Target reference") }, modifier = Modifier.testTag("quick-create-reference-id-$index"))
+        Row { listOf(0, 1, 2).forEach { kind -> TextButton(onClick = { updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) }) { Text("Target kind $kind") } } }
         Text("Relation")
         Row { listOf(4, 3, 1, 2, 0).forEach { relation -> TextButton(onClick = { updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) }) { Text(relation.toString()) } } }
         OutlinedTextField(pick.string("momentId", "10"), { value -> value.toIntOrNull()?.coerceIn(5, 120)?.let { minutes -> updateReference(draft, store, index, reference.copy(pick = pick.with("momentId", minutes.toString()))) } }, label = { Text("Interval (minutes)") })
@@ -175,11 +183,54 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     }
 }
 
+private fun defaultPlanReference() = QuickCreatePlanReference(
+    id = "",
+    target = JsonObject(mapOf("kind" to JsonPrimitive(0), "contextKind" to JsonNull, "referenceId" to JsonNull, "conditionId" to JsonNull)),
+    pick = JsonObject(mapOf("kind" to JsonPrimitive(4), "momentId" to JsonPrimitive("10"))),
+)
+
+@Composable
+private fun IntentPanel(store: QuickCreateStateStore) {
+    Text("Add condition or group")
+    listOf(
+        "Time" to QuickCreatePanel.Time,
+        "References" to QuickCreatePanel.References,
+        "Recurring" to QuickCreatePanel.Recurring,
+        "Meta" to QuickCreatePanel.Meta,
+        "Completion" to QuickCreatePanel.Completion,
+    ).forEach { (label, panel) ->
+        TextButton(onClick = { store.openSubpanel(panel) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-intent-${label.lowercase()}")) { Text(label) }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun NativeDateField(label: String, value: String, tag: String, onSelected: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    TextButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth().testTag(tag)) { Text(if (value.isBlank()) label else value) }
+    if (open) {
+        val state = androidx.compose.material3.rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { open = false },
+            confirmButton = { TextButton(onClick = {
+                state.selectedDateMillis?.let { millis -> onSelected(Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toString()) }
+                open = false
+            }) { Text("OK") } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text("Cancel") } },
+        ) { DatePicker(state = state) }
+    }
+}
+
 @Composable
 private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     Text("Logic")
     Row { listOf(0 to "ALL", 1 to "ANY", 2 to "NOT").forEach { (kind, label) -> TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = draft.plan.completion.root.copy(kind = kind, term = null)))) }) { Text(label) } } }
-    ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) })
+    ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }, allowTermKind = false)
+    Row {
+        TextButton(onClick = { addCompletionTerm(draft, store, "task") }, modifier = Modifier.testTag("quick-create-completion-add-task")) { Text("Task") }
+        TextButton(onClick = { addCompletionTerm(draft, store, "relation") }, modifier = Modifier.testTag("quick-create-completion-add-relation")) { Text("Relation") }
+        TextButton(onClick = { addCompletionTerm(draft, store, "metric") }, modifier = Modifier.testTag("quick-create-completion-add-metric")) { Text("Metric") }
+    }
     TextButton(
         onClick = {
             store.updatePlan(
@@ -192,7 +243,7 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
                 ),
             )
         },
-        modifier = Modifier.testTag("quick-create-add-time-requirement"),
+        modifier = Modifier.testTag("quick-create-completion-add-time"),
     ) { Text("Add time requirement") }
     draft.plan.completion.timeRequirements.forEachIndexed { index, requirement ->
         val required = requirement.required.jsonObjectOrEmpty()
@@ -225,6 +276,16 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             modifier = Modifier.testTag("time-requirement-$index-remove"),
         ) { Text("Remove time requirement") }
     }
+    TextButton(onClick = {
+        store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = QuickCreateConditionNode(0), timeRequirements = emptyList(), tasks = emptyList())))
+    }, modifier = Modifier.testTag("quick-create-completion-clear")) { Text("Clear completion") }
+}
+
+private fun addCompletionTerm(draft: QuickCreateDraftState, store: QuickCreateStateStore, kind: String) {
+    val term = if (kind == "task" && draft.plan.completion.tasks.isNotEmpty()) {
+        termValue("task", mapOf("taskId" to JsonPrimitive(draft.plan.completion.tasks.first().id), "state" to JsonPrimitive(2)))
+    } else defaultTermValue(kind)
+    store.appendCompletionTerm(term)
 }
 
 private fun webTimeRequirement(durationMinimumMs: Long?): QuickCreateTimeRequirement = QuickCreateTimeRequirement(
@@ -248,8 +309,8 @@ private fun updateTimeRequirement(
     )
 }
 
-@Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit, path: String = "root") {
-    Row { listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").forEach { (kind, label) -> TextButton(onClick = { onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) defaultTermValue("calendar") else null)) }) { Text(label) } } }
+@Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit, path: String = "root", allowTermKind: Boolean = true) {
+    Row { listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").filter { allowTermKind || it.first != 3 }.forEach { (kind, label) -> TextButton(onClick = { onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) defaultTermValue("calendar") else null)) }) { Text(label) } } }
     if (node.kind == 3) {
         Row { listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life").forEach { type -> TextButton(onClick = { onChange(node.copy(term = defaultTermValue(type))) }, modifier = Modifier.testTag("condition-$path-term-$type")) { Text(type) } } }
         val term = node.term?.jsonObjectOrEmpty() ?: JsonObject(emptyMap())
@@ -376,6 +437,17 @@ private fun MetaPanel(
     knownTags: List<String>,
     onBack: () -> Unit,
 ) {
+    Text("Behavior")
+    Row(Modifier.testTag("behavior-role")) {
+        QuickCreatePlanRole.entries.forEach { value ->
+            FilterChip(
+                selected = draft.plan.role == value,
+                onClick = { store.updateBehavior(value) },
+                label = { Text(value.name) },
+                modifier = Modifier.testTag("behavior-role-${value.name.lowercase()}"),
+            )
+        }
+    }
     Text("Project")
     Column(Modifier.testTag("meta-project-catalog")) {
         FilterChip(

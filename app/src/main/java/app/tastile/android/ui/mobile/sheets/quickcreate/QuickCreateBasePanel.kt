@@ -86,6 +86,11 @@ private fun QuickCreateBaseComposition(
         EssentialRow("Duration", durationSummary(draft), "quick-create-essential-duration") { store.openSubpanel(QuickCreatePanel.Duration) }
         EssentialRow("Repeat", repeatSummary(draft), "quick-create-essential-repeat") { store.openSubpanel(QuickCreatePanel.Recurring) }
         HorizontalDivider()
+        Row(Modifier.fillMaxWidth().clickable { store.openSubpanel(QuickCreatePanel.Completion) }.testTag("quick-create-condition-card"), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Completion logic")
+            Text(conditionSummary(draft.plan.completion.root.kind))
+        }
+        TextButton({ store.openSubpanel(QuickCreatePanel.Intent) }, Modifier.testTag("quick-create-condition-add")) { Text("Add condition or group") }
         Row(Modifier.fillMaxWidth().clickable { store.openSubpanel(QuickCreatePanel.Completion) }.testTag("quick-create-tasks-header"), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Completion requires")
             Text("${draft.plan.completion.tasks.size} item(s)")
@@ -93,6 +98,16 @@ private fun QuickCreateBaseComposition(
         draft.plan.completion.tasks.forEachIndexed { index, task ->
             Row(Modifier.fillMaxWidth().testTag("quick-create-task-row-$index"), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(task.content.title.ifBlank { "Untitled" })
+                TextButton(
+                    { if (index > 0) store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.swap(index, index - 1)))) },
+                    enabled = index > 0,
+                    modifier = Modifier.testTag("quick-create-task-move-up-$index"),
+                ) { Text("Move up") }
+                TextButton(
+                    { if (index < draft.plan.completion.tasks.lastIndex) store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.swap(index, index + 1)))) },
+                    enabled = index < draft.plan.completion.tasks.lastIndex,
+                    modifier = Modifier.testTag("quick-create-task-move-down-$index"),
+                ) { Text("Move down") }
                 TextButton({ store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.filterIndexed { item, _ -> item != index }))) }) { Text("Remove") }
             }
         }
@@ -101,7 +116,7 @@ private fun QuickCreateBaseComposition(
             Modifier.testTag("quick-create-add-task"),
         ) { Text("Add task") }
         HorizontalDivider()
-        Row(Modifier.fillMaxWidth().clickable { store.openSubpanel(QuickCreatePanel.Behavior) }.testTag("quick-create-behavior-card"), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth().clickable { store.openSubpanel(QuickCreatePanel.Meta) }.testTag("quick-create-behavior-card"), horizontalArrangement = Arrangement.SpaceBetween) {
             Column { Text("Behavior"); Text(if (draft.plan.role.name == "Label") "Label" else "Executable") }
             Text("Edit")
         }
@@ -129,6 +144,12 @@ private fun timeSummary(draft: QuickCreateDraftState): String = when {
 }
 private fun durationSummary(draft: QuickCreateDraftState): String = draft.time.durationMinMax.minMs?.div(60_000)?.let { "$it min" } ?: "Not set"
 private fun repeatSummary(draft: QuickCreateDraftState): String = if (draft.recurring.repeatMode.name == "Once") "Not set" else draft.recurring.repeatMode.name
+private fun conditionSummary(kind: Int): String = when (kind) { 0 -> "ALL"; 1 -> "ANY"; 2 -> "NOT"; else -> "ALL" }
+private fun <T> List<T>.swap(first: Int, second: Int): List<T> = toMutableList().also { items ->
+    val item = items[first]
+    items[first] = items[second]
+    items[second] = item
+}
 
 data class QuickCreateValidation(val isValid: Boolean)
 fun quickCreateValidation(draft: QuickCreateDraftState): QuickCreateValidation {
