@@ -82,20 +82,6 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         compose = true
         buildConfig = true
     }
-    // M3 baseline (2026-07-16): enable Compose Compiler Reports so the next
-    // successful Kotlin compile drops HTML stability reports under
-    // app/build/compose-reports/ and metrics under app/build/compose-metrics/.
-    // Captured baseline lives at docs/superpowers/m3/before-reports/.
-    composeOptions {
-        freeCompilerArgs += listOf(
-            "-P",
-            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
-                project.layout.projectDirectory.dir("build/compose-reports").asFile.absolutePath,
-            "-P",
-            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
-                project.layout.projectDirectory.dir("build/compose-metrics").asFile.absolutePath,
-        )
-    }
     lint {
         // OldTargetApi is suppressed deliberately: this box only has API 35 and 37 installed
         // (commit a2c508c). Bumping targetSdk to 36 is blocked until the missing SDK is
@@ -121,6 +107,18 @@ kotlin {
         // so they apply to both the value parameter and the backing field.
         freeCompilerArgs.addAll(
             "-Xannotation-default-target=param-property",
+        )
+        // M3 baseline (2026-07-16): enable Compose Compiler Reports so the next
+        // successful Kotlin compile drops HTML stability reports under
+        // app/build/compose-reports/ and metrics under app/build/compose-metrics/.
+        // Captured baseline lives at docs/superpowers/m3/before-reports/.
+        freeCompilerArgs.addAll(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+                project.layout.projectDirectory.dir("build/compose-reports").asFile.absolutePath,
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
+                project.layout.projectDirectory.dir("build/compose-metrics").asFile.absolutePath,
         )
     }
 }

@@ -37,8 +37,11 @@ class ReferenceOverlayStore @Inject constructor(
     private val prefs: SharedPreferences = prefs(context)
 
     private val _enabled = MutableStateFlow(readInitial())
-    /** Live set of label-overlays the user has enabled. */
-    val enabled: StateFlow<Set<String>> = _enabled.asStateFlow()
+    /**
+     * A5: Flow-returning surface uses `get*Stream` naming. Live set of
+     * label-overlays the user has enabled.
+     */
+    val getEnabledStream: StateFlow<Set<String>> = _enabled.asStateFlow()
 
     /** Add [label] when absent, remove it when present. Idempotent. */
     suspend fun toggle(label: String) {

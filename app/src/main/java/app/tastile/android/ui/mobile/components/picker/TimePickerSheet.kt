@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+// m2-allow: primitive
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimePicker
+// m2-allow: state-holder
 import androidx.compose.material3.rememberModalBottomSheetState
+// m2-allow: state-holder
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -20,7 +23,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaModalBottomSheet
 import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.core.designsystem.component.NiaTimePicker
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 
@@ -40,14 +45,14 @@ fun TimePickerSheet(
         is24Hour = true,
     )
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    NiaModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(stringResource(titleRes), style = MaterialTheme.typography.titleMedium)
-            TimePicker(state = timeState)
+            NiaTimePicker(state = timeState)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

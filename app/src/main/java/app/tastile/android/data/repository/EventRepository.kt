@@ -23,7 +23,7 @@ data class EventRow(
 )
 
 @Singleton
-class EventRepository @Inject constructor() {
+class DefaultEventRepository @Inject constructor() {
     suspend fun loadAll(userId: String): List<EventRow> = emptyList()
 
     suspend fun append(

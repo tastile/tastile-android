@@ -4,9 +4,9 @@ import app.tastile.android.core.CoreCommandStore
 import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.core.PersistentCoreRuntimeService
 import app.tastile.android.core.SharedPreferencesCoreCommandStore
-import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.AuthRepositoryContract
 import app.tastile.android.data.repository.CurrentUserProvider
+import app.tastile.android.data.repository.DefaultAuthRepository
 import app.tastile.android.data.repository.MemoTileRepository
 import app.tastile.android.data.repository.PromptTileRepository
 import app.tastile.android.data.repository.TileFilter
@@ -40,11 +40,11 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideCurrentUserProvider(authRepository: AuthRepository): CurrentUserProvider = authRepository
+    fun provideCurrentUserProvider(authRepository: DefaultAuthRepository): CurrentUserProvider = authRepository
 
     @Provides
     @Singleton
-    fun provideAuthRepositoryContract(authRepository: AuthRepository): AuthRepositoryContract = authRepository
+    fun provideAuthRepositoryContract(authRepository: DefaultAuthRepository): AuthRepositoryContract = authRepository
 
     @Provides
     @Singleton
@@ -62,9 +62,9 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideDomainAuthRepository(authRepository: AuthRepository): DomainAuthRepository =
+    fun provideDomainAuthRepository(authRepository: DefaultAuthRepository): DomainAuthRepository =
         object : DomainAuthRepository {
-            override val authState = authRepository.authState
+            override val getAuthStateStream = authRepository.getAuthStateStream
             override fun currentUserId(): String? = authRepository.currentUserId()
         }
 

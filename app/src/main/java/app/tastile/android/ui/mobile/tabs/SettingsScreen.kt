@@ -16,14 +16,15 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
+// m2-allow: primitive
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
+// m2-allow: state-holder
 import androidx.compose.material3.ListItemDefaults
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
+// m2-allow: state-holder
 import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,6 +44,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaListItem
+import app.tastile.android.core.designsystem.component.NiaSegmentedButton
+import app.tastile.android.core.designsystem.component.NiaSingleChoiceSegmentedButtonRow
+import app.tastile.android.core.designsystem.component.NiaSwitch
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.notifications.ExecutionNotificationChannels
@@ -154,25 +159,25 @@ private fun ThemeSection(
             },
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ListItem(
+        NiaListItem(
             headlineContent = { Text(stringResource(R.string.settings_theme)) },
             supportingContent = { Text(themeLabel(current)) },
             leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            SegmentedButton(
+        NiaSingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            NiaSegmentedButton(
                 selected = current == ThemeMode.LIGHT,
                 onClick = { onPick(ThemeMode.LIGHT) },
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
             ) { Text(stringResource(R.string.settings_theme_light)) }
-            SegmentedButton(
+            NiaSegmentedButton(
                 selected = current == ThemeMode.GRAY,
                 onClick = { onPick(ThemeMode.GRAY) },
                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
             ) { Text(stringResource(R.string.settings_theme_gray)) }
-            SegmentedButton(
+            NiaSegmentedButton(
                 selected = current == ThemeMode.DARK,
                 onClick = { onPick(ThemeMode.DARK) },
                 shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
@@ -195,20 +200,20 @@ private fun LanguageSection(
             },
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ListItem(
+        NiaListItem(
             headlineContent = { Text(stringResource(R.string.settings_language)) },
             supportingContent = { Text(localeLabel(current)) },
             leadingContent = { Icon(Icons.Outlined.Language, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            SegmentedButton(
+        NiaSingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            NiaSegmentedButton(
                 selected = current == AppLocale.JA,
                 onClick = { onPick(AppLocale.JA) },
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
             ) { Text(stringResource(R.string.settings_language_ja)) }
-            SegmentedButton(
+            NiaSegmentedButton(
                 selected = current == AppLocale.EN,
                 onClick = { onPick(AppLocale.EN) },
                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
@@ -229,7 +234,7 @@ private fun SecurityLockSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ListItem(
+        NiaListItem(
             headlineContent = {
                 Text(
                     stringResource(
@@ -239,7 +244,7 @@ private fun SecurityLockSection(
                 )
             },
             leadingContent = { Icon(Icons.Outlined.Lock, contentDescription = null) },
-            trailingContent = { Switch(checked = enabled, onCheckedChange = onToggle) },
+            trailingContent = { NiaSwitch(checked = enabled, onCheckedChange = onToggle) },
             modifier = Modifier
                 .fillMaxWidth()
                 .semantics(mergeDescendants = true) {

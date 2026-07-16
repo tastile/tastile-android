@@ -38,14 +38,14 @@ class ReferenceOverlayStoreTest {
     @Test
     fun getEnabled_defaultsToEmptySet() = runTest {
         val store = ReferenceOverlayStore(context)
-        assertEquals(emptySet<String>(), store.enabled.first())
+        assertEquals(emptySet<String>(), store.getEnabledStream.first())
     }
 
     @Test
     fun toggle_addsLabelWhenAbsent() = runTest {
         val store = ReferenceOverlayStore(context)
         store.toggle("work")
-        assertEquals(setOf("work"), store.enabled.first())
+        assertEquals(setOf("work"), store.getEnabledStream.first())
     }
 
     @Test
@@ -53,7 +53,7 @@ class ReferenceOverlayStoreTest {
         val store = ReferenceOverlayStore(context)
         store.toggle("work")
         store.toggle("work")
-        assertEquals(emptySet<String>(), store.enabled.first())
+        assertEquals(emptySet<String>(), store.getEnabledStream.first())
     }
 
     @Test
@@ -61,7 +61,7 @@ class ReferenceOverlayStoreTest {
         val store = ReferenceOverlayStore(context)
         store.toggle("work")
         store.toggle("urgent")
-        assertEquals(setOf("work", "urgent"), store.enabled.first())
+        assertEquals(setOf("work", "urgent"), store.getEnabledStream.first())
     }
 
     @Test
@@ -69,7 +69,7 @@ class ReferenceOverlayStoreTest {
         val store = ReferenceOverlayStore(context)
         store.toggle("work")
         store.setEnabled(setOf("a", "b", "c"))
-        assertEquals(setOf("a", "b", "c"), store.enabled.first())
+        assertEquals(setOf("a", "b", "c"), store.getEnabledStream.first())
     }
 
     @Test
@@ -78,7 +78,7 @@ class ReferenceOverlayStoreTest {
         store.toggle("work")
         store.toggle("urgent")
         store.setEnabled(emptySet())
-        assertEquals(emptySet<String>(), store.enabled.first())
+        assertEquals(emptySet<String>(), store.getEnabledStream.first())
     }
 
     @Test

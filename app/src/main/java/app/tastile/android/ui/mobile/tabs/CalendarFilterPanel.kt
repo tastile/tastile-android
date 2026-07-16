@@ -38,13 +38,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.data.api.Workspace
-import app.tastile.android.ui.mobile.designsystem.AppPickerButton
-import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
-import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
-import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
-import app.tastile.android.ui.mobile.designsystem.SectionHeader
-import app.tastile.android.ui.mobile.designsystem.StatChip
+import androidx.compose.material3.OutlinedTextField
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.component.NiaTextButton
+
+
+
 import app.tastile.android.ui.mobile.panels.projects.orderWorkspaceTree
 import app.tastile.android.ui.util.localDateFromEpochMillis
 

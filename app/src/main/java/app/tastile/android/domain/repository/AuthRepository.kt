@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.Flow
  * policy at this layer).
  */
 interface AuthRepository {
-    val authState: Flow<TastileAuthState>
+    /** A5: Flow-returning surface uses `get*Stream` naming. */
+    val getAuthStateStream: Flow<TastileAuthState>
 
     fun currentUserId(): String?
 }

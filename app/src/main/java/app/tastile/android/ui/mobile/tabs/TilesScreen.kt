@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Inbox
-import androidx.compose.material3.ExtendedFloatingActionButton
+// m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.component.NiaExtendedFloatingActionButton
 import app.tastile.android.data.model.Tile
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TilesTab
@@ -113,7 +117,7 @@ fun TilesScreen(
             }
         }
 
-        ExtendedFloatingActionButton(
+        NiaExtendedFloatingActionButton(
             onClick = { overlay.show(Overlay.QuickCreate) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)

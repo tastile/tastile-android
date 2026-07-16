@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 // m2-allow: primitive
 import androidx.compose.material3.CircularProgressIndicator
 // m2-allow: theme-bridge
@@ -22,9 +23,6 @@ import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineSubScale
-import app.tastile.android.ui.designsystem.AppTheme
-import app.tastile.android.ui.mobile.designsystem.MobileSpacing
-import app.tastile.android.ui.mobile.designsystem.SectionHeader
 
 /**
  * Timeline pane body. Mirrors web `/dashboard/timeline` surface in
@@ -54,8 +52,8 @@ internal fun TimelineSectionContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = MobileSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         SectionHeader(title = "Calendar")
 
@@ -102,12 +100,12 @@ private fun CustomDateRow(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MobileSpacing.xxs),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
             text = "${startIso ?: "—"}  →  ${endIso ?: "—"}",
             style = MaterialTheme.typography.labelSmall,
-            color = AppTheme.colors.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         // Date picker dialogs intentionally deferred — the existing
         // v1 /v1/timeline endpoint accepts ISO-8601 instants, so the
@@ -119,7 +117,7 @@ private fun CustomDateRow(
         Text(
             text = "setCustomRange hook · ${onStartChange.hashCode()}/${onEndChange.hashCode()}",
             style = MaterialTheme.typography.bodySmall,
-            color = AppTheme.colors.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -129,20 +127,35 @@ private fun TimelineLoadingOverlay() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = MobileSpacing.md),
+            .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             CircularProgressIndicator(modifier = Modifier.padding(4.dp))
             Text(
                 text = stringResource(R.string.panels_timeline_loading),
                 style = MaterialTheme.typography.bodySmall,
-                color = AppTheme.colors.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
