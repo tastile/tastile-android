@@ -72,7 +72,7 @@ fun TastileTheme(
     val colorScheme = when (themeMode) {
         ThemeMode.LIGHT -> M3LightColorScheme
         ThemeMode.GRAY -> M3GrayColorScheme
-        ThemeMode.DARK -> M3DarkColorScheme
+        ThemeMode.DARK, ThemeMode.SYSTEM, ThemeMode.BRAND -> M3DarkColorScheme
     }
     val isLightAppearance = themeMode != ThemeMode.DARK
     val view = LocalView.current
