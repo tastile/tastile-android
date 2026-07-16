@@ -14,7 +14,7 @@ import java.util.UUID
 /** The Web quick-create base panel and its eight subpanels. */
 enum class QuickCreatePanel { Base, Intent, Time, Duration, Recurring, References, Completion, Meta, Behavior }
 
-enum class QuickCreateTileKind { Recurring, Placement, Execution }
+enum class QuickCreateTileKind { Recurring, Placement }
 enum class QuickCreatePlanRole { Executable, Label }
 enum class QuickCreateIntent { FinishOnce, Recurring, MaximizeWithinInterval, LabelOnly }
 enum class QuickCreateWhenMode { None, Day, Range, Reference }

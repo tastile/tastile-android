@@ -159,7 +159,23 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("condition-moment-reference").performTextReplacement("tile-1")
         rule.onNodeWithTag("condition-moment-offset").performTextReplacement("60000")
         assertTrue(store.state.value.plan.completion.root.children.first().term?.jsonObject?.get("kind")?.jsonPrimitive?.content == "moment")
-        assertTrue(store.state.value.plan.completion.root.children.first().term?.jsonObject?.get("referenceId")?.jsonPrimitive?.content == "tile-1")
+        val moment = store.state.value.plan.completion.root.children.first().term!!.jsonObject
+        assertTrue(moment["value"]?.jsonObject?.get("referenceId")?.jsonPrimitive?.content == "tile-1")
+        assertTrue(moment["referenceId"] == null)
+    }
+
+    @Test
+    fun `every exposed condition term keeps its v1 data inside value`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
+
+        listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life").forEach { kind ->
+            rule.onNodeWithTag("condition-root-0-term-$kind").performScrollTo().performClick()
+            val term = store.state.value.plan.completion.root.children.first().term!!.jsonObject
+            assertTrue("$kind must have a value object", term["value"] is kotlinx.serialization.json.JsonObject)
+            assertTrue("$kind must only expose kind and value", term.keys == setOf("kind", "value"))
+        }
     }
 
     @Test
