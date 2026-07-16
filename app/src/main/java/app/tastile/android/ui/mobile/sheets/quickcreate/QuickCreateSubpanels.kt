@@ -170,6 +170,11 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             "moment" -> MomentTermFields(term, path) { value -> onChange(node.copy(term = value)) }
             "relation" -> RelationTermFields(term) { value -> onChange(node.copy(term = value)) }
             "task" -> TaskTermFields(term) { value -> onChange(node.copy(term = value)) }
+            "gap" -> GapTermFields(path)
+            "requirement" -> RequirementTermFields(term, path) { value -> onChange(node.copy(term = value)) }
+            "fact" -> ScalarTermFields(term, path, "fact", "factId") { value -> onChange(node.copy(term = value)) }
+            "metric" -> ScalarTermFields(term, path, "metric", "metricId") { value -> onChange(node.copy(term = value)) }
+            "life" -> LifeTermFields(term, path) { value -> onChange(node.copy(term = value)) }
         }
     }
     else { node.children.forEachIndexed { index, child -> ConditionControls(child, { updated -> onChange(node.copy(children = node.children.replace(index, updated))) }, "$path-$index"); TextButton(onClick = { onChange(node.copy(children = node.children.filterIndexed { item, _ -> item != index })) }) { Text("Remove") } }; TextButton(onClick = { onChange(node.copy(children = node.children + QuickCreateConditionNode(3, term = JsonObject(mapOf("kind" to JsonPrimitive("calendar")))))) }) { Text("Add condition") } }
@@ -198,7 +203,73 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     OutlinedTextField(term.string("state", "0"), { value -> onChange(term.with("state", value.toIntOrNull() ?: 0)) }, label = { Text("State") }, modifier = Modifier.testTag("condition-task-state"))
 }
 
-private fun defaultTermValue(kind: String): JsonObject = JsonObject(mapOf("kind" to JsonPrimitive(kind), "weekdayMask" to JsonPrimitive(0), "offsetMin" to JsonPrimitive(0), "timeStart" to JsonNull, "timeEnd" to JsonNull, "referenceId" to JsonNull, "offsetMs" to JsonPrimitive(0)))
+@Composable private fun GapTermFields(path: String) {
+    // Current Web TermFields intentionally exposes Gap as an informational placeholder only.
+    Text("Gap configuration is preserved when supplied by the API.", modifier = Modifier.testTag("condition-$path-gap-placeholder"))
+}
+
+@Composable private fun RequirementTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
+    val value = term.valueObject()
+    OutlinedTextField(value.string("requirementId"), { input ->
+        onChange(term.withValue("requirementId", input))
+    }, label = { Text("Requirement ID") }, modifier = Modifier.testTag("condition-$path-requirement-id"))
+    OutlinedTextField(value.string("state", "0"), { input ->
+        onChange(term.withValue("state", input.toIntOrNull() ?: 0))
+    }, label = { Text("State") }, modifier = Modifier.testTag("condition-$path-requirement-state"))
+}
+
+@Composable private fun ScalarTermFields(
+    term: JsonObject,
+    path: String,
+    kind: String,
+    idKey: String,
+    onChange: (JsonObject) -> Unit,
+) {
+    val value = term.valueObject()
+    OutlinedTextField(value.string(idKey), { input ->
+        onChange(term.withValue(idKey, input))
+    }, label = { Text("ID") }, modifier = Modifier.testTag("condition-$path-$kind-id"))
+    OutlinedTextField(value.string("op", "0"), { input ->
+        onChange(term.withValue("op", input.toIntOrNull() ?: 0))
+    }, label = { Text("Operator") }, modifier = Modifier.testTag("condition-$path-$kind-op"))
+    OutlinedTextField(value.string("value"), { input ->
+        onChange(term.withValue("value", scalarValue(input)))
+    }, label = { Text("Value") }, modifier = Modifier.testTag("condition-$path-$kind-value"))
+}
+
+@Composable private fun LifeTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
+    val value = term.valueObject()
+    OutlinedTextField(value.string("target"), { input ->
+        onChange(term.withValue("target", input))
+    }, label = { Text("Target") }, modifier = Modifier.testTag("condition-$path-life-target"))
+    OutlinedTextField(value.string("state", "0"), { input ->
+        onChange(term.withValue("state", input.toIntOrNull() ?: 0))
+    }, label = { Text("State") }, modifier = Modifier.testTag("condition-$path-life-state"))
+}
+
+private fun defaultTermValue(kind: String): JsonObject = when (kind) {
+    "gap" -> termValue(kind, mapOf(
+        "scope" to JsonPrimitive(0),
+        "leftAnchor" to JsonObject(mapOf("referenceId" to JsonNull, "point" to JsonNull)),
+        "rightAnchor" to JsonObject(mapOf("referenceId" to JsonNull, "point" to JsonNull)),
+        "size" to JsonObject(mapOf("minMs" to JsonNull, "maxMs" to JsonNull)),
+    ))
+    "requirement" -> termValue(kind, mapOf("requirementId" to JsonPrimitive(""), "state" to JsonPrimitive(0)))
+    "fact" -> termValue(kind, mapOf("factId" to JsonPrimitive(""), "op" to JsonPrimitive(0), "value" to JsonNull))
+    "metric" -> termValue(kind, mapOf("metricId" to JsonPrimitive(""), "op" to JsonPrimitive(0), "value" to JsonNull))
+    "life" -> termValue(kind, mapOf("target" to JsonPrimitive(""), "state" to JsonPrimitive(0)))
+    else -> JsonObject(mapOf("kind" to JsonPrimitive(kind), "weekdayMask" to JsonPrimitive(0), "offsetMin" to JsonPrimitive(0), "timeStart" to JsonNull, "timeEnd" to JsonNull, "referenceId" to JsonNull, "offsetMs" to JsonPrimitive(0)))
+}
+
+private fun termValue(kind: String, value: Map<String, JsonElement>) = JsonObject(mapOf("kind" to JsonPrimitive(kind), "value" to JsonObject(value)))
+private fun JsonObject.valueObject(): JsonObject = this["value"] as? JsonObject ?: JsonObject(emptyMap())
+private fun JsonObject.withValue(key: String, value: Any?): JsonObject = with("value", valueObject().with(key, value))
+private fun scalarValue(input: String): Any? = when {
+    input.isBlank() -> null
+    input.toLongOrNull() != null -> input.toLong()
+    input.toDoubleOrNull()?.isFinite() == true -> input.toDouble()
+    else -> input
+}
 
 @Composable
 private fun MetaPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
@@ -231,7 +302,14 @@ private fun <T> List<T>.replace(index: Int, value: T): List<T> = toMutableList()
 
 private fun JsonElement.jsonObjectOrEmpty(): JsonObject = this as? JsonObject ?: JsonObject(emptyMap())
 private fun JsonObject.string(key: String, fallback: String = ""): String = this[key]?.jsonPrimitive?.content?.takeUnless { it == "null" } ?: fallback
-private fun JsonObject.with(key: String, value: Any?): JsonObject = JsonObject(toMutableMap().also { map -> map[key] = when (value) { null -> JsonNull; is Int -> JsonPrimitive(value); else -> JsonPrimitive(value.toString()) } })
+private fun JsonObject.with(key: String, value: Any?): JsonObject = JsonObject(toMutableMap().also { map -> map[key] = when (value) {
+    null -> JsonNull
+    is JsonElement -> value
+    is Int -> JsonPrimitive(value)
+    is Long -> JsonPrimitive(value)
+    is Double -> JsonPrimitive(value)
+    else -> JsonPrimitive(value.toString())
+} })
 private fun updateReference(draft: QuickCreateDraftState, store: QuickCreateStateStore, index: Int, reference: QuickCreatePlanReference) = store.updatePlan(draft.plan.copy(references = draft.plan.references.replace(index, reference)))
 
 private fun updateTask(draft: QuickCreateDraftState, store: QuickCreateStateStore, index: Int, task: QuickCreateTaskDefinition) {

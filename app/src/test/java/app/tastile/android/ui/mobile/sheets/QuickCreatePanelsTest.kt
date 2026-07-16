@@ -161,4 +161,50 @@ class QuickCreatePanelsTest {
         assertTrue(store.state.value.plan.completion.root.children.first().term?.jsonObject?.get("kind")?.jsonPrimitive?.content == "moment")
         assertTrue(store.state.value.plan.completion.root.children.first().term?.jsonObject?.get("referenceId")?.jsonPrimitive?.content == "tile-1")
     }
+
+    @Test
+    fun `remaining Web condition terms retain their typed v1 values`() {
+        val store = QuickCreateStateStore()
+        rule.setContent { QuickCreatePanelContent(store = store, onClose = {}) }
+        rule.onNodeWithTag("quick-create-row-6").performScrollTo().performClick()
+
+        rule.onNodeWithTag("condition-root-0-term-requirement").performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitForIdle()
+        rule.onNodeWithTag("condition-root-0-requirement-id").performTextReplacement("required-focus")
+        rule.onNodeWithTag("condition-root-0-requirement-state").performTextReplacement("1")
+        val requirement = store.state.value.plan.completion.root.children.first().term!!.jsonObject
+        assertTrue(requirement["value"]?.jsonObject?.get("requirementId")?.jsonPrimitive?.content == "required-focus")
+        assertTrue(requirement["value"]?.jsonObject?.get("state")?.jsonPrimitive?.content == "1")
+        rule.onNodeWithTag("condition-root-0-term-fact").performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitForIdle()
+        rule.onNodeWithTag("condition-root-0-fact-id").performTextReplacement("fact-energy")
+        rule.onNodeWithTag("condition-root-0-fact-op").performTextReplacement("4")
+        rule.onNodeWithTag("condition-root-0-fact-value").performTextReplacement("3.5")
+        val fact = store.state.value.plan.completion.root.children.first().term!!.jsonObject
+        assertTrue(fact["value"]?.jsonObject?.get("factId")?.jsonPrimitive?.content == "fact-energy")
+        assertTrue(fact["value"]?.jsonObject?.get("value")?.jsonPrimitive?.content == "3.5")
+        rule.onNodeWithTag("condition-root-0-term-metric").performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitForIdle()
+        rule.onNodeWithTag("condition-root-0-metric-id").performTextReplacement("metric-steps")
+        rule.onNodeWithTag("condition-root-0-metric-value").performTextReplacement("10000")
+        val metric = store.state.value.plan.completion.root.children.first().term!!.jsonObject
+        assertTrue(metric["value"]?.jsonObject?.get("metricId")?.jsonPrimitive?.content == "metric-steps")
+        assertTrue(metric["value"]?.jsonObject?.get("value")?.jsonPrimitive?.content == "10000")
+        rule.onNodeWithTag("condition-root-0-term-life").performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitForIdle()
+        rule.onNodeWithTag("condition-root-0-life-target").performTextReplacement("tile-123")
+        rule.onNodeWithTag("condition-root-0-life-state").performTextReplacement("2")
+
+        val life = store.state.value.plan.completion.root.children.first().term!!.jsonObject
+        assertTrue(life["kind"]?.jsonPrimitive?.content == "life")
+        assertTrue(life["value"]?.jsonObject?.get("target")?.jsonPrimitive?.content == "tile-123")
+        assertTrue(life["value"]?.jsonObject?.get("state")?.jsonPrimitive?.content == "2")
+
+        rule.onNodeWithTag("condition-root-0-term-gap").performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitForIdle()
+        rule.onNodeWithTag("condition-root-0-gap-placeholder").assertIsDisplayed()
+        val gap = store.state.value.plan.completion.root.children.first().term!!.jsonObject
+        assertTrue(gap["value"]?.jsonObject?.get("leftAnchor")?.jsonObject?.containsKey("referenceId") == true)
+        assertTrue(gap["value"]?.jsonObject?.get("size")?.jsonObject?.containsKey("minMs") == true)
+    }
 }
