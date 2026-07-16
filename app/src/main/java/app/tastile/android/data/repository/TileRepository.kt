@@ -238,11 +238,10 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
-    suspend fun deferTile(tileId: String, reason: String? = null, minutes: Int? = null) {
+    suspend fun deferTile(tileId: String, deferredUntil: String) {
         val ack = v1CommandDispatcher.dispatchTileDefer(
             tileId = tileId,
-            reason = reason,
-            minutes = minutes
+            deferredUntil = deferredUntil,
         ) ?: run {
             // v0 used to fall through to pauseTile on defer failure; with v1
             // we just throw — the UI surfaces the failure.
@@ -383,10 +382,13 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun rescheduleTile(tileId: String, startAtIso: String, endAtIso: String) {
+        val ownerId = currentUserProvider.currentUserId()
+            ?: throw IllegalStateException("Cannot reschedule tile without the current user")
         val ack = v1CommandDispatcher.dispatchTileReschedule(
             tileId = tileId,
             startAt = startAtIso,
-            endAt = endAtIso
+            endAt = endAtIso,
+            ownerId = ownerId,
         ) ?: throw IllegalStateException("Cloud command rejected: reschedule tile")
         refreshCloudCacheAfterCommand(ack)
     }

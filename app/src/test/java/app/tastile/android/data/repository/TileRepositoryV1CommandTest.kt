@@ -276,13 +276,13 @@ class TileRepositoryV1CommandTest {
     fun rescheduleTile_routesToV1Dispatcher() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         val dispatcher = mockk<V1CommandDispatcher>()
-        coEvery { dispatcher.dispatchTileReschedule(any(), any(), any()) } returns okAck("t-123")
+        coEvery { dispatcher.dispatchTileReschedule(any(), any(), any(), any()) } returns okAck("t-123")
 
         val repository = newRepository(apiClient, dispatcher)
         repository.rescheduleTile("t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z")
 
         coVerify(exactly = 1) {
-            dispatcher.dispatchTileReschedule("t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z")
+            dispatcher.dispatchTileReschedule("t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z", "user-1")
         }
     }
 
@@ -290,7 +290,7 @@ class TileRepositoryV1CommandTest {
     fun rescheduleTile_propagatesIllegalStateExceptionWhenNoPlacement() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         val dispatcher = mockk<V1CommandDispatcher>()
-        coEvery { dispatcher.dispatchTileReschedule(any(), any(), any()) } throws
+        coEvery { dispatcher.dispatchTileReschedule(any(), any(), any(), any()) } throws
             IllegalStateException("tile.reschedule: no placement for tile t-123")
 
         val repository = newRepository(apiClient, dispatcher)
@@ -308,23 +308,23 @@ class TileRepositoryV1CommandTest {
     fun deferTile_routesToV1Dispatcher() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         val dispatcher = mockk<V1CommandDispatcher>()
-        coEvery { dispatcher.dispatchTileDefer(any(), any(), any()) } returns okAck("t-123")
+        coEvery { dispatcher.dispatchTileDefer(any(), any()) } returns okAck("t-123")
 
         val repository = newRepository(apiClient, dispatcher)
-        repository.deferTile("t-123", reason = "later", minutes = 15)
+        repository.deferTile("t-123", deferredUntil = "2026-07-01T09:15:00Z")
 
-        coVerify(exactly = 1) { dispatcher.dispatchTileDefer("t-123", "later", 15) }
+        coVerify(exactly = 1) { dispatcher.dispatchTileDefer("t-123", "2026-07-01T09:15:00Z") }
     }
 
     @Test
     fun deferTile_throwsWhenDispatcherReturnsNull() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         val dispatcher = mockk<V1CommandDispatcher>()
-        coEvery { dispatcher.dispatchTileDefer(any(), any(), any()) } returns null
+        coEvery { dispatcher.dispatchTileDefer(any(), any()) } returns null
 
         val repository = newRepository(apiClient, dispatcher)
         try {
-            repository.deferTile("t-123", reason = null, minutes = 15)
+            repository.deferTile("t-123", deferredUntil = "2026-07-01T09:15:00Z")
             fail("expected IllegalStateException")
         } catch (e: IllegalStateException) {
             assertEquals("Cloud command rejected: defer tile", e.message)

@@ -282,6 +282,14 @@ class DashboardViewModel @Inject constructor(
     private val _requestDeleteTileId = MutableStateFlow<String?>(null)
     val requestDeleteTileId: StateFlow<String?> = _requestDeleteTileId.asStateFlow()
 
+    /** User intent is held until the corresponding confirmation sheet submits. */
+    private val _requestDeferTileId = MutableStateFlow<String?>(null)
+    val requestDeferTileId: StateFlow<String?> = _requestDeferTileId.asStateFlow()
+    private val _requestPromptTileId = MutableStateFlow<String?>(null)
+    val requestPromptTileId: StateFlow<String?> = _requestPromptTileId.asStateFlow()
+    private val _lastActionMessage = MutableStateFlow<String?>(null)
+    val lastActionMessage: StateFlow<String?> = _lastActionMessage.asStateFlow()
+
     /**
      * Labels the user has enabled as overlays from the References side panel.
      * Mirrors `tastile-web/src/lib/stores/reference-overlay-store.ts`. C6
@@ -437,6 +445,24 @@ class DashboardViewModel @Inject constructor(
         _requestDeleteTileId.value = null
         deleteTile(id)
     }
+
+    fun setDeferTileCandidate(id: String?) { _requestDeferTileId.value = id }
+
+    fun confirmDeferTile(deferredUntil: String) {
+        val id = _requestDeferTileId.value ?: return
+        _requestDeferTileId.value = null
+        deferTile(id, deferredUntil)
+    }
+
+    fun setPromptTileCandidate(id: String?) { _requestPromptTileId.value = id }
+
+    fun confirmPromptTile() {
+        val id = _requestPromptTileId.value ?: return
+        _requestPromptTileId.value = null
+        triggerPrompt(id)
+    }
+
+    fun clearActionMessage() { _lastActionMessage.value = null }
 
     /**
      * Format an ISO instant as a short, locale-aware date-time string.
@@ -594,6 +620,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.startTile(tileId)
+                _lastActionMessage.value = "Started"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to start tile"
@@ -605,6 +632,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.completeTile(tileId)
+                _lastActionMessage.value = "Completed"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to complete tile"
@@ -616,6 +644,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.pauseTile(tileId)
+                _lastActionMessage.value = "Paused"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to pause execution"
@@ -627,6 +656,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.continueTile(tileId)
+                _lastActionMessage.value = "Resumed"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to resume execution"
@@ -634,10 +664,11 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun deferTile(tileId: String) {
+    fun deferTile(tileId: String, deferredUntil: String) {
         viewModelScope.launch {
             try {
-                tileRepository.deferTile(tileId)
+                tileRepository.deferTile(tileId, deferredUntil)
+                _lastActionMessage.value = "Deferred until $deferredUntil"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to defer tile"
@@ -649,6 +680,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.deleteTile(tileId)
+                _lastActionMessage.value = "Deleted"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to delete tile"
@@ -690,11 +722,11 @@ class DashboardViewModel @Inject constructor(
 
     fun handleCardAction(action: CardAction) {
         when (action) {
-            is CardAction.TriggerPrompt -> triggerPrompt(action.tileId)
+            is CardAction.TriggerPrompt -> setPromptTileCandidate(action.tileId)
             is CardAction.StartTile -> startTile(action.tileId)
             is CardAction.CompleteTile -> completeTile(action.tileId)
-            is CardAction.DeferTile -> deferTile(action.tileId)
-            is CardAction.DeleteTile -> deleteTile(action.tileId)
+            is CardAction.DeferTile -> setDeferTileCandidate(action.tileId)
+            is CardAction.DeleteTile -> setDeleteTileCandidate(action.tileId)
         }
     }
 
@@ -702,6 +734,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.requestPrompt(tileId)
+                _lastActionMessage.value = "Prompt requested"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to trigger prompt"

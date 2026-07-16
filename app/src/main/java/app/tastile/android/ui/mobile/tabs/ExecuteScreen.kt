@@ -41,6 +41,9 @@ import app.tastile.android.ui.designsystem.AppSectionHeader
 import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
+import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
+import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
 
 @Composable
 fun ExecuteScreen(
@@ -50,6 +53,10 @@ fun ExecuteScreen(
     val tiles by viewModel.tiles.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val deleteCandidate by viewModel.requestDeleteTileId.collectAsStateWithLifecycle()
+    val deferCandidate by viewModel.requestDeferTileId.collectAsStateWithLifecycle()
+    val promptCandidate by viewModel.requestPromptTileId.collectAsStateWithLifecycle()
+    val actionMessage by viewModel.lastActionMessage.collectAsStateWithLifecycle()
 
     if (loading && tiles.isEmpty()) {
         AppCenteredLoading()
@@ -62,12 +69,11 @@ fun ExecuteScreen(
         TileLifecycle.fromString(tile.lifecycle) != TileLifecycle.DONE
     }
 
-    var deleteCandidate by remember { mutableStateOf<String?>(null) }
-
     AppPageColumn {
         error?.let { message ->
             Text(text = message, color = AppTheme.colors.error)
         }
+        actionMessage?.let { message -> Text(text = message, color = AppTheme.colors.primary) }
         active?.let { ActiveTileHero(tile = it, viewModel = viewModel) }
 
         AppSectionHeader(text = if (showable.isEmpty()) "Nothing to do — create a tile" else "Today and ready")
@@ -89,28 +95,23 @@ fun ExecuteScreen(
                     onStart = { viewModel.startTile(tile.id) },
                     onComplete = { viewModel.completeTile(tile.id) },
                     onPause = { viewModel.pauseTile(tile.id) },
-                    onDelete = { deleteCandidate = tile.id },
+                    onDelete = { viewModel.setDeleteTileCandidate(tile.id) },
+                    onDefer = { viewModel.setDeferTileCandidate(tile.id) },
+                    onPrompt = { viewModel.setPromptTileCandidate(tile.id) },
                 )
             }
         }
     }
 
     deleteCandidate?.let { id ->
-        AlertDialog(
-            onDismissRequest = { deleteCandidate = null },
-            title = { Text("Delete tile?") },
-            text = { Text("This action cannot be undone.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteTile(id)
-                    deleteCandidate = null
-                }) { Text("Delete") }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleteCandidate = null }) { Text("Cancel") }
-            },
+        DeleteTileDialog(
+            tileTitle = tiles.firstOrNull { it.id == id }?.title,
+            onConfirm = viewModel::confirmDeleteTile,
+            onCancel = { viewModel.setDeleteTileCandidate(null) },
         )
     }
+    deferCandidate?.let { id -> DeferTileDialog(tiles.firstOrNull { it.id == id }?.title, viewModel::confirmDeferTile) { viewModel.setDeferTileCandidate(null) } }
+    promptCandidate?.let { id -> PromptRequestDialog(tiles.firstOrNull { it.id == id }?.title, viewModel::confirmPromptTile) { viewModel.setPromptTileCandidate(null) } }
 }
 
 @Composable
@@ -142,6 +143,8 @@ private fun TileActionRow(
     onComplete: () -> Unit,
     onPause: () -> Unit,
     onDelete: () -> Unit,
+    onDefer: () -> Unit,
+    onPrompt: () -> Unit,
 ) {
     val lifecycle = TileLifecycle.fromString(tile.lifecycle)
     val glyph = when (lifecycle) {
@@ -167,6 +170,8 @@ private fun TileActionRow(
                             leadingIcon = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
                             onClick = { menuOpen = false; onStart() },
                         )
+                        DropdownMenuItem(text = { Text("Defer") }, onClick = { menuOpen = false; onDefer() })
+                        DropdownMenuItem(text = { Text("Request prompt") }, onClick = { menuOpen = false; onPrompt() })
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
                         DropdownMenuItem(

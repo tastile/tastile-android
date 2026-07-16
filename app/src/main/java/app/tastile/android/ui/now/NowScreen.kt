@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -61,6 +62,7 @@ fun NowScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     
     var isRefreshing by remember { mutableStateOf(false) }
+    var deleteCandidate by remember { mutableStateOf<String?>(null) }
     
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
@@ -136,7 +138,7 @@ fun NowScreen(
                         tile = tile,
                         onStart = { viewModel.startTile(it) },
                         onComplete = { viewModel.completeTile(it) },
-                        onDelete = { viewModel.deleteTile(it) }
+                        onDelete = { deleteCandidate = it }
                     )
                 }
             }
@@ -151,6 +153,21 @@ fun NowScreen(
         if (isLoading && tiles.isEmpty()) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
+        deleteCandidate?.let { id ->
+            AlertDialog(
+                onDismissRequest = { deleteCandidate = null },
+                title = { Text("Delete tile?") },
+                text = { Text("This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteTile(id)
+                        deleteCandidate = null
+                    }) { Text("Delete") }
+                },
+                dismissButton = { TextButton(onClick = { deleteCandidate = null }) { Text("Cancel") } },
             )
         }
     }

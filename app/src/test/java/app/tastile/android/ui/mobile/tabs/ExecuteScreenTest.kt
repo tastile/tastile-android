@@ -11,6 +11,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
+import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.Assert.assertNotNull
 
 @RunWith(AndroidJUnit4::class)
 class ExecuteScreenTest {
@@ -38,6 +41,10 @@ class ExecuteScreenTest {
         every { vm.tiles } returns MutableStateFlow(tiles)
         every { vm.loading } returns MutableStateFlow(loading)
         every { vm.error } returns MutableStateFlow(null)
+        every { vm.requestDeleteTileId } returns MutableStateFlow(null)
+        every { vm.requestDeferTileId } returns MutableStateFlow(null)
+        every { vm.requestPromptTileId } returns MutableStateFlow(null)
+        every { vm.lastActionMessage } returns MutableStateFlow(null)
         every { vm.locale } returns MutableStateFlow(app.tastile.android.data.repository.AppLocale.EN)
         return vm
     }
@@ -97,5 +104,33 @@ class ExecuteScreenTest {
 
         verify(exactly = 1) { vm.pauseTile("t1") }
         verify(exactly = 1) { vm.completeTile("t1") }
+    }
+
+    @Test
+    fun `defer confirmation submits an explicit selected next time`() {
+        var deferredUntil: String? = null
+        rule.setContent {
+            DeferTileDialog(
+                tileTitle = "Standup",
+                onConfirm = { deferredUntil = it },
+                onCancel = {},
+            )
+        }
+
+        rule.onNodeWithText("Confirm").performClick()
+
+        assertNotNull(deferredUntil)
+    }
+
+    @Test
+    fun `prompt request requires confirmation before sending`() {
+        var requests = 0
+        rule.setContent {
+            PromptRequestDialog(tileTitle = "Standup", onConfirm = { requests++ }, onCancel = {})
+        }
+
+        rule.onNodeWithText("Request").performClick()
+
+        org.junit.Assert.assertEquals(1, requests)
     }
 }

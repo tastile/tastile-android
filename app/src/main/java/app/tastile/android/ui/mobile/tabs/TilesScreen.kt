@@ -29,6 +29,8 @@ import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
+import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
+import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
 import app.tastile.android.ui.mobile.tabs.tiles.TilesChangesBody
 import app.tastile.android.ui.mobile.tabs.tiles.TilesFilterBar
 import app.tastile.android.ui.mobile.tabs.tiles.TilesSectionColumn
@@ -52,6 +54,8 @@ fun TilesScreen(
 ) {
     val activeTab by viewModel.activeTilesTab.collectAsStateWithLifecycle()
     val deleteCandidate by viewModel.requestDeleteTileId.collectAsStateWithLifecycle()
+    val deferCandidate by viewModel.requestDeferTileId.collectAsStateWithLifecycle()
+    val promptCandidate by viewModel.requestPromptTileId.collectAsStateWithLifecycle()
     val grouped by viewModel.groupedTiles.collectAsStateWithLifecycle()
     val expanded by viewModel.expandedSections.collectAsStateWithLifecycle()
     val sectionLimits by viewModel.sectionLimits.collectAsStateWithLifecycle()
@@ -120,6 +124,20 @@ fun TilesScreen(
             tileTitle = title,
             onConfirm = { viewModel.confirmDeleteTile() },
             onCancel = { viewModel.setDeleteTileCandidate(null) },
+        )
+    }
+    deferCandidate?.let { id ->
+        DeferTileDialog(
+            tileTitle = tiles.firstOrNull { it.id == id }?.title,
+            onConfirm = viewModel::confirmDeferTile,
+            onCancel = { viewModel.setDeferTileCandidate(null) },
+        )
+    }
+    promptCandidate?.let { id ->
+        PromptRequestDialog(
+            tileTitle = tiles.firstOrNull { it.id == id }?.title,
+            onConfirm = viewModel::confirmPromptTile,
+            onCancel = { viewModel.setPromptTileCandidate(null) },
         )
     }
 }

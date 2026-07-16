@@ -2,6 +2,8 @@ package app.tastile.android.data.command
 
 import app.tastile.android.core.CoreCommandAck
 import app.tastile.android.data.api.AggregateRef
+import app.tastile.android.data.api.AppendChangesPayload
+import app.tastile.android.data.api.SetTileLifecyclePayload
 import app.tastile.android.data.api.CommandResponse
 import app.tastile.android.data.api.PendingWork
 import app.tastile.android.data.api.V1ApiClient
@@ -17,6 +19,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
@@ -195,10 +199,21 @@ class V1CommandDispatcherTest {
             )
         } returns okResponse("t-123")
 
+        val payload = slot<SetTileLifecyclePayload>()
         val dispatcher = V1CommandDispatcher(apiClient)
-        val ack = dispatcher.dispatchTileDefer("t-123", reason = null, minutes = 15)
+        val ack = dispatcher.dispatchTileDefer("t-123", deferredUntil = "2026-07-01T09:15:00Z")
 
         assertNotNull(ack)
+        coVerify {
+            apiClient.postCommand(
+                path = "/v1/tiles/t-123/defer",
+                commandKind = null,
+                payload = capture(payload),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        }
+        assertEquals("2026-07-01T09:15:00Z", payload.captured.deferredUntil)
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/defer",
@@ -539,7 +554,7 @@ class V1CommandDispatcherTest {
 
         val dispatcher = V1CommandDispatcher(apiClient)
         try {
-            dispatcher.dispatchTileReschedule("t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z")
+            dispatcher.dispatchTileReschedule("t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z", ownerId = "user-1")
             throw AssertionError("expected IllegalStateException")
         } catch (e: IllegalStateException) {
             assertTrue(e.message!!.contains("no placement"))
@@ -567,12 +582,29 @@ class V1CommandDispatcherTest {
             )
         } returns okResponse("t-123")
 
+        val payload = slot<AppendChangesPayload>()
         val dispatcher = V1CommandDispatcher(apiClient)
         val ack = dispatcher.dispatchTileReschedule(
-            "t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z"
+            "t-123", "2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z", ownerId = "user-1"
         )
 
         assertNotNull(ack)
+        coVerify {
+            apiClient.postCommand(
+                path = "/v1/placements/pl-1/changes",
+                commandKind = null,
+                payload = capture(payload),
+                payloadSerializer = any<KSerializer<Any>>(),
+                responseSerializer = any<KSerializer<Any>>()
+            )
+        }
+        val changeSet = payload.captured.changeset
+        assertEquals("user-1", changeSet["owner_id"]!!.jsonPrimitive.content)
+        assertEquals("pl-1", changeSet["target"]!!.jsonObject["Placement"]!!.jsonPrimitive.content)
+        assertEquals(2, changeSet["changes"]!!.jsonArray.size)
+        assertEquals("pl-1", changeSet["changes"]!!.jsonArray[0].jsonObject["key"]!!.jsonObject["item"]!!.jsonPrimitive.content)
+        assertEquals("2026-07-01T09:00:00Z", changeSet["changes"]!!.jsonArray[0].jsonObject["value"]!!.jsonObject["Instant"]!!.jsonPrimitive.content)
+        assertEquals("user-1", changeSet["created_by"]!!.jsonObject["actor"]!!.jsonPrimitive.content)
         coVerify(exactly = 1) { apiClient.listPlacements() }
         coVerify(exactly = 1) {
             apiClient.postCommand(

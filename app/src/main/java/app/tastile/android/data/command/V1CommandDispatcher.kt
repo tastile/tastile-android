@@ -21,12 +21,14 @@ import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1NumericConstants
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -176,14 +178,8 @@ class V1CommandDispatcher @Inject constructor(
         }.getOrNull()
     }
 
-    suspend fun dispatchTileDefer(
-        tileId: String,
-        reason: String?,
-        minutes: Int?
-    ): CoreCommandAck? {
+    suspend fun dispatchTileDefer(tileId: String, deferredUntil: String): CoreCommandAck? {
         return runCatching {
-            val mins = minutes ?: 60
-            val deferredUntil = Instant.now().plusSeconds(mins * 60L).toString()
             val payload = SetTileLifecyclePayload(
                 tileId = tileId,
                 state = 1.toShort(),
@@ -342,40 +338,44 @@ class V1CommandDispatcher @Inject constructor(
      * / `activation` / `source` / `source_ref` / `created_at` / `created_by`
      * fields we don't model in Kotlin. The server accepts whatever JSON
      * `serde_json::Value` deserializes against the full struct; per the
-     * current handler those fields are not strictly required and the
-     * dispatcher is allowed to send a minimal body.
+     * Android sends the same full audit envelope as the web client. This is
+     * important: partial ChangeSets are not a stable public API contract.
      */
     suspend fun dispatchTileReschedule(
         tileId: String,
         startAt: String,
-        endAt: String
+        endAt: String,
+        ownerId: String,
     ): CoreCommandAck? {
         return runCatching {
             val placement = findPlacementForTile(tileId)
                 ?: throw IllegalStateException("tile.reschedule: no placement for tile $tileId")
             val now = Instant.now().toString()
-            // Generate stable UUIDv7-ish ChangeSet id from the placement id
-            // (16 hex bytes from the placement UUID). The server doesn't
-            // require a specific format — it just needs uniqueness within
-            // the owner's ChangeSet space.
+            val commandId = UUID.randomUUID().toString()
             val changeSet = buildJsonObject {
-                put("id", JsonPrimitive("00000000-0000-7000-8000-${placement.placementId.takeLast(12).padStart(12, '0')}"))
+                put("id", JsonPrimitive(UUID.randomUUID().toString()))
+                put("owner_id", JsonPrimitive(ownerId))
+                put("target", buildJsonObject { put("Placement", JsonPrimitive(placement.placementId)) })
                 put("layer", JsonPrimitive(V1NumericConstants.ChangeLayer.PLACEMENT))
                 put("rank", JsonPrimitive(0))
                 put("changes", kotlinx.serialization.json.JsonArray(listOf(
-                    buildChangeSpan(
-                        groupPart = 0,
-                        spanStart = startAt,
-                        spanEnd = null,
-                        now = now
-                    ),
-                    buildChangeSpan(
-                        groupPart = 1,
-                        spanStart = null,
-                        spanEnd = endAt,
-                        now = now
-                    )
+                    buildInstantChange(placement.placementId, 0, startAt),
+                    buildInstantChange(placement.placementId, 1, endAt)
                 )))
+                put("activation", buildJsonObject {
+                    put("when", JsonNull)
+                    put("until", JsonNull)
+                })
+                put("revoked", JsonNull)
+                put("source", JsonPrimitive(V1NumericConstants.ChangeSource.USER))
+                put("source_ref", JsonNull)
+                put("created_at", JsonPrimitive(now))
+                put("created_by", buildJsonObject {
+                    put("at", JsonPrimitive(now))
+                    put("actor", JsonPrimitive(ownerId))
+                    put("actor_kind", JsonPrimitive(V1NumericConstants.ActorKind.USER))
+                    put("command_id", JsonPrimitive(commandId))
+                })
             }
             val payload = AppendChangesPayload(
                 placementId = placement.placementId,
@@ -514,32 +514,22 @@ class V1CommandDispatcher @Inject constructor(
         }?.also { executionIdsByTile[tileId] = it }
     }
 
-    private fun buildChangeSpan(
+    private fun buildInstantChange(
+        placementId: String,
         groupPart: Int,
-        spanStart: String?,
-        spanEnd: String?,
-        now: String
+        instant: String,
     ): JsonObject = buildJsonObject {
-        // Change.id: derived from a stable UUIDv7-shape string per change.
-        // Server is tolerant about the exact id format as long as it's unique.
-        put("id", JsonPrimitive("00000000-0000-7000-8000-${now.hashCode().toString().padStart(12, '0').take(12)}"))
+        put("id", JsonPrimitive(UUID.randomUUID().toString()))
         put("key", buildJsonObject {
-            put("group", JsonPrimitive(V1NumericConstants.ChangeLayer.PLACEMENT))
-            put("item", kotlinx.serialization.json.JsonNull)
+            put("group", JsonPrimitive(5))
+            put("item", JsonPrimitive(placementId))
             put("part", JsonPrimitive(groupPart))
         })
         put("kind", JsonPrimitive(V1NumericConstants.ChangeKind.SET))
-        put("value", buildJsonObject {
-            val span = buildJsonObject {
-                if (spanStart != null) put("start_at", JsonPrimitive(spanStart))
-                if (spanEnd != null) put("end_at", JsonPrimitive(spanEnd))
-            }
-            // ChangeValue::Span is the variant — we tag it so the server
-            // can distinguish Span vs Instant etc.
-            put("Span", span)
-        })
+        put("value", buildJsonObject { put("Instant", JsonPrimitive(instant)) })
         put("merge", JsonPrimitive(V1NumericConstants.MergeMode.OVERRIDE))
         put("source", JsonPrimitive(V1NumericConstants.ChangeSource.USER))
+        put("source_ref", JsonNull)
         put("rank", JsonPrimitive(0))
     }
 
