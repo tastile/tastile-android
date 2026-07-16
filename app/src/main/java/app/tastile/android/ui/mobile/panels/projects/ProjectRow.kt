@@ -12,22 +12,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
-import app.tastile.android.data.api.Workspace
 // m2-allow: primitive
 import androidx.compose.material3.Icon
 // m2-allow: m3-component
 import androidx.compose.material3.IconButton
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-// m2-allow: m3-component
-import androidx.compose.material3.ListItem
-// m2-allow: m3-component
-import androidx.compose.material3.ListItemDefaults
-// m2-allow: primitive
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +25,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import app.tastile.android.data.api.Workspace
+import app.tastile.android.ui.mobile.designsystem.AppListItem
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 
 /**
  * Single workspace row with a long-press-revealed delete × button.
@@ -54,7 +50,7 @@ fun ProjectRow(
     onDelete: () -> Unit,
 ) {
     var revealDelete by remember(workspace.id) { mutableStateOf(false) }
-    val startIndent = 8.dp + 8.dp * depth
+    val startIndent = MobileSpacing.sm + MobileSpacing.sm * depth
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -65,29 +61,18 @@ fun ProjectRow(
             )
             .testTag("project-select-${workspace.id}"),
     ) {
-        ListItem(
-            headlineContent = {
-                Text(
-                    workspace.displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            },
-            leadingContent = { Icon(Icons.Outlined.Folder, contentDescription = null) },
+        AppListItem(
+            headline = workspace.displayName,
+            leading = Icons.Outlined.Folder,
+            selected = selected,
             modifier = Modifier.fillMaxWidth(),
-            colors = ListItemDefaults.colors(
-                containerColor = if (selected) {
-                    MaterialTheme.colorScheme.secondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
-            ),
         )
         if (revealDelete) {
             Row(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    .padding(end = MobileSpacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xxs),
             ) {
                 IconButton(
                     onClick = onEdit,

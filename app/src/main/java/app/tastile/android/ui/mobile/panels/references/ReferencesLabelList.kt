@@ -15,8 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.ui.designsystem.AppSpacing
 
 /**
  * Renders the per-label overlay rows for the mobile References side panel.
@@ -39,19 +39,19 @@ fun ReferencesLabelList(
             text = stringResource(R.string.panels_references_empty),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = modifier.padding(horizontal = 12.dp),
+            modifier = modifier.padding(horizontal = AppSpacing.md),
         )
         return
     }
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
     ) {
         labels.forEach { label ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .padding(horizontal = AppSpacing.md, vertical = AppSpacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {

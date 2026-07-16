@@ -18,8 +18,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,8 +27,11 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.data.repository.CalendarProjectionResponse
+import app.tastile.android.ui.designsystem.AppBodyText
+import app.tastile.android.ui.designsystem.AppScreenTitle
+import app.tastile.android.ui.designsystem.AppSecondaryButton
+import app.tastile.android.ui.designsystem.AppTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -77,14 +78,14 @@ private fun DayAgendaScreen(
 
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
+            .background(AppTheme.colors.background)
             .padding(12.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text("Day View", style = MaterialTheme.typography.titleLarge)
-        Text(today.toString())
+        AppScreenTitle("Day View")
+        AppBodyText(today.toString())
         if (todayBlocks.isEmpty()) {
-            Text(
+            AppBodyText(
                 text = "No scheduled blocks today",
                 modifier = Modifier.padding(top = 12.dp)
             )
@@ -95,13 +96,13 @@ private fun DayAgendaScreen(
                         .fillMaxWidth()
                         .padding(top = 10.dp)
                 ) {
-                    Text(
+                    AppBodyText(
                         text = parseInstant(block.startAt)?.atZone(zone)?.format(
                             DateTimeFormatter.ofPattern("HH:mm", Locale.US)
                         ) ?: "--:--",
                         modifier = Modifier.width(56.dp)
                     )
-                    Text(block.title)
+                    AppBodyText(block.title)
                 }
             }
         }
@@ -122,11 +123,11 @@ private fun WeekAgendaScreen(
 
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
+            .background(AppTheme.colors.background)
             .padding(12.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text("Week View", style = MaterialTheme.typography.titleLarge)
+        AppScreenTitle("Week View")
         weekDays.forEach { day ->
             val count = blocks.count { block ->
                 parseInstant(block.startAt)?.atZone(zone)?.toLocalDate() == day
@@ -136,12 +137,12 @@ private fun WeekAgendaScreen(
                     .fillMaxWidth()
                     .padding(top = 10.dp)
             ) {
-                Text(day.dayOfWeek.name.take(3), modifier = Modifier.width(56.dp))
-                Text("$count items")
+                AppBodyText(day.dayOfWeek.name.take(3), modifier = Modifier.width(56.dp))
+                AppBodyText("$count items")
             }
         }
-        NiaOutlinedButton(
-            text = { Text("Today") },
+        AppSecondaryButton(
+            text = "Today",
             onClick = {},
             modifier = Modifier.padding(top = 16.dp)
         )
@@ -165,7 +166,7 @@ private fun TimelineEventBlock(
             .offset { IntOffset(leftPx.roundToInt(), topPx.roundToInt()) }
             .width((columnWidthPx / androidx.compose.ui.platform.LocalDensity.current.density).dp)
             .height((heightPx / androidx.compose.ui.platform.LocalDensity.current.density).dp)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+            .background(AppTheme.colors.primary.copy(alpha = 0.16f))
             .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -174,7 +175,7 @@ private fun TimelineEventBlock(
                 contentDescription = "Status",
                 modifier = Modifier.width(18.dp).height(18.dp)
             )
-            Text(block.item.title, modifier = Modifier.weight(1f))
+            AppBodyText(block.item.title, modifier = Modifier.weight(1f))
         }
     }
 }

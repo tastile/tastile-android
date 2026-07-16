@@ -1,32 +1,26 @@
 package app.tastile.android.ui.mobile.panels.timeline
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
-// m2-allow: primitive
-import androidx.compose.material3.Icon
-// m2-allow: primitive
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.ui.designsystem.AppCorner
+import app.tastile.android.ui.designsystem.AppListRow
+import app.tastile.android.ui.designsystem.AppSpacing
+import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.MobileTokens
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 
 /**
  * Renders the timeline block list using the v1 wire payload
@@ -54,8 +48,8 @@ internal fun TimelineBlockList(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .padding(vertical = AppSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs),
     ) {
         blocks.forEach { block ->
             TimelineBlockRow(block = block, onClick = { onBlockClick(block) })
@@ -71,61 +65,16 @@ private fun TimelineBlockRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.10f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .clip(AppCorner.smallShape)
+            .background(AppTheme.colors.surfaceVariant.copy(alpha = MobileTokens.SurfaceAlpha.subtle))
+            .padding(horizontal = AppSpacing.xs, vertical = AppSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 2.dp),
-        ) {
-            Text(
-                text = block.title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "${block.type} · ${block.status} · ${block.startAt}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun AppEmptyState(
-    icon: ImageVector,
-    title: String,
-    hint: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(48.dp),
+        AppListRow(
+            label = block.title,
+            description = "${block.type} · ${block.status} · ${block.startAt}",
+            onClick = onClick,
+            modifier = Modifier.padding(horizontal = AppSpacing.xxs),
         )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 12.dp),
-        )
-        if (hint.isNotBlank()) {
-            Text(
-                text = hint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
     }
 }

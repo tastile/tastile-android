@@ -24,11 +24,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaButton
-import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.dashboard.components.DurationPickerContent
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,26 +47,26 @@ fun DurationPickerSheet(
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(MobileSpacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(MobileSpacing.md),
         ) {
             Text(stringResource(R.string.picker_duration_label), style = MaterialTheme.typography.titleMedium)
             DurationPickerContent(hours = hours, minutes = minutes, onHoursChange = { hours = it }, onMinutesChange = { minutes = it })
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(MobileSpacing.sm),
             ) {
-                NiaTextButton(
+                AppTertiaryButton(
+                    text = stringResource(R.string.common_cancel),
                     onClick = { scope.launch { sheetState.hide(); onDismiss() } },
-                    text = { Text(stringResource(R.string.common_cancel)) },
                     modifier = Modifier.weight(1f),
                 )
-                NiaButton(
+                AppPrimaryButton(
+                    text = stringResource(R.string.common_confirm),
                     onClick = {
                         scope.launch { sheetState.hide(); onConfirm(hours * 60 + minutes) }
                     },
-                    text = { Text(stringResource(R.string.common_confirm)) },
                     modifier = Modifier.weight(1f),
                 )
             }

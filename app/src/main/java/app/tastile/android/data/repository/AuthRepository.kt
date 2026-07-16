@@ -33,7 +33,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DefaultAuthRepository @Inject constructor(
+class AuthRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val apiTokenManager: Lazy<ApiTokenManager>,
 ) : CurrentUserProvider, AuthRepositoryContract {
@@ -46,8 +46,7 @@ class DefaultAuthRepository @Inject constructor(
     private val prefs = EncryptedTokenStorage.cognitoPrefs(context)
     private val _authState = MutableStateFlow(loadStoredAuthState())
     val currentSession: Any? get() = null
-    /** A5: Flow-returning surface uses `get*Stream` naming. */
-    override val getAuthStateStream: StateFlow<TastileAuthState> = _authState.asStateFlow()
+    override val authState: StateFlow<TastileAuthState> = _authState.asStateFlow()
 
     override fun currentUserId(): String? =
         (_authState.value as? TastileAuthState.Authenticated)?.userId

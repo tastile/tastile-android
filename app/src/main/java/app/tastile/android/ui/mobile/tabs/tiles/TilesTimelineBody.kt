@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
@@ -18,8 +16,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.DatePickerDialog
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
@@ -34,26 +30,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.core.designsystem.component.NiaButton
-import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.util.formatIsoDateTime
+import app.tastile.android.ui.designsystem.AppCorner
+import app.tastile.android.ui.designsystem.AppEmptyState
+import app.tastile.android.ui.designsystem.AppSectionHeader
+import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineSubScale
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileTokens
 
 /**
  * Timeline sub-tab body. Renders the `dashboard_tiles_timeline_section_title`
  * header, a 4-button scale segmented control, two DatePickerDialog triggers
  * when scale = CUSTOM, and a vertical list of timestamped rows driven by
  * `DashboardViewModel.timeline`. Dot colour follows the web parity rule
- * "ended → success-green · otherwise → primary".
+ * "ended → success-green (`MobileTokens.Status.started`) · otherwise → primary".
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,12 +66,8 @@ fun TilesTimelineBody(
     val scale by vm.timelineScale.collectAsStateWithLifecycle()
     val customStart by vm.customStartIso.collectAsStateWithLifecycle()
     val customEnd by vm.customEndIso.collectAsStateWithLifecycle()
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.dashboard_tiles_timeline_section_title),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+        AppSectionHeader(text = stringResource(R.string.dashboard_tiles_timeline_section_title))
         TimelineScaleHeader(
             current = scale,
             onPick = { vm.setTimelineScale(it) },
@@ -80,13 +76,9 @@ fun TilesTimelineBody(
             onCustomRange = { start, end -> vm.setCustomRange(start, end) },
         )
         if (timeline.isEmpty()) {
-            Text(
-                text = stringResource(R.string.dashboard_tiles_timeline_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            AppEmptyState(message = stringResource(R.string.dashboard_tiles_timeline_empty))
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
                 timeline.forEach { item ->
                     TimelineRow(item = item, locale = locale)
                 }
@@ -103,27 +95,28 @@ private fun TimelineScaleHeader(
     customEnd: String?,
     onCustomRange: (String?, String?) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val colors = AppTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(2.dp)
+                .clip(AppCorner.pillShape)
+                .background(colors.surfaceVariant)
+                .padding(AppTheme.spacing.xxs)
                 .testTag("tiles-timeline-scale"),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs),
         ) {
             TimelineSubScale.entries.forEach { scale ->
                 val active = scale == current
                 Text(
                     scale.label(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = AppTheme.typography.labelMedium,
+                    color = if (active) colors.onSurface else colors.onSurfaceVariant,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(if (active) MaterialTheme.colorScheme.surface else Color.Transparent)
+                        .clip(AppCorner.smallShape)
+                        .background(if (active) colors.surface else colors.surfaceVariant)
                         .clickable { onPick(scale) }
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                        .padding(horizontal = AppTheme.spacing.sm, vertical = AppTheme.spacing.xxs),
                 )
             }
         }
@@ -148,7 +141,7 @@ private fun DateRangeRow(
     var showEndPicker by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
     ) {
         Box(
             modifier = Modifier
@@ -186,20 +179,20 @@ private fun DateRangeRow(
         DatePickerDialog(
             onDismissRequest = { showStartPicker = false },
             confirmButton = {
-                NiaButton(
+                AppPrimaryButton(
+                    text = "OK",
+                    leadingIcon = Icons.Outlined.Check,
                     onClick = {
                         onChange(pickerState.selectedDateMillis?.let(::isoFromMillis), endIso)
                         showStartPicker = false
                     },
-                    text = { Text("OK") },
-                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Check, contentDescription = null) },
                 )
             },
             dismissButton = {
-                NiaTextButton(
+                AppTertiaryButton(
+                    text = "Cancel",
+                    leadingIcon = Icons.Outlined.Close,
                     onClick = { showStartPicker = false },
-                    text = { Text("Cancel") },
-                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Close, contentDescription = null) },
                 )
             },
         ) { androidx.compose.material3.DatePicker(state = pickerState) }
@@ -209,20 +202,20 @@ private fun DateRangeRow(
         DatePickerDialog(
             onDismissRequest = { showEndPicker = false },
             confirmButton = {
-                NiaButton(
+                AppPrimaryButton(
+                    text = "OK",
+                    leadingIcon = Icons.Outlined.Check,
                     onClick = {
                         onChange(startIso, pickerState.selectedDateMillis?.let(::isoFromMillis))
                         showEndPicker = false
                     },
-                    text = { Text("OK") },
-                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Check, contentDescription = null) },
                 )
             },
             dismissButton = {
-                NiaTextButton(
+                AppTertiaryButton(
+                    text = "Cancel",
+                    leadingIcon = Icons.Outlined.Close,
                     onClick = { showEndPicker = false },
-                    text = { Text("Cancel") },
-                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Close, contentDescription = null) },
                 )
             },
         ) { androidx.compose.material3.DatePicker(state = pickerState) }
@@ -231,31 +224,32 @@ private fun DateRangeRow(
 
 @Composable
 private fun TimelineRow(item: CoreTimelineItem, locale: AppLocale) {
+    val colors = AppTheme.colors
     val ended = item.type.endsWith("_ended") || item.status == "done" || item.status == "completed"
-    val dotColor = if (ended) StatusStartedGreen else MaterialTheme.colorScheme.primary
+    val dotColor = if (ended) MobileTokens.Status.started else colors.primary
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("timeline-block-${item.id}")
-            .padding(vertical = 4.dp),
+            .padding(vertical = AppTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
     ) {
         Box(
             modifier = Modifier
                 .size(8.dp)
-                .clip(CircleShape)
+                .clip(AppCorner.pillShape)
                 .background(dotColor),
         )
         Text(
             text = formatIsoDateTime(item.startAt, locale),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = AppTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
         )
         Text(
             text = "${item.title} · ${item.type}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = AppTheme.typography.bodyMedium,
+            color = colors.onSurface,
         )
     }
 }
@@ -270,6 +264,3 @@ private fun TimelineSubScale.label(): String = when (this) {
 
 private fun isoFromMillis(millis: Long): String =
     java.time.Instant.ofEpochMilli(millis).toString()
-
-// Mirrors the legacy MobileTokens.Status.started success-green (0xFF0D8A72).
-private val StatusStartedGreen = Color(0xFF0D8A72)

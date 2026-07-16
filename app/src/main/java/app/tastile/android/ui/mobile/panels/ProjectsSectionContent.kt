@@ -11,12 +11,12 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 // m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
-// m2-allow: primitive
-import androidx.compose.material3.Icon
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,9 +30,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaButton
-import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.api.Workspace
+import app.tastile.android.ui.designsystem.AppSpacing
 import app.tastile.android.ui.mobile.panels.projects.NewProjectForm
 import app.tastile.android.ui.mobile.panels.projects.ProjectsList
 import app.tastile.android.ui.mobile.panels.projects.ProjectEditForm
@@ -76,13 +75,13 @@ fun ProjectsSectionContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(vertical = AppSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
+                .padding(horizontal = AppSpacing.md, vertical = AppSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -92,10 +91,10 @@ fun ProjectsSectionContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (!creating) {
-                NiaTextButton(
-                    text = { Text(stringResource(R.string.panels_projects_new_button)) },
+                AppTertiaryButton(
+                    text = stringResource(R.string.panels_projects_new_button),
                     onClick = projectsViewModel::openCreateForm,
-                    leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
+                    leadingIcon = Icons.Outlined.Check,
                 )
             }
         }
@@ -117,13 +116,13 @@ fun ProjectsSectionContent(
                 text = stringResource(R.string.panels_projects_loading_projects),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 12.dp),
+                modifier = Modifier.padding(horizontal = AppSpacing.md),
             )
             state.error != null -> Text(
                 text = state.error.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = 12.dp),
+                modifier = Modifier.padding(horizontal = AppSpacing.md),
             )
             else -> ProjectsList(
                 workspaces = state.workspaces,
@@ -131,7 +130,7 @@ fun ProjectsSectionContent(
                 onSelect = projectsViewModel::selectOwner,
                 onEditRequest = { ws -> editCandidate = ws },
                 onDeleteRequest = { ws -> deleteCandidate = ws },
-                modifier = Modifier.padding(horizontal = 8.dp),
+                modifier = Modifier.padding(horizontal = AppSpacing.sm),
             )
         }
     }
@@ -173,20 +172,20 @@ fun ProjectsSectionContent(
                 Text(stringResource(R.string.panels_projects_delete_confirm_body))
             },
             confirmButton = {
-                NiaButton(
-                    text = { Text(stringResource(R.string.panels_projects_delete)) },
+                AppPrimaryButton(
+                    text = stringResource(R.string.panels_projects_delete),
                     onClick = {
                         projectsViewModel.deleteWorkspace(target.id)
                         deleteCandidate = null
                     },
-                    leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+                    leadingIcon = Icons.Outlined.Delete,
                 )
             },
             dismissButton = {
-                NiaTextButton(
-                    text = { Text(stringResource(R.string.panels_projects_cancel)) },
+                AppTertiaryButton(
+                    text = stringResource(R.string.panels_projects_cancel),
                     onClick = { deleteCandidate = null },
-                    leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
+                    leadingIcon = Icons.Outlined.Close,
                 )
             },
         )

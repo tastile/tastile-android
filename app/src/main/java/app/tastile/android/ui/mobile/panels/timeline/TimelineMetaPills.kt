@@ -12,8 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.ui.designsystem.AppSpacing
+import app.tastile.android.ui.designsystem.AppTheme
 
 /**
  * Meta-pills row shown above the timeline block list. Mirrors web's
@@ -40,34 +41,34 @@ internal fun TimelineMetaPills(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(vertical = AppSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = "${model.blockCount} " + stringResource(R.string.panels_timeline_meta_blocks),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = AppTheme.colors.onSurfaceVariant,
         )
         Text(
             text = "·",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = AppTheme.colors.onSurfaceVariant,
         )
         Text(
             text = "${model.totalWorkMin}m " + stringResource(R.string.panels_timeline_meta_work),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = AppTheme.colors.onSurfaceVariant,
         )
         Text(
             text = "·",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = AppTheme.colors.onSurfaceVariant,
         )
         Text(
             text = "${model.totalBreakMin} " + stringResource(R.string.panels_timeline_meta_breaks),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = AppTheme.colors.onSurfaceVariant,
         )
     }
 }

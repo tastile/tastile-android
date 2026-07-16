@@ -8,19 +8,15 @@ import androidx.compose.material.icons.outlined.Delete
 // m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
 // m2-allow: primitive
-import androidx.compose.material3.Icon
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
-// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaButton
-import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 
 /**
  * Confirmation dialog triggered by
@@ -40,15 +36,15 @@ fun DeleteTileDialog(
     AlertDialog(
         onDismissRequest = onCancel,
         title = {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs)) {
                 Text(
                     text = stringResource(R.string.dashboard_tiles_delete_dialog_title),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = AppTheme.typography.headlineSmall,
                 )
                 if (!tileTitle.isNullOrBlank()) {
                     Text(
                         text = tileTitle,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = AppTheme.typography.bodyMedium,
                         modifier = Modifier.testTag("tiles-delete-dialog-target"),
                     )
                 }
@@ -56,19 +52,19 @@ fun DeleteTileDialog(
         },
         text = { Text(stringResource(R.string.dashboard_tiles_delete_dialog_body)) },
         confirmButton = {
-            NiaButton(
+            AppPrimaryButton(
+                text = stringResource(R.string.dashboard_tiles_delete_dialog_confirm),
                 onClick = onConfirm,
+                leadingIcon = Icons.Outlined.Delete,
                 modifier = Modifier.testTag("tiles-delete-dialog-confirm"),
-                text = { Text(stringResource(R.string.dashboard_tiles_delete_dialog_confirm)) },
-                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
             )
         },
         dismissButton = {
-            NiaTextButton(
+            AppTertiaryButton(
+                text = stringResource(R.string.dashboard_tiles_delete_dialog_cancel),
                 onClick = onCancel,
+                leadingIcon = Icons.Outlined.Close,
                 modifier = Modifier.testTag("tiles-delete-dialog-cancel"),
-                text = { Text(stringResource(R.string.dashboard_tiles_delete_dialog_cancel)) },
-                leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
             )
         },
         modifier = modifier.testTag("tiles-delete-dialog"),

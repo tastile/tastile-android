@@ -5,10 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
-// m2-allow: primitive
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,11 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.tastile.android.core.designsystem.component.NiaButton
-import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
-import app.tastile.android.core.designsystem.component.NiaOutlinedButton
-import app.tastile.android.core.designsystem.component.NiaOutlinedCard
 import app.tastile.android.data.repository.AppLocale
+import app.tastile.android.ui.designsystem.AppBodyText
+import app.tastile.android.ui.designsystem.AppDangerButton
+import app.tastile.android.ui.designsystem.AppInlineError
+import app.tastile.android.ui.designsystem.AppOutlinedPanel
+import app.tastile.android.ui.designsystem.AppPrimaryButton
+import app.tastile.android.ui.designsystem.AppScreenTitle
+import app.tastile.android.ui.designsystem.AppSecondaryButton
+import app.tastile.android.ui.designsystem.AppTonalButton
 
 @Composable
 fun AccountDashboardScreen(viewModel: DashboardViewModel) {
@@ -41,7 +41,7 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
     val completionRate = if (total == 0) 0 else (completed * 100) / total
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text(t("アカウント設定", "Account Settings"), style = MaterialTheme.typography.titleLarge)
+        AppScreenTitle(t("アカウント設定", "Account Settings"))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             listOf(
                 "profile" to t("プロフィール", "Profile"),
@@ -50,14 +50,14 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
                 "usage" to t("利用状況", "Usage")
             ).forEach { (key, label) ->
                 if (activeTab.value == key) {
-                    NiaFilledTonalButton(
-                        text = { Text(label) },
+                    AppTonalButton(
+                        text = label,
                         onClick = { activeTab.value = key },
                         modifier = Modifier.weight(1f)
                     )
                 } else {
-                    NiaOutlinedButton(
-                        text = { Text(label) },
+                    AppSecondaryButton(
+                        text = label,
                         onClick = { activeTab.value = key },
                         modifier = Modifier.weight(1f)
                     )
@@ -66,65 +66,61 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
         }
 
         when (activeTab.value) {
-            "profile" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
+            "profile" -> AppOutlinedPanel {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(t("プロフィール情報", "Profile Information"))
-                    Text(profile?.displayName ?: t("表示名なし", "No display name"))
-                    Text(email)
-                    NiaButton(
-                        text = { Text(t("Webでアカウント設定を開く", "Open Web Account Settings")) },
+                    AppBodyText(t("プロフィール情報", "Profile Information"))
+                    AppBodyText(profile?.displayName ?: t("表示名なし", "No display name"))
+                    AppBodyText(email)
+                    AppPrimaryButton(
+                        text = t("Webでアカウント設定を開く", "Open Web Account Settings"),
                         onClick = { uriHandler.openUri("https://app.tastile.app/dashboard/account") },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    NiaOutlinedButton(
-                        text = { Text(t("ログアウト", "Sign Out")) },
+                    AppDangerButton(
+                        text = t("ログアウト", "Sign Out"),
                         onClick = { viewModel.signOut() },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
 
-            "subscription" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
+            "subscription" -> AppOutlinedPanel {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(t("サブスクリプション", "Subscription"))
-                    Text(t("現在のプラン", "Current Plan") + ": ${profile?.plan ?: "free"}")
+                    AppBodyText(t("サブスクリプション", "Subscription"))
+                    AppBodyText(t("現在のプラン", "Current Plan") + ": ${profile?.plan ?: "free"}")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NiaButton(text = { Text(t("Proへアップグレード", "Upgrade to Pro")) }, onClick = { uriHandler.openUri("https://tastile.app/api/stripe/checkout") })
-                        NiaOutlinedButton(text = { Text(t("請求管理", "Manage Billing")) }, onClick = { uriHandler.openUri("https://tastile.app/api/stripe/portal") })
+                        AppPrimaryButton(text = t("Proへアップグレード", "Upgrade to Pro"), onClick = { uriHandler.openUri("https://tastile.app/api/stripe/checkout") })
+                        AppSecondaryButton(text = t("請求管理", "Manage Billing"), onClick = { uriHandler.openUri("https://tastile.app/api/stripe/portal") })
                     }
                 }
             }
 
-            "statistics" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
+            "statistics" -> AppOutlinedPanel {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(t("タイル統計", "Tile Statistics"))
-                    Text(t("総数", "Total") + ": $total")
-                    Text(t("完了", "Completed") + ": $completed")
-                    Text(t("進行中", "In Progress") + ": $started")
-                    Text(t("準備完了", "Ready") + ": $ready")
-                    Text(t("完了率", "Completion Rate") + ": $completionRate%")
-                    Text(t("診断", "Diagnostics") + ": $statsDiagnostics")
+                    AppBodyText(t("タイル統計", "Tile Statistics"))
+                    AppBodyText(t("総数", "Total") + ": $total")
+                    AppBodyText(t("完了", "Completed") + ": $completed")
+                    AppBodyText(t("進行中", "In Progress") + ": $started")
+                    AppBodyText(t("準備完了", "Ready") + ": $ready")
+                    AppBodyText(t("完了率", "Completion Rate") + ": $completionRate%")
+                    AppBodyText(t("診断", "Diagnostics") + ": $statsDiagnostics")
                 }
             }
 
-            "usage" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
+            "usage" -> AppOutlinedPanel {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(t("利用ダッシュボード", "Usage Dashboard"))
-                    Text(t("準備中: 利用分析チャートを追加予定です。", "Coming Soon: analytics charts for productivity and focus trends."))
-                    Text("• " + t("Tiles Over Time", "Tiles Over Time"))
-                    Text("• " + t("Completion Rate", "Completion Rate"))
-                    Text("• " + t("Focus Time", "Focus Time"))
-                    Text("• " + t("Activity Heatmap", "Activity Heatmap"))
+                    AppBodyText(t("利用ダッシュボード", "Usage Dashboard"))
+                    AppBodyText(t("準備中: 利用分析チャートを追加予定です。", "Coming Soon: analytics charts for productivity and focus trends."))
+                    AppBodyText("• " + t("Tiles Over Time", "Tiles Over Time"))
+                    AppBodyText("• " + t("Completion Rate", "Completion Rate"))
+                    AppBodyText("• " + t("Focus Time", "Focus Time"))
+                    AppBodyText("• " + t("Activity Heatmap", "Activity Heatmap"))
                 }
             }
         }
 
         if (!error.isNullOrBlank()) {
-            Text(
-                text = error.orEmpty(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
+            AppInlineError(error.orEmpty())
         }
     }
 }

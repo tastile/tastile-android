@@ -6,14 +6,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOff
 // m2-allow: m3-component
 import androidx.compose.material3.Checkbox
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,12 +18,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.projectLabel
+import app.tastile.android.ui.designsystem.AppCorner
+import app.tastile.android.ui.designsystem.AppSpacing
+import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
 
 /**
  * "Projects" filter section reused by both [TimelineSectionContent]
@@ -45,7 +44,7 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
     val projects = remember(tiles) { extractProjects(tiles) }
     val checked = remember { mutableStateOf(setOf<String>()) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
         SectionHeader(title = stringResource(R.string.panels_schedule_projects))
         if (projects.isEmpty()) {
             AppEmptyState(
@@ -60,11 +59,11 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(AppCorner.mediumShape)
                     .clickable {
                         checked.value = if (isChecked) checked.value - name else checked.value + name
                     }
-                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                    .padding(horizontal = AppSpacing.xs, vertical = AppSpacing.xs + AppSpacing.xxs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Checkbox(
@@ -75,58 +74,11 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
                 )
                 Text(
                     text = name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = AppTheme.typography.bodyMedium,
+                    color = AppTheme.colors.onSurface,
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun AppEmptyState(
-    icon: ImageVector,
-    title: String,
-    hint: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        androidx.compose.material3.Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(48.dp),
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 12.dp),
-        )
-        Text(
-            text = hint,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
     }
 }
 

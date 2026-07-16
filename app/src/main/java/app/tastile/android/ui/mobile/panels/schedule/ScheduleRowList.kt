@@ -1,35 +1,23 @@
 package app.tastile.android.ui.mobile.panels.schedule
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.Schedule
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
-// m2-allow: state-holder
-import androidx.compose.material3.ListItemDefaults
-// m2-allow: primitive
-import androidx.compose.material3.Icon
-// m2-allow: primitive
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaListItem
 import app.tastile.android.data.model.Tile
+import app.tastile.android.ui.designsystem.AppSpacing
+import app.tastile.android.ui.mobile.designsystem.AppEmptyState
+import app.tastile.android.ui.mobile.designsystem.AppListItem
 
 /**
  * Filtered list of schedule rows for the active view. Mirrors the web
@@ -61,7 +49,7 @@ fun ScheduleRowList(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = 320.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs),
     ) {
         items(tiles.take(VISIBLE_LIMIT), key = { it.id }) { tile ->
             ScheduleRow(
@@ -79,49 +67,11 @@ private fun ScheduleRow(
     recurring: Boolean,
     onClick: () -> Unit,
 ) {
-    NiaListItem(
-        headlineContent = { Text(tile.title, style = MaterialTheme.typography.bodyLarge) },
-        leadingContent = {
-            Icon(
-                imageVector = if (recurring) Icons.Outlined.Replay else Icons.Outlined.Schedule,
-                contentDescription = null,
-            )
-        },
-        modifier = Modifier.clickable(onClick = onClick),
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+    AppListItem(
+        headline = tile.title,
+        leading = if (recurring) Icons.Outlined.Replay else Icons.Outlined.Schedule,
+        onClick = onClick,
     )
-}
-
-@Composable
-private fun AppEmptyState(
-    icon: ImageVector,
-    title: String,
-    hint: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(48.dp),
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 12.dp),
-        )
-        Text(
-            text = hint,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
 }
 
 private const val VISIBLE_LIMIT = 10

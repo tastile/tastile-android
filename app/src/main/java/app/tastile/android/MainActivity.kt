@@ -134,7 +134,7 @@ class MainActivity : ComponentActivity() {
 
     private fun observeSessionForCoreSync() {
         lifecycleScope.launch {
-            authRepository.getAuthStateStream.collectLatest { status ->
+            authRepository.authState.collectLatest { status ->
                 if (status !is TastileAuthState.Authenticated) {
                     executionNotificationCoordinator.stop()
                     return@collectLatest

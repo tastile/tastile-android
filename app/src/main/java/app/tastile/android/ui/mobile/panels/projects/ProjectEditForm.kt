@@ -3,18 +3,13 @@ package app.tastile.android.ui.mobile.panels.projects
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountTree
-import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.ui.graphics.vector.ImageVector
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
@@ -22,11 +17,7 @@ import androidx.compose.material3.DropdownMenuItem
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
-import androidx.compose.material3.OutlinedButton
-// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
-// m2-allow: primitive
-import androidx.compose.material3.Icon
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,10 +28,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
-import app.tastile.android.core.designsystem.component.NiaButton
-import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.api.Workspace
+import app.tastile.android.ui.mobile.designsystem.AppPickerButton
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.MobileSpacing
 
 /** Web ProjectsMain edit fields, including the Android-visible parent link. */
 @Composable
@@ -61,7 +53,7 @@ fun ProjectEditForm(
     val candidates = remember(workspace.id, workspaces) {
         orderWorkspaceTree(workspaces.filterNot { it.id in blockedIds })
     }
-    Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(MobileSpacing.sm)) {
         OutlinedTextField(name, { name = it.take(80) }, label = { Text("Name") }, singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag("project-edit-name"))
         OutlinedTextField(slug, { slug = it.lowercase().filter { c -> c.isLetterOrDigit() || c == '-' }.take(40) }, label = { Text("Slug") }, singleLine = true,
@@ -79,12 +71,12 @@ fun ProjectEditForm(
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text("Top level") },
-                    leadingIcon = { Icon(Icons.Outlined.AccountTree, contentDescription = null) },
+                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.AccountTree, contentDescription = null) },
                     onClick = { parentId = null; menuOpen = false },
                 )
                 candidates.forEach { entry -> DropdownMenuItem(
                     text = { Text("  ".repeat(entry.depth) + entry.workspace.displayName) },
-                    leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null) },
+                    leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Folder, contentDescription = null) },
                     onClick = { parentId = entry.workspace.id; menuOpen = false },
                 ) }
             }
@@ -92,56 +84,22 @@ fun ProjectEditForm(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(MobileSpacing.xs),
         ) {
-            NiaButton(
-                text = { Text(if (busy) "Saving…" else "Save") },
+            AppPrimaryButton(
+                text = if (busy) "Saving…" else "Save",
                 onClick = { onSave(name, slug.ifBlank { null }, color.ifBlank { null }, parentId) },
                 enabled = !busy && name.isNotBlank(),
-                leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
+                leadingIcon = Icons.Outlined.Check,
                 modifier = Modifier.testTag("project-edit-save"),
             )
-            NiaTextButton(
-                text = { Text("Cancel") },
+            AppTertiaryButton(
+                text = "Cancel",
                 onClick = onCancel,
                 enabled = !busy,
             )
         }
         if (!errorText.isNullOrBlank()) Text(errorText, color = MaterialTheme.colorScheme.error)
-    }
-}
-
-@Composable
-private fun AppPickerButton(
-    label: String,
-    value: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    leadingIcon: ImageVector? = null,
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        shape = RoundedCornerShape(8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (leadingIcon != null) {
-                    Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Box(Modifier.size(8.dp))
-                }
-                Column {
-                    Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(value.ifBlank { "—" }, style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-            Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
-        }
     }
 }
 

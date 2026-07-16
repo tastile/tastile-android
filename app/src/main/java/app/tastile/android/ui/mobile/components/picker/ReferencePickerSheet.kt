@@ -7,25 +7,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Tag
-// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
-// m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: state-holder
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
-// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-// m2-allow: primitive
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-// m2-allow: state-holder
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaListItem
-import app.tastile.android.core.designsystem.component.NiaModalBottomSheet
 
 data class ReferenceOption(val id: String, val label: String)
 
@@ -38,7 +32,7 @@ fun ReferencePickerSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    NiaModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -52,7 +46,7 @@ fun ReferencePickerSheet(
                 )
             } else {
                 references.forEach { ref ->
-                    NiaListItem(
+                    ListItem(
                         headlineContent = { Text(ref.label) },
                         supportingContent = { Text(ref.id, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingContent = { Icon(Icons.Outlined.Tag, contentDescription = null) },

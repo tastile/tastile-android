@@ -1,7 +1,6 @@
 package app.tastile.android.ui.mobile
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -14,10 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.NotificationsNone
 // m2-allow: m3-component
@@ -30,8 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-// m2-allow: m3-component
-import androidx.compose.material3.Surface
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -54,7 +47,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.ui.dashboard.TimelineScale
-import coil.compose.AsyncImage
+import app.tastile.android.ui.designsystem.AppAvatar
+import app.tastile.android.ui.mobile.designsystem.AppPickerButtonCompact
+import app.tastile.android.ui.mobile.designsystem.MobileTokens
 
 @Composable
 fun MobileTopBar(
@@ -125,7 +120,7 @@ private fun ScaleDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        CompactPickerButton(
+        AppPickerButtonCompact(
             label = scale.name,
             onClick = { expanded = true },
             modifier = Modifier.semantics { contentDescription = "Scale: ${scale.name}" },
@@ -152,43 +147,6 @@ private fun ScaleDropdown(
     }
 }
 
-/**
- * Compact pill-shaped picker button — wraps [Surface] with a pill shape and
- * outline border so the top-bar dropdown trigger matches the Material 3
- * surface interaction behaviour (built-in ripple via [Surface]).
- */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun CompactPickerButton(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(50),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Icon(
-                Icons.Outlined.ArrowDropDown,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
 @Composable
 private fun TopBarAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -198,13 +156,13 @@ private fun TopBarAction(
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = MobileTokens.iconHitTarget)
             .semantics { role = Role.Button },
     ) {
         Icon(
             imageVector = icon,
             contentDescription = stringResource(id = descriptionRes),
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(MobileTokens.iconVisualSize),
         )
     }
 }
@@ -220,54 +178,12 @@ private fun TopBarAvatarAction(
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = MobileTokens.iconHitTarget)
             .clearAndSetSemantics {
                 contentDescription = descriptionString
                 role = Role.Button
             },
     ) {
-        AvatarCircle(
-            imageUrl = avatarUrl,
-            fallbackText = avatarFallback,
-        )
-    }
-}
-
-/**
- * Circular avatar used by the top-bar avatar action. Renders a 40dp circular
- * surface; if [imageUrl] is non-blank it loads with [AsyncImage], otherwise it
- * shows the first letter of [fallbackText] on the primary-container surface.
- */
-@Composable
-private fun AvatarCircle(
-    imageUrl: String?,
-    fallbackText: String,
-    modifier: Modifier = Modifier,
-) {
-    val size = 40.dp
-    val hasImage = !imageUrl.isNullOrBlank()
-    if (hasImage) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = "Avatar",
-            modifier = modifier
-                .size(size)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
-        )
-    } else {
-        Box(
-            modifier = modifier
-                .size(size)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = fallbackText.take(1).uppercase(),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
+        AppAvatar(imageUrl = avatarUrl, fallbackText = avatarFallback)
     }
 }
