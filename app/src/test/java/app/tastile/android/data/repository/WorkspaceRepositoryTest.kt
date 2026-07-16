@@ -4,6 +4,7 @@ import app.tastile.android.data.api.CreateWorkspaceInput
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1ListWorkspacesResponse
 import app.tastile.android.data.api.Workspace
+import app.tastile.android.data.api.UpdateWorkspaceInput
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -136,6 +137,19 @@ class WorkspaceRepositoryTest {
         repository.delete("ws-1")
 
         coVerify(exactly = 1) { apiClient.deleteWorkspace("ws-1") }
+    }
+
+    @Test
+    fun update_delegatesTypedPatchToV1ApiClient() = runTest {
+        val apiClient = mockk<V1ApiClient>()
+        val input = UpdateWorkspaceInput("Renamed", "renamed", "#112233", "parent")
+        coEvery { apiClient.updateWorkspace("ws-1", input) } returns ws(id = "ws-1", name = "Renamed", parent = "parent")
+
+        val result = WorkspaceRepository(apiClient).update("ws-1", input)
+
+        coVerify(exactly = 1) { apiClient.updateWorkspace("ws-1", input) }
+        assertEquals("Renamed", result.displayName)
+        assertEquals("parent", result.parentSubjectId)
     }
 
     @Test

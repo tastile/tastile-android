@@ -121,6 +121,14 @@ class DashboardViewModel @Inject constructor(
         _tileFilter.value = filter
     }
 
+    /** Applies the same owner_ids selection to tile lists and the calendar. */
+    fun setOwnerFilter(ownerId: String?) {
+        _tileFilter.value = _tileFilter.value.copy(
+            ownerIds = ownerId?.takeIf { it.isNotBlank() }?.let(::listOf).orEmpty(),
+        )
+        refreshTimeline()
+    }
+
     private val _selectedTileId = MutableStateFlow<String?>(null)
 
     val selectedTile: StateFlow<Tile?> = combine(tiles, _selectedTileId) { list, id ->
@@ -482,7 +490,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoadingTimeline.value = true
             try {
-                _timeline.value = tileRepository.getTimeline(start, end)
+                _timeline.value = tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load timeline"
             } finally {
@@ -505,7 +513,7 @@ class DashboardViewModel @Inject constructor(
                     _profile.value = profileRepository.getProfile(userId)
                     _avatarUrl.value = metadataAvatar ?: _profile.value?.avatarUrl
                     val (tlStart, tlEnd) = _timelineRange.value
-                    _timeline.value = tileRepository.getTimeline(tlStart, tlEnd)
+                    _timeline.value = tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds)
                 } else {
                     _timeline.value = emptyList()
                     _profile.value = null

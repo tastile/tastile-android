@@ -32,10 +32,15 @@ internal object V1Endpoints {
     fun materializeRecurring(tileId: String, frameRuleId: String) =
         "/v1/recurring/$tileId/frame-rules/$frameRuleId/materialize"
 
-    fun timeline(start: Instant, end: Instant): String {
+    fun timeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): String {
         val startIso = URLEncoder.encode(start.toString(), Charsets.UTF_8.name())
         val endIso = URLEncoder.encode(end.toString(), Charsets.UTF_8.name())
-        return "/v1/timeline?start=$startIso&end=$endIso"
+        val owners = ownerIds.filter { it.isNotBlank() }
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString(",")
+            ?.let { "&owner_ids=${URLEncoder.encode(it, Charsets.UTF_8.name())}" }
+            .orEmpty()
+        return "/v1/timeline?start=$startIso&end=$endIso$owners"
     }
 }
 
@@ -51,6 +56,15 @@ internal object V1Wire {
         put("idempotency_key", idempotencyKey)
         put("occurred_at", occurredAt)
         put("payload", payload)
+    }
+}
+
+internal object V1WorkspaceWire {
+    fun updateBody(input: UpdateWorkspaceInput): JsonObject = buildJsonObject {
+        put("display_name", input.displayName?.let(::JsonPrimitive) ?: JsonNull)
+        put("slug", input.slug?.let(::JsonPrimitive) ?: JsonNull)
+        put("color", input.color?.let(::JsonPrimitive) ?: JsonNull)
+        put("parent_subject_id", input.parentSubjectId?.let(::JsonPrimitive) ?: JsonNull)
     }
 }
 
@@ -116,8 +130,8 @@ class V1ApiClient @Inject constructor(
     suspend fun readExecution(executionId: String): ExecutionView =
         get("/v1/executions/$executionId")
 
-    suspend fun getTimeline(start: Instant, end: Instant): V1TimelineResponse {
-        return get(V1Endpoints.timeline(start, end))
+    suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): V1TimelineResponse {
+        return get(V1Endpoints.timeline(start, end, ownerIds))
     }
 
     suspend fun createTile(payload: CreateTilePayload): CommandResponse =
@@ -177,6 +191,16 @@ class V1ApiClient @Inject constructor(
      */
     suspend fun deleteWorkspace(id: String) {
         deleteRaw(path = "/v1/access/subjects/$id")
+    }
+
+    /** Plain JSON PATCH, matching the web updateSubject endpoint. */
+    suspend fun updateWorkspace(id: String, input: UpdateWorkspaceInput): Workspace {
+        val body = V1WorkspaceWire.updateBody(input)
+        return patchRawJson(
+            path = "/v1/access/subjects/$id",
+            body = body,
+            responseSerializer = Workspace.serializer(),
+        )
     }
 
     suspend fun <Req, Resp> postCommand(
@@ -262,6 +286,39 @@ class V1ApiClient @Inject constructor(
             val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
                 ?.bufferedReader()?.use { it.readText() }
                 .orEmpty()
+            if (status !in 200..299) {
+                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(responseBody) }.getOrNull()
+                if (err != null) throw V1Error.fromApiBody(err)
+                throw V1Error.Unknown(status, responseBody.take(200))
+            }
+            json.decodeFromString(responseSerializer, responseBody)
+        } catch (e: IOException) {
+            throw V1Error.Network(e)
+        }
+    }
+
+    suspend fun <Resp> patchRawJson(
+        path: String,
+        body: JsonObject,
+        responseSerializer: KSerializer<Resp>,
+    ): Resp = withContext(Dispatchers.IO) {
+        try {
+            val token = tokenProvider()
+            if (token.isNullOrBlank()) throw V1Error.Auth()
+            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                requestMethod = "PATCH"
+                doOutput = true
+                doInput = true
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000
+                readTimeout = 15_000
+            }
+            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            val status = connection.responseCode
+            val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                ?.bufferedReader()?.use { it.readText() }.orEmpty()
             if (status !in 200..299) {
                 val err = runCatching { json.decodeFromString<V1ApiErrorBody>(responseBody) }.getOrNull()
                 if (err != null) throw V1Error.fromApiBody(err)

@@ -207,4 +207,32 @@ class V1ApiClientTest {
             ),
         )
     }
+
+    @Test
+    fun workspace_patch_wire_matches_web_edit_fields_including_parent() {
+        val body = V1WorkspaceWire.updateBody(
+            UpdateWorkspaceInput(
+                displayName = "Mobile launch",
+                slug = "mobile-launch",
+                color = "#aabbcc",
+                parentSubjectId = "parent-1",
+            ),
+        )
+        assertEquals("Mobile launch", body["display_name"]?.jsonPrimitive?.content)
+        assertEquals("mobile-launch", body["slug"]?.jsonPrimitive?.content)
+        assertEquals("#aabbcc", body["color"]?.jsonPrimitive?.content)
+        assertEquals("parent-1", body["parent_subject_id"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun timeline_path_includes_owner_ids_when_project_selected() {
+        assertEquals(
+            "/v1/timeline?start=2026-07-01T00%3A00%3A00Z&end=2026-07-02T00%3A00%3A00Z&owner_ids=project-1",
+            V1Endpoints.timeline(
+                Instant.parse("2026-07-01T00:00:00Z"),
+                Instant.parse("2026-07-02T00:00:00Z"),
+                listOf("project-1"),
+            ),
+        )
+    }
 }

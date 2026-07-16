@@ -4,6 +4,7 @@ import app.tastile.android.data.api.CreateWorkspaceInput
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1ApiErrorBody
 import app.tastile.android.data.api.Workspace
+import app.tastile.android.data.api.UpdateWorkspaceInput
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,6 +36,9 @@ class WorkspaceRepository @Inject constructor(
     suspend fun delete(id: String) {
         v1ApiClient.deleteWorkspace(id)
     }
+
+    suspend fun update(id: String, input: UpdateWorkspaceInput): Workspace =
+        v1ApiClient.updateWorkspace(id, input)
 }
 
 class WorkspaceSlugConflictException(message: String) : RuntimeException(message)

@@ -240,6 +240,14 @@ data class CreateWorkspaceInput(
     @SerialName("parent_subject_id") val parentSubjectId: String? = null,
 )
 
+/** Fields accepted by PATCH /v1/access/subjects/{id}. */
+data class UpdateWorkspaceInput(
+    @SerialName("display_name") val displayName: String? = null,
+    val slug: String? = null,
+    val color: String? = null,
+    @SerialName("parent_subject_id") val parentSubjectId: String? = null,
+)
+
 @Serializable
 data class V1ListWorkspacesResponse(
     val items: List<Workspace> = emptyList(),

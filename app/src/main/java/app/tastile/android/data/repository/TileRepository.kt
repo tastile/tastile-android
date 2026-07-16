@@ -295,8 +295,8 @@ class TileRepository @Inject constructor(
         return ack
     }
 
-    suspend fun getTimeline(start: Instant, end: Instant): List<CoreTimelineItem> {
-        readCloudTimeline(start, end)?.let { v1Items ->
+    suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): List<CoreTimelineItem> {
+        readCloudTimeline(start, end, ownerIds)?.let { v1Items ->
             if (v1Items.isNotEmpty()) {
                 latestReadDiagnostics = buildString {
                     append(latestReadDiagnostics)
@@ -318,11 +318,15 @@ class TileRepository @Inject constructor(
         return fallback
     }
 
-    private suspend fun readCloudTimeline(start: Instant, end: Instant): List<CoreTimelineItem>? {
+    private suspend fun readCloudTimeline(
+        start: Instant,
+        end: Instant,
+        ownerIds: List<String>,
+    ): List<CoreTimelineItem>? {
         val token = currentUserProvider.currentIdToken()
         if (token.isNullOrBlank()) return null
         return try {
-            val response = v1ApiClient.getTimeline(start, end)
+            val response = v1ApiClient.getTimeline(start, end, ownerIds)
             val mapped = response.items.mapNotNull { it.toCoreTimelineItem(start, end) }
             android.util.Log.d("TileRepository", "v1 timeline: ${response.items.size} items, mapped=${mapped.size}")
             mapped
