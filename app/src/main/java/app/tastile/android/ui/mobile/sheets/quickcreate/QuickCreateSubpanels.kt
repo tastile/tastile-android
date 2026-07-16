@@ -499,12 +499,14 @@ private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateState
 
 @Composable
 private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    AppSecondaryButton(
-        text = "Add reference",
+    FilledTonalButton(
         onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references + defaultPlanReference())) },
         modifier = Modifier.testTag("quick-create-add-reference"),
-        leadingIcon = Icons.Outlined.Add,
-    )
+    ) {
+        Icon(Icons.Outlined.Add, contentDescription = null)
+        Spacer(Modifier.width(8.dp))
+        Text("Add reference")
+    }
     draft.plan.references.forEachIndexed { index, reference ->
         val target = reference.target.jsonObjectOrEmpty()
         val pick = reference.pick.jsonObjectOrEmpty()
@@ -550,12 +552,14 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             suffix = "min",
             modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-record-$index-interval"),
         )
-        AppSecondaryButton(
-            text = "Remove reference",
+        FilledTonalButton(
             onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references.filterIndexed { item, _ -> item != index })) },
             modifier = Modifier.testTag("quick-create-reference-record-$index-remove"),
-            leadingIcon = Icons.Outlined.Delete,
-        )
+        ) {
+            Icon(Icons.Outlined.Delete, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Remove reference")
+        }
     }
 }
 
