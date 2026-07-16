@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Delete
@@ -59,6 +58,9 @@ import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaListItem
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.component.NiaSegmentedButton
+import app.tastile.android.core.designsystem.component.NiaSegmentedButtonDefaults
+import app.tastile.android.core.designsystem.component.NiaSingleChoiceSegmentedButtonRow
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
@@ -145,21 +147,25 @@ private fun QuickCreateBaseComposition(
             )
         }
         Column(
-            Modifier.fillMaxWidth().testTag("quick-create-tile-kind"),
+            Modifier
+                .fillMaxWidth()
+                .testTag("quick-create-tile-kind")
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            QuickCreateTileKind.entries.forEach { kind ->
-                NiaListItem(
-                    headlineContent = { Text(kind.name) },
-                    trailingContent = if (draft.identity.kind == kind) {
-                        { Icon(Icons.Outlined.Check, contentDescription = null) }
-                    } else null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { store.updateIdentity(draft.identity.copy(kind = kind)) }
-                        .testTag("quick-create-kind-${kind.name}"),
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                )
+NiaSingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                QuickCreateTileKind.entries.forEachIndexed { index, kind ->
+                    NiaSegmentedButton(
+                        selected = draft.identity.kind == kind,
+                        onClick = { store.updateIdentity(draft.identity.copy(kind = kind)) },
+                        shape = NiaSegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = QuickCreateTileKind.entries.size,
+                        ),
+                        modifier = Modifier.testTag("quick-create-kind-${kind.name}"),
+                        label = { Text(kind.name) },
+                    )
+                }
             }
         }
         HorizontalDivider()
