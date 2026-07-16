@@ -9,16 +9,51 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Anchor
+import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.EventBusy
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.HorizontalRule
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.PlaylistAdd
+import androidx.compose.material.icons.outlined.PlaylistAddCheck
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.RepeatOne
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Tag
+import androidx.compose.material.icons.outlined.Task
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +68,12 @@ import app.tastile.android.ui.mobile.components.picker.DatePickerSheet
 import app.tastile.android.ui.mobile.components.picker.ReferenceOption
 import app.tastile.android.ui.mobile.components.picker.ReferencePickerSheet
 import app.tastile.android.ui.mobile.components.picker.TimePickerSheet
+import app.tastile.android.ui.mobile.designsystem.AppDismissButton
 import app.tastile.android.ui.mobile.designsystem.AppPickerButton
+import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
+import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
+import app.tastile.android.ui.mobile.designsystem.SectionHeader
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreateDurationRange
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
@@ -86,7 +126,7 @@ internal fun QuickCreateSubpanel(
         Modifier.testTag("quick-create-subpanel-${panel.name}").verticalScroll(rememberScrollState()).padding(vertical = 4.dp),
     ) {
         BackHeader(onBack)
-        Text(panel.name)
+        SectionHeader(title = panel.name)
         when (panel) {
             QuickCreatePanel.Intent -> IntentPanel(store)
             QuickCreatePanel.Time -> TimePanel(draft, store)
@@ -124,15 +164,43 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             ReferenceOption(id = refId, label = ref.id.ifBlank { refId })
         }
     }
-    TextButton(onClick = { setWhen(QuickCreateWhenMode.None) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-when-none")) { Text("No date or time") }
-    Text("When")
-    Row { listOf(QuickCreateWhenMode.Day, QuickCreateWhenMode.Range, QuickCreateWhenMode.Reference).forEach { mode -> TextButton(onClick = { setWhen(mode) }, modifier = Modifier.testTag("quick-create-when-${mode.name.lowercase()}")) { Text(mode.name) } } }
+    AppTertiaryButton(
+        text = "No date or time",
+        onClick = { setWhen(QuickCreateWhenMode.None) },
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-when-none"),
+        leadingIcon = Icons.Outlined.EventBusy,
+    )
+    SectionHeader(title = "When")
+    val whenModes = listOf(QuickCreateWhenMode.Day, QuickCreateWhenMode.Range, QuickCreateWhenMode.Reference)
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        whenModes.forEachIndexed { index, mode ->
+            val icon = when (mode) {
+                QuickCreateWhenMode.None -> Icons.Outlined.EventBusy
+                QuickCreateWhenMode.Day -> Icons.Outlined.Today
+                QuickCreateWhenMode.Range -> Icons.Outlined.DateRange
+                QuickCreateWhenMode.Reference -> Icons.Outlined.Tag
+            }
+            SegmentedButton(
+                selected = draft.time.whenMode == mode,
+                onClick = { setWhen(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = whenModes.size),
+                modifier = Modifier.testTag("quick-create-when-${mode.name.lowercase()}"),
+                icon = {
+                    Icon(
+                        imageVector = if (draft.time.whenMode == mode) Icons.Outlined.Check else icon,
+                        contentDescription = null,
+                    )
+                },
+                label = { Text(mode.name) },
+            )
+        }
+    }
     if (draft.time.whenMode == QuickCreateWhenMode.Day || draft.time.whenMode == QuickCreateWhenMode.Range) Column(Modifier.testTag("quick-create-calendar")) {
         NativeDateField("Date", draft.time.span.start, "quick-create-start") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(start = value))) }
         if (draft.time.whenMode == QuickCreateWhenMode.Range) NativeDateField("End date", draft.time.span.end, "quick-create-end") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }
     }
     if (draft.time.whenMode == QuickCreateWhenMode.Reference) Column(Modifier.testTag("quick-create-reference-catalog")) {
-        Text("Reference range")
+        SectionHeader(title = "Reference range")
         AppPickerButton(
             label = stringResource(R.string.picker_reference_label),
             value = draft.time.referenceId.orEmpty().ifBlank { "—" },
@@ -143,10 +211,27 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         OutlinedTextField(draft.time.referenceLabel, { value -> store.updateTime(draft.time.copy(referenceLabel = value)) }, label = { Text("Reference label") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-label"))
     }
     if (draft.time.whenMode != QuickCreateWhenMode.None) {
-        Text("Time of day")
-        Row { QuickCreateTimeOfDayMode.entries.forEach { mode -> TextButton(onClick = {
-            store.updateTime(if (mode == QuickCreateTimeOfDayMode.Range) draft.time.copy(timeOfDayMode = mode, timeOfDayStart = draft.time.timeOfDayStart.ifBlank { "09:00" }, timeOfDayEnd = draft.time.timeOfDayEnd.ifBlank { "18:00" }) else draft.time.copy(timeOfDayMode = mode, timeOfDayStart = "", timeOfDayEnd = ""))
-        }, modifier = Modifier.testTag("quick-create-time-of-day-${mode.name.lowercase()}")) { Text(mode.name) } } }
+        SectionHeader(title = "Time of day")
+        val timeOfDayModes = QuickCreateTimeOfDayMode.entries.toList()
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            timeOfDayModes.forEachIndexed { index, mode ->
+                SegmentedButton(
+                    selected = draft.time.timeOfDayMode == mode,
+                    onClick = {
+                        store.updateTime(if (mode == QuickCreateTimeOfDayMode.Range) draft.time.copy(timeOfDayMode = mode, timeOfDayStart = draft.time.timeOfDayStart.ifBlank { "09:00" }, timeOfDayEnd = draft.time.timeOfDayEnd.ifBlank { "18:00" }) else draft.time.copy(timeOfDayMode = mode, timeOfDayStart = "", timeOfDayEnd = ""))
+                    },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = timeOfDayModes.size),
+                    modifier = Modifier.testTag("quick-create-time-of-day-${mode.name.lowercase()}"),
+                    icon = {
+                        Icon(
+                            imageVector = if (draft.time.timeOfDayMode == mode) Icons.Outlined.Check else Icons.Outlined.Schedule,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text(mode.name) },
+                )
+            }
+        }
         if (draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range) {
             AppPickerButton(
                 label = stringResource(R.string.picker_time_start),
@@ -184,16 +269,79 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                     titleRes = R.string.picker_time_end,
                 )
             }
-            Row { listOf("morning" to ("06:00" to "10:00"), "midday" to ("09:00" to "18:00"), "night" to ("18:00" to "24:00")).forEach { (label, range) -> TextButton(onClick = { store.updateTime(draft.time.copy(timeOfDayMode = QuickCreateTimeOfDayMode.Range, timeOfDayStart = range.first, timeOfDayEnd = range.second)) }, modifier = Modifier.testTag("quick-create-time-quick-$label")) { Text(label) } } }
+            val quickRanges = listOf(
+                Triple("morning", "06:00" to "10:00", Icons.Outlined.WbSunny),
+                Triple("midday", "09:00" to "18:00", Icons.Outlined.LightMode),
+                Triple("night", "18:00" to "24:00", Icons.Outlined.DarkMode),
+            )
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                quickRanges.forEachIndexed { index, (label, range, icon) ->
+                    SegmentedButton(
+                        selected = draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range &&
+                            draft.time.timeOfDayStart == range.first &&
+                            draft.time.timeOfDayEnd == range.second,
+                        onClick = {
+                            store.updateTime(
+                                draft.time.copy(
+                                    timeOfDayMode = QuickCreateTimeOfDayMode.Range,
+                                    timeOfDayStart = range.first,
+                                    timeOfDayEnd = range.second,
+                                ),
+                            )
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = quickRanges.size),
+                        modifier = Modifier.testTag("quick-create-time-quick-$label"),
+                        icon = {
+                            Icon(
+                                imageVector = if (
+                                    draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range &&
+                                    draft.time.timeOfDayStart == range.first &&
+                                    draft.time.timeOfDayEnd == range.second
+                                ) Icons.Outlined.Check else icon,
+                                contentDescription = null,
+                            )
+                        },
+                        label = { Text(label) },
+                    )
+                }
+            }
         }
     }
-    TextButton(onClick = { store.updateWindows(draft.windows + QuickCreateWindow(UUID.randomUUID().toString(), "self", 0, app.tastile.android.ui.mobile.sheets.QuickCreateSpan())) }, modifier = Modifier.testTag("quick-create-add-window")) { Text("Add window") }
+    AppSecondaryButton(
+        text = "Add window",
+        onClick = { store.updateWindows(draft.windows + QuickCreateWindow(UUID.randomUUID().toString(), "self", 0, app.tastile.android.ui.mobile.sheets.QuickCreateSpan())) },
+        modifier = Modifier.testTag("quick-create-add-window"),
+        leadingIcon = Icons.Outlined.Add,
+    )
     draft.windows.forEachIndexed { index, window ->
         var showWindowStartDate by remember(index) { mutableStateOf(false) }
         var showWindowEndDate by remember(index) { mutableStateOf(false) }
         var showWindowReferencePicker by remember(index) { mutableStateOf(false) }
-        Text("Window ${index + 1}")
-        Row { listOf(0, 1, 2, 3).forEach { kind -> TextButton(onClick = { store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) }, modifier = Modifier.testTag("quick-create-window-$index-kind-$kind")) { Text("Kind $kind") } } }
+        SectionHeader(title = "Window ${index + 1}")
+        val windowKinds = listOf(0, 1, 2, 3)
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            windowKinds.forEachIndexed { kindIndex, kind ->
+                val icon = when (kind) {
+                    0 -> Icons.Outlined.Anchor
+                    1 -> Icons.Outlined.Link
+                    2 -> Icons.Outlined.Schedule
+                    else -> Icons.Outlined.Repeat
+                }
+                SegmentedButton(
+                    selected = window.kind == kind,
+                    onClick = { store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) },
+                    shape = SegmentedButtonDefaults.itemShape(index = kindIndex, count = windowKinds.size),
+                    modifier = Modifier.testTag("quick-create-window-$index-kind-$kind"),
+                    icon = {
+                        Icon(
+                            imageVector = if (window.kind == kind) Icons.Outlined.Check else icon,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text("Kind $kind") },
+                )
+            }
+        }
         AppPickerButton(
             label = stringResource(R.string.picker_date_start),
             value = window.bounds.start.ifBlank { "—" },
@@ -249,7 +397,12 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                 )
             }
         }
-        TextButton(onClick = { store.updateWindows(draft.windows.filterIndexed { item, _ -> item != index }) }) { Text("Remove window") }
+        AppSecondaryButton(
+            text = "Remove window",
+            onClick = { store.updateWindows(draft.windows.filterIndexed { item, _ -> item != index }) },
+            modifier = Modifier.testTag("quick-create-window-$index-remove"),
+            leadingIcon = Icons.Outlined.Delete,
+        )
     }
     if (showReferencePicker) {
         ReferencePickerSheet(
@@ -266,7 +419,12 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
 @Composable
 private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     val duration = draft.time.durationMinMax
-    TextButton(onClick = { store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(null, null))) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none")) { Text("No duration") }
+    AppTertiaryButton(
+        text = "No duration",
+        onClick = { store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(null, null))) },
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none"),
+        leadingIcon = Icons.Outlined.Close,
+    )
     OutlinedTextField(
         value = duration.minMs?.div(60_000L)?.toString() ?: "90",
         onValueChange = { value -> value.toLongOrNull()?.let { minutes ->
@@ -282,30 +440,126 @@ private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
 @Composable
 private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     Column(Modifier.testTag("quick-create-recurring-controls")) {
-        Row { QuickCreateRepeatMode.entries.forEach { value -> TextButton(onClick = {
-            store.updateRecurring(draft.recurring.copy(repeatMode = value))
-            if (value != QuickCreateRepeatMode.Once) store.updateIdentity(draft.identity.copy(kind = QuickCreateTileKind.Recurring))
-        }, modifier = Modifier.testTag("quick-create-repeat-${value.name.lowercase()}")) { Text(value.name) } } }
+        val repeatModes = QuickCreateRepeatMode.entries.toList()
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            repeatModes.forEachIndexed { index, value ->
+                val icon = when (value) {
+                    QuickCreateRepeatMode.Once -> Icons.Outlined.Event
+                    QuickCreateRepeatMode.Daily -> Icons.Outlined.Today
+                    QuickCreateRepeatMode.Weekly -> Icons.Outlined.DateRange
+                    QuickCreateRepeatMode.Interval -> Icons.Outlined.Repeat
+                    QuickCreateRepeatMode.Condition -> Icons.Outlined.Autorenew
+                }
+                SegmentedButton(
+                    selected = draft.recurring.repeatMode == value,
+                    onClick = {
+                        store.updateRecurring(draft.recurring.copy(repeatMode = value))
+                        if (value != QuickCreateRepeatMode.Once) store.updateIdentity(draft.identity.copy(kind = QuickCreateTileKind.Recurring))
+                    },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = repeatModes.size),
+                    modifier = Modifier.testTag("quick-create-repeat-${value.name.lowercase()}"),
+                    icon = {
+                        Icon(
+                            imageVector = if (draft.recurring.repeatMode == value) Icons.Outlined.Check else icon,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text(value.name) },
+                )
+            }
+        }
         Text(if (draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly) "Weekdays" else "Weekdays (weekly only)")
-        Row { (0..6).forEach { bit -> TextButton(onClick = { store.updateRecurring(draft.recurring.copy(weekdayMask = draft.recurring.weekdayMask xor (1 shl bit))) }, enabled = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly, modifier = Modifier.testTag("quick-create-weekday-$bit")) { Text(bit.toString()) } } }
-        TextButton(onClick = { store.updateRecurring(draft.recurring.copy(endDate = if (draft.recurring.endDate.isBlank()) LocalDate.now().toString() else "")) }, modifier = Modifier.testTag("quick-create-recurring-end-switch")) { Text("End date") }
+        val weekdays = (0..6).toList()
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            weekdays.forEachIndexed { index, bit ->
+                val selected = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly && (draft.recurring.weekdayMask shr bit) and 1 == 1
+                SegmentedButton(
+                    selected = selected,
+                    enabled = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly,
+                    onClick = { store.updateRecurring(draft.recurring.copy(weekdayMask = draft.recurring.weekdayMask xor (1 shl bit))) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = weekdays.size),
+                    modifier = Modifier.testTag("quick-create-weekday-$bit"),
+                    icon = {
+                        Icon(
+                            imageVector = if (selected) Icons.Outlined.Check else Icons.Outlined.CalendarToday,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text(bit.toString()) },
+                )
+            }
+        }
+        AppTertiaryButton(
+            text = "End date",
+            onClick = { store.updateRecurring(draft.recurring.copy(endDate = if (draft.recurring.endDate.isBlank()) LocalDate.now().toString() else "")) },
+            modifier = Modifier.testTag("quick-create-recurring-end-switch"),
+            leadingIcon = Icons.Outlined.CalendarMonth,
+        )
         if (draft.recurring.endDate.isNotBlank()) NativeDateField("End date", draft.recurring.endDate, "quick-create-recurring-end-date") { value -> store.updateRecurring(draft.recurring.copy(endDate = value)) }
     }
 }
 
 @Composable
 private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    TextButton(onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references + defaultPlanReference())) }, modifier = Modifier.testTag("quick-create-add-reference")) { Text("Add reference") }
+    AppSecondaryButton(
+        text = "Add reference",
+        onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references + defaultPlanReference())) },
+        modifier = Modifier.testTag("quick-create-add-reference"),
+        leadingIcon = Icons.Outlined.Add,
+    )
     draft.plan.references.forEachIndexed { index, reference ->
         val target = reference.target.jsonObjectOrEmpty()
         val pick = reference.pick.jsonObjectOrEmpty()
         OutlinedTextField(reference.id, { value -> updateReference(draft, store, index, reference.copy(id = value)) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("quick-create-reference-record-id-$index"))
         OutlinedTextField(target.string("referenceId"), { value -> updateReference(draft, store, index, reference.copy(target = target.with("referenceId", value.ifBlank { null }))) }, label = { Text("Target reference") }, modifier = Modifier.testTag("quick-create-reference-id-$index"))
-        Row { listOf(0, 1, 2).forEach { kind -> TextButton(onClick = { updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) }) { Text("Target kind $kind") } } }
-        Text("Relation")
-        Row { listOf(4, 3, 1, 2, 0).forEach { relation -> TextButton(onClick = { updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) }) { Text(relation.toString()) } } }
+        val targetKinds = listOf(0, 1, 2)
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            targetKinds.forEachIndexed { kindIndex, kind ->
+                val currentKind = target["kind"]?.jsonPrimitive?.content?.toIntOrNull()
+                val icon = when (kind) {
+                    0 -> Icons.Outlined.Tag
+                    else -> Icons.Outlined.Link
+                }
+                SegmentedButton(
+                    selected = currentKind == kind,
+                    onClick = { updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) },
+                    shape = SegmentedButtonDefaults.itemShape(index = kindIndex, count = targetKinds.size),
+                    icon = {
+                        Icon(
+                            imageVector = if (currentKind == kind) Icons.Outlined.Check else icon,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text("Target kind $kind") },
+                )
+            }
+        }
+        SectionHeader(title = "Relation")
+        val relations = listOf(4, 3, 1, 2, 0)
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            relations.forEachIndexed { relIndex, relation ->
+                val currentRelation = pick["kind"]?.jsonPrimitive?.content?.toIntOrNull()
+                SegmentedButton(
+                    selected = currentRelation == relation,
+                    onClick = { updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) },
+                    shape = SegmentedButtonDefaults.itemShape(index = relIndex, count = relations.size),
+                    icon = {
+                        Icon(
+                            imageVector = if (currentRelation == relation) Icons.Outlined.Check else Icons.Outlined.Link,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text(relation.toString()) },
+                )
+            }
+        }
         OutlinedTextField(pick.string("momentId", "10"), { value -> value.toIntOrNull()?.coerceIn(5, 120)?.let { minutes -> updateReference(draft, store, index, reference.copy(pick = pick.with("momentId", minutes.toString()))) } }, label = { Text("Interval (minutes)") })
-        TextButton(onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references.filterIndexed { item, _ -> item != index })) }) { Text("Remove reference") }
+        AppSecondaryButton(
+            text = "Remove reference",
+            onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references.filterIndexed { item, _ -> item != index })) },
+            modifier = Modifier.testTag("quick-create-reference-record-$index-remove"),
+            leadingIcon = Icons.Outlined.Delete,
+        )
     }
 }
 
@@ -317,15 +571,23 @@ private fun defaultPlanReference() = QuickCreatePlanReference(
 
 @Composable
 private fun IntentPanel(store: QuickCreateStateStore) {
-    Text("Add condition or group")
-    listOf(
-        "Time" to QuickCreatePanel.Time,
-        "References" to QuickCreatePanel.References,
-        "Recurring" to QuickCreatePanel.Recurring,
-        "Meta" to QuickCreatePanel.Meta,
-        "Completion" to QuickCreatePanel.Completion,
-    ).forEach { (label, panel) ->
-        TextButton(onClick = { store.openSubpanel(panel) }, modifier = Modifier.fillMaxWidth().testTag("quick-create-intent-${label.lowercase()}")) { Text(label) }
+    SectionHeader(title = "Add condition or group")
+    val intentTargets = listOf(
+        Triple("Time", QuickCreatePanel.Time, Icons.Outlined.Schedule),
+        Triple("References", QuickCreatePanel.References, Icons.Outlined.Link),
+        Triple("Recurring", QuickCreatePanel.Recurring, Icons.Outlined.Repeat),
+        Triple("Meta", QuickCreatePanel.Meta, Icons.Outlined.Tag),
+        Triple("Completion", QuickCreatePanel.Completion, Icons.Outlined.Check),
+    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        intentTargets.forEach { (label, panel, icon) ->
+            AppPrimaryButton(
+                text = label,
+                onClick = { store.openSubpanel(panel) },
+                modifier = Modifier.fillMaxWidth().testTag("quick-create-intent-${label.lowercase()}"),
+                leadingIcon = icon,
+            )
+        }
     }
 }
 
@@ -333,31 +595,86 @@ private fun IntentPanel(store: QuickCreateStateStore) {
 @OptIn(ExperimentalMaterial3Api::class)
 private fun NativeDateField(label: String, value: String, tag: String, onSelected: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    TextButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth().testTag(tag)) { Text(if (value.isBlank()) label else value) }
+    AppPickerButton(
+        label = label,
+        value = value.ifBlank { "—" },
+        onClick = { open = true },
+        modifier = Modifier.fillMaxWidth().testTag(tag),
+        leadingIcon = Icons.Outlined.CalendarMonth,
+    )
     if (open) {
         val state = androidx.compose.material3.rememberDatePickerState()
         DatePickerDialog(
             onDismissRequest = { open = false },
-            confirmButton = { TextButton(onClick = {
-                state.selectedDateMillis?.let { millis -> onSelected(Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toString()) }
-                open = false
-            }) { Text("OK") } },
-            dismissButton = { TextButton(onClick = { open = false }) { Text("Cancel") } },
+            confirmButton = {
+                AppPrimaryButton(
+                    text = "OK",
+                    onClick = {
+                        state.selectedDateMillis?.let { millis -> onSelected(Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toString()) }
+                        open = false
+                    },
+                    leadingIcon = Icons.Outlined.Check,
+                )
+            },
+            dismissButton = {
+                AppTertiaryButton(
+                    text = "Cancel",
+                    onClick = { open = false },
+                    leadingIcon = Icons.Outlined.Close,
+                )
+            },
         ) { DatePicker(state = state) }
     }
 }
 
 @Composable
 private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    Text("Logic")
-    Row { listOf(0 to "ALL", 1 to "ANY", 2 to "NOT").forEach { (kind, label) -> TextButton(onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = draft.plan.completion.root.copy(kind = kind, term = null)))) }) { Text(label) } } }
+    SectionHeader(title = "Logic")
+    val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT")
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        logicKinds.forEachIndexed { index, (kind, label) ->
+            val icon = when (kind) {
+                0 -> Icons.Outlined.PlaylistAddCheck
+                1 -> Icons.Outlined.PlaylistAdd
+                else -> Icons.Outlined.Block
+            }
+            SegmentedButton(
+                selected = draft.plan.completion.root.kind == kind,
+                onClick = { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = draft.plan.completion.root.copy(kind = kind, term = null)))) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = logicKinds.size),
+                icon = {
+                    Icon(
+                        imageVector = if (draft.plan.completion.root.kind == kind) Icons.Outlined.Check else icon,
+                        contentDescription = null,
+                    )
+                },
+                label = { Text(label) },
+            )
+        }
+    }
     ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }, allowTermKind = false)
     Row {
-        TextButton(onClick = { addCompletionTerm(draft, store, "task") }, modifier = Modifier.testTag("quick-create-completion-add-task")) { Text("Task") }
-        TextButton(onClick = { addCompletionTerm(draft, store, "relation") }, modifier = Modifier.testTag("quick-create-completion-add-relation")) { Text("Relation") }
-        TextButton(onClick = { addCompletionTerm(draft, store, "metric") }, modifier = Modifier.testTag("quick-create-completion-add-metric")) { Text("Metric") }
+        AppSecondaryButton(
+            text = "Task",
+            onClick = { addCompletionTerm(draft, store, "task") },
+            modifier = Modifier.testTag("quick-create-completion-add-task"),
+            leadingIcon = Icons.Outlined.Task,
+        )
+        AppSecondaryButton(
+            text = "Relation",
+            onClick = { addCompletionTerm(draft, store, "relation") },
+            modifier = Modifier.testTag("quick-create-completion-add-relation"),
+            leadingIcon = Icons.Outlined.Link,
+        )
+        AppSecondaryButton(
+            text = "Metric",
+            onClick = { addCompletionTerm(draft, store, "metric") },
+            modifier = Modifier.testTag("quick-create-completion-add-metric"),
+            leadingIcon = Icons.Outlined.BarChart,
+        )
     }
-    TextButton(
+    AppSecondaryButton(
+        text = "Add time requirement",
         onClick = {
             store.updatePlan(
                 draft.plan.copy(
@@ -370,7 +687,8 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             )
         },
         modifier = Modifier.testTag("quick-create-completion-add-time"),
-    ) { Text("Add time requirement") }
+        leadingIcon = Icons.Outlined.Add,
+    )
     draft.plan.completion.timeRequirements.forEachIndexed { index, requirement ->
         val required = requirement.required.jsonObjectOrEmpty()
         val minimumMinutes = required.long("minMs")?.div(60_000L)?.toString().orEmpty()
@@ -389,7 +707,8 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             modifier = Modifier.testTag("time-requirement-$index-required-minutes"),
         )
         Text("minutes")
-        TextButton(
+        AppSecondaryButton(
+            text = "Remove time requirement",
             onClick = {
                 store.updatePlan(
                     draft.plan.copy(
@@ -400,11 +719,17 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
                 )
             },
             modifier = Modifier.testTag("time-requirement-$index-remove"),
-        ) { Text("Remove time requirement") }
+            leadingIcon = Icons.Outlined.Delete,
+        )
     }
-    TextButton(onClick = {
-        store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = QuickCreateConditionNode(0), timeRequirements = emptyList(), tasks = emptyList())))
-    }, modifier = Modifier.testTag("quick-create-completion-clear")) { Text("Clear completion") }
+    AppTertiaryButton(
+        text = "Clear completion",
+        onClick = {
+            store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = QuickCreateConditionNode(0), timeRequirements = emptyList(), tasks = emptyList())))
+        },
+        modifier = Modifier.testTag("quick-create-completion-clear"),
+        leadingIcon = Icons.Outlined.DeleteSweep,
+    )
 }
 
 private fun addCompletionTerm(draft: QuickCreateDraftState, store: QuickCreateStateStore, kind: String) {
@@ -436,9 +761,61 @@ private fun updateTimeRequirement(
 }
 
 @Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit, path: String = "root", allowTermKind: Boolean = true) {
-    Row { listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").filter { allowTermKind || it.first != 3 }.forEach { (kind, label) -> TextButton(onClick = { onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) defaultTermValue("calendar") else null)) }) { Text(label) } } }
+    val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").filter { allowTermKind || it.first != 3 }
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        logicKinds.forEachIndexed { index, (kind, label) ->
+            val icon = when (kind) {
+                0 -> Icons.Outlined.PlaylistAddCheck
+                1 -> Icons.Outlined.PlaylistAdd
+                2 -> Icons.Outlined.Block
+                else -> Icons.Outlined.TextFields
+            }
+            SegmentedButton(
+                selected = node.kind == kind,
+                onClick = { onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) defaultTermValue("calendar") else null)) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = logicKinds.size),
+                icon = {
+                    Icon(
+                        imageVector = if (node.kind == kind) Icons.Outlined.Check else icon,
+                        contentDescription = null,
+                    )
+                },
+                label = { Text(label) },
+            )
+        }
+    }
     if (node.kind == 3) {
-        Row { listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life").forEach { type -> TextButton(onClick = { onChange(node.copy(term = defaultTermValue(type))) }, modifier = Modifier.testTag("condition-$path-term-$type")) { Text(type) } } }
+        val termTypes = listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life")
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            termTypes.forEachIndexed { index, type ->
+                val icon = when (type) {
+                    "calendar" -> Icons.Outlined.CalendarMonth
+                    "moment" -> Icons.Outlined.Schedule
+                    "relation" -> Icons.Outlined.Link
+                    "gap" -> Icons.Outlined.HorizontalRule
+                    "requirement" -> Icons.Outlined.Check
+                    "task" -> Icons.Outlined.Task
+                    "fact" -> Icons.Filled.Lightbulb
+                    "metric" -> Icons.Outlined.BarChart
+                    "life" -> Icons.Outlined.Favorite
+                    else -> Icons.Outlined.TextFields
+                }
+                val currentKind = node.term?.jsonObjectOrEmpty()?.string("kind")
+                SegmentedButton(
+                    selected = currentKind == type,
+                    onClick = { onChange(node.copy(term = defaultTermValue(type))) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = termTypes.size),
+                    modifier = Modifier.testTag("condition-$path-term-$type"),
+                    icon = {
+                        Icon(
+                            imageVector = if (currentKind == type) Icons.Outlined.Check else icon,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text(type) },
+                )
+            }
+        }
         val term = node.term?.jsonObjectOrEmpty() ?: JsonObject(emptyMap())
         when (term.string("kind")) {
             "calendar" -> CalendarTermFields(term, path) { value -> onChange(node.copy(term = value)) }
@@ -453,7 +830,23 @@ private fun updateTimeRequirement(
             "life" -> LifeTermFields(term, path) { value -> onChange(node.copy(term = value)) }
         }
     }
-    else { node.children.forEachIndexed { index, child -> ConditionControls(child, { updated -> onChange(node.copy(children = node.children.replace(index, updated))) }, "$path-$index"); TextButton(onClick = { onChange(node.copy(children = node.children.filterIndexed { item, _ -> item != index })) }) { Text("Remove") } }; TextButton(onClick = { onChange(node.copy(children = node.children + QuickCreateConditionNode(3, term = defaultTermValue("calendar")))) }) { Text("Add condition") } }
+    else {
+        node.children.forEachIndexed { index, child ->
+            ConditionControls(child, { updated -> onChange(node.copy(children = node.children.replace(index, updated))) }, "$path-$index")
+            AppSecondaryButton(
+                text = "Remove",
+                onClick = { onChange(node.copy(children = node.children.filterIndexed { item, _ -> item != index })) },
+                modifier = Modifier.testTag("condition-$path-child-$index-remove"),
+                leadingIcon = Icons.Outlined.Delete,
+            )
+        }
+        AppSecondaryButton(
+            text = "Add condition",
+            onClick = { onChange(node.copy(children = node.children + QuickCreateConditionNode(3, term = defaultTermValue("calendar")))) },
+            modifier = Modifier.testTag("condition-$path-add-child"),
+            leadingIcon = Icons.Outlined.Add,
+        )
+    }
 }
 
 @Composable private fun CalendarTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
@@ -565,7 +958,7 @@ private fun MetaPanel(
     knownTags: List<String>,
     onBack: () -> Unit,
 ) {
-    Text("Behavior")
+    SectionHeader(title = "Behavior")
     Row(Modifier.testTag("behavior-role")) {
         QuickCreatePlanRole.entries.forEach { value ->
             FilterChip(
@@ -576,7 +969,7 @@ private fun MetaPanel(
             )
         }
     }
-    Text("Project")
+    SectionHeader(title = "Project")
     Column(Modifier.testTag("meta-project-catalog")) {
         FilterChip(
             selected = draft.meta.ownerSubjectId == null,
@@ -593,7 +986,7 @@ private fun MetaPanel(
             )
         }
     }
-    Text("Tags")
+    SectionHeader(title = "Tags")
     FlowRow(Modifier.testTag("meta-tag-chips")) {
         knownTags.filterNot { it in draft.meta.tags }.forEach { tag ->
             FilterChip(false, { store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag)) }, { Text("#$tag") }, Modifier.testTag("meta-tag-suggestion-$tag"))
@@ -604,22 +997,64 @@ private fun MetaPanel(
     }
     var tagDraft by remember { mutableStateOf("") }
     OutlinedTextField(tagDraft, { tagDraft = it }, label = { Text("Add tag") }, modifier = Modifier.fillMaxWidth().testTag("meta-tag-input"))
-    TextButton(onClick = {
-        val tag = tagDraft.trim().removePrefix("#")
-        if (tag.isNotBlank() && tag !in draft.meta.tags) store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag))
-        tagDraft = ""
-    }, modifier = Modifier.testTag("meta-tag-add")) { Text("Add tag") }
+    AppSecondaryButton(
+        text = "Add tag",
+        onClick = {
+            val tag = tagDraft.trim().removePrefix("#")
+            if (tag.isNotBlank() && tag !in draft.meta.tags) store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag))
+            tagDraft = ""
+        },
+        modifier = Modifier.testTag("meta-tag-add"),
+        leadingIcon = Icons.Outlined.Add,
+    )
     OutlinedTextField(draft.meta.memo, { value -> store.updateMeta(draft.meta.copy(memo = value)) }, label = { Text("Memo") }, modifier = Modifier.fillMaxWidth().testTag("meta-memo"))
     Row {
-        TextButton(onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null, tags = emptyList(), memo = "")) }, modifier = Modifier.testTag("meta-clear")) { Text("Clear") }
-        TextButton(onClick = onBack, modifier = Modifier.testTag("meta-cancel")) { Text("Cancel") }
-        TextButton(onClick = onBack, modifier = Modifier.testTag("meta-apply")) { Text("Apply") }
+        AppTertiaryButton(
+            text = "Clear",
+            onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null, tags = emptyList(), memo = "")) },
+            modifier = Modifier.testTag("meta-clear"),
+            leadingIcon = Icons.Outlined.DeleteSweep,
+        )
+        AppTertiaryButton(
+            text = "Cancel",
+            onClick = onBack,
+            modifier = Modifier.testTag("meta-cancel"),
+            leadingIcon = Icons.Outlined.Close,
+        )
+        AppPrimaryButton(
+            text = "Apply",
+            onClick = onBack,
+            modifier = Modifier.testTag("meta-apply"),
+            leadingIcon = Icons.Outlined.Check,
+        )
     }
 }
 
 @Composable
 private fun BehaviorPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    Row { QuickCreatePlanRole.entries.forEach { value -> TextButton(onClick = { store.updateBehavior(value) }) { Text(value.name) } } }
+    val planRoles = QuickCreatePlanRole.entries.toList()
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        planRoles.forEachIndexed { index, value ->
+            val icon = when (index) {
+                0 -> Icons.Outlined.Flag
+                1 -> Icons.Outlined.Repeat
+                2 -> Icons.Outlined.PlayArrow
+                else -> Icons.Outlined.HelpOutline
+            }
+            SegmentedButton(
+                selected = draft.plan.role == value,
+                onClick = { store.updateBehavior(value) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = planRoles.size),
+                icon = {
+                    Icon(
+                        imageVector = if (draft.plan.role == value) Icons.Outlined.Check else icon,
+                        contentDescription = null,
+                    )
+                },
+                label = { Text(value.name) },
+            )
+        }
+    }
 }
 
 @Composable

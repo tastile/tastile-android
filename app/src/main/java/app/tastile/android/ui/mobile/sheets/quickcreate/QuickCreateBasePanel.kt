@@ -11,23 +11,32 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import app.tastile.android.ui.mobile.designsystem.AppDismissButton
 import app.tastile.android.ui.mobile.designsystem.AppListItem
 import app.tastile.android.ui.mobile.designsystem.AppPrimaryButton
+import app.tastile.android.ui.mobile.designsystem.AppSecondaryButton
 import app.tastile.android.ui.mobile.designsystem.AppTertiaryButton
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
@@ -87,7 +96,12 @@ private fun QuickCreateBaseComposition(
         FlowRow(Modifier.testTag("quick-create-organize-row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (projectName != null) FilterChip(true, { store.openSubpanel(QuickCreatePanel.Meta) }, { Text(projectName) })
             draft.meta.tags.forEach { tag -> FilterChip(true, { store.openSubpanel(QuickCreatePanel.Meta) }, { Text("#$tag") }) }
-            TextButton({ store.openSubpanel(QuickCreatePanel.Meta) }, Modifier.testTag("quick-create-organize")) { Text("Organize") }
+            AppTertiaryButton(
+                text = "Organize",
+                onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
+                modifier = Modifier.testTag("quick-create-organize"),
+                leadingIcon = Icons.Outlined.Tune,
+            )
         }
         Row(Modifier.testTag("quick-create-tile-kind"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             QuickCreateTileKind.entries.forEach { kind ->
@@ -107,7 +121,12 @@ private fun QuickCreateBaseComposition(
             onClick = { store.openSubpanel(QuickCreatePanel.Completion) },
             modifier = Modifier.testTag("quick-create-condition-card"),
         )
-        TextButton({ store.openSubpanel(QuickCreatePanel.Intent) }, Modifier.testTag("quick-create-condition-add")) { Text("Add condition or group") }
+        AppTertiaryButton(
+            text = "Add condition or group",
+            onClick = { store.openSubpanel(QuickCreatePanel.Intent) },
+            modifier = Modifier.testTag("quick-create-condition-add"),
+            leadingIcon = Icons.Outlined.Add,
+        )
         AppListItem(
             headline = "Completion requires",
             supporting = "${draft.plan.completion.tasks.size} item(s)",
@@ -117,25 +136,74 @@ private fun QuickCreateBaseComposition(
             modifier = Modifier.testTag("quick-create-tasks-header"),
         )
         draft.plan.completion.tasks.forEachIndexed { index, task ->
-            Row(Modifier.fillMaxWidth().testTag("quick-create-task-row-$index"), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(task.content.title.ifBlank { "Untitled" })
-                TextButton(
-                    { if (index > 0) store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.swap(index, index - 1)))) },
-                    enabled = index > 0,
-                    modifier = Modifier.testTag("quick-create-task-move-up-$index"),
-                ) { Text("Move up") }
-                TextButton(
-                    { if (index < draft.plan.completion.tasks.lastIndex) store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.swap(index, index + 1)))) },
-                    enabled = index < draft.plan.completion.tasks.lastIndex,
-                    modifier = Modifier.testTag("quick-create-task-move-down-$index"),
-                ) { Text("Move down") }
-                TextButton({ store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks.filterIndexed { item, _ -> item != index }))) }) { Text("Remove") }
+            Row(Modifier.fillMaxWidth().testTag("quick-create-task-row-$index"), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                AppListItem(
+                    headline = task.content.title.ifBlank { "Untitled" },
+                    leading = Icons.Outlined.CheckBox,
+                    modifier = Modifier.weight(1f),
+                    onClick = { /* tap to focus task */ },
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    AppTertiaryButton(
+                        text = "Move up",
+                        onClick = {
+                            if (index > 0) store.updatePlan(
+                                draft.plan.copy(
+                                    completion = draft.plan.completion.copy(
+                                        tasks = draft.plan.completion.tasks.swap(index, index - 1),
+                                    ),
+                                ),
+                            )
+                        },
+                        enabled = index > 0,
+                        modifier = Modifier.testTag("quick-create-task-move-up-$index"),
+                    )
+                    AppTertiaryButton(
+                        text = "Move down",
+                        onClick = {
+                            if (index < draft.plan.completion.tasks.lastIndex) store.updatePlan(
+                                draft.plan.copy(
+                                    completion = draft.plan.completion.copy(
+                                        tasks = draft.plan.completion.tasks.swap(index, index + 1),
+                                    ),
+                                ),
+                            )
+                        },
+                        enabled = index < draft.plan.completion.tasks.lastIndex,
+                        modifier = Modifier.testTag("quick-create-task-move-down-$index"),
+                    )
+                }
+                AppSecondaryButton(
+                    text = "Remove",
+                    onClick = {
+                        store.updatePlan(
+                            draft.plan.copy(
+                                completion = draft.plan.completion.copy(
+                                    tasks = draft.plan.completion.tasks.filterIndexed { item, _ -> item != index },
+                                ),
+                            ),
+                        )
+                    },
+                    modifier = Modifier.testTag("quick-create-task-remove-$index"),
+                    leadingIcon = Icons.Outlined.Delete,
+                )
             }
         }
-        TextButton(
-            { store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(tasks = draft.plan.completion.tasks + QuickCreateTaskDefinition(UUID.randomUUID().toString(), QuickCreateTaskContent(""))))) },
-            Modifier.testTag("quick-create-add-task"),
-        ) { Text("Add task") }
+        AppTertiaryButton(
+            text = "Add task",
+            onClick = {
+                store.updatePlan(
+                    draft.plan.copy(
+                        completion = draft.plan.completion.copy(
+                            tasks = draft.plan.completion.tasks +
+                                QuickCreateTaskDefinition(UUID.randomUUID().toString(), QuickCreateTaskContent("")),
+                        ),
+                    ),
+                )
+            },
+            modifier = Modifier.testTag("quick-create-add-task"),
+            leadingIcon = Icons.Outlined.Add,
+        )
         HorizontalDivider()
         AppListItem(
             headline = "Behavior",
@@ -145,24 +213,41 @@ private fun QuickCreateBaseComposition(
             onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
             modifier = Modifier.testTag("quick-create-behavior-card"),
         )
-        TextButton({ store.openSubpanel(QuickCreatePanel.References) }, Modifier.testTag("quick-create-references-link")) { Text("References") }
+        AppTertiaryButton(
+            text = "References",
+            onClick = { store.openSubpanel(QuickCreatePanel.References) },
+            modifier = Modifier.testTag("quick-create-references-link"),
+            leadingIcon = Icons.Outlined.Link,
+        )
         val submissionValidation = quickCreateSubmissionValidation(draft)
         if (!submissionValidation.isValid) Text(submissionValidation.message ?: "Fix required fields", Modifier.testTag("quick-create-validation-error"))
         submitError?.let { Text(it, Modifier.testTag("quick-create-submit-error")) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppTertiaryButton(text = "Cancel", onClick = onClose, enabled = !isSubmitting)
+            AppTertiaryButton(
+                text = "Cancel",
+                onClick = onClose,
+                enabled = !isSubmitting,
+                leadingIcon = Icons.Outlined.Close,
+            )
             AppPrimaryButton(
                 text = if (isSubmitting) "Creating…" else "Create",
                 onClick = { onSubmit(draft) },
                 enabled = submissionValidation.isValid && !isSubmitting,
                 modifier = Modifier.testTag("quick-create-submit"),
+                leadingIcon = Icons.Outlined.Check,
             )
         }
     }
 }
 
 @Composable
-internal fun BackHeader(onBack: () -> Unit) { TextButton(onClick = onBack) { Text("Back") } }
+internal fun BackHeader(onBack: () -> Unit) {
+    AppDismissButton(
+        text = "Back",
+        onClick = onBack,
+        leadingIcon = Icons.AutoMirrored.Outlined.ArrowBack,
+    )
+}
 
 @Composable private fun EssentialRow(label: String, summary: String, tag: String, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).testTag(tag).padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(label); Text(summary) }
