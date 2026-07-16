@@ -1,6 +1,8 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -16,7 +19,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.PlayArrow
@@ -38,16 +40,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.AssistChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaListItem
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
-import app.tastile.android.core.designsystem.component.NiaOutlinedTextField
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
@@ -76,7 +80,7 @@ fun QuickCreatePanelContent(
     if (active != null && active != QuickCreatePanel.Base) {
         QuickCreateSubpanel(active, draft, store, store::backToBase, projects, knownTags)
     } else {
-        QuickCreateBaseComposition(draft, store, onClose, onSubmit, isSubmitting, submitError, projects)
+        QuickCreateBaseComposition(draft, store, isSubmitting, submitError, projects)
     }
 }
 
@@ -85,8 +89,6 @@ fun QuickCreatePanelContent(
 private fun QuickCreateBaseComposition(
     draft: QuickCreateDraftState,
     store: QuickCreateStateStore,
-    onClose: () -> Unit,
-    onSubmit: (QuickCreateDraftState) -> Unit,
     isSubmitting: Boolean,
     submitError: String?,
     projects: List<QuickCreateProject>,
@@ -94,22 +96,17 @@ private fun QuickCreateBaseComposition(
     val projectName = projects.firstOrNull { it.id == draft.meta.ownerSubjectId }?.displayName
         ?: draft.meta.ownerSubjectId
     Column(
-        Modifier.testTag("quick-create-base").verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier
+            .testTag("quick-create-base")
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column {
-            Text(
-                text = "Create tile",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            HorizontalDivider()
-        }
-        NiaOutlinedTextField(
-            draft.identity.title,
-            { store.updateIdentity(draft.identity.copy(title = it)) },
-            label = { Text("Title") },
-            modifier = Modifier.fillMaxWidth().testTag("quick-create-title"),
+        EditableTitleField(
+            value = draft.identity.title,
+            onValueChange = { newTitle ->
+                store.updateIdentity(draft.identity.copy(title = newTitle))
+            },
         )
         FlowRow(
             modifier = Modifier.fillMaxWidth().testTag("quick-create-organize-row"),
@@ -318,22 +315,10 @@ private fun QuickCreateBaseComposition(
             )
         }
         submitError?.let { Text(it, Modifier.testTag("quick-create-submit-error")) }
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            NiaTextButton(
-                onClick = onClose,
-                enabled = !isSubmitting,
-                text = { Text("Cancel") },
-                leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
-            )
-            NiaButton(
-                onClick = { onSubmit(draft) },
-                enabled = submissionValidation.isValid && !isSubmitting,
-                modifier = Modifier.testTag("quick-create-submit"),
-                text = { Text(if (isSubmitting) "Creating…" else "Create") },
-                leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
+        if (isSubmitting) {
+            Text(
+                text = "Creating…",
+                modifier = Modifier.testTag("quick-create-submitting"),
             )
         }
     }
@@ -417,3 +402,60 @@ fun quickCreateValidation(draft: QuickCreateDraftState): QuickCreateValidation {
 
 private fun String.parseOffsetDateTimeOrNull(): OffsetDateTime? =
     runCatching { OffsetDateTime.parse(this) }.getOrNull()
+
+/**
+ * Underline-style title input: tap to focus → primary-colored underline
+ * appears; loses focus → fades to a faint on-surface divider. No enclosing
+ * box (no rounded corners, no fill, no outline border), per the QuickCreate
+ * redesign brief.
+ */
+@Composable
+internal fun EditableTitleField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = typography.titleLarge.copy(
+                color = colors.onSurface,
+                textAlign = TextAlign.Center,
+            ),
+            singleLine = true,
+            cursorBrush = SolidColor(colors.primary),
+            interactionSource = interactionSource,
+            decorationBox = { innerTextField ->
+                if (value.isEmpty()) {
+                    Text(
+                        text = "Tile title",
+                        style = typography.titleLarge,
+                        color = colors.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                } else {
+                    innerTextField()
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("quick-create-title"),
+        )
+        HorizontalDivider(
+            thickness = if (isFocused) 2.dp else 1.dp,
+            color = if (isFocused) colors.primary
+            else colors.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}

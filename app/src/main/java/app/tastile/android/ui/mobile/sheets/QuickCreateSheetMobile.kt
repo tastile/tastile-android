@@ -10,13 +10,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.tastile.android.ui.mobile.panels.ProjectsViewModel
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.panels.ProjectsViewModel
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateSubmissionViewModel
-import java.time.Instant
+import app.tastile.android.ui.mobile.sheets.quickcreate.quickCreateSubmissionValidation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,15 +58,21 @@ fun QuickCreateSheetMobile(
                 overlay.dismiss()
             }
         }
+        val draft by quickCreateStore.state.collectAsStateWithLifecycle()
+        val validation = quickCreateSubmissionValidation(draft)
+        val canSubmit = validation.isValid && !submission.isSubmitting
+
         PanelSheet(
-            title = "Quick Create",
             sheetState = sheetState,
             onDismiss = { overlay.dismiss() },
+            onSubmit = { resolvedSubmissionViewModel.submit(draft) },
+            submitEnabled = canSubmit,
+            submitTestTag = "quick-create-submit",
         ) {
             QuickCreatePanelContent(
                 store = quickCreateStore,
                 onClose = { overlay.dismiss() },
-                onSubmit = resolvedSubmissionViewModel::submit,
+                onSubmit = { resolvedSubmissionViewModel.submit(draft) },
                 isSubmitting = submission.isSubmitting,
                 submitError = submission.error,
                 projects = projectsState.workspaces.map { QuickCreateProject(it.id, it.displayName) },
