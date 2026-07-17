@@ -78,6 +78,7 @@ import app.tastile.android.ui.mobile.panels.ProjectsViewModel
 import app.tastile.android.ui.mobile.calendar.DayView
 import app.tastile.android.ui.mobile.calendar.EventChipContent
 import app.tastile.android.ui.mobile.calendar.GridConstants
+import app.tastile.android.ui.mobile.calendar.MonthView
 import app.tastile.android.ui.mobile.calendar.NowIndicator
 import app.tastile.android.ui.mobile.calendar.PlacedBlock
 import app.tastile.android.ui.mobile.calendar.WeekView
@@ -100,7 +101,7 @@ private const val INITIAL_ZOOM = 1.5f  // day is 1.5× screen → always scrolla
 // MobileScaffold sets contentWindowInsets = WindowInsets(0) and ignores innerPadding,
 // so consumers must pad themselves if they want to sit below the top bar.
 @Composable
-private fun topBarTotalHeight(): Dp =
+internal fun topBarTotalHeight(): Dp =
     WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 56.dp
 
 @Composable
@@ -245,10 +246,10 @@ fun TimelineScreen(
                 ) { page ->
                     val pageMonthStart = today.plusMonths((page - PAGER_CENTER).toLong()).withDayOfMonth(1)
                     MonthView(
-                        items = activeTimeline,
                         monthStart = pageMonthStart,
+                        selectedDate = selectedDay,
+                        items = activeTimeline,
                         zone = zone,
-                        selectedDay = selectedDay,
                         onOpenDay = onOpenDay,
                     )
                 }
@@ -350,121 +351,6 @@ private fun CalendarToolbar(
                         .clickable { onMinimumDuration(minutes) },
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun MonthView(
-    items: List<CoreTimelineItem>,
-    monthStart: LocalDate,
-    zone: ZoneId,
-    selectedDay: LocalDate,
-    onOpenDay: (LocalDate) -> Unit,
-) {
-    val dowFormatter = remember { DateTimeFormatter.ofPattern("EEE", Locale.getDefault()) }
-
-    val itemsByDate: Map<LocalDate, Int> = remember(items, monthStart) {
-        val map = mutableMapOf<LocalDate, Int>()
-        items.forEach { item ->
-            val start = parseInstantOrNull(item.startAt) ?: return@forEach
-            val day = start.atZone(zone).toLocalDate()
-            if (day.month != monthStart.month || day.year != monthStart.year) return@forEach
-            map[day] = (map[day] ?: 0) + 1
-        }
-        map
-    }
-
-    val gridStart = monthStart.minusDays((monthStart.dayOfWeek.value - 1).toLong())
-    val today = LocalDate.now()
-
-    // Top padding puts the day-of-week header row below the top bar
-    // (see WeekView's equivalent comment for details).
-    Column(modifier = Modifier.fillMaxSize().padding(top = topBarTotalHeight())) {
-        // Day-of-week header row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(28.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            for (col in 0 until 7) {
-                val date = gridStart.plusDays(col.toLong())
-                Text(
-                    text = date.format(dowFormatter),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-        // 6 week rows, each weight(1f) → fills remaining vertical space
-        for (weekRow in 0 until 6) {
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-            ) {
-                for (dayCol in 0 until 7) {
-                    val cellDate = gridStart.plusDays((weekRow * 7 + dayCol).toLong())
-                    MonthDayCell(
-                        date = cellDate,
-                        inMonth = cellDate.month == monthStart.month,
-                        isSelected = cellDate == selectedDay,
-                        isToday = cellDate == today,
-                        eventCount = itemsByDate[cellDate] ?: 0,
-                        onClick = { onOpenDay(cellDate) },
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MonthDayCell(
-    date: LocalDate,
-    inMonth: Boolean,
-    isSelected: Boolean,
-    isToday: Boolean,
-    eventCount: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // Simple grid cell — matches Week's day columns: a thin border, no fill,
-    // no rounded corners. Identity (selected/today) is conveyed by text weight
-    // and color, not by background tints.
-    val numberColor = when {
-        !inMonth -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-        isSelected -> MaterialTheme.colorScheme.primary
-        isToday -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val dotColor = if (inMonth) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.30f)
-
-    Box(
-        modifier = modifier
-            .border(width = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-            .clickable { onClick() }
-            .padding(horizontal = 6.dp, vertical = 6.dp),
-    ) {
-        Text(
-            text = date.dayOfMonth.toString(),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (isSelected || isToday) FontWeight.SemiBold else FontWeight.Normal,
-            color = numberColor,
-            modifier = Modifier.align(Alignment.TopStart),
-        )
-        if (eventCount > 0 && inMonth) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(6.dp)
-                    .background(dotColor, CircleShape),
-            )
         }
     }
 }
