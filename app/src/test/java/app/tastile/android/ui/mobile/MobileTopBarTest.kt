@@ -1,6 +1,7 @@
 package app.tastile.android.ui.mobile
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -15,10 +16,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.R
 import app.tastile.android.ui.dashboard.TimelineScale
 import java.util.concurrent.atomic.AtomicInteger
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.Assert.assertEquals
 
 @RunWith(AndroidJUnit4::class)
 class MobileTopBarTest {
@@ -64,7 +65,7 @@ class MobileTopBarTest {
     @Test
     fun `scale picker opens and selects new scale`() {
         val selected = AtomicInteger(-1)
-        val currentScale = androidx.compose.runtime.mutableStateOf(TimelineScale.Day)
+        val currentScale = mutableStateOf(TimelineScale.Day)
 
         rule.setContent {
             MobileTopBar(
