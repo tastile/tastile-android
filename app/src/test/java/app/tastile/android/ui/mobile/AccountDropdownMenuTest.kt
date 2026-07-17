@@ -109,23 +109,17 @@ class AccountDropdownMenuTest {
         rule.onNodeWithTag("account_menu_sign_out").performClick()
         rule.waitForIdle()
         // The AlertDialog renders the confirm button in its own DialogWindow
-        // which `createAndroidComposeRule`'s main tree does not see. The
-        // dialog confirm Button has testTag `account_menu_sign_out_confirm`
-        // and reuses the "Sign out" label; we click it via that tag after
-        // allowing a few frames for the dialog to settle.
-        for (attempt in 1..5) {
-            val found = runCatching {
+        // which `createAndroidComposeRule`'s main tree does not see. Poll the
+        // dialog node deterministically with waitUntil (no sleep loop) so the
+        // test stays stable under CI load.
+        rule.waitUntil(timeoutMillis = 5_000) {
+            runCatching {
                 rule.onNodeWithTag("account_menu_sign_out_confirm").assertExists()
                 true
             }.getOrDefault(false)
-            if (found) {
-                rule.onNodeWithTag("account_menu_sign_out_confirm").performClick()
-                rule.waitForIdle()
-                break
-            }
-            rule.waitForIdle()
-            Thread.sleep(60L * attempt)
         }
+        rule.onNodeWithTag("account_menu_sign_out_confirm").performClick()
+        rule.waitForIdle()
 
         verify(exactly = 1) { vm.signOut() }
     }
