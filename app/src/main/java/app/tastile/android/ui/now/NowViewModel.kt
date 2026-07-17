@@ -3,9 +3,10 @@ package app.tastile.android.ui.now
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.TileFilter
-import app.tastile.android.data.repository.TileRepository
+import app.tastile.android.domain.repository.AuthRepository
+import app.tastile.android.domain.repository.TileRepository
+import app.tastile.android.domain.usecase.GetTilesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,8 +16,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class NowViewModel @Inject constructor(
+    // R23: tile list reads go through the domain use case. Writes still
+    // hit the domain repository contract so this ViewModel no longer
+    // imports anything from data.repository beyond `TileFilter`.
+    private val getTiles: GetTilesUseCase,
     private val tileRepository: TileRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _tiles = MutableStateFlow<List<Tile>>(emptyList())
@@ -39,7 +44,7 @@ class NowViewModel @Inject constructor(
             try {
                 val userId = authRepository.currentUserId()
                 if (userId != null) {
-                    _tiles.value = tileRepository.getTiles(TileFilter.DEFAULT).tiles
+                    _tiles.value = getTiles(TileFilter.DEFAULT)
                 }
             } catch (e: Exception) {
                 _error.value = e.message
@@ -52,7 +57,7 @@ class NowViewModel @Inject constructor(
 
     fun createTile(title: String) {
         if (title.isBlank()) return
-        
+
         viewModelScope.launch {
             try {
                 val userId = authRepository.currentUserId()
@@ -103,3 +108,4 @@ class NowViewModel @Inject constructor(
         }
     }
 }
+

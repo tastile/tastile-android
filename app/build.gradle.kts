@@ -44,8 +44,13 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         applicationId = "app.tastile.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 30
-        versionName = "0.2.22"
+        versionCode = 31
+        versionName = "0.3.0"
+
+        // R17 (android-archdoc audit 2026-07-16): instrumented UI navigation tests.
+        // The runner swaps the production Application for Hilt's HiltTestApplication
+        // so per-test Hilt @TestInstallIn modules can swap repositories.
+        testInstrumentationRunner = "app.tastile.android.util.TastileTestRunner"
 
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
         buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: "3f14cs42nkc0v3qf6k57gthlfe"}\"")
@@ -77,6 +82,12 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         compose = true
         buildConfig = true
     }
+    // M3 baseline (2026-07-16): enable Compose Compiler Reports so the next
+    // successful Kotlin compile drops HTML stability reports under
+    // app/build/compose-reports/ and metrics under app/build/compose-metrics/.
+    // Captured baseline lives at docs/superpowers/m3/before-reports/.
+    // AGP 9.x removed the AndroidExtension.composeOptions DSL; the compose
+    // plugin wires these via kotlin.compilerOptions.freeCompilerArgs.
     lint {
         // OldTargetApi is suppressed deliberately: this box only has API 35 and 37 installed
         // (commit a2c508c). Bumping targetSdk to 36 is blocked until the missing SDK is
@@ -103,6 +114,18 @@ kotlin {
         freeCompilerArgs.addAll(
             "-Xannotation-default-target=param-property",
         )
+        // M3 baseline (2026-07-16): enable Compose Compiler Reports so the next
+        // successful Kotlin compile drops HTML stability reports under
+        // app/build/compose-reports/ and metrics under app/build/compose-metrics/.
+        // Captured baseline lives at docs/superpowers/m3/before-reports/.
+        freeCompilerArgs.addAll(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+                project.layout.projectDirectory.dir("build/compose-reports").asFile.absolutePath,
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
+                project.layout.projectDirectory.dir("build/compose-metrics").asFile.absolutePath,
+        )
     }
 }
 
@@ -125,18 +148,39 @@ gradle.taskGraph.whenReady {
     }
 }
 
-val designSystemGuardFiles = listOf(
-    "app/src/main/java/app/tastile/android/ui/dashboard/ManagementScreens.kt"
+val designSystemGuardRoots = listOf(
+    "src/main/java/app/tastile/android/ui/dashboard",
+    "src/main/java/app/tastile/android/ui/mobile",
+    "src/main/java/app/tastile/android/ui/account",
 )
+val designSystemGuardFiles: List<File> =
+    designSystemGuardRoots.flatMap { root ->
+        project.fileTree(root) { include("**/*.kt") }.files
+    }
 
 tasks.register("verifyDesignSystemImports") {
     group = "verification"
     description = "Disallow direct Material3 imports in M3-unified screens"
     doLast {
-        val forbidden = "import androidx.compose.material3."
-        val offenders = designSystemGuardFiles
-            .map { project.file(it) }
-            .filter { it.exists() && it.readText().contains(forbidden) }
+        val forbiddenPrefix = "import androidx.compose.material3."
+        val allowMarker = "// m2-allow:"
+        val offenders = designSystemGuardFiles.filter { f ->
+            if (!f.exists()) return@filter false
+            val lines = f.readText().lines()
+            // A file is an offender only when it contains a forbidden import
+            // whose immediately preceding non-blank line is NOT an m2-allow marker.
+            lines.withIndex().any { (idx, rawLine) ->
+                val trimmed = rawLine.trimStart()
+                if (!trimmed.startsWith(forbiddenPrefix)) return@any false
+                var i = idx - 1
+                while (i >= 0) {
+                    val prev = lines[i].trim()
+                    if (prev.isEmpty()) { i--; continue }
+                    return@any !prev.startsWith(allowMarker)
+                }
+                true
+            }
+        }
         check(offenders.isEmpty()) {
             "Direct Material3 imports are not allowed in guarded screens:\n" +
                 offenders.joinToString(separator = "\n") { "- ${it.path}" }
@@ -176,6 +220,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.0.0")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.activity:activity-compose:1.9.3")
@@ -213,4 +258,23 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // R17: instrumented UI navigation tests (audit 2026-07-16).
+    // Hilt-testing lives in androidTest only so the unit-test source set stays
+    // Robolectric-only and avoids dragging the Hilt test-application into the
+    // `test` classpath (which would conflict with @HiltAndroidTest subclasses
+    // that try to use HiltTestApplication).
+    androidTestImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("io.mockk:mockk-android:1.13.12")
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.59.2")
+    androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.3.3")
+
+    // Custom lint rules (M2-T4): WrapperParameterOrderDetector (L0 C1 + C2).
+    lintChecks(project(":lint-rules"))
 }

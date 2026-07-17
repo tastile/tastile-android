@@ -14,9 +14,18 @@ data class CommandResponse(
     @SerialName("command_id") val commandId: String,
     @SerialName("accepted_at") val acceptedAt: String,
     val aggregate: AggregateRef? = null,
+    @SerialName("aggregate_meta") val aggregateMeta: AggregateMeta? = null,
     val revision: Long? = null,
     val result: Byte,
     val pending: List<PendingWork> = emptyList()
+)
+
+@Serializable
+data class AggregateMeta(
+    @SerialName("tile_id") val tileId: String? = null,
+    @SerialName("plan_id") val planId: String? = null,
+    @SerialName("recurring_id") val recurringId: String? = null,
+    @SerialName("frame_rule_id") val frameRuleId: String? = null,
 )
 
 @Serializable
@@ -64,6 +73,7 @@ data class ResolutionInfoView(
 @Serializable
 data class TimelineItem(
     @SerialName("placement_id") val placementId: String,
+    @SerialName("tile_id") val tileId: String,
     val revision: Long,
     val content: TileContentView,
     val visual: TileVisualView,
@@ -152,11 +162,6 @@ data class V1ListTilesResponse(
 )
 
 @Serializable
-data class V1TimelineResponse(
-    val items: List<TimelineItem> = emptyList()
-)
-
-@Serializable
 data class RuntimePathView(
     @SerialName("id") val id: String,
     @SerialName("profile_name") val profileName: String,
@@ -202,6 +207,49 @@ data class TileDetailView(
     @SerialName("archived_at") val archivedAt: String? = null
 )
 
+// --- C5 Projects (workspaces) -------------------------------------------
+//
+// Wire shape for `GET /v1/access/subjects?kind=1` and friends.
+// Mirrors the web `Workspace` interface (see tastile-web
+// `src/lib/hooks/use-projects.ts`). We use only the fields Android reads; the
+// list endpoint returns SubjectRow items as opaque Workspace summaries.
+
+@Serializable
+data class Workspace(
+    val id: String,
+    val kind: Short = 1,
+    @SerialName("display_name") val displayName: String,
+    val slug: String? = null,
+    val email: String? = null,
+    @SerialName("parent_subject_id") val parentSubjectId: String? = null,
+    val color: String? = null,
+    @SerialName("owner_user_id") val ownerUserId: String? = null,
+    @SerialName("disabled_at") val disabledAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+)
+
+data class CreateWorkspaceInput(
+    @SerialName("display_name") val displayName: String,
+    val slug: String? = null,
+    val color: String? = null,
+    @SerialName("parent_subject_id") val parentSubjectId: String? = null,
+)
+
+/** Fields accepted by PATCH /v1/access/subjects/{id}. */
+data class UpdateWorkspaceInput(
+    @SerialName("display_name") val displayName: String? = null,
+    val slug: String? = null,
+    val color: String? = null,
+    @SerialName("parent_subject_id") val parentSubjectId: String? = null,
+)
+
+@Serializable
+data class V1ListWorkspacesResponse(
+    val items: List<Workspace> = emptyList(),
+    val count: Int = 0,
+)
+
 @Serializable
 data class V1PlacementListItem(
     @SerialName("placement_id") val placementId: String,
@@ -210,4 +258,24 @@ data class V1PlacementListItem(
     val title: String = "",
     @SerialName("span_start") val spanStart: String? = null,
     @SerialName("span_end") val spanEnd: String? = null
+)
+
+/** Current execution attached to the user's currently running tile. */
+@Serializable
+data class ActiveTileView(
+    @SerialName("tile_id") val tileId: String,
+    @SerialName("placement_id") val placementId: String,
+    @SerialName("execution_id") val executionId: String? = null,
+    val title: String = "",
+    @SerialName("span_start") val spanStart: String? = null,
+    @SerialName("span_end") val spanEnd: String? = null,
+)
+
+/** Minimal authoritative projection from GET /v1/executions/{id}. */
+@Serializable
+data class ExecutionView(
+    val id: String,
+    @SerialName("tile_id") val tileId: String,
+    val state: Int,
+    @SerialName("placement_id") val placementId: String? = null,
 )

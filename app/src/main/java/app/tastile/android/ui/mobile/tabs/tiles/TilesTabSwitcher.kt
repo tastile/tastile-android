@@ -1,24 +1,30 @@
 package app.tastile.android.ui.mobile.tabs.tiles
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChangeHistory
+import androidx.compose.material.icons.outlined.FormatListBulleted
+import androidx.compose.material.icons.outlined.Timeline
+// m2-allow: primitive
+import androidx.compose.material3.Icon
+// m2-allow: primitive
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.tastile.android.R
-import app.tastile.android.ui.designsystem.AppCorner
-import app.tastile.android.ui.designsystem.AppTheme
+import app.tastile.android.core.designsystem.component.NiaSegmentedButton
+import app.tastile.android.core.designsystem.component.NiaSingleChoiceSegmentedButtonRow
+import app.tastile.android.core.designsystem.component.NiaSegmentedButtonDefaults
 import app.tastile.android.ui.dashboard.TilesTab
 
 /**
- * Three-button pill matching web's
- * `flex items-center gap-2 rounded-lg bg-surface-1 p-1` style. The
- * active tab takes the surface accent and the inactive tabs stay
- * transparent so the pill reads as a single segmented control.
+ * Three-button segmented control matching the web tiles tab switcher.
+ *
+ * Each segment carries its own `tiles-tab-${name.lowercase()}` test tag in a
+ * non-merged semantics block; this keeps `onNodeWithTag` matches consistent
+ * across segments and prevents the selectable-group parent from absorbing
+ * per-segment tags.
  */
 @Composable
 fun TilesTabSwitcher(
@@ -26,35 +32,35 @@ fun TilesTabSwitcher(
     onSelect: (TilesTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = AppTheme.colors
-    Row(
-        modifier = modifier
-            .clip(AppCorner.mediumShape)
-            .background(colors.surfaceVariant)
-            .padding(AppTheme.spacing.xxs),
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs),
-    ) {
-        TilesTab.entries.forEach { tab ->
-            val isActive = tab == active
-            androidx.compose.material3.TextButton(
+    NiaSingleChoiceSegmentedButtonRow(modifier = modifier) {
+        TilesTab.entries.forEachIndexed { index, tab ->
+            NiaSegmentedButton(
+                selected = tab == active,
                 onClick = { onSelect(tab) },
-                modifier = Modifier
-                    .clip(AppCorner.smallShape)
-                    .background(if (isActive) colors.surface else colors.surfaceVariant)
-                    .testTag("tiles-tab-${tab.name.lowercase()}"),
-            ) {
-                androidx.compose.material3.Text(
-                    text = stringResource(
-                        when (tab) {
-                            TilesTab.LIST -> R.string.dashboard_tiles_tab_list
-                            TilesTab.TIMELINE -> R.string.dashboard_tiles_tab_timeline
-                            TilesTab.CHANGES -> R.string.dashboard_tiles_tab_changes
+                shape = NiaSegmentedButtonDefaults.itemShape(index = index, count = TilesTab.entries.size),
+                modifier = Modifier.testTag("tiles-tab-${tab.name.lowercase()}"),
+                icon = {
+                    Icon(
+                        imageVector = when (tab) {
+                            TilesTab.LIST -> Icons.Outlined.FormatListBulleted
+                            TilesTab.TIMELINE -> Icons.Outlined.Timeline
+                            TilesTab.CHANGES -> Icons.Outlined.ChangeHistory
                         },
-                    ),
-                    color = if (isActive) colors.onSurface else colors.onSurfaceVariant,
-                    style = AppTheme.typography.labelLarge,
-                )
-            }
+                        contentDescription = null,
+                    )
+                },
+                label = {
+                    Text(
+                        text = stringResource(
+                            when (tab) {
+                                TilesTab.LIST -> R.string.dashboard_tiles_tab_list
+                                TilesTab.TIMELINE -> R.string.dashboard_tiles_tab_timeline
+                                TilesTab.CHANGES -> R.string.dashboard_tiles_tab_changes
+                            },
+                        ),
+                    )
+                },
+            )
         }
     }
 }

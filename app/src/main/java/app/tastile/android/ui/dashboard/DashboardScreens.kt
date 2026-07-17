@@ -19,7 +19,13 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+// m2-allow: primitive
+import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,19 +35,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
+import app.tastile.android.core.designsystem.component.NiaLoadingWheel
+import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.component.NiaOutlinedCard
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.ui.designsystem.AppDivider
-import app.tastile.android.ui.designsystem.AppDangerButton
-import app.tastile.android.ui.designsystem.AppLoading
-import app.tastile.android.ui.designsystem.AppOutlinedPanel
-import app.tastile.android.ui.designsystem.AppRowActions
-import app.tastile.android.ui.designsystem.AppPrimaryButton
-import app.tastile.android.ui.designsystem.AppScreenTitle
-import app.tastile.android.ui.designsystem.AppSecondaryButton
-import app.tastile.android.ui.designsystem.AppTonalButton
-import app.tastile.android.ui.designsystem.AppTheme
 
 @Composable
 fun ExecuteDashboardScreen(viewModel: DashboardViewModel) {
@@ -51,12 +52,12 @@ fun ExecuteDashboardScreen(viewModel: DashboardViewModel) {
     val cards = viewModel.buildExecuteCards()
 
     if (loading && cards.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { AppLoading() }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { NiaLoadingWheel(contentDesc = "Loading") }
         return
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { AppScreenTitle(t("実行", "Execute")) }
+        item { Text(t("実行", "Execute"), style = MaterialTheme.typography.titleLarge) }
         items(cards, key = { it.id }) { card ->
             DashboardCardRenderer(
                 card = card,
@@ -74,12 +75,12 @@ fun TilesDashboardScreen(viewModel: DashboardViewModel) {
     val cards = viewModel.buildTileCards()
 
     if (loading && cards.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { AppLoading() }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { NiaLoadingWheel(contentDesc = "Loading") }
         return
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { AppScreenTitle(t("タイル", "Tiles")) }
+        item { Text(t("タイル", "Tiles"), style = MaterialTheme.typography.titleLarge) }
         items(cards, key = { it.id }) { card ->
             DashboardCardRenderer(
                 card = card,
@@ -92,7 +93,7 @@ fun TilesDashboardScreen(viewModel: DashboardViewModel) {
 @Composable
 private fun TileCompactCard(tile: Tile?, onStart: (String) -> Unit) {
     if (tile == null) {
-        Text("No tile", style = AppTheme.typography.bodySmall)
+        Text("No tile", style = MaterialTheme.typography.bodySmall)
         return
     }
     val lifecycle = TileLifecycle.fromString(tile.lifecycle)
@@ -107,7 +108,7 @@ private fun TileCompactCard(tile: Tile?, onStart: (String) -> Unit) {
             lifecycle = lifecycle,
             onClick = if (lifecycle == TileLifecycle.READY) ({ onStart(tile.id) }) else null
         )
-        Text(tile.title, modifier = Modifier.weight(1f), style = AppTheme.typography.bodySmall)
+        Text(tile.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -136,8 +137,8 @@ private fun TileExpandableCard(
                 onClick = if (lifecycle == TileLifecycle.READY) onStart else null
             )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(tile.title, style = AppTheme.typography.titleSmall)
-                Text(tile.lifecycle, style = AppTheme.typography.labelSmall)
+                Text(tile.title, style = MaterialTheme.typography.titleSmall)
+                Text(tile.lifecycle, style = MaterialTheme.typography.labelSmall)
             }
             Icon(
                 imageVector = if (expanded.value) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -146,24 +147,24 @@ private fun TileExpandableCard(
         }
 
         if (expanded.value) {
-            AppDivider()
+            HorizontalDivider()
             Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 tile.nextAction?.takeIf { it.isNotBlank() }?.let {
-                    Text("Next: $it", style = AppTheme.typography.bodySmall)
+                    Text("Next: $it", style = MaterialTheme.typography.bodySmall)
                 }
                 tile.doneDefinition?.takeIf { it.isNotBlank() }?.let {
-                    Text("Done: $it", style = AppTheme.typography.bodySmall)
+                    Text("Done: $it", style = MaterialTheme.typography.bodySmall)
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (lifecycle == TileLifecycle.READY) {
-                        AppPrimaryButton(text = "Start", onClick = onStart)
+                        NiaButton(text = { Text("Start") }, onClick = onStart)
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
-                        AppPrimaryButton(text = "Complete", onClick = onComplete)
+                        NiaButton(text = { Text("Complete") }, onClick = onComplete)
                     }
-                    AppTonalButton(text = "Defer", onClick = onDefer)
-                    AppDangerButton(text = "Delete", onClick = onDelete)
+                    NiaFilledTonalButton(text = { Text("Defer") }, onClick = onDefer)
+                    NiaOutlinedButton(text = { Text("Delete") }, onClick = onDelete)
                 }
             }
         }
@@ -185,7 +186,7 @@ private fun StatusCircle(lifecycle: TileLifecycle, onClick: (() -> Unit)?) {
                 TileLifecycle.READY -> "○"
                 TileLifecycle.ARCHIVED -> "·"
             },
-            style = AppTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall
         )
     }
 }
@@ -200,7 +201,7 @@ private fun DashboardCardRenderer(
         else -> card.id
     }
 
-    AppOutlinedPanel(
+    NiaOutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
@@ -210,12 +211,12 @@ private fun DashboardCardRenderer(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AppSecondaryButton(
-                text = "Prompt",
+            NiaOutlinedButton(
+                text = { Text("Prompt") },
                 onClick = { headerActionTileId?.let { onAction(CardAction.TriggerPrompt(it)) } }
             )
             Icon(imageVector = statusIcon(card.status), contentDescription = "Status")
-            Text(card.title, style = AppTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(card.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         }
 
         when (card) {
@@ -228,14 +229,14 @@ private fun DashboardCardRenderer(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        AppSecondaryButton(
-                            text = "Prompt",
+                        NiaOutlinedButton(
+                            text = { Text("Prompt") },
                             onClick = { onAction(CardAction.TriggerPrompt(item.tileId)) }
                         )
                         Icon(imageVector = statusIcon(item.status), contentDescription = "Status")
-                        Text(item.timestampIso, style = AppTheme.typography.labelSmall)
-                        Text("│", style = AppTheme.typography.labelSmall)
-                        Text(item.title, style = AppTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(item.timestampIso, style = MaterialTheme.typography.labelSmall)
+                        Text("│", style = MaterialTheme.typography.labelSmall)
+                        Text(item.title, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -249,22 +250,23 @@ private fun CardPrimaryActions(
     status: CardStatus,
     onAction: (CardAction) -> Unit
 ) {
-    AppRowActions(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         when (status) {
             CardStatus.READY -> {
-                AppPrimaryButton(text = "Start", onClick = { onAction(CardAction.StartTile(tileId)) })
-                AppDangerButton(text = "Delete", onClick = { onAction(CardAction.DeleteTile(tileId)) })
+                NiaButton(text = { Text("Start") }, onClick = { onAction(CardAction.StartTile(tileId)) })
+                NiaOutlinedButton(text = { Text("Delete") }, onClick = { onAction(CardAction.DeleteTile(tileId)) })
             }
             CardStatus.STARTED -> {
-                AppPrimaryButton(text = "Complete", onClick = { onAction(CardAction.CompleteTile(tileId)) })
-                AppTonalButton(text = "Defer", onClick = { onAction(CardAction.DeferTile(tileId)) })
+                NiaButton(text = { Text("Complete") }, onClick = { onAction(CardAction.CompleteTile(tileId)) })
+                NiaFilledTonalButton(text = { Text("Defer") }, onClick = { onAction(CardAction.DeferTile(tileId)) })
             }
             CardStatus.DONE, CardStatus.ARCHIVED -> {
-                AppDangerButton(text = "Delete", onClick = { onAction(CardAction.DeleteTile(tileId)) })
+                NiaOutlinedButton(text = { Text("Delete") }, onClick = { onAction(CardAction.DeleteTile(tileId)) })
             }
         }
     }

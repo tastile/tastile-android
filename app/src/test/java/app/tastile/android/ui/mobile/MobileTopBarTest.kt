@@ -1,6 +1,7 @@
 package app.tastile.android.ui.mobile
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -9,9 +10,13 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.R
 import app.tastile.android.ui.dashboard.TimelineScale
+import java.util.concurrent.atomic.AtomicInteger
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,7 +45,6 @@ class MobileTopBarTest {
                 onScaleChange = {},
                 onMenu = {},
                 onNotifications = {},
-                onAvatar = {},
             )
         }
 
@@ -55,5 +59,30 @@ class MobileTopBarTest {
         rule.onNodeWithContentDescription(avatar)
             .assertIsDisplayed()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+    }
+
+    @Test
+    fun `scale picker opens and selects new scale`() {
+        val selected = AtomicInteger(-1)
+        val currentScale = mutableStateOf(TimelineScale.Day)
+
+        rule.setContent {
+            MobileTopBar(
+                title = "Execute",
+                scale = currentScale.value,
+                onScaleChange = {
+                    selected.set(it.ordinal)
+                    currentScale.value = it
+                },
+                onMenu = {},
+                onNotifications = {},
+            )
+        }
+
+        rule.onNodeWithContentDescription("Scale: Day").performClick()
+        rule.onNodeWithText("Week").performClick()
+        rule.onNodeWithContentDescription("Scale: Week").assertIsDisplayed()
+
+        assertEquals(TimelineScale.Week.ordinal, selected.get())
     }
 }

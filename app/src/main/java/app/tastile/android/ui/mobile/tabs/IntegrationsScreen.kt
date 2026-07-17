@@ -4,14 +4,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+// m2-allow: primitive
+import androidx.compose.material3.HorizontalDivider
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.component.NiaOutlinedCard
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.designsystem.AppBodyText
-import app.tastile.android.ui.designsystem.AppOutlinedPanel
-import app.tastile.android.ui.designsystem.AppScreenTitle
-import app.tastile.android.ui.designsystem.AppTheme
 
 /**
  * Integrations tab — v1 static notice.
@@ -26,23 +29,40 @@ fun IntegrationsScreen(viewModel: DashboardViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(AppTheme.spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md),
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        AppScreenTitle("Integrations")
-        AppBodyText("Manage Google Calendar connections and sync.")
+        Text(
+            text = "Integrations",
+            style = MaterialTheme.typography.titleLarge,
+        )
+        HorizontalDivider()
+        Text(
+            text = "Manage Google Calendar connections and sync.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
 
-        AppOutlinedPanel {
+        NiaOutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                AppBodyText("Google Calendar")
-                AppBodyText("This integration is outside the current Tastile v1 scope.")
-                AppBodyText(
-                    "Until v2, do not expect the dashboard to load or sync any integration state."
+                Text(
+                    text = "Google Calendar",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = "This integration is outside the current Tastile v1 scope.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = "Until v2, do not expect the dashboard to load or sync any integration state.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

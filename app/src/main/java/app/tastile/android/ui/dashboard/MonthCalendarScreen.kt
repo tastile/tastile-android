@@ -12,7 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
 import androidx.compose.material3.Surface
+// m2-allow: primitive
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,12 +26,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.data.repository.CalendarProjectionBlockResponse
 import app.tastile.android.data.repository.CalendarProjectionResponse
-import app.tastile.android.ui.designsystem.AppBodyText
-import app.tastile.android.ui.designsystem.AppScreenTitle
-import app.tastile.android.ui.designsystem.AppSecondaryButton
-import app.tastile.android.ui.designsystem.AppTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -58,7 +60,7 @@ fun MonthCalendarScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(AppTheme.colors.background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -67,16 +69,16 @@ fun MonthCalendarScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AppScreenTitle(monthTitle)
-            AppSecondaryButton(
-                text = "Today",
+            Text(monthTitle, style = MaterialTheme.typography.titleLarge)
+            NiaOutlinedButton(
+                text = { Text("Today") },
                 onClick = {}
             )
         }
 
         Row(modifier = Modifier.fillMaxWidth()) {
             weekdayLabels.forEach { weekday ->
-                AppBodyText(
+                Text(
                     text = weekday,
                     modifier = Modifier
                         .weight(1f)
@@ -133,10 +135,10 @@ private fun MonthDayCell(
         modifier = modifier
             .border(
                 width = 1.dp,
-                color = AppTheme.colors.outline.copy(alpha = 0.22f),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.22f),
                 shape = RoundedCornerShape(0.dp)
             ),
-        color = if (cell.inCurrentMonth) AppTheme.colors.surface else AppTheme.colors.surfaceVariant.copy(alpha = 0.3f),
+        color = if (cell.inCurrentMonth) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         shape = RoundedCornerShape(0.dp)
     ) {
         Column(
@@ -147,32 +149,32 @@ private fun MonthDayCell(
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 val dayTextColor = when {
-                    isToday -> AppTheme.colors.onPrimary
-                    cell.inCurrentMonth -> AppTheme.colors.onSurface
-                    else -> AppTheme.colors.onSurfaceVariant
+                    isToday -> MaterialTheme.colorScheme.onPrimary
+                    cell.inCurrentMonth -> MaterialTheme.colorScheme.onSurface
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .size(24.dp)
                         .clip(CircleShape)
-                        .background(if (isToday) AppTheme.colors.primary else AppTheme.colors.surface.copy(alpha = 0f)),
+                        .background(if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    AppBodyText(cell.date.dayOfMonth.toString())
+                    Text(cell.date.dayOfMonth.toString())
                 }
             }
             cell.titles.forEach { title ->
-                AppBodyText(
+                Text(
                     text = title,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(AppTheme.colors.primary.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
             if (cell.overflowCount > 0) {
-                AppBodyText(
+                Text(
                     text = "+${cell.overflowCount} more"
                 )
             }

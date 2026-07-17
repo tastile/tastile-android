@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -21,6 +22,51 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 typealias AuthTokenProvider = suspend () -> String?
+
+/** Canonical endpoint paths shared with tastile-web's v1 command client. */
+internal object V1Endpoints {
+    const val CREATE_TILE = "/v1/tiles"
+    const val CREATE_PLACEMENT = "/v1/placements"
+
+    fun setPlan(tileId: String) = "/v1/tiles/$tileId/plan"
+    fun materializeRecurring(tileId: String, frameRuleId: String) =
+        "/v1/recurring/$tileId/frame-rules/$frameRuleId/materialize"
+
+    fun timeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): String {
+        val startIso = URLEncoder.encode(start.toString(), Charsets.UTF_8.name())
+        val endIso = URLEncoder.encode(end.toString(), Charsets.UTF_8.name())
+        val owners = ownerIds.filter { it.isNotBlank() }
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString(",")
+            ?.let { "&owner_ids=${URLEncoder.encode(it, Charsets.UTF_8.name())}" }
+            .orEmpty()
+        return "/v1/timeline?start=$startIso&end=$endIso$owners"
+    }
+}
+
+/** Serializes the v1 `CommandRequest<T>` wire format used by tastile-web. */
+internal object V1Wire {
+    fun commandEnvelope(
+        payload: JsonElement,
+        idempotencyKey: String = V1Idempotency.generate(),
+        occurredAt: String = Instant.now().toString(),
+        expectedRevision: Long? = null,
+    ): JsonObject = buildJsonObject {
+        put("expected_revision", expectedRevision?.let(::JsonPrimitive) ?: JsonNull)
+        put("idempotency_key", idempotencyKey)
+        put("occurred_at", occurredAt)
+        put("payload", payload)
+    }
+}
+
+internal object V1WorkspaceWire {
+    fun updateBody(input: UpdateWorkspaceInput): JsonObject = buildJsonObject {
+        put("display_name", input.displayName?.let(::JsonPrimitive) ?: JsonNull)
+        put("slug", input.slug?.let(::JsonPrimitive) ?: JsonNull)
+        put("color", input.color?.let(::JsonPrimitive) ?: JsonNull)
+        put("parent_subject_id", input.parentSubjectId?.let(::JsonPrimitive) ?: JsonNull)
+    }
+}
 
 @Singleton
 class V1ApiClient @Inject constructor(
@@ -77,35 +123,103 @@ class V1ApiClient @Inject constructor(
     suspend fun listPlacements(): List<V1PlacementListItem> =
         get("/v1/placements")
 
-    suspend fun getTimeline(start: Instant, end: Instant): V1TimelineResponse {
-        val startIso = URLEncoder.encode(start.toString(), Charsets.UTF_8.name())
-        val endIso = URLEncoder.encode(end.toString(), Charsets.UTF_8.name())
-        return get("/v1/timeline?start=$startIso&end=$endIso")
+    /** Returns null when the account has no running execution. */
+    suspend fun getActiveTile(): ActiveTileView? =
+        get("/v1/active-tile")
+
+    suspend fun readExecution(executionId: String): ExecutionView =
+        get("/v1/executions/$executionId")
+
+    /** `/v1/timeline` returns a bare TimelineItem array, not an `{ items }` envelope. */
+    suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): List<TimelineItem> {
+        return get(V1Endpoints.timeline(start, end, ownerIds))
     }
+
+    suspend fun createTile(payload: CreateTilePayload): CommandResponse =
+        postCommand(V1Endpoints.CREATE_TILE, payload, CreateTilePayload.serializer(), CommandResponse.serializer())
+
+    suspend fun setPlan(tileId: String, payload: SetPlanPayload): CommandResponse =
+        postCommand(V1Endpoints.setPlan(tileId), payload, SetPlanPayload.serializer(), CommandResponse.serializer())
+
+    suspend fun createPlacement(payload: CreatePlacementPayload): CommandResponse =
+        postCommand(V1Endpoints.CREATE_PLACEMENT, payload, CreatePlacementPayload.serializer(), CommandResponse.serializer())
+
+    suspend fun materializeRecurring(payload: MaterializeRecurringPayload): CommandResponse =
+        postCommand(
+            V1Endpoints.materializeRecurring(payload.recurringId, payload.frameRuleId),
+            payload,
+            MaterializeRecurringPayload.serializer(),
+            CommandResponse.serializer(),
+        )
 
     suspend fun listRuntimePaths(): V1ListRuntimePathsResponse =
         get("/v1/runtime/paths")
 
+    // --- C5 Projects (workspaces) ---------------------------------------
+    //
+    // All three endpoints are *raw JSON* (no CommandRequest envelope) — the
+    // web hooks call them through `getCoreClient().call("listMyWorkspaces")`
+    // with no envelope. The Rust handlers at
+    // `crates/v1/api/src/handlers/access.rs` accept a plain JSON body, so
+    // we follow suit.
+
+    suspend fun listWorkspaces(): V1ListWorkspacesResponse =
+        get("/v1/access/subjects?kind=1")
+
+    /**
+     * `POST /v1/access/workspaces` body `{ display_name, slug?, color?,
+     * parent_subject_id? }`. Returns the created `Workspace` row per the
+     * 201 CREATED wire shape.
+     */
+    suspend fun createWorkspace(input: CreateWorkspaceInput): Workspace {
+        val body = buildJsonObject {
+            put("display_name", input.displayName)
+            put("slug", input.slug?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("color", input.color?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("parent_subject_id", input.parentSubjectId?.let { JsonPrimitive(it) } ?: JsonNull)
+        }
+        return postRawJson(
+            path = "/v1/access/workspaces",
+            body = body,
+            responseSerializer = Workspace.serializer(),
+        )
+    }
+
+    /**
+     * `DELETE /v1/access/subjects/{id}` returns 204 NO CONTENT with no body.
+     * Surface that as a unit (`Unit`) and let the caller's `Response` chain
+     * collapse it.
+     */
+    suspend fun deleteWorkspace(id: String) {
+        deleteRaw(path = "/v1/access/subjects/$id")
+    }
+
+    /** Plain JSON PATCH, matching the web updateSubject endpoint. */
+    suspend fun updateWorkspace(id: String, input: UpdateWorkspaceInput): Workspace {
+        val body = V1WorkspaceWire.updateBody(input)
+        return patchRawJson(
+            path = "/v1/access/subjects/$id",
+            body = body,
+            responseSerializer = Workspace.serializer(),
+        )
+    }
+
     suspend fun <Req, Resp> postCommand(
         path: String,
-        commandKind: String,
         payload: Req,
         payloadSerializer: KSerializer<Req>,
         responseSerializer: KSerializer<Resp>,
-        expectedRevision: Long? = null
+        expectedRevision: Long? = null,
+        @Suppress("UNUSED_PARAMETER") commandKind: String? = null,
     ): Resp = withContext(Dispatchers.IO) {
         try {
             val token = tokenProvider()
             if (token.isNullOrBlank()) throw V1Error.Auth()
-            val envelope = buildJsonObject {
-                put("expectedRevision", expectedRevision?.let { JsonPrimitive(it) } ?: JsonNull)
-                put("idempotencyKey", V1Idempotency.generate())
-                put("occurredAt", Instant.now().toString())
-                put("payload", buildJsonObject {
-                    put("kind", commandKind)
-                    put("value", json.encodeToJsonElement(payloadSerializer, payload))
-                })
-            }
+            val encodedPayload = json.encodeToJsonElement(payloadSerializer, payload)
+            val envelope = V1Wire.commandEnvelope(
+                payload = encodedPayload,
+                expectedRevision = expectedRevision,
+            )
             val url = URL("${baseUrl()}$path")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
@@ -133,12 +247,37 @@ class V1ApiClient @Inject constructor(
         }
     }
 
+    suspend fun <Resp> postNullCommand(
+        path: String,
+        responseSerializer: KSerializer<Resp>,
+    ): Resp = postCommand(
+        path = path,
+        payload = JsonNull,
+        payloadSerializer = JsonElement.serializer(),
+        responseSerializer = responseSerializer,
+    )
+
+    suspend fun <Req> postCommandNoResponse(path: String, payload: Req, payloadSerializer: KSerializer<Req>) = withContext(Dispatchers.IO) {
+        val token = tokenProvider()
+        if (token.isNullOrBlank()) throw V1Error.Auth()
+        val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"; doOutput = true; doInput = true
+            setRequestProperty("Authorization", "Bearer $token")
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Accept", "application/json")
+            connectTimeout = 15_000; readTimeout = 15_000
+        }
+        val envelope = V1Wire.commandEnvelope(json.encodeToJsonElement(payloadSerializer, payload))
+        connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+        val status = connection.responseCode
+        val body = (if (status in 200..299) connection.inputStream else connection.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+        if (status !in 200..299) throw V1Error.Unknown(status, body.take(200))
+    }
+
     /**
-     * Issues a POST request whose body is sent verbatim (no `CommandRequest`
-     * envelope wrapping).  Used by Macro Step 5 for endpoints that bypass the
-     * standard envelope: `POST /v1/prompts` and
-     * `POST /v1/prompts/startup-recovery`.  Idempotency keys are still added
-     * via the `Idempotency-Key` header so retry dedup still works.
+     * Issues a POST request whose body is sent verbatim (no CommandRequest
+     * envelope). Used for endpoints that take a plain JSON payload — C5
+     * projects (`POST /v1/access/workspaces`).
      */
     suspend fun <Resp> postRawJson(
         path: String,
@@ -176,28 +315,65 @@ class V1ApiClient @Inject constructor(
         }
     }
 
-    /**
-     * Issues a DELETE request to the v1 endpoint. Mirrors [postCommand]'s shape but
-     * with no body — used for `tile.delete` (`DELETE /v1/tiles/{id}`). The
-     * endpoint still returns a `CommandResponse` envelope, which is decoded via
-     * the supplied [responseSerializer].
-     */
-    suspend fun <Resp> deleteCommand(
+    suspend fun <Resp> patchRawJson(
         path: String,
-        responseSerializer: KSerializer<Resp>
+        body: JsonObject,
+        responseSerializer: KSerializer<Resp>,
     ): Resp = withContext(Dispatchers.IO) {
+        try {
+            val token = tokenProvider()
+            if (token.isNullOrBlank()) throw V1Error.Auth()
+            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                requestMethod = "PATCH"
+                doOutput = true
+                doInput = true
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000
+                readTimeout = 15_000
+            }
+            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            val status = connection.responseCode
+            val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                ?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (status !in 200..299) {
+                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(responseBody) }.getOrNull()
+                if (err != null) throw V1Error.fromApiBody(err)
+                throw V1Error.Unknown(status, responseBody.take(200))
+            }
+            json.decodeFromString(responseSerializer, responseBody)
+        } catch (e: IOException) {
+            throw V1Error.Network(e)
+        }
+    }
+
+    /** Sends a v1 CommandEnvelope DELETE. Tile archive succeeds with 204. */
+    suspend fun <Req> deleteCommand(
+        path: String,
+        payload: Req,
+        payloadSerializer: KSerializer<Req>,
+        expectedRevision: Long? = null,
+    ) = withContext(Dispatchers.IO) {
         try {
             val token = tokenProvider()
             if (token.isNullOrBlank()) throw V1Error.Auth()
             val url = URL("${baseUrl()}$path")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "DELETE"
+                doOutput = true
                 doInput = true
                 setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Accept", "application/json")
                 connectTimeout = 15_000
                 readTimeout = 15_000
             }
+            val envelope = V1Wire.commandEnvelope(
+                payload = json.encodeToJsonElement(payloadSerializer, payload),
+                expectedRevision = expectedRevision,
+            )
+            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
             val status = connection.responseCode
             val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
                 ?.bufferedReader()?.use { it.readText() }
@@ -207,7 +383,37 @@ class V1ApiClient @Inject constructor(
                 if (err != null) throw V1Error.fromApiBody(err)
                 throw V1Error.Unknown(status, body.take(200))
             }
-            json.decodeFromString(responseSerializer, body)
+            Unit
+        } catch (e: IOException) {
+            throw V1Error.Network(e)
+        }
+    }
+
+    /**
+     * Issues a DELETE request whose response body is unused. Used by
+     * C5 projects (`DELETE /v1/access/subjects/{id}` returns
+     * 204 NO CONTENT) where the [deleteCommand] envelope-decoding
+     * path is not appropriate.
+     */
+    suspend fun deleteRaw(path: String) = withContext(Dispatchers.IO) {
+        try {
+            val token = tokenProvider()
+            if (token.isNullOrBlank()) throw V1Error.Auth()
+            val url = URL("${baseUrl()}$path")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "DELETE"
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000
+                readTimeout = 15_000
+            }
+            val status = connection.responseCode
+            if (status !in 200..299) {
+                val body = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
+                if (err != null) throw V1Error.fromApiBody(err)
+                throw V1Error.Unknown(status, body.take(200))
+            }
         } catch (e: IOException) {
             throw V1Error.Network(e)
         }

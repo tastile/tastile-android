@@ -22,12 +22,16 @@ import androidx.lifecycle.lifecycleScope
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.ui.app.AppShellViewModel
 import app.tastile.android.ui.mobile.MobileNavGraph
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import app.tastile.android.sync.SyncCoordinator
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.theme.TastileTheme
+import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.ui.util.SystemBarEffect
+import app.tastile.android.ui.util.resolveDarkTheme
+import app.tastile.android.ui.util.supportsDynamicColor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -36,6 +40,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val dashboardViewModel: DashboardViewModel by viewModels()
+    private val appShellViewModel: AppShellViewModel by viewModels()
 
     @Inject
     lateinit var authRepository: AuthRepository
@@ -77,8 +82,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val themeMode by dashboardViewModel.themeMode.collectAsStateWithLifecycle()
+            val darkTheme = resolveDarkTheme(themeMode)
 
-            TastileTheme(themeMode = themeMode) {
+            NiaTheme(
+                darkTheme = darkTheme,
+                androidTheme = supportsDynamicColor(),
+                disableDynamicTheming = !supportsDynamicColor(),
+            ) {
+                SystemBarEffect(color = MaterialTheme.colorScheme.background, darkTheme = darkTheme)
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

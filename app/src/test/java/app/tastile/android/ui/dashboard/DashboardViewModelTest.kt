@@ -6,23 +6,29 @@ import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.ReferenceOverlayStore
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.ui.dashboard.ListGroupingMode
 import androidx.lifecycle.viewModelScope
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -55,6 +61,7 @@ class DashboardViewModelTest {
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
+        val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
@@ -67,30 +74,32 @@ class DashboardViewModelTest {
             profileRepository,
             tileRepository,
             userSettingsRepository,
+            referenceOverlayStore,
         ).also { viewModels.add(it) }
     }
 
     @Test
     fun handleCardAction_routesToRequestPromptCommand() = runTest {
-        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.requestPrompt(any()) } returns true
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
 
         viewModel.handleCardAction(CardAction.TriggerPrompt("tile-1"))
 
-        coVerify(atLeast = 1) { tileRepository.requestPrompt("tile-1") }
+        assertEquals("tile-1", viewModel.requestPromptTileId.value)
+        coVerify(exactly = 0) { tileRepository.requestPrompt(any()) }
     }
 
     @Test
     fun rescheduleTimelineItem_routesToCoreRescheduleCommand() = runTest {
-        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         coEvery { tileRepository.rescheduleTile(any(), any(), any()) } returns Unit
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
         val item = CoreTimelineItem(
             id = "tl-1",
@@ -109,9 +118,9 @@ class DashboardViewModelTest {
 
     @Test
     fun refreshAll_setsDiagnosticsWhenUnauthenticated() = runTest {
-        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
 
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
         viewModel.refreshAll()
 
@@ -176,9 +185,9 @@ class DashboardViewModelTest {
 
     @Test
     fun confirmDeleteTile_clearsCandidateAndCallsRepository() = runTest {
-        val (authRepository, profileRepository, tileRepository, userSettingsRepository) = mocks()
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { tileRepository.deleteTile(any()) } returns Unit
-        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModels.add(viewModel)
 
         viewModel.setDeleteTileCandidate("kill-me")
@@ -190,6 +199,158 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun startTile_reloadsTheStartedTileAndExposesPauseControl() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        var response = TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Ready")),
+            null,
+            null,
+        )
+        coEvery { tileRepository.getTiles(any()) } answers { response }
+        coEvery { tileRepository.startTile("tile-1") } answers {
+            response = TilesResponse(
+                listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
+                null,
+                null,
+            )
+            Tile(id = "tile-1", title = "Focus", lifecycle = "Started")
+        }
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.Found(0)
+
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+
+        viewModel.startTile("tile-1")
+
+        assertEquals("Started", viewModel.tiles.value.single().lifecycle)
+        assertEquals(ExecutionControlState.Active, viewModel.executionControlStates.value["tile-1"])
+        coVerify(exactly = 1) { tileRepository.startTile("tile-1") }
+        coVerify(atLeast = 1) { tileRepository.getTiles(any()) }
+    }
+
+    @Test
+    fun authoritativeExecutionRefresh_clearsUnvalidatedPausedState() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val authState = MutableStateFlow<TastileAuthState>(TastileAuthState.Authenticated("user-1", "user@example.test", "id-token", "access-token", null))
+        every { authRepository.authState } returns authState
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
+            null,
+            null,
+        )
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.NoActiveExecution
+
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Paused))
+
+        viewModel.setTileFilter(app.tastile.android.data.repository.TileFilter(limit = 21))
+
+        assertEquals(null, viewModel.executionControlStates.value["tile-1"])
+    }
+
+    @Test
+    fun pauseThenResume_transitionsControlStateForTheSameExecution() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.pauseTile("tile-1") } returns Unit
+        coEvery { tileRepository.continueTile("tile-1") } returns Unit
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
+            null,
+            null,
+        )
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returnsMany listOf(
+            ExecutionStateLookup.Found(1),
+            ExecutionStateLookup.Found(0),
+        )
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
+
+        viewModel.pauseTile("tile-1")
+        coVerify(exactly = 1) { tileRepository.pauseTile("tile-1") }
+        assertEquals(ExecutionControlState.Paused, viewModel.executionControlStates.value["tile-1"])
+
+        viewModel.resumeTile("tile-1")
+        coVerify(exactly = 1) { tileRepository.continueTile("tile-1") }
+        assertEquals(ExecutionControlState.Active, viewModel.executionControlStates.value["tile-1"])
+    }
+
+    @Test
+    fun pausedGrace_expiresAfterFiveSecondsWithoutAnotherRefresh() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.pauseTile("tile-1") } returns Unit
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")), null, null,
+        )
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.NoActiveExecution
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
+
+        viewModel.pauseTile("tile-1")
+        assertEquals(ExecutionControlState.Paused, viewModel.executionControlStates.value["tile-1"])
+
+        advanceTimeBy(4_999)
+        runCurrent()
+        assertEquals(ExecutionControlState.Paused, viewModel.executionControlStates.value["tile-1"])
+        advanceTimeBy(1)
+        runCurrent()
+
+        assertEquals(null, viewModel.executionControlStates.value["tile-1"])
+        verify(exactly = 1) { tileRepository.clearExecutionCacheForTile("tile-1") }
+    }
+
+    @Test
+    fun invalidExecutionLookup_neverKeepsResumeDuringPauseGrace() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.pauseTile("tile-1") } returns Unit
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")), null, null,
+        )
+        coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.InvalidExecution
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
+
+        viewModel.pauseTile("tile-1")
+
+        assertEquals(null, viewModel.executionControlStates.value["tile-1"])
+    }
+
+    @Test
+    fun resumeFailure_clearsStaleResumeControl() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.continueTile("tile-1") } throws IllegalStateException("execution is terminal")
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+        viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Paused))
+
+        viewModel.resumeTile("tile-1")
+
+        assertEquals(null, viewModel.executionControlStates.value["tile-1"])
+        assertTrue(viewModel.executionControlInFlightTileIds.value.isEmpty())
+    }
+
+    @Test
+    fun pauseTile_ignoresRepeatedCallWhilePauseIsInFlight() = runTest {
+        val (authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val pauseGate = CompletableDeferred<Unit>()
+        coEvery { tileRepository.pauseTile("tile-1") } coAnswers { pauseGate.await() }
+        val viewModel = DashboardViewModel(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
+        viewModels.add(viewModel)
+
+        viewModel.pauseTile("tile-1")
+        viewModel.pauseTile("tile-1")
+
+        assertTrue("tile-1" in viewModel.executionControlInFlightTileIds.value)
+        coVerify(exactly = 1) { tileRepository.pauseTile("tile-1") }
+        pauseGate.complete(Unit)
+        runCurrent()
+        assertTrue(viewModel.executionControlInFlightTileIds.value.isEmpty())
+    }
+
+    @Test
     fun setSearchTerm_rebuildsTileFilter() = runTest {
         val viewModel = newViewModel()
         val seed = app.tastile.android.data.repository.TileFilter(limit = 50)
@@ -197,6 +358,17 @@ class DashboardViewModelTest {
         viewModel.setSearchTerm("alpha")
         assertEquals("alpha", viewModel.tileFilter.value.search)
         assertEquals(50, viewModel.tileFilter.value.limit)
+    }
+
+    @Test
+    fun setOwnerFilter_updatesTileFilterAndClearsBackToAllProjects() = runTest {
+        val viewModel = newViewModel()
+
+        viewModel.setOwnerFilter("project-1")
+        assertEquals(listOf("project-1"), viewModel.tileFilter.value.ownerIds)
+
+        viewModel.setOwnerFilter(null)
+        assertTrue(viewModel.tileFilter.value.ownerIds.isEmpty())
     }
 
     @Test
@@ -218,6 +390,7 @@ class DashboardViewModelTest {
         val profileRepository: ProfileRepository,
         val tileRepository: TileRepository,
         val userSettingsRepository: UserSettingsRepository,
+        val referenceOverlayStore: ReferenceOverlayStore,
     )
 
     private fun mocks(): Mocks {
@@ -225,12 +398,13 @@ class DashboardViewModelTest {
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
+        val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
         every { authRepository.currentSession } returns null
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
-        return Mocks(authRepository, profileRepository, tileRepository, userSettingsRepository)
+        return Mocks(authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
     }
 }

@@ -1,5 +1,6 @@
 package app.tastile.android.ui.dashboard
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
@@ -10,11 +11,13 @@ import app.tastile.android.data.model.projectLabels
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.ProfileRepository
+import app.tastile.android.data.repository.ReferenceOverlayStore
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.TileFilter
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.data.util.formatIsoDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -40,7 +44,7 @@ import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
-enum class TimelineScale { Day, Week, Month }
+enum class TimelineScale { Day, Week, Month, List }
 
 /**
  * Sub-tab selector for the mobile Tiles tab. Independent from
@@ -51,6 +55,9 @@ enum class TimelineScale { Day, Week, Month }
 enum class TilesTab { LIST, TIMELINE, CHANGES }
 
 enum class TileRange { ALL, TODAY, RECENT, EXCLUDE_FUTURE }
+
+/** Authoritative v1 execution state available for a started tile's controls. */
+enum class ExecutionControlState { Active, Paused }
 enum class TileGranularity { ALL, NO_BREAKS, MIN_5M, MIN_15M, MIN_30M }
 enum class ListGroupingMode { STATE, PROJECT, TAG }
 enum class ListViewMode { COMPACT, COMFORTABLE, DETAILED }
@@ -101,6 +108,7 @@ class DashboardViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val tileRepository: TileRepository,
     private val userSettingsRepository: UserSettingsRepository,
+    private val referenceOverlayStore: ReferenceOverlayStore,
 ) : ViewModel() {
     private val cardMapper = DashboardCardMapper()
     private val _tiles = MutableStateFlow<List<Tile>>(emptyList())
@@ -115,8 +123,32 @@ class DashboardViewModel @Inject constructor(
     private val _nextActionableStartAt = MutableStateFlow<String?>(null)
     val nextActionableStartAt: StateFlow<String?> = _nextActionableStartAt.asStateFlow()
 
+    private val _executionControlStates = MutableStateFlow<Map<String, ExecutionControlState>>(emptyMap())
+    val executionControlStates: StateFlow<Map<String, ExecutionControlState>> = _executionControlStates.asStateFlow()
+    private val _executionControlInFlightTileIds = MutableStateFlow<Set<String>>(emptySet())
+    val executionControlInFlightTileIds: StateFlow<Set<String>> = _executionControlInFlightTileIds.asStateFlow()
+
+    /**
+     * The v1 active-tile endpoint deliberately omits paused executions. Keep
+     * the locally paused state only long enough for an immediate resume while
+     * the same process still holds the execution id; all later UI state comes
+     * from a validated execution read.
+     */
+    private val recentlyPausedUntilElapsedMs = mutableMapOf<String, Long>()
+
     fun setTileFilter(filter: TileFilter) {
         _tileFilter.value = filter
+    }
+
+    /** Applies the same owner_ids selection to tile lists and the calendar. */
+    fun setOwnerFilter(ownerId: String?) {
+        setOwnerFilters(ownerId?.takeIf { it.isNotBlank() }?.let(::listOf).orEmpty())
+    }
+
+    /** Applies Calendar's checked workspace tree as the v1 `owner_ids` selection. */
+    fun setOwnerFilters(ownerIds: Collection<String>) {
+        _tileFilter.value = _tileFilter.value.copy(ownerIds = ownerIds.filter { it.isNotBlank() }.distinct())
+        refreshTimeline()
     }
 
     private val _selectedTileId = MutableStateFlow<String?>(null)
@@ -135,6 +167,21 @@ class DashboardViewModel @Inject constructor(
 
     internal fun replaceTilesForTest(list: List<Tile>) {
         _tiles.value = list
+    }
+
+    /**
+     * Test-only seam for the timeline StateFlow. Sibling of
+     * [replaceTilesForTest] / [replaceExecutionControlStatesForTest]; lets
+     * [DayViewRefreshSnapshotTest] seed a pre-call snapshot before kicking
+     * off a refresh that throws, so the test can assert the catch-block
+     * leaves the prior list intact. Not invoked from production.
+     */
+    internal fun replaceTimelineForTest(list: List<CoreTimelineItem>) {
+        _timeline.value = list
+    }
+
+    internal fun replaceExecutionControlStatesForTest(states: Map<String, ExecutionControlState>) {
+        _executionControlStates.value = states
     }
 
     private val _profile = MutableStateFlow<Profile?>(null)
@@ -164,6 +211,9 @@ class DashboardViewModel @Inject constructor(
     private val _timeline = MutableStateFlow<List<CoreTimelineItem>>(emptyList())
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
 
+    private val _isLoadingTimeline = MutableStateFlow(false)
+    val isLoadingTimeline: StateFlow<Boolean> = _isLoadingTimeline.asStateFlow()
+
     private val _timelineRange = MutableStateFlow(
         computeTimelineRange(LocalDate.now(), TimelineScale.Day)
     )
@@ -179,6 +229,32 @@ class DashboardViewModel @Inject constructor(
     val scale: StateFlow<TimelineScale> = _scale.asStateFlow()
     fun setScale(scale: TimelineScale) {
         _scale.value = scale
+    }
+
+    private val _calendarMode = MutableStateFlow(CalendarMode.Scope)
+    val calendarMode: StateFlow<CalendarMode> = _calendarMode.asStateFlow()
+
+    private val _calendarMinimumDurationMinutes = MutableStateFlow(0)
+    val calendarMinimumDurationMinutes: StateFlow<Int> = _calendarMinimumDurationMinutes.asStateFlow()
+
+    fun setCalendarMode(mode: CalendarMode) {
+        _calendarMode.value = mode
+        if (mode != CalendarMode.Scope) _selectedDay.value = LocalDate.now()
+    }
+
+    fun setCalendarMinimumDuration(minutes: Int) {
+        _calendarMinimumDurationMinutes.value = minutes.coerceAtLeast(0)
+        refreshTimeline()
+    }
+
+    fun moveCalendar(delta: Long) {
+        if (!canNavigateCalendar(_calendarMode.value)) return
+        _selectedDay.value = shiftCalendarAnchor(_selectedDay.value, _scale.value, delta)
+    }
+
+    fun goToCalendarToday() {
+        _calendarMode.value = CalendarMode.Scope
+        _selectedDay.value = LocalDate.now()
     }
 
     private val _statsDiagnostics = MutableStateFlow("n/a")
@@ -224,8 +300,42 @@ class DashboardViewModel @Inject constructor(
     private val _customEndIso = MutableStateFlow<String?>(null)
     val customEndIso: StateFlow<String?> = _customEndIso.asStateFlow()
 
+    /**
+     * Schedule right-pane view mode. Mirrors the `?view=` URL parameter
+     * on `tastile-web/src/components/panels/ScheduleSidePanel.tsx`;
+     * persisted via [UserSettingsRepository] so the toggle survives
+     * process death. C11 ships the two-button toggle + filter logic.
+     * Values are unconstrained strings (`"recurring"` / `"upcoming"`)
+     * intentionally — see
+     * `app.tastile.android.ui.mobile.panels.schedule.VIEW_RECURRING` /
+     * `VIEW_UPCOMING` constants.
+     */
+    private val _scheduleView = MutableStateFlow(userSettingsRepository.getScheduleView())
+    val scheduleView: StateFlow<String> = _scheduleView.asStateFlow()
+
     private val _requestDeleteTileId = MutableStateFlow<String?>(null)
     val requestDeleteTileId: StateFlow<String?> = _requestDeleteTileId.asStateFlow()
+    private val _requestClosePlacementId = MutableStateFlow<String?>(null)
+    val requestClosePlacementId: StateFlow<String?> = _requestClosePlacementId.asStateFlow()
+
+    /** User intent is held until the corresponding confirmation sheet submits. */
+    private val _requestDeferTileId = MutableStateFlow<String?>(null)
+    val requestDeferTileId: StateFlow<String?> = _requestDeferTileId.asStateFlow()
+    private val _requestPromptTileId = MutableStateFlow<String?>(null)
+    val requestPromptTileId: StateFlow<String?> = _requestPromptTileId.asStateFlow()
+    private val _lastActionMessage = MutableStateFlow<String?>(null)
+    val lastActionMessage: StateFlow<String?> = _lastActionMessage.asStateFlow()
+
+    /**
+     * Labels the user has enabled as overlays from the References side panel.
+     * Mirrors `tastile-web/src/lib/stores/reference-overlay-store.ts`. C6
+     * binds this to a `Switch` row per unique label inside the mobile panel.
+     */
+    val referenceOverlayEnabled: StateFlow<Set<String>> = referenceOverlayStore.enabled
+
+    fun toggleReference(label: String) {
+        viewModelScope.launch { referenceOverlayStore.toggle(label) }
+    }
 
     /**
      * Tiles partitioned by the active [listGroupingMode]. STATE groups by
@@ -345,10 +455,17 @@ class DashboardViewModel @Inject constructor(
     companion object {
         private const val INITIAL_SECTION_LIMIT = 8
         private const val MAX_SECTION_LIMIT = 60
+        private const val JUST_PAUSED_GRACE_MS = 5_000L
     }
 
     fun setTimelineScale(scale: TimelineSubScale) {
         _timelineScale.value = scale
+    }
+
+    fun setScheduleView(view: String) {
+        if (_scheduleView.value == view) return
+        _scheduleView.value = view
+        userSettingsRepository.setScheduleView(view)
     }
 
     fun setCustomRange(startIso: String?, endIso: String?) {
@@ -365,6 +482,30 @@ class DashboardViewModel @Inject constructor(
         _requestDeleteTileId.value = null
         deleteTile(id)
     }
+    fun setClosePlacementCandidate(id: String?) { _requestClosePlacementId.value = id }
+    fun confirmClosePlacement() {
+        val id = _requestClosePlacementId.value ?: return
+        _requestClosePlacementId.value = null
+        viewModelScope.launch { try { tileRepository.closePlacement(id); refreshAll() } catch (e: Exception) { _error.value = e.message ?: "Failed to close occurrence" } }
+    }
+
+    fun setDeferTileCandidate(id: String?) { _requestDeferTileId.value = id }
+
+    fun confirmDeferTile(deferredUntil: String) {
+        val id = _requestDeferTileId.value ?: return
+        _requestDeferTileId.value = null
+        deferTile(id, deferredUntil)
+    }
+
+    fun setPromptTileCandidate(id: String?) { _requestPromptTileId.value = id }
+
+    fun confirmPromptTile() {
+        val id = _requestPromptTileId.value ?: return
+        _requestPromptTileId.value = null
+        triggerPrompt(id)
+    }
+
+    fun clearActionMessage() { _lastActionMessage.value = null }
 
     /**
      * Format an ISO instant as a short, locale-aware date-time string.
@@ -406,7 +547,9 @@ class DashboardViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(_selectedDay, _scale) { d, s -> computeTimelineRange(d, s) }
+            combine(_selectedDay, _scale, _calendarMode) { d, s, m ->
+                calendarRange(d, s, m)
+            }
                 .distinctUntilChanged()
                 .collect { range ->
                     _timelineRange.value = range
@@ -426,15 +569,12 @@ class DashboardViewModel @Inject constructor(
                 .collect { (state, filter) ->
                     val userId = (state as? TastileAuthState.Authenticated)?.userId
                     if (userId != null) {
-                        val response = tileRepository.getTiles(filter)
-                        _tiles.value = response.tiles
-                        _nextActionableTileId.value = response.nextActionableTileId
-                        _nextActionableStartAt.value = response.nextActionableStartAt
-                        _statsDiagnostics.value = tileRepository.latestReadDiagnostics()
+                        reloadVisibleTilesAndExecutionControls(filter)
                     } else {
                         _tiles.value = emptyList()
                         _nextActionableTileId.value = null
                         _nextActionableStartAt.value = null
+                        _executionControlStates.value = emptyMap()
                         _statsDiagnostics.value = "source=none reason=unauthenticated"
                     }
                 }
@@ -445,10 +585,16 @@ class DashboardViewModel @Inject constructor(
     private fun refreshTimeline() {
         val (start, end) = _timelineRange.value
         viewModelScope.launch {
+            _isLoadingTimeline.value = true
             try {
-                _timeline.value = tileRepository.getTimeline(start, end)
+                _timeline.value = filterCalendarByMinimumDuration(
+                    tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds),
+                    _calendarMinimumDurationMinutes.value,
+                )
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load timeline"
+            } finally {
+                _isLoadingTimeline.value = false
             }
         }
     }
@@ -467,7 +613,10 @@ class DashboardViewModel @Inject constructor(
                     _profile.value = profileRepository.getProfile(userId)
                     _avatarUrl.value = metadataAvatar ?: _profile.value?.avatarUrl
                     val (tlStart, tlEnd) = _timelineRange.value
-                    _timeline.value = tileRepository.getTimeline(tlStart, tlEnd)
+                    _timeline.value = filterCalendarByMinimumDuration(
+                        tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds),
+                        _calendarMinimumDurationMinutes.value,
+                    )
                 } else {
                     _timeline.value = emptyList()
                     _profile.value = null
@@ -511,6 +660,8 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.startTile(tileId)
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+                _lastActionMessage.value = "Started"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to start tile"
@@ -522,6 +673,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.completeTile(tileId)
+                _lastActionMessage.value = "Completed"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to complete tile"
@@ -529,10 +681,158 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun deferTile(tileId: String) {
+    fun startExecution(tileId: String) {
+        if (!beginExecutionControl(tileId)) return
         viewModelScope.launch {
             try {
-                tileRepository.deferTile(tileId)
+                tileRepository.startExecution(tileId)
+                _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Active)
+                _lastActionMessage.value = "Execution started"
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to start execution"
+            } finally {
+                endExecutionControl(tileId)
+            }
+        }
+    }
+
+    fun finishExecution(tileId: String) {
+        if (!beginExecutionControl(tileId)) return
+        viewModelScope.launch {
+            try {
+                tileRepository.finishExecution(tileId)
+                recentlyPausedUntilElapsedMs.remove(tileId)
+                _executionControlStates.value = _executionControlStates.value - tileId
+                _lastActionMessage.value = "Execution finished"
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to finish execution"
+            } finally {
+                endExecutionControl(tileId)
+            }
+        }
+    }
+
+    fun pauseTile(tileId: String) {
+        if (!beginExecutionControl(tileId)) return
+        viewModelScope.launch {
+            try {
+                tileRepository.pauseTile(tileId)
+                _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Paused)
+                val expiresAt = SystemClock.elapsedRealtime() + JUST_PAUSED_GRACE_MS
+                recentlyPausedUntilElapsedMs[tileId] = expiresAt
+                schedulePausedExpiry(tileId, expiresAt)
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+                _lastActionMessage.value = "Paused"
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to pause execution"
+            } finally {
+                endExecutionControl(tileId)
+            }
+        }
+    }
+
+    fun resumeTile(tileId: String) {
+        if (!beginExecutionControl(tileId)) return
+        viewModelScope.launch {
+            try {
+                tileRepository.continueTile(tileId)
+                recentlyPausedUntilElapsedMs.remove(tileId)
+                _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Active)
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+                _lastActionMessage.value = "Resumed"
+                refreshAll()
+            } catch (e: Exception) {
+                // A resume failure can mean that the locally cached paused
+                // execution has become terminal or no longer belongs to this
+                // tile. Do not leave a stale Resume affordance on screen.
+                recentlyPausedUntilElapsedMs.remove(tileId)
+                _executionControlStates.value = _executionControlStates.value - tileId
+                _error.value = e.message ?: "Failed to resume execution"
+            } finally {
+                endExecutionControl(tileId)
+            }
+        }
+    }
+
+    private fun beginExecutionControl(tileId: String): Boolean {
+        if (tileId in _executionControlInFlightTileIds.value) return false
+        _executionControlInFlightTileIds.value = _executionControlInFlightTileIds.value + tileId
+        return true
+    }
+
+    private fun endExecutionControl(tileId: String) {
+        _executionControlInFlightTileIds.value = _executionControlInFlightTileIds.value - tileId
+    }
+
+    private fun schedulePausedExpiry(tileId: String, expiresAt: Long) {
+        viewModelScope.launch {
+            delay(JUST_PAUSED_GRACE_MS)
+            if (recentlyPausedUntilElapsedMs[tileId] != expiresAt) return@launch
+            recentlyPausedUntilElapsedMs.remove(tileId)
+            tileRepository.clearExecutionCacheForTile(tileId)
+            _executionControlStates.value = _executionControlStates.value - tileId
+        }
+    }
+
+    private suspend fun reloadVisibleTilesAndExecutionControls(filter: TileFilter) {
+        val response = tileRepository.getTiles(filter)
+        _tiles.value = response.tiles
+        _nextActionableTileId.value = response.nextActionableTileId
+        _nextActionableStartAt.value = response.nextActionableStartAt
+        refreshExecutionControlStates(response.tiles)
+        _statsDiagnostics.value = tileRepository.latestReadDiagnostics()
+    }
+
+    private suspend fun refreshExecutionControlStates(tiles: List<Tile>) {
+        val startedIds = tiles.filter { it.isStarted() }.map { it.id }.toSet()
+        if (startedIds.isEmpty()) {
+            recentlyPausedUntilElapsedMs.clear()
+            _executionControlStates.value = emptyMap()
+            return
+        }
+        val lookups = startedIds.associateWith { tileRepository.executionStateLookupForTile(it) }
+        val refreshed = lookups.mapNotNull { (tileId, lookup) ->
+            when (lookup) {
+                is ExecutionStateLookup.Found -> when (lookup.state) {
+                    0 -> tileId to ExecutionControlState.Active
+                    1 -> tileId to ExecutionControlState.Paused
+                    else -> null
+                }
+                ExecutionStateLookup.NoActiveExecution, ExecutionStateLookup.InvalidExecution -> null
+                is ExecutionStateLookup.Unavailable -> {
+                    _error.value = "Unable to verify execution state"
+                    null
+                }
+            }
+        }.toMap()
+        val now = SystemClock.elapsedRealtime()
+        val justPaused = recentlyPausedUntilElapsedMs
+            .filter { (tileId, expiresAt) ->
+                tileId in startedIds &&
+                    expiresAt > now &&
+                    lookups[tileId] == ExecutionStateLookup.NoActiveExecution
+            }
+            .keys
+        recentlyPausedUntilElapsedMs.entries.removeAll { (tileId, expiresAt) ->
+            tileId !in startedIds || expiresAt <= now ||
+                lookups[tileId] == ExecutionStateLookup.InvalidExecution ||
+                lookups[tileId] is ExecutionStateLookup.Unavailable
+        }
+        _executionControlStates.value = refreshed + justPaused
+            .filter { it !in refreshed }
+            .associateWith { ExecutionControlState.Paused }
+    }
+
+    fun deferTile(tileId: String, deferredUntil: String) {
+        viewModelScope.launch {
+            try {
+                tileRepository.deferTile(tileId, deferredUntil)
+                _lastActionMessage.value = "Deferred until $deferredUntil"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to defer tile"
@@ -544,9 +844,28 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 tileRepository.deleteTile(tileId)
+                _lastActionMessage.value = "Deleted"
                 refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to delete tile"
+            }
+        }
+    }
+
+    /** Updates only fields the Android tile list can read and prefill. */
+    fun updateTileTitle(tileId: String, title: String) {
+        val trimmed = title.trim()
+        if (trimmed.isBlank()) {
+            _error.value = "Title is required"
+            return
+        }
+        viewModelScope.launch {
+            try {
+                tileRepository.updateTile(tileId, buildJsonObject { put("title", JsonPrimitive(trimmed)) })
+                _lastActionMessage.value = "Changes saved"
+                refreshAll()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to update tile"
             }
         }
     }
@@ -585,19 +904,23 @@ class DashboardViewModel @Inject constructor(
 
     fun handleCardAction(action: CardAction) {
         when (action) {
-            is CardAction.TriggerPrompt -> triggerPrompt(action.tileId)
+            is CardAction.TriggerPrompt -> setPromptTileCandidate(action.tileId)
             is CardAction.StartTile -> startTile(action.tileId)
             is CardAction.CompleteTile -> completeTile(action.tileId)
-            is CardAction.DeferTile -> deferTile(action.tileId)
-            is CardAction.DeleteTile -> deleteTile(action.tileId)
+            is CardAction.DeferTile -> setDeferTileCandidate(action.tileId)
+            is CardAction.DeleteTile -> setDeleteTileCandidate(action.tileId)
         }
     }
 
     private fun triggerPrompt(tileId: String) {
         viewModelScope.launch {
             try {
-                tileRepository.requestPrompt(tileId)
-                refreshAll()
+                if (tileRepository.requestPrompt(tileId)) {
+                    _lastActionMessage.value = "Prompt requested"
+                    refreshAll()
+                } else {
+                    _error.value = "Prompt request was rejected"
+                }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to trigger prompt"
             }
@@ -791,23 +1114,7 @@ private fun parseIsoOrNull(value: String?): Instant? {
 }
 
 internal fun computeTimelineRange(day: LocalDate, scale: TimelineScale): Pair<Instant, Instant> {
-    val zone = ZoneId.systemDefault()
-    return when (scale) {
-        TimelineScale.Day -> {
-            val start = day.atStartOfDay(zone).toInstant()
-            start to start.plusSeconds(24L * 3600L)
-        }
-        TimelineScale.Week -> {
-            val monday = day.minusDays((day.dayOfWeek.value - 1).toLong())
-            val start = monday.atStartOfDay(zone).toInstant()
-            start to start.plusSeconds(7L * 24L * 3600L)
-        }
-        TimelineScale.Month -> {
-            val ym = YearMonth.from(day)
-            val start = ym.atDay(1).atStartOfDay(zone).toInstant()
-            start to ym.atEndOfMonth().plusDays(1).atStartOfDay(zone).toInstant()
-        }
-    }
+    return calendarRange(day, scale, CalendarMode.Scope)
 }
 
 private fun snapByZoom(zoomScale: Float): Long {

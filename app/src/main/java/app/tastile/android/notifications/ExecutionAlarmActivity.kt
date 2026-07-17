@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,11 +40,21 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import app.tastile.android.ui.theme.TastileTheme
+import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.ui.util.SystemBarEffect
+import app.tastile.android.ui.util.resolveDarkTheme
+import app.tastile.android.ui.util.supportsDynamicColor
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlin.math.hypot
 import kotlin.math.max
 
+@AndroidEntryPoint
 class ExecutionAlarmActivity : ComponentActivity() {
+    @Inject
+    lateinit var userSettingsRepository: UserSettingsRepository
+
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
 
@@ -57,7 +68,14 @@ class ExecutionAlarmActivity : ComponentActivity() {
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Tastile"
         val body = intent.getStringExtra(EXTRA_BODY) ?: "Tastile needs your attention."
         setContent {
-            TastileTheme {
+            val themeMode = remember { mutableStateOf(userSettingsRepository.getThemeMode()) }
+            val darkTheme = resolveDarkTheme(themeMode.value)
+            NiaTheme(
+                darkTheme = darkTheme,
+                androidTheme = false,
+                disableDynamicTheming = true,
+            ) {
+                SystemBarEffect(color = MaterialTheme.colorScheme.background, darkTheme = darkTheme)
                 AlarmSurface(
                     title = title,
                     body = body,

@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.tabs.tiles
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,31 +8,37 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.IconButton
+// m2-allow: m3-component
+import androidx.compose.material3.ListItem
+// m2-allow: m3-component
+import androidx.compose.material3.ListItemDefaults
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.model.dueAtDate
 import app.tastile.android.data.model.isRecurring
 import app.tastile.android.data.model.projectLabel
-import app.tastile.android.ui.designsystem.AppChevron
-import app.tastile.android.ui.designsystem.AppListRow
-import app.tastile.android.ui.designsystem.AppMetaText
-import app.tastile.android.ui.designsystem.AppTheme
 import app.tastile.android.ui.dashboard.ListViewMode
 
 /**
  * Three-card dispatch by [ListViewMode]. Each branch shares the same
  * `tile-card-${tile.id}-${mode}` testTag so a test can assert that the
  * right density renders without depending on the underlying
- * implementation (compact uses [AppListRow] directly; comfortable
+ * implementation (compact uses a tappable [ListItem] directly; comfortable
  * builds a meta line; detailed adds duration/start/delete affordances).
  */
 @Composable
@@ -42,13 +49,35 @@ fun CompactTileCard(
 ) {
     val lifecycle = TileLifecycle.fromString(tile.lifecycle)
     val glyph = lifecycle.glyph()
-    AppListRow(
-        label = tile.title,
-        meta = lifecycle.shortLabel(),
-        leading = { Text(glyph, style = AppTheme.typography.bodyMedium) },
-        trailing = { AppChevron() },
-        onClick = onClick,
-        modifier = modifier.testTag("tile-card-${tile.id}-compact"),
+    ListItem(
+        headlineContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(glyph, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = tile.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp),
+                )
+                Text(
+                    text = "›",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        supportingContent = {
+            Text(
+                text = lifecycle.shortLabel(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .testTag("tile-card-${tile.id}-compact"),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     )
 }
 
@@ -63,13 +92,35 @@ fun ComfortableTileCard(
     val dueAt = tile.dueAtDate()
     val isRecurring = tile.isRecurring()
     val meta = buildMeta(project = project, dueAt = dueAt, isRecurring = isRecurring)
-    AppListRow(
-        label = tile.title,
-        meta = meta.ifBlank { lifecycle.shortLabel() },
-        leading = { Text(lifecycle.glyph(), style = AppTheme.typography.bodyMedium) },
-        trailing = { AppChevron() },
-        onClick = onClick,
-        modifier = modifier.testTag("tile-card-${tile.id}-comfortable"),
+    ListItem(
+        headlineContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(lifecycle.glyph(), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = tile.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp),
+                )
+                Text(
+                    text = "›",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        supportingContent = {
+            Text(
+                text = meta.ifBlank { lifecycle.shortLabel() },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .testTag("tile-card-${tile.id}-comfortable"),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     )
 }
 
@@ -84,24 +135,24 @@ fun DetailedTileCard(
     val project = tile.projectLabel()
     val dueAt = tile.dueAtDate()
     val isRecurring = tile.isRecurring()
-    val colors = AppTheme.colors
     val meta = buildMeta(project = project, dueAt = dueAt, isRecurring = isRecurring)
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .testTag("tile-card-${tile.id}-detailed"),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(lifecycle.glyph(), style = AppTheme.typography.bodyMedium)
+            Text(lifecycle.glyph(), style = MaterialTheme.typography.bodyMedium)
             Text(
                 tile.title,
-                style = AppTheme.typography.bodyMedium,
-                color = colors.onSurface,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = onDelete) {
@@ -109,25 +160,29 @@ fun DetailedTileCard(
             }
         }
         if (meta.isNotBlank()) {
-            AppMetaText(meta)
+            Text(
+                meta,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = AppTheme.spacing.xxs),
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md),
+                .padding(top = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "${stringResource(R.string.tiles_duration)}: ${tile.targetWorkMin ?: 0} min",
-                style = AppTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             val start = tile.fixedStart ?: tile.activeStart
             if (!start.isNullOrBlank()) {
                 Text(
                     text = "${stringResource(R.string.tiles_start_at)}: $start",
-                    style = AppTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

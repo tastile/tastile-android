@@ -5,10 +5,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+// m2-allow: state-holder
+import androidx.compose.material3.DrawerValue
+// m2-allow: experimental-annotation
+import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: m3-component
+import androidx.compose.material3.ModalNavigationDrawer
+// m2-allow: m3-component
 import androidx.compose.material3.Scaffold
+// m2-allow: state-holder
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -24,9 +34,11 @@ import app.tastile.android.ui.mobile.tabs.IntegrationsScreen
 import app.tastile.android.ui.mobile.tabs.SettingsScreen
 import app.tastile.android.ui.mobile.tabs.TilesScreen
 import app.tastile.android.ui.mobile.tabs.TimelineScreen
+import kotlinx.coroutines.launch
 
 private const val START = "timeline"
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MobileScaffold(
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
@@ -65,84 +77,113 @@ fun MobileScaffold(
             TimelineScale.Day -> selectedDay.format(dayFormatter)
             TimelineScale.Week -> "${weekStart.format(weekShortFormatter)} – ${weekEnd.format(weekShortFormatter)}"
             TimelineScale.Month -> monthStart.format(monthFormatter)
+            TimelineScale.List -> "All events"
         }
     }
 
-    Scaffold(
-        topBar = {
-            MobileTopBar(
-                title = title,
-                scale = scale,
-                onScaleChange = { dashboardViewModel.setScale(it) },
-                onMenu = { overlayViewModel.show(Overlay.SidePanel(sectionForRoute(currentRoute))) },
-                onNotifications = { overlayViewModel.show(Overlay.Notifications) },
-                onAvatar = { overlayViewModel.show(Overlay.AccountMenu) },
-                avatarUrl = avatarUrl,
-                avatarFallback = profile?.displayName?.firstOrNull()?.toString()
-                    ?: email.firstOrNull()?.toString()
-                    ?: "U",
-                showScale = currentRoute == "timeline",
-            )
-        },
-        // Edge-to-edge: main content fills the whole screen so the transparent
-        // top-bar gradient can show the timeline peeking through.
-        contentWindowInsets = WindowInsets(0),
-    ) { innerPadding ->
-        // Non-timeline tabs pad themselves with the scaffold's innerPadding so their
-        // first row sits below the top bar. TimelineScreen already pads internally
-        // (status bar + MobileTokens.topBarHeight); applying innerPadding here too
-        // would push it off-screen, so we leave the timeline route alone.
-        val topPad = innerPadding.calculateTopPadding()
-        Box(modifier = Modifier.fillMaxSize()) {
-            NavHost(
-                navController = navController,
-                startDestination = START,
-            ) {
-                composable("timeline") { TimelineScreen(viewModel = dashboardViewModel, overlay = overlayViewModel) }
-                composable("execute") {
-                    Box(modifier = Modifier.padding(top = topPad)) {
-                        ExecuteScreen(viewModel = dashboardViewModel)
-                    }
-                }
-                composable("tiles") {
-                    Box(modifier = Modifier.padding(top = topPad)) {
-                        TilesScreen(viewModel = dashboardViewModel)
-                    }
-                }
-                composable("integrations") {
-                    Box(modifier = Modifier.padding(top = topPad)) {
-                        IntegrationsScreen(viewModel = dashboardViewModel)
-                    }
-                }
-                composable("settings") {
-                    Box(modifier = Modifier.padding(top = topPad)) {
-                        SettingsScreen(viewModel = dashboardViewModel)
-                    }
-                }
-            }
-            OverlayLayer(
-                overlay = overlayViewModel,
-                onNavigate = { route ->
-                    navController.navigate(route) {
-                        launchSingleTop = true
-                    }
-                },
-            )
+    // Phase 1: ModalNavigationDrawer replaces the bottom-anchored SidePanelSheet.
+    // Drawer state is fully local to this composable (rememberDrawerState) — the
+    // hamburger in the top-bar calls drawerState.open() via the onMenu callback.
+    // Phase 1 also gates the drawer off full-screen routes (settings today;
+    // Phase 3 promotes settings to its own Scaffold so it owns its own top-bar).
+    val showDrawerForRoute = currentRoute != "settings"
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
 
-            // Task 21: prioritize overlay dismissal over nav pop on system back press.
-            val overlayCurrent by overlayViewModel.current.collectAsStateWithLifecycle()
-            BackHandler(enabled = overlayCurrent !is Overlay.Hidden) {
-                dashboardViewModel.clearSelectedTile()
-                overlayViewModel.dismiss()
+    val scaffoldContent: @Composable () -> Unit = {
+        Scaffold(
+            topBar = {
+                // Phase 3: Settings is a full-screen drill-down with its own
+                // CenterAlignedTopAppBar, so the shell top bar is suppressed
+                // on that route to avoid two stacked top bars.
+                if (currentRoute != "settings") {
+                    MobileTopBar(
+                        title = title,
+                        scale = scale,
+                        onScaleChange = { dashboardViewModel.setScale(it) },
+                        onMenu = { coroutineScope.launch { drawerState.open() } },
+                        onNotifications = { overlayViewModel.show(Overlay.Notifications) },
+                        avatarUrl = avatarUrl,
+                        avatarFallback = profile?.displayName?.firstOrNull()?.toString()
+                            ?: email.firstOrNull()?.toString()
+                            ?: "U",
+                        showScale = currentRoute == "timeline",
+                    )
+                }
+            },
+            // Edge-to-edge: main content fills the whole screen so the transparent
+            // top-bar gradient can show the timeline peeking through.
+            contentWindowInsets = WindowInsets(0),
+        ) { innerPadding ->
+            // Non-timeline tabs pad themselves with the scaffold's innerPadding so their
+            // first row sits below the top bar. TimelineScreen already pads internally
+            // (status bar + MobileTokens.topBarHeight); applying innerPadding here too
+            // would push it off-screen, so we leave the timeline route alone.
+            val topPad = innerPadding.calculateTopPadding()
+            Box(modifier = Modifier.fillMaxSize()) {
+                NavHost(
+                    navController = navController,
+                    startDestination = START,
+                ) {
+                    composable("timeline") { TimelineScreen(viewModel = dashboardViewModel, overlay = overlayViewModel) }
+                    composable("execute") {
+                        Box(modifier = Modifier.padding(top = topPad)) {
+                            ExecuteScreen(viewModel = dashboardViewModel)
+                        }
+                    }
+                    composable("tiles") {
+                        Box(modifier = Modifier.padding(top = topPad)) {
+                            TilesScreen(viewModel = dashboardViewModel)
+                        }
+                    }
+                    composable("integrations") {
+                        Box(modifier = Modifier.padding(top = topPad)) {
+                            IntegrationsScreen(viewModel = dashboardViewModel)
+                        }
+                    }
+                    composable("settings") {
+                        SettingsScreen(
+                            viewModel = dashboardViewModel,
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                }
+                OverlayLayer(
+                    overlay = overlayViewModel,
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+
+                // Task 21: prioritize overlay dismissal over nav pop on system back press.
+                val overlayCurrent by overlayViewModel.current.collectAsStateWithLifecycle()
+                // Phase 1: drawer has its own back handling — if open, swallow the
+                // back press to close it before letting the overlay handler fire.
+                BackHandler(enabled = drawerState.isOpen) {
+                    coroutineScope.launch { drawerState.close() }
+                }
+                BackHandler(enabled = overlayCurrent !is Overlay.Hidden) {
+                    dashboardViewModel.clearSelectedTile()
+                    overlayViewModel.dismiss()
+                }
             }
         }
     }
-}
 
-private fun sectionForRoute(route: String): SidePanelSection = when (route) {
-    "execute" -> SidePanelSection.Schedule
-    "tiles" -> SidePanelSection.Projects
-    "integrations" -> SidePanelSection.References
-    "settings" -> SidePanelSection.Preferences
-    else -> SidePanelSection.Calendar
+    if (showDrawerForRoute) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                SidePanelDrawerContent(
+                    navController = navController,
+                    drawerState = drawerState,
+                )
+            },
+            content = scaffoldContent,
+        )
+    } else {
+        scaffoldContent()
+    }
 }

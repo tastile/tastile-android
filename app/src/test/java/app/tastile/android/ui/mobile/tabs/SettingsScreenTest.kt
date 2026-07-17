@@ -35,22 +35,21 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun `renders all 5 settings rows with icon and label`() {
+    fun `renders all 4 settings rows with icon and label`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm())
+            SettingsScreen(viewModel = stubVm(), onBack = {})
         }
 
-        rule.onAllNodesWithText("Locale", substring = true).onFirst().performScrollTo().assertIsDisplayed()
         rule.onAllNodesWithText("Theme", substring = true).onFirst().performScrollTo().assertIsDisplayed()
+        rule.onAllNodesWithText("Language", substring = true).onFirst().performScrollTo().assertIsDisplayed()
+        rule.onAllNodesWithText("Security", substring = true).onFirst().performScrollTo().assertIsDisplayed()
         rule.onAllNodesWithText("Notifications", substring = true).onFirst().performScrollTo().assertIsDisplayed()
-        rule.onAllNodesWithText("Privacy", substring = true).onFirst().performScrollTo().assertIsDisplayed()
-        rule.onAllNodesWithText("About", substring = true).onFirst().performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun `locale value reflects current AppLocale`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm(locale = AppLocale.JA))
+            SettingsScreen(viewModel = stubVm(locale = AppLocale.JA), onBack = {})
         }
         rule.onAllNodesWithText("日本語", substring = true).onFirst().assertIsDisplayed()
     }
@@ -58,9 +57,9 @@ class SettingsScreenTest {
     @Test
     fun `row tap opens locale picker dialog`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm())
+            SettingsScreen(viewModel = stubVm(), onBack = {})
         }
-        rule.onAllNodesWithText("Locale", substring = true).onFirst().performClick()
+        rule.onAllNodesWithText("Language", substring = true).onFirst().performClick()
 
         rule.onAllNodesWithText("日本語", substring = true).onFirst().assertIsDisplayed()
     }

@@ -1,7 +1,10 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package app.tastile.android.data.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
 
 /**
  * Typed payload shapes for the v1 command endpoints wired in Macro Step 4.
@@ -21,11 +24,135 @@ import kotlinx.serialization.Serializable
 data class CreateTilePayload(
     val kind: Byte,
     val title: String,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val description: String? = null,
-    val color: String? = null,
-    val icon: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val color: String? = "#3b82f6",
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val icon: String? = "check-circle",
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("external_id") val externalId: String? = null,
-    @SerialName("plan_role") val planRole: Byte
+    @SerialName("plan_role") val planRole: Byte,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    @SerialName("owner_subject_id") val ownerSubjectId: String? = null,
+    @SerialName("frame_rule") val frameRule: FrameRulePayload? = null,
+)
+
+@Serializable
+data class FrameRulePayload(
+    val id: String,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val active: FrameRuleConditionPayload? = null,
+    val rank: Int,
+    val generator: FrameRuleGeneratorPayload,
+)
+
+/** Web's externally tagged `FrameGenerator` form. The create panel uses `Step`. */
+@Serializable
+data class FrameRuleGeneratorPayload(
+    @SerialName("Step") val step: FrameRuleStepPayload,
+)
+
+@Serializable
+data class FrameRuleStepPayload(
+    val step: Long,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val origin: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val bounds: PlacementSpanPayload? = null,
+)
+
+/** Frame-rule creation currently sends `active: null`; keep that null typed. */
+@Serializable
+data class FrameRuleConditionPayload(
+    val kind: String,
+    val value: kotlinx.serialization.json.JsonElement,
+)
+
+@Serializable
+data class SourceRefPayload(
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val created: SourceStampPayload? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val recurring: SourceVersionRefPayload? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val flow: SourceVersionRefPayload? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val frame: SourceVersionRefPayload? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val proposal: SourceProposalKeyPayload? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    @SerialName("source_text") val sourceText: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    @SerialName("external_id") val externalId: String? = null,
+) {
+    companion object {
+        fun empty() = SourceRefPayload()
+    }
+}
+
+@Serializable
+data class SourceStampPayload(
+    val at: String,
+    val actor: String,
+    @SerialName("actor_kind") val actorKind: Byte,
+    @SerialName("command_id") val commandId: String,
+)
+
+@Serializable
+data class SourceVersionRefPayload(
+    val id: String,
+    val revision: Long,
+)
+
+@Serializable
+data class SourceProposalKeyPayload(
+    @SerialName("producer_id") val producerId: String,
+    @SerialName("local_id") val localId: String,
+)
+
+/** Exact body for `POST /v1/tiles/{tileId}/plan`. */
+@Serializable
+data class SetPlanPayload(
+    @SerialName("tile_id") val tileId: String,
+    val role: Byte,
+    val references: kotlinx.serialization.json.JsonElement,
+    val completion: kotlinx.serialization.json.JsonElement,
+    val planning: kotlinx.serialization.json.JsonElement,
+    val metrics: kotlinx.serialization.json.JsonArray,
+    val decisions: kotlinx.serialization.json.JsonArray,
+)
+
+/** Exact body for `POST /v1/placements`. */
+@Serializable
+data class CreatePlacementPayload(
+    @SerialName("tile_id") val tileId: String,
+    @SerialName("plan_id") val planId: String,
+    val source: Byte,
+    @SerialName("source_ref") val sourceRef: SourceRefPayload,
+    val baseline: PlacementBaselinePayload,
+)
+
+@Serializable
+data class PlacementBaselinePayload(
+    val span: PlacementSpanPayload,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val inside: kotlinx.serialization.json.JsonObject? = null,
+)
+
+@Serializable
+data class PlacementSpanPayload(
+    val start: String,
+    val end: String,
+)
+
+/** Exact body for recurring-frame materialization. */
+@Serializable
+data class MaterializeRecurringPayload(
+    @SerialName("recurring_id") val recurringId: String,
+    @SerialName("frame_rule_id") val frameRuleId: String,
+    @SerialName("range_start") val rangeStart: String,
+    @SerialName("range_end") val rangeEnd: String,
 )
 
 @Serializable
@@ -74,29 +201,27 @@ data class StartTilePayload(
     @SerialName("tile_id") val tileId: String,
     @SerialName("plan_id") val planId: String,
     val source: Byte,
-    @SerialName("source_ref") val sourceRef: String? = null,
+    @SerialName("source_ref") val sourceRef: SourceRefPayload,
     val baseline: StartTileBaseline
 )
 
 @Serializable
 data class StartTileBaseline(
-    @SerialName("start_at") val startAt: String,
-    @SerialName("end_at") val endAt: String
-)
-
-/**
- * `domain::PauseExecutionPayload` and `domain::ResumeExecutionPayload` both
- * hold only `execution_id`.  We keep two distinct Kotlin classes so the
- * `command_kind` envelope field stays unambiguous.
- */
-@Serializable
-data class PauseExecutionPayload(
-    @SerialName("execution_id") val executionId: String
+    val span: PlacementSpanPayload,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val inside: kotlinx.serialization.json.JsonObject? = null,
 )
 
 @Serializable
-data class ResumeExecutionPayload(
-    @SerialName("execution_id") val executionId: String
+data class StartExecutionPayload(@SerialName("placement_id") val placementId: String)
+
+@Serializable
+data class ClosePlacementPayload(@SerialName("placement_id") val placementId: String)
+
+@Serializable
+data class ExecutionFinishPayload(
+    val kind: Int = 0,
+    val note: String? = null,
 )
 
 /**

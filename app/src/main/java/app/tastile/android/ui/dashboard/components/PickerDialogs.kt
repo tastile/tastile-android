@@ -7,10 +7,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+// m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
 import androidx.compose.material3.RadioButton
+// m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,9 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.NiaTheme
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.ThemeMode
-import app.tastile.android.ui.theme.TastileTheme
 
 @Composable
 fun <T> PickerDialog(
@@ -117,5 +122,5 @@ fun TimeoutPickerDialog(
 @Preview(showBackground = true)
 @Composable
 private fun LocalePickerDialogPreview() {
-    TastileTheme { LocalePickerDialog(current = AppLocale.JA, onPick = {}, onDismiss = {}) }
+    NiaTheme { LocalePickerDialog(current = AppLocale.JA, onPick = {}, onDismiss = {}) }
 }

@@ -7,24 +7,29 @@ import app.tastile.android.data.api.AppendChangesPayload
 import app.tastile.android.data.api.ArchiveTilePayload
 import app.tastile.android.data.api.AttachMemoPayload
 import app.tastile.android.data.api.CommandResponse
+import app.tastile.android.data.api.ClosePlacementPayload
+import app.tastile.android.data.api.ExecutionFinishPayload
 import app.tastile.android.data.api.CreatePromptRequestPayload
 import app.tastile.android.data.api.CreateTilePayload
-import app.tastile.android.data.api.PauseExecutionPayload
-import app.tastile.android.data.api.ResumeExecutionPayload
 import app.tastile.android.data.api.SetTileLifecyclePayload
 import app.tastile.android.data.api.StartTileBaseline
 import app.tastile.android.data.api.StartTilePayload
+import app.tastile.android.data.api.StartExecutionPayload
+import app.tastile.android.data.api.PlacementSpanPayload
+import app.tastile.android.data.api.SourceRefPayload
 import app.tastile.android.data.api.UpdateTilePayload
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1NumericConstants
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,10 +54,34 @@ import javax.inject.Singleton
  *     overwrite this if domain invariants demand a different timestamp.
  *   - memo.attach: v0 `text` → v1 `body`.
  */
+sealed interface ExecutionStateLookup {
+    data class Found(val state: Int) : ExecutionStateLookup
+    data object NoActiveExecution : ExecutionStateLookup
+    /** The claimed execution was missing, terminal, mismatched, or unreadable. */
+    data object InvalidExecution : ExecutionStateLookup
+    /** The authoritative lookup itself could not be completed. */
+    data class Unavailable(val cause: Throwable) : ExecutionStateLookup
+}
+
 @Singleton
 class V1CommandDispatcher @Inject constructor(
     private val v1ApiClient: V1ApiClient
 ) {
+    suspend fun dispatchPlacementClose(placementId: String): CoreCommandAck? = runCatching {
+        v1ApiClient.postCommandNoResponse("/v1/placements/$placementId/close", ClosePlacementPayload(placementId), ClosePlacementPayload.serializer())
+        CoreCommandResponse(true, null, null, emptyList(), buildJsonObject { put("placementId", JsonPrimitive(placementId)) }, null)
+    }.getOrNull()
+    /**
+     * Kept only to bridge the paused-execution hole in the current read API.
+     * A resumed process revalidates it through GET /v1/executions/{id}; after
+     * process death the backend currently exposes only active (not paused)
+     * executions via /v1/active-tile.
+     */
+    private val executionIdsByTile = mutableMapOf<String, String>()
+
+    fun clearExecutionCacheForTile(tileId: String) {
+        executionIdsByTile.remove(tileId)
+    }
     suspend fun dispatchTileCreate(
         v0Payload: JsonObject,
         userId: String
@@ -69,14 +98,11 @@ class V1CommandDispatcher @Inject constructor(
                 kind = kind,
                 title = title,
                 description = note,
-                color = null,
-                icon = null,
                 externalId = null,
                 planRole = planRole
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = "CreateTile",
                 payload = payload,
                 payloadSerializer = CreateTilePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -90,11 +116,12 @@ class V1CommandDispatcher @Inject constructor(
 
     suspend fun dispatchTileDelete(tileId: String): CoreCommandAck? {
         return runCatching {
-            val response = v1ApiClient.deleteCommand(
+            v1ApiClient.deleteCommand(
                 path = "/v1/tiles/$tileId",
-                responseSerializer = CommandResponse.serializer()
+                payload = ArchiveTilePayload(tileId),
+                payloadSerializer = ArchiveTilePayload.serializer(),
             )
-            response.toCoreAck()
+            CoreCommandResponse(accepted = true, requestId = null, commandId = null, eventIds = emptyList(), metadata = buildJsonObject { put("tileId", JsonPrimitive(tileId)) }, error = null)
         }.recover { error ->
             logFailure("tile.delete", error)
             null
@@ -123,7 +150,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/update",
-                commandKind = "UpdateTile",
                 payload = payload,
                 payloadSerializer = UpdateTilePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -142,6 +168,15 @@ class V1CommandDispatcher @Inject constructor(
     ): CoreCommandAck? {
         if (effectiveTileId.isNullOrBlank()) return null
         return runCatching {
+            val executionId = findExecutionIdForTile(effectiveTileId)
+                ?: throw IllegalStateException("tile.complete: no active execution for tile $effectiveTileId")
+            val finish = v1ApiClient.postCommand(
+                path = "/v1/executions/$executionId/finish",
+                payload = ExecutionFinishPayload(),
+                payloadSerializer = ExecutionFinishPayload.serializer(),
+                responseSerializer = CommandResponse.serializer()
+            )
+            if (!finish.toCoreAck().accepted) return@runCatching null
             val payload = SetTileLifecyclePayload(
                 tileId = effectiveTileId,
                 state = 2.toShort(),
@@ -151,7 +186,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$effectiveTileId/complete",
-                commandKind = "SetTileLifecycle",
                 payload = payload,
                 payloadSerializer = SetTileLifecyclePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -163,14 +197,8 @@ class V1CommandDispatcher @Inject constructor(
         }.getOrNull()
     }
 
-    suspend fun dispatchTileDefer(
-        tileId: String,
-        reason: String?,
-        minutes: Int?
-    ): CoreCommandAck? {
+    suspend fun dispatchTileDefer(tileId: String, deferredUntil: String): CoreCommandAck? {
         return runCatching {
-            val mins = minutes ?: 60
-            val deferredUntil = Instant.now().plusSeconds(mins * 60L).toString()
             val payload = SetTileLifecyclePayload(
                 tileId = tileId,
                 state = 1.toShort(),
@@ -180,7 +208,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/defer",
-                commandKind = "SetTileLifecycle",
                 payload = payload,
                 payloadSerializer = SetTileLifecyclePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -209,7 +236,6 @@ class V1CommandDispatcher @Inject constructor(
             val payload = AttachMemoPayload(tileId = tileId, body = body)
             val response = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/memos",
-                commandKind = "AttachMemo",
                 payload = payload,
                 payloadSerializer = AttachMemoPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -236,27 +262,38 @@ class V1CommandDispatcher @Inject constructor(
      * the v1 backend's PlanCompletion resolver will compute the canonical
      * span once a Plan exists, so this is only the wire bootstrap.
      */
-    suspend fun dispatchTileStart(tileId: String): CoreCommandAck? {
+    suspend fun dispatchTileStart(tileId: String, targetWorkMinutes: Long? = null): CoreCommandAck? {
         return runCatching {
             val tile = v1ApiClient.readTile(tileId)
             val planId = tile.planId
                 ?: throw IllegalStateException("tile.start requires plan_id; v1 backend did not return one for tile $tileId")
-            val now = Instant.now().toString()
+            val start = Instant.now()
+            val end = start.plusSeconds((targetWorkMinutes ?: 25L).coerceAtLeast(1L) * 60)
             val payload = StartTilePayload(
                 tileId = tileId,
                 planId = planId,
                 source = V1NumericConstants.PlacementSource.MANUAL,
-                sourceRef = null,
-                baseline = StartTileBaseline(startAt = now, endAt = now)
+                sourceRef = SourceRefPayload.empty(),
+                baseline = StartTileBaseline(span = PlacementSpanPayload(start = start.toString(), end = end.toString()))
             )
-            val response = v1ApiClient.postCommand(
+            val placement = v1ApiClient.postCommand(
                 path = "/v1/tiles/$tileId/start",
-                commandKind = "StartTile",
                 payload = payload,
                 payloadSerializer = StartTilePayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
             )
-            response.toCoreAck()
+            val placementId = placement.aggregate?.id
+                ?: throw IllegalStateException("tile.start response missing placement aggregate for tile $tileId")
+            val execution = v1ApiClient.postCommand(
+                path = "/v1/placements/$placementId/executions",
+                payload = StartExecutionPayload(placementId),
+                payloadSerializer = StartExecutionPayload.serializer(),
+                responseSerializer = CommandResponse.serializer()
+            )
+            val executionId = execution.aggregate?.id
+                ?: throw IllegalStateException("start execution response missing execution aggregate for tile $tileId")
+            executionIdsByTile[tileId] = executionId
+            execution.toCoreAck()
         }.recover { error ->
             if (error is IllegalStateException) throw error
             logFailure("tile.start", error)
@@ -272,16 +309,54 @@ class V1CommandDispatcher @Inject constructor(
      * no placement exists we throw — the user can't pause something that
      * was never started in v1.
      */
+    /** Starts an execution for an already-created placement without creating or completing a tile. */
+    suspend fun dispatchPlacementExecutionStart(tileId: String): CoreCommandAck? {
+        return runCatching {
+            val placement = findPlacementForTile(tileId)
+                ?: throw IllegalStateException("execution.start: no placement for tile ${tileId}")
+            val execution = v1ApiClient.postCommand(
+                path = "/v1/placements/${placement.placementId}/executions",
+                payload = StartExecutionPayload(placement.placementId),
+                payloadSerializer = StartExecutionPayload.serializer(),
+                responseSerializer = CommandResponse.serializer(),
+            )
+            val executionId = execution.aggregate?.id
+                ?: throw IllegalStateException("execution.start response missing execution aggregate for tile ${tileId}")
+            executionIdsByTile[tileId] = executionId
+            execution.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("execution.start", error)
+            null
+        }.getOrNull()
+    }
+
+    /** Finishes only the current execution; tile lifecycle is intentionally unchanged. */
+    suspend fun dispatchExecutionFinish(tileId: String): CoreCommandAck? {
+        return runCatching {
+            val executionId = findExecutionIdForTile(tileId)
+                ?: throw IllegalStateException("execution.finish: no active execution for tile ${tileId}")
+            val response = v1ApiClient.postCommand(
+                path = "/v1/executions/${executionId}/finish",
+                payload = ExecutionFinishPayload(kind = 0, note = null),
+                payloadSerializer = ExecutionFinishPayload.serializer(),
+                responseSerializer = CommandResponse.serializer(),
+            )
+            executionIdsByTile.remove(tileId)
+            response.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("execution.finish", error)
+            null
+        }.getOrNull()
+    }
+
     suspend fun dispatchTilePause(tileId: String): CoreCommandAck? {
         return runCatching {
-            val executionId = findActiveExecutionIdForTile(tileId)
+            val executionId = findExecutionIdForTile(tileId)
                 ?: throw IllegalStateException("tile.pause: no active execution for tile $tileId")
-            val payload = PauseExecutionPayload(executionId = executionId)
-            val response = v1ApiClient.postCommand(
+            val response = v1ApiClient.postNullCommand(
                 path = "/v1/executions/$executionId/pause",
-                commandKind = "PauseExecution",
-                payload = payload,
-                payloadSerializer = PauseExecutionPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
             )
             response.toCoreAck()
@@ -299,14 +374,10 @@ class V1CommandDispatcher @Inject constructor(
      */
     suspend fun dispatchTileContinue(tileId: String): CoreCommandAck? {
         return runCatching {
-            val executionId = findActiveExecutionIdForTile(tileId)
+            val executionId = findExecutionIdForTile(tileId)
                 ?: throw IllegalStateException("tile.continue: no active execution for tile $tileId")
-            val payload = ResumeExecutionPayload(executionId = executionId)
-            val response = v1ApiClient.postCommand(
+            val response = v1ApiClient.postNullCommand(
                 path = "/v1/executions/$executionId/resume",
-                commandKind = "ResumeExecution",
-                payload = payload,
-                payloadSerializer = ResumeExecutionPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
             )
             response.toCoreAck()
@@ -328,40 +399,44 @@ class V1CommandDispatcher @Inject constructor(
      * / `activation` / `source` / `source_ref` / `created_at` / `created_by`
      * fields we don't model in Kotlin. The server accepts whatever JSON
      * `serde_json::Value` deserializes against the full struct; per the
-     * current handler those fields are not strictly required and the
-     * dispatcher is allowed to send a minimal body.
+     * Android sends the same full audit envelope as the web client. This is
+     * important: partial ChangeSets are not a stable public API contract.
      */
     suspend fun dispatchTileReschedule(
         tileId: String,
         startAt: String,
-        endAt: String
+        endAt: String,
+        ownerId: String,
     ): CoreCommandAck? {
         return runCatching {
             val placement = findPlacementForTile(tileId)
                 ?: throw IllegalStateException("tile.reschedule: no placement for tile $tileId")
             val now = Instant.now().toString()
-            // Generate stable UUIDv7-ish ChangeSet id from the placement id
-            // (16 hex bytes from the placement UUID). The server doesn't
-            // require a specific format — it just needs uniqueness within
-            // the owner's ChangeSet space.
+            val commandId = UUID.randomUUID().toString()
             val changeSet = buildJsonObject {
-                put("id", JsonPrimitive("00000000-0000-7000-8000-${placement.placementId.takeLast(12).padStart(12, '0')}"))
+                put("id", JsonPrimitive(UUID.randomUUID().toString()))
+                put("owner_id", JsonPrimitive(ownerId))
+                put("target", buildJsonObject { put("Placement", JsonPrimitive(placement.placementId)) })
                 put("layer", JsonPrimitive(V1NumericConstants.ChangeLayer.PLACEMENT))
                 put("rank", JsonPrimitive(0))
                 put("changes", kotlinx.serialization.json.JsonArray(listOf(
-                    buildChangeSpan(
-                        groupPart = 0,
-                        spanStart = startAt,
-                        spanEnd = null,
-                        now = now
-                    ),
-                    buildChangeSpan(
-                        groupPart = 1,
-                        spanStart = null,
-                        spanEnd = endAt,
-                        now = now
-                    )
+                    buildInstantChange(placement.placementId, 0, startAt),
+                    buildInstantChange(placement.placementId, 1, endAt)
                 )))
+                put("activation", buildJsonObject {
+                    put("when", JsonNull)
+                    put("until", JsonNull)
+                })
+                put("revoked", JsonNull)
+                put("source", JsonPrimitive(V1NumericConstants.ChangeSource.USER))
+                put("source_ref", JsonNull)
+                put("created_at", JsonPrimitive(now))
+                put("created_by", buildJsonObject {
+                    put("at", JsonPrimitive(now))
+                    put("actor", JsonPrimitive(ownerId))
+                    put("actor_kind", JsonPrimitive(V1NumericConstants.ActorKind.USER))
+                    put("command_id", JsonPrimitive(commandId))
+                })
             }
             val payload = AppendChangesPayload(
                 placementId = placement.placementId,
@@ -369,7 +444,6 @@ class V1CommandDispatcher @Inject constructor(
             )
             val response = v1ApiClient.postCommand(
                 path = "/v1/placements/${placement.placementId}/changes",
-                commandKind = "AppendChanges",
                 payload = payload,
                 payloadSerializer = AppendChangesPayload.serializer(),
                 responseSerializer = CommandResponse.serializer()
@@ -487,53 +561,87 @@ class V1CommandDispatcher @Inject constructor(
         return placements.firstOrNull { it.tileId == tileId }
     }
 
-    /**
-     * Find the active execution for [tileId]. Macro Step 5 has NO v1
-     * endpoint that maps a tile_id to an execution_id:
-     *   - `listPlacements()` returns `PlacementListItem` (no execution field).
-     *   - `getTimeline()` returns `TimelineItem` (placement_id only, no
-     *     execution_id).
-     *   - `readExecution(executionId)` requires the id we don't have.
-     *
-     * So this helper always returns `null`. The dispatcher callers throw
-     * `IllegalStateException("tile.{pause,continue}: no active execution for
-     * tile $tileId")` per the Step 5 spec. Future work: add a
-     * `GET /v1/tiles/{id}/executions` lookup endpoint, then plumb the
-     * execution_id into this helper.
-     */
-    private suspend fun findActiveExecutionIdForTile(tileId: String): String? {
-        // Confirm at least one placement exists for the tile (otherwise the
-        // throw message is misleading), then bail.
-        findPlacementForTile(tileId)
-        return null
+    private suspend fun findExecutionIdForTile(tileId: String): String? {
+        executionIdsByTile[tileId]?.let { cached ->
+            val execution = runCatching { v1ApiClient.readExecution(cached) }.getOrNull()
+            if (execution?.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES) return cached
+            // A failed or mismatched validation is never a reason to keep
+            // offering Resume. Discard the volatile id before falling back
+            // to the authoritative active-tile lookup.
+            executionIdsByTile.remove(tileId)
+        }
+        val active = v1ApiClient.getActiveTile()
+        val executionId = active?.takeIf { it.tileId == tileId }?.executionId ?: return null
+        val execution = runCatching { v1ApiClient.readExecution(executionId) }.getOrNull() ?: return null
+        return executionId.takeIf {
+            execution.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES
+        }?.also { executionIdsByTile[tileId] = it }
     }
 
-    private fun buildChangeSpan(
+    /**
+     * Reads the current state for a known execution. The active-tile endpoint
+     * only reports ACTIVE executions, while a cached paused execution remains
+     * readable through its execution id; callers must not infer Resume when
+     * this returns null.
+     */
+    suspend fun executionStateForTile(tileId: String): Int? =
+        (executionStateLookupForTile(tileId) as? ExecutionStateLookup.Found)?.state
+
+    /**
+     * Unlike [executionStateForTile], this preserves why no state is available.
+     * Callers must never treat [ExecutionStateLookup.InvalidExecution] as a
+     * paused execution that can be resumed.
+     */
+    suspend fun executionStateLookupForTile(tileId: String): ExecutionStateLookup {
+        val cachedId = executionIdsByTile[tileId]
+        if (cachedId != null) {
+            val execution = try {
+                v1ApiClient.readExecution(cachedId)
+            } catch (error: Throwable) {
+                return ExecutionStateLookup.Unavailable(error)
+            }
+            if (execution.tileId == tileId && execution.state in ACTIVE_EXECUTION_STATES) {
+                return ExecutionStateLookup.Found(execution.state)
+            }
+            executionIdsByTile.remove(tileId)
+            return ExecutionStateLookup.InvalidExecution
+        }
+
+        val active = try {
+            v1ApiClient.getActiveTile()
+        } catch (error: Throwable) {
+            return ExecutionStateLookup.Unavailable(error)
+        } ?: return ExecutionStateLookup.NoActiveExecution
+        val executionId = active.takeIf { it.tileId == tileId }?.executionId
+            ?: return ExecutionStateLookup.NoActiveExecution
+        val execution = try {
+            v1ApiClient.readExecution(executionId)
+        } catch (error: Throwable) {
+            return ExecutionStateLookup.Unavailable(error)
+        }
+        if (execution.tileId != tileId || execution.state !in ACTIVE_EXECUTION_STATES) {
+            return ExecutionStateLookup.InvalidExecution
+        }
+        executionIdsByTile[tileId] = executionId
+        return ExecutionStateLookup.Found(execution.state)
+    }
+
+    private fun buildInstantChange(
+        placementId: String,
         groupPart: Int,
-        spanStart: String?,
-        spanEnd: String?,
-        now: String
+        instant: String,
     ): JsonObject = buildJsonObject {
-        // Change.id: derived from a stable UUIDv7-shape string per change.
-        // Server is tolerant about the exact id format as long as it's unique.
-        put("id", JsonPrimitive("00000000-0000-7000-8000-${now.hashCode().toString().padStart(12, '0').take(12)}"))
+        put("id", JsonPrimitive(UUID.randomUUID().toString()))
         put("key", buildJsonObject {
-            put("group", JsonPrimitive(V1NumericConstants.ChangeLayer.PLACEMENT))
-            put("item", kotlinx.serialization.json.JsonNull)
+            put("group", JsonPrimitive(5))
+            put("item", JsonPrimitive(placementId))
             put("part", JsonPrimitive(groupPart))
         })
         put("kind", JsonPrimitive(V1NumericConstants.ChangeKind.SET))
-        put("value", buildJsonObject {
-            val span = buildJsonObject {
-                if (spanStart != null) put("start_at", JsonPrimitive(spanStart))
-                if (spanEnd != null) put("end_at", JsonPrimitive(spanEnd))
-            }
-            // ChangeValue::Span is the variant — we tag it so the server
-            // can distinguish Span vs Instant etc.
-            put("Span", span)
-        })
+        put("value", buildJsonObject { put("Instant", JsonPrimitive(instant)) })
         put("merge", JsonPrimitive(V1NumericConstants.MergeMode.OVERRIDE))
         put("source", JsonPrimitive(V1NumericConstants.ChangeSource.USER))
+        put("source_ref", JsonNull)
         put("rank", JsonPrimitive(0))
     }
 
@@ -568,5 +676,6 @@ class V1CommandDispatcher @Inject constructor(
 
     private companion object {
         private const val TAG = "V1CommandDispatcher"
+        private val ACTIVE_EXECUTION_STATES = setOf(0, 1)
     }
 }

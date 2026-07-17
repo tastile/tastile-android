@@ -1,12 +1,19 @@
 package app.tastile.android.ui.dashboard.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+// m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: m3-component
 import androidx.compose.material3.ExposedDropdownMenuBox
+// m2-allow: m3-component
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+// m2-allow: m3-component
 import androidx.compose.material3.MenuAnchorType
+// m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

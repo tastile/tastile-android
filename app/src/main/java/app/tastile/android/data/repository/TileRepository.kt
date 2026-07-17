@@ -9,6 +9,7 @@ import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.toTiles
 import app.tastile.android.data.command.V1CommandDispatcher
+import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
@@ -166,7 +167,8 @@ class TileRepository @Inject constructor(
         // Step 5: tile.start now requires plan_id from v1. The dispatcher
         // throws IllegalStateException with a clear message if the backend
         // hasn't attached a plan to the tile. We propagate the throw.
-        val ack = v1CommandDispatcher.dispatchTileStart(tileId)
+        val targetWorkMinutes = latestCloudTiles.firstOrNull { it.id == tileId }?.targetWorkMin
+        val ack = v1CommandDispatcher.dispatchTileStart(tileId, targetWorkMinutes)
             ?: throw IllegalStateException("Cloud command rejected: start tile")
         refreshCloudCacheAfterCommand(ack)
         return findSnapshotTile(tileId) ?: readCloudTileById(tileId)
@@ -205,6 +207,24 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
+    suspend fun closePlacement(placementId: String) {
+        val ack = v1CommandDispatcher.dispatchPlacementClose(placementId)
+            ?: throw IllegalStateException("Cloud command rejected: close placement")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
+    suspend fun startExecution(tileId: String) {
+        val ack = v1CommandDispatcher.dispatchPlacementExecutionStart(tileId)
+            ?: throw IllegalStateException("Cloud command rejected: start execution")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
+    suspend fun finishExecution(tileId: String) {
+        val ack = v1CommandDispatcher.dispatchExecutionFinish(tileId)
+            ?: throw IllegalStateException("Cloud command rejected: finish execution")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
     override suspend fun pauseTile(tileId: String) {
         val ack = v1CommandDispatcher.dispatchTilePause(tileId)
             ?: throw IllegalStateException("Cloud command rejected: pause tile")
@@ -237,11 +257,22 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
-    suspend fun deferTile(tileId: String, reason: String? = null, minutes: Int? = null) {
+    /** v1 execution state for a visible started tile; null means unknown, not paused. */
+    suspend fun executionStateForTile(tileId: String): Int? =
+        v1CommandDispatcher.executionStateForTile(tileId)
+
+    /** Preserves a failed cached-execution validation separately from no active execution. */
+    suspend fun executionStateLookupForTile(tileId: String): ExecutionStateLookup =
+        v1CommandDispatcher.executionStateLookupForTile(tileId)
+
+    fun clearExecutionCacheForTile(tileId: String) {
+        v1CommandDispatcher.clearExecutionCacheForTile(tileId)
+    }
+
+    suspend fun deferTile(tileId: String, deferredUntil: String) {
         val ack = v1CommandDispatcher.dispatchTileDefer(
             tileId = tileId,
-            reason = reason,
-            minutes = minutes
+            deferredUntil = deferredUntil,
         ) ?: run {
             // v0 used to fall through to pauseTile on defer failure; with v1
             // we just throw — the UI surfaces the failure.
@@ -294,8 +325,8 @@ class TileRepository @Inject constructor(
         return ack
     }
 
-    suspend fun getTimeline(start: Instant, end: Instant): List<CoreTimelineItem> {
-        readCloudTimeline(start, end)?.let { v1Items ->
+    suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): List<CoreTimelineItem> {
+        readCloudTimeline(start, end, ownerIds)?.let { v1Items ->
             if (v1Items.isNotEmpty()) {
                 latestReadDiagnostics = buildString {
                     append(latestReadDiagnostics)
@@ -317,13 +348,17 @@ class TileRepository @Inject constructor(
         return fallback
     }
 
-    private suspend fun readCloudTimeline(start: Instant, end: Instant): List<CoreTimelineItem>? {
+    private suspend fun readCloudTimeline(
+        start: Instant,
+        end: Instant,
+        ownerIds: List<String>,
+    ): List<CoreTimelineItem>? {
         val token = currentUserProvider.currentIdToken()
         if (token.isNullOrBlank()) return null
         return try {
-            val response = v1ApiClient.getTimeline(start, end)
-            val mapped = response.items.mapNotNull { it.toCoreTimelineItem(start, end) }
-            android.util.Log.d("TileRepository", "v1 timeline: ${response.items.size} items, mapped=${mapped.size}")
+            val response = v1ApiClient.getTimeline(start, end, ownerIds)
+            val mapped = response.mapNotNull { it.toCoreTimelineItem(start, end) }
+            android.util.Log.d("TileRepository", "v1 timeline: ${response.size} items, mapped=${mapped.size}")
             mapped
         } catch (e: V1Error) {
             android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)
@@ -348,7 +383,8 @@ class TileRepository @Inject constructor(
         if (startInstant.isBefore(rangeStart) || !startInstant.isBefore(rangeEnd)) return null
         return CoreTimelineItem(
             id = placementId,
-            tileId = null,
+            tileId = tileId,
+            sourceKind = source.value.toInt(),
             title = content.title.ifBlank { "Untitled" },
             type = role.toRoleName(),
             status = resolution.state.toStatusName(),
@@ -377,10 +413,13 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun rescheduleTile(tileId: String, startAtIso: String, endAtIso: String) {
+        val ownerId = currentUserProvider.currentUserId()
+            ?: throw IllegalStateException("Cannot reschedule tile without the current user")
         val ack = v1CommandDispatcher.dispatchTileReschedule(
             tileId = tileId,
             startAt = startAtIso,
-            endAt = endAtIso
+            endAt = endAtIso,
+            ownerId = ownerId,
         ) ?: throw IllegalStateException("Cloud command rejected: reschedule tile")
         refreshCloudCacheAfterCommand(ack)
     }
