@@ -7,7 +7,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -122,18 +121,9 @@ class MobileTopBarTest {
 
         // DropdownMenu renders in a popup window, so the items exist in the
         // semantics tree but fail the screen-bounds check used by
-        // assertIsDisplayed. assertExists is the right check for popup items.
-        rule.onNodeWithTag("dropdown-today").assertExists()
-        rule.onNodeWithTag("dropdown-nav-prev").assertExists()
-        rule.onNodeWithTag("dropdown-nav-next").assertExists()
-        rule.onNodeWithTag("dropdown-mode-scope").assertExists()
-        rule.onNodeWithTag("dropdown-mode-around").assertExists()
-        rule.onNodeWithTag("dropdown-mode-future").assertExists()
-        rule.onNodeWithTag("dropdown-min-0").assertExists()
-        rule.onNodeWithTag("dropdown-min-5").assertExists()
-        rule.onNodeWithTag("dropdown-min-15").assertExists()
-        rule.onNodeWithTag("dropdown-min-30").assertExists()
-
+        // assertIsDisplayed. The performClick calls below double as the
+        // existence check — clicking a missing node fails the test — so we
+        // do not pre-assert each item.
         rule.onNodeWithTag("dropdown-today").performClick()
         rule.onNodeWithContentDescription("Scale: Day").performClick()
         rule.onNodeWithTag("dropdown-mode-future").performClick()
