@@ -24,15 +24,14 @@ import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
+// m2-allow: primitive
+import androidx.compose.material3.Icon
 // m2-allow: m3-component
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.Surface
-// m2-allow: primitive
-import androidx.compose.material3.Icon
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,18 +44,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.ui.dashboard.CalendarMode
 import app.tastile.android.ui.dashboard.TimelineScale
 import coil.compose.AsyncImage
 
@@ -67,18 +63,11 @@ fun MobileTopBar(
     onScaleChange: (TimelineScale) -> Unit,
     onMenu: () -> Unit,
     onNotifications: () -> Unit,
+    onAvatar: () -> Unit,
     modifier: Modifier = Modifier,
     avatarUrl: String? = null,
     avatarFallback: String = "U",
     showScale: Boolean = true,
-    calendarMode: CalendarMode? = null,
-    onCalendarModeChange: ((CalendarMode) -> Unit)? = null,
-    onToday: (() -> Unit)? = null,
-    onPrevious: (() -> Unit)? = null,
-    onNext: (() -> Unit)? = null,
-    canNavigate: Boolean = true,
-    minimumDuration: Int? = null,
-    onMinimumDurationChange: ((Int) -> Unit)? = null,
 ) {
     val background = MaterialTheme.colorScheme.background
     Row(
@@ -112,18 +101,7 @@ fun MobileTopBar(
         )
         Box(modifier = Modifier.weight(1f))
         if (showScale) {
-            ScaleDropdown(
-                scale = scale,
-                onScaleChange = onScaleChange,
-                calendarMode = calendarMode,
-                onCalendarModeChange = onCalendarModeChange,
-                onToday = onToday,
-                onPrevious = onPrevious,
-                onNext = onNext,
-                canNavigate = canNavigate,
-                minimumDuration = minimumDuration,
-                onMinimumDurationChange = onMinimumDurationChange,
-            )
+            ScaleDropdown(scale = scale, onScaleChange = onScaleChange)
             Spacer(Modifier.width(4.dp))
         }
         TopBarAction(
@@ -133,6 +111,7 @@ fun MobileTopBar(
         )
         TopBarAvatarAction(
             descriptionRes = R.string.mobile_top_avatar,
+            onClick = onAvatar,
             avatarUrl = avatarUrl,
             avatarFallback = avatarFallback,
         )
@@ -143,19 +122,8 @@ fun MobileTopBar(
 private fun ScaleDropdown(
     scale: TimelineScale,
     onScaleChange: (TimelineScale) -> Unit,
-    calendarMode: CalendarMode?,
-    onCalendarModeChange: ((CalendarMode) -> Unit)?,
-    onToday: (() -> Unit)?,
-    onPrevious: (() -> Unit)?,
-    onNext: (() -> Unit)?,
-    canNavigate: Boolean,
-    minimumDuration: Int?,
-    onMinimumDurationChange: ((Int) -> Unit)?,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val hasNav = onToday != null || onPrevious != null || onNext != null
-    val hasMode = calendarMode != null && onCalendarModeChange != null
-    val hasMin = minimumDuration != null && onMinimumDurationChange != null
     Box {
         CompactPickerButton(
             label = scale.name,
@@ -180,70 +148,6 @@ private fun ScaleDropdown(
                     },
                 )
             }
-            if (hasNav || hasMode || hasMin) {
-                HorizontalDivider()
-            }
-            if (hasNav) {
-                onPrevious?.let {
-                    DropdownMenuItem(
-                        text = { Text("‹ Previous") },
-                        enabled = canNavigate,
-                        modifier = Modifier.testTag("dropdown-nav-prev"),
-                        onClick = { it(); expanded = false },
-                    )
-                }
-                onToday?.let {
-                    DropdownMenuItem(
-                        text = { Text("Today") },
-                        modifier = Modifier.testTag("dropdown-today"),
-                        onClick = { it(); expanded = false },
-                    )
-                }
-                onNext?.let {
-                    DropdownMenuItem(
-                        text = { Text("Next ›") },
-                        enabled = canNavigate,
-                        modifier = Modifier.testTag("dropdown-nav-next"),
-                        onClick = { it(); expanded = false },
-                    )
-                }
-            }
-            if (hasMode) {
-                HorizontalDivider()
-                CalendarMode.entries.forEach { mode ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = mode.name,
-                                fontWeight = if (mode == calendarMode) FontWeight.SemiBold else FontWeight.Normal,
-                            )
-                        },
-                        modifier = Modifier.testTag("dropdown-mode-${mode.name.lowercase()}"),
-                        onClick = {
-                            onCalendarModeChange?.invoke(mode)
-                            expanded = false
-                        },
-                    )
-                }
-            }
-            if (hasMin) {
-                HorizontalDivider()
-                listOf(0, 5, 15, 30).forEach { minutes ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = if (minutes == 0) "Any" else "${minutes}m",
-                                fontWeight = if (minutes == minimumDuration) FontWeight.SemiBold else FontWeight.Normal,
-                            )
-                        },
-                        modifier = Modifier.testTag("dropdown-min-$minutes"),
-                        onClick = {
-                            onMinimumDurationChange?.invoke(minutes)
-                            expanded = false
-                        },
-                    )
-                }
-            }
         }
     }
 }
@@ -253,6 +157,7 @@ private fun ScaleDropdown(
  * outline border so the top-bar dropdown trigger matches the Material 3
  * surface interaction behaviour (built-in ripple via [Surface]).
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun CompactPickerButton(
     label: String,
@@ -307,36 +212,24 @@ private fun TopBarAction(
 @Composable
 private fun TopBarAvatarAction(
     @StringRes descriptionRes: Int,
+    onClick: () -> Unit,
     avatarUrl: String?,
     avatarFallback: String,
 ) {
     val descriptionString = stringResource(id = descriptionRes)
-    var menuOpen by remember { mutableStateOf(false) }
-    Box {
-        IconButton(
-            onClick = { menuOpen = true },
-            modifier = Modifier
-                .heightIn(min = 48.dp)
-                .clearAndSetSemantics {
-                    contentDescription = descriptionString
-                    role = Role.Button
-                    stateDescription = if (menuOpen) "Open" else "Closed"
-                },
-        ) {
-            AvatarCircle(
-                imageUrl = avatarUrl,
-                fallbackText = avatarFallback,
-            )
-        }
-        // Lazy-render the menu so Hilt VM resolution only fires when the user
-        // opens it; a plain ComponentActivity host (MobileTopBarTest) never
-        // asks for the menu and skips `hiltViewModel()` resolution entirely.
-        if (menuOpen) {
-            AccountDropdownMenu(
-                expanded = menuOpen,
-                onDismiss = { menuOpen = false },
-            )
-        }
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .clearAndSetSemantics {
+                contentDescription = descriptionString
+                role = Role.Button
+            },
+    ) {
+        AvatarCircle(
+            imageUrl = avatarUrl,
+            fallbackText = avatarFallback,
+        )
     }
 }
 
