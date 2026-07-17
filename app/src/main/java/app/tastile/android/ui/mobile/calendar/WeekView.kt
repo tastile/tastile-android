@@ -150,10 +150,7 @@ fun WeekView(
                 )
             }
         }
-        // Suppress unused-onZoomChange warning: signature mirrors DayView
-        // even though Week currently has no pinch zoom.
-        @Suppress("UNUSED_EXPRESSION")
-        onZoomChange
+        // Week has no pinch zoom yet; onZoomChange matches DayView for forward symmetry.
     }
 }
 
