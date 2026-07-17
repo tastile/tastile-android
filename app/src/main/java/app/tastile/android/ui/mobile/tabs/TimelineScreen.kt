@@ -1,13 +1,7 @@
 package app.tastile.android.ui.mobile.tabs
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,8 +13,6 @@ import androidx.compose.material.icons.filled.Add
 import app.tastile.android.core.designsystem.component.NiaFloatingActionButton
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: primitive
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,10 +32,8 @@ import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import androidx.compose.material3.MaterialTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
-import app.tastile.android.ui.mobile.panels.ProjectsViewModel
 import app.tastile.android.ui.mobile.calendar.DayView
 import app.tastile.android.ui.mobile.calendar.MonthView
-import app.tastile.android.ui.mobile.calendar.TOP_BAR_TOTAL_HEIGHT
 import app.tastile.android.ui.mobile.calendar.WeekView
 import app.tastile.android.ui.mobile.calendar.toDayBlocks
 import java.time.LocalDate
@@ -66,17 +55,11 @@ private const val INITIAL_ZOOM = 1.5f  // day is 1.5× screen → always scrolla
 fun TimelineScreen(
     viewModel: DashboardViewModel,
     overlay: OverlayViewModel,
-    projectsViewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     val timeline by viewModel.timeline.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val selectedDay by viewModel.selectedDay.collectAsStateWithLifecycle()
     val scale by viewModel.scale.collectAsStateWithLifecycle()
-    val calendarMode by viewModel.calendarMode.collectAsStateWithLifecycle()
-    val minimumDuration by viewModel.calendarMinimumDurationMinutes.collectAsStateWithLifecycle()
-    val tileFilter by viewModel.tileFilter.collectAsStateWithLifecycle()
-    val projectsState by projectsViewModel.state.collectAsStateWithLifecycle()
-
     val today = remember { LocalDate.now() }
     val zone = remember { ZoneId.systemDefault() }
     val activeTimeline = remember(timeline) { timeline }
@@ -210,32 +193,6 @@ fun TimelineScreen(
             }
         }
 
-        CalendarToolbar(
-            mode = calendarMode,
-            minimumDuration = minimumDuration,
-            onPrevious = { viewModel.moveCalendar(-1) },
-            onNext = { viewModel.moveCalendar(1) },
-            onToday = viewModel::goToCalendarToday,
-            onMode = viewModel::setCalendarMode,
-            onMinimumDuration = viewModel::setCalendarMinimumDuration,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = TOP_BAR_TOTAL_HEIGHT()),
-        )
-
-        CalendarFilterPanel(
-            selectedDayLabel = selectedDay.toString(),
-            workspaces = projectsState.workspaces,
-            ownerIds = tileFilter.ownerIds,
-            onSelectDate = { value ->
-                runCatching { LocalDate.parse(value) }.getOrNull()?.let(viewModel::setSelectedDay)
-            },
-            onOwnerIdsChange = { ownerIds -> viewModel.setOwnerFilters(ownerIds) },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = TOP_BAR_TOTAL_HEIGHT() + 76.dp),
-        )
-
         // Quick-create FAB: bottom-right round + button. Sits on top of every
         // scale (Day / Week / Month) so the entry point is always discoverable
         // regardless of which view the user is on. `navigationBarsPadding` keeps
@@ -255,54 +212,6 @@ fun TimelineScreen(
                 contentDescription = "Create",
                 modifier = Modifier.size(24.dp),
             )
-        }
-    }
-}
-
-@Composable
-private fun CalendarToolbar(
-    mode: app.tastile.android.ui.dashboard.CalendarMode,
-    minimumDuration: Int,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    onToday: () -> Unit,
-    onMode: (app.tastile.android.ui.dashboard.CalendarMode) -> Unit,
-    onMinimumDuration: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val navigationEnabled = app.tastile.android.ui.dashboard.canNavigateCalendar(mode)
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.94f))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("‹", modifier = Modifier.testTag("calendar-previous").clickable(enabled = navigationEnabled, onClick = onPrevious))
-            Text("Today", modifier = Modifier.testTag("calendar-today").clickable(onClick = onToday))
-            Text("›", modifier = Modifier.testTag("calendar-next").clickable(enabled = navigationEnabled, onClick = onNext))
-            app.tastile.android.ui.dashboard.CalendarMode.entries.forEach { candidate ->
-                Text(
-                    text = candidate.name,
-                    color = if (candidate == mode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .testTag("calendar-mode-${candidate.name.lowercase()}")
-                        .clickable { onMode(candidate) },
-                )
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Min", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            listOf(0, 5, 15, 30).forEach { minutes ->
-                Text(
-                    text = if (minutes == 0) "Any" else "${minutes}m",
-                    color = if (minutes == minimumDuration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .testTag("calendar-min-$minutes")
-                        .clickable { onMinimumDuration(minutes) },
-                )
-            }
         }
     }
 }
