@@ -52,6 +52,9 @@ fun MobileScaffold(
     val avatarUrl by dashboardViewModel.avatarUrl.collectAsStateWithLifecycle()
     val profile by dashboardViewModel.profile.collectAsStateWithLifecycle()
     val scale by dashboardViewModel.scale.collectAsStateWithLifecycle()
+    val calendarMode by dashboardViewModel.calendarMode.collectAsStateWithLifecycle()
+    val calendarMinimumDurationMinutes by dashboardViewModel.calendarMinimumDurationMinutes.collectAsStateWithLifecycle()
+    val canNavigateCalendar = app.tastile.android.ui.dashboard.canNavigateCalendar(calendarMode)
 
     // Range-aware header titles: Day=single date, Week=Mon–Sun short range, Month=long month name.
     val weekStart = remember(selectedDay) {
@@ -108,6 +111,14 @@ fun MobileScaffold(
                             ?: email.firstOrNull()?.toString()
                             ?: "U",
                         showScale = currentRoute == "timeline",
+                        calendarMode = if (currentRoute == "timeline") calendarMode else null,
+                        onCalendarModeChange = if (currentRoute == "timeline") dashboardViewModel::setCalendarMode else null,
+                        onToday = if (currentRoute == "timeline") dashboardViewModel::goToCalendarToday else null,
+                        onPrevious = if (currentRoute == "timeline") ({ dashboardViewModel.moveCalendar(-1) }) else null,
+                        onNext = if (currentRoute == "timeline") ({ dashboardViewModel.moveCalendar(1) }) else null,
+                        canNavigate = canNavigateCalendar,
+                        minimumDuration = if (currentRoute == "timeline") calendarMinimumDurationMinutes else null,
+                        onMinimumDurationChange = if (currentRoute == "timeline") dashboardViewModel::setCalendarMinimumDuration else null,
                     )
                 }
             },
