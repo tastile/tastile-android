@@ -10,12 +10,19 @@ import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
+// m2-allow: state-holder
 import androidx.compose.material3.DrawerState
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: m3-component
 import androidx.compose.material3.ModalDrawerSheet
+// m2-allow: m3-component
 import androidx.compose.material3.NavigationDrawerItem
+// m2-allow: state-holder
 import androidx.compose.material3.NavigationDrawerItemDefaults
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

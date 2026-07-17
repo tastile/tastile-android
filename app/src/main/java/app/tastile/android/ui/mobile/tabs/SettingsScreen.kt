@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 // m2-allow: primitive
 import androidx.compose.material3.CenterAlignedTopAppBar
+// m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
 // m2-allow: primitive
 import androidx.compose.material3.Icon
