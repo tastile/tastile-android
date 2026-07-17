@@ -157,11 +157,6 @@ internal fun QuickCreateSubpanel(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        NiaTextButton(
-            onClick = onBack,
-            text = { Text("Back") },
-            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null) },
-        )
         Text(
             text = panel.name,
             style = MaterialTheme.typography.titleLarge,

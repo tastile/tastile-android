@@ -7,15 +7,19 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.R
+import app.tastile.android.ui.dashboard.CalendarMode
 import app.tastile.android.ui.dashboard.TimelineScale
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -84,5 +88,77 @@ class MobileTopBarTest {
         rule.onNodeWithContentDescription("Scale: Week").assertIsDisplayed()
 
         assertEquals(TimelineScale.Week.ordinal, selected.get())
+    }
+
+    @Test
+    fun `dropdown exposes nav, mode, and minimum-duration sections when configured`() {
+        val today = AtomicReference<Unit>()
+        val previous = AtomicReference<Unit>()
+        val next = AtomicReference<Unit>()
+        val modeRef = AtomicReference<CalendarMode?>(null)
+        val minRef = AtomicReference<Int?>(null)
+        val currentScale = mutableStateOf(TimelineScale.Day)
+
+        rule.setContent {
+            MobileTopBar(
+                title = "Timeline",
+                scale = currentScale.value,
+                onScaleChange = { currentScale.value = it },
+                onMenu = {},
+                onNotifications = {},
+                calendarMode = CalendarMode.Scope,
+                onCalendarModeChange = { modeRef.set(it) },
+                onToday = { today.set(Unit) },
+                onPrevious = { previous.set(Unit) },
+                onNext = { next.set(Unit) },
+                canNavigate = true,
+                minimumDuration = 0,
+                onMinimumDurationChange = { minRef.set(it) },
+            )
+        }
+
+        rule.onNodeWithContentDescription("Scale: Day").performClick()
+
+        rule.onNodeWithTag("dropdown-today").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-nav-prev").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-nav-next").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-mode-scope").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-mode-around").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-mode-future").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-min-0").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-min-5").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-min-15").assertIsDisplayed()
+        rule.onNodeWithTag("dropdown-min-30").assertIsDisplayed()
+
+        rule.onNodeWithTag("dropdown-today").performClick()
+        rule.onNodeWithTag("dropdown-mode-future").performClick()
+        rule.onNodeWithTag("dropdown-min-15").performClick()
+
+        assertEquals(Unit, today.get())
+        assertEquals(CalendarMode.Future, modeRef.get())
+        assertEquals(15, minRef.get())
+    }
+
+    @Test
+    fun `dropdown hides nav, mode, and minimum sections when no callbacks are configured`() {
+        val currentScale = mutableStateOf(TimelineScale.Day)
+
+        rule.setContent {
+            MobileTopBar(
+                title = "Execute",
+                scale = currentScale.value,
+                onScaleChange = { currentScale.value = it },
+                onMenu = {},
+                onNotifications = {},
+            )
+        }
+
+        rule.onNodeWithContentDescription("Scale: Day").performClick()
+
+        rule.onNodeWithTag("dropdown-today").assertDoesNotExist()
+        rule.onNodeWithTag("dropdown-nav-prev").assertDoesNotExist()
+        rule.onNodeWithTag("dropdown-nav-next").assertDoesNotExist()
+        rule.onNodeWithTag("dropdown-mode-scope").assertDoesNotExist()
+        rule.onNodeWithTag("dropdown-min-0").assertDoesNotExist()
     }
 }

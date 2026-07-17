@@ -43,7 +43,7 @@ fun QuickCreateSheetMobile(
             .distinct()
             .sortedBy { it.lowercase() }
         val baseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        val subpanelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val subpanelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
         val initialDraft = (current as? Overlay.QuickCreateAt)?.let { slot ->
             QuickCreateDraftState(
                 time = QuickCreateTime(
