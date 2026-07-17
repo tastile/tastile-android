@@ -18,18 +18,22 @@ import androidx.compose.ui.unit.dp
  *
  * Positions a red dot + horizontal line at the minute corresponding to
  * [nowProvider] relative to the visible day range, scaled by [pxPerMin]
- * (dp/min). Renders nothing when [nowProvider] returns null.
+ * (dp/min). The Instant from [nowProvider] is converted to minutes-of-day
+ * via [zone] so the indicator lines up with the user's wall clock, not UTC.
+ * Renders nothing when [nowProvider] returns null.
  */
 @Composable
 fun NowIndicator(
     nowProvider: () -> java.time.Instant?,
+    zone: java.time.ZoneId = java.time.ZoneId.systemDefault(),
     pxPerMin: Float,
     dayRangeStartHour: Int,
     dayRangeEndHour: Int,
     modifier: Modifier = Modifier,
 ) {
     val now = nowProvider() ?: return
-    val minutesOfDay = ((now.epochSecond / 60) % (24 * 60)).toInt()
+    val localTime = now.atZone(zone).toLocalTime()
+    val minutesOfDay = localTime.hour * 60 + localTime.minute
     val pxPerMinEff = pxPerMin.coerceAtLeast(0.0001f)
     val nowY = ((minutesOfDay - dayRangeStartHour * 60) * pxPerMinEff).dp
     Box(modifier) {

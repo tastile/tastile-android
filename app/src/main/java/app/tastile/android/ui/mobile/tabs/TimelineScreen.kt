@@ -222,6 +222,7 @@ fun TimelineScreen(
                             overlay.show(Overlay.QuickCreateAt(start.toString(), start.plusSeconds(60 * 60).toString()))
                         },
                         onEditEvent = onEditEvent,
+                        zone = zone,
                     )
                 }
             }
@@ -369,6 +370,7 @@ private fun DayGrid(
     onZoomChange: (Float) -> Unit,
     onCreateAt: (hour: Int, minute: Int) -> Unit,
     onEditEvent: (CoreTimelineItem) -> Unit,
+    zone: ZoneId,
 ) {
     val scrollState = rememberScrollState()
     val latestZoom by rememberUpdatedState(zoom)
@@ -540,6 +542,7 @@ private fun DayGrid(
                         outlineColor = outlineColor,
                         showNowLine = showNowLine,
                         canvasWidth = canvasWidth,
+                        zone = zone,
                         onCreateAt = onCreateAt,
                         onEditEvent = onEditEvent,
                     )
@@ -557,6 +560,7 @@ private fun DayContentLayer(
     outlineColor: Color,
     showNowLine: Boolean,
     canvasWidth: Dp,
+    zone: ZoneId,
     onCreateAt: (hour: Int, minute: Int) -> Unit,
     onEditEvent: (CoreTimelineItem) -> Unit,
 ) {
@@ -611,6 +615,7 @@ private fun DayContentLayer(
         if (showNowLine) {
             NowIndicator(
                 nowProvider = { java.time.Instant.now() },
+                zone = zone,
                 pxPerMin = pxPerMin,
                 dayRangeStartHour = startHour,
                 dayRangeEndHour = GridConstants.DAY_END_HOUR,
