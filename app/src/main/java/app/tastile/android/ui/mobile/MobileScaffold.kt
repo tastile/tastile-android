@@ -103,7 +103,6 @@ fun MobileScaffold(
                         onScaleChange = { dashboardViewModel.setScale(it) },
                         onMenu = { coroutineScope.launch { drawerState.open() } },
                         onNotifications = { overlayViewModel.show(Overlay.Notifications) },
-                        onAvatar = { overlayViewModel.show(Overlay.AccountMenu) },
                         avatarUrl = avatarUrl,
                         avatarFallback = profile?.displayName?.firstOrNull()?.toString()
                             ?: email.firstOrNull()?.toString()

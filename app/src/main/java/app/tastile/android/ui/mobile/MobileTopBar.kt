@@ -50,6 +50,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
@@ -63,7 +64,6 @@ fun MobileTopBar(
     onScaleChange: (TimelineScale) -> Unit,
     onMenu: () -> Unit,
     onNotifications: () -> Unit,
-    onAvatar: () -> Unit,
     modifier: Modifier = Modifier,
     avatarUrl: String? = null,
     avatarFallback: String = "U",
@@ -111,7 +111,6 @@ fun MobileTopBar(
         )
         TopBarAvatarAction(
             descriptionRes = R.string.mobile_top_avatar,
-            onClick = onAvatar,
             avatarUrl = avatarUrl,
             avatarFallback = avatarFallback,
         )
@@ -211,24 +210,36 @@ private fun TopBarAction(
 @Composable
 private fun TopBarAvatarAction(
     @StringRes descriptionRes: Int,
-    onClick: () -> Unit,
     avatarUrl: String?,
     avatarFallback: String,
 ) {
     val descriptionString = stringResource(id = descriptionRes)
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .heightIn(min = 48.dp)
-            .clearAndSetSemantics {
-                contentDescription = descriptionString
-                role = Role.Button
-            },
-    ) {
-        AvatarCircle(
-            imageUrl = avatarUrl,
-            fallbackText = avatarFallback,
-        )
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
+        IconButton(
+            onClick = { menuOpen = true },
+            modifier = Modifier
+                .heightIn(min = 48.dp)
+                .clearAndSetSemantics {
+                    contentDescription = descriptionString
+                    role = Role.Button
+                    stateDescription = if (menuOpen) "Open" else "Closed"
+                },
+        ) {
+            AvatarCircle(
+                imageUrl = avatarUrl,
+                fallbackText = avatarFallback,
+            )
+        }
+        // Lazy-render the menu so Hilt VM resolution only fires when the user
+        // opens it; a plain ComponentActivity host (MobileTopBarTest) never
+        // asks for the menu and skips `hiltViewModel()` resolution entirely.
+        if (menuOpen) {
+            AccountDropdownMenu(
+                expanded = menuOpen,
+                onDismiss = { menuOpen = false },
+            )
+        }
     }
 }
 

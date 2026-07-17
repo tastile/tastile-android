@@ -8,7 +8,6 @@ import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.account.AccountSheet
 import app.tastile.android.ui.mobile.account.SubscriptionSheet
 import app.tastile.android.ui.mobile.account.TokensSheet
-import app.tastile.android.ui.mobile.sheets.AccountMenuSheet
 import app.tastile.android.ui.mobile.sheets.NotificationsSheet
 import app.tastile.android.ui.mobile.sheets.QuickCreateSheetMobile
 import app.tastile.android.ui.mobile.sheets.SearchOverlaySheet
@@ -32,7 +31,6 @@ fun OverlayLayer(
     TileEditSheet(overlay = overlay, viewModel = dashboardViewModel)
     SearchOverlaySheet(overlay = overlay)
     NotificationsSheet(overlay = overlay, repository = notificationsViewModel.repository)
-    AccountMenuSheet(viewModel = dashboardViewModel, overlay = overlay)
     // Phase 1: SidePanelSheet removed — primary nav now lives in the
     // ModalNavigationDrawer mounted by MobileScaffold.
     AccountSheet(overlay = overlay)

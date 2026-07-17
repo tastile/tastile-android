@@ -45,7 +45,6 @@ class MobileTopBarTest {
                 onScaleChange = {},
                 onMenu = {},
                 onNotifications = {},
-                onAvatar = {},
             )
         }
 
@@ -77,7 +76,6 @@ class MobileTopBarTest {
                 },
                 onMenu = {},
                 onNotifications = {},
-                onAvatar = {},
             )
         }
 

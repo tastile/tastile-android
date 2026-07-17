@@ -1,17 +1,19 @@
-package app.tastile.android.ui.mobile.sheets
+package app.tastile.android.ui.mobile
 
 import androidx.activity.ComponentActivity
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.R
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.mobile.Overlay
-import app.tastile.android.ui.mobile.OverlayViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -23,28 +25,33 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
-class AccountMenuSheetTest {
+class AccountDropdownMenuTest {
 
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private fun openMenu(overlay: OverlayViewModel) {
-        rule.runOnUiThread {
-            overlay.show(Overlay.AccountMenu)
+    private fun setMenuOpen(open: Boolean, vm: DashboardViewModel, overlay: OverlayViewModel) {
+        rule.setContent {
+            var expanded by remember { mutableStateOf(open) }
+            // Render a tiny trigger so the dropdown's anchor resolves cleanly.
+            Text(text = "trigger")
+            AccountDropdownMenu(
+                expanded = expanded,
+                onDismiss = { expanded = false },
+                viewModel = vm,
+                overlay = overlay,
+            )
         }
         rule.waitForIdle()
     }
 
     @Test
-    fun `AccountMenuSheet renders email header and 4 menu rows when opened`() {
+    fun `AccountDropdownMenu renders email header and 4 menu rows when opened`() {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         every { vm.email } returns MutableStateFlow("op@example.com")
         val overlay = OverlayViewModel()
 
-        rule.setContent {
-            AccountMenuSheet(viewModel = vm, overlay = overlay)
-        }
-        openMenu(overlay)
+        setMenuOpen(open = true, vm = vm, overlay = overlay)
 
         rule.onNodeWithText("op@example.com").assertIsDisplayed()
         rule.onNodeWithText(rule.activity.getString(R.string.nav_account_profile)).assertIsDisplayed()
@@ -54,46 +61,35 @@ class AccountMenuSheetTest {
     }
 
     @Test
-    fun `AccountMenuSheet shows Signed in fallback when email is blank`() {
+    fun `AccountDropdownMenu shows Signed in fallback when email is blank`() {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         every { vm.email } returns MutableStateFlow("")
         val overlay = OverlayViewModel()
 
-        rule.setContent {
-            AccountMenuSheet(viewModel = vm, overlay = overlay)
-        }
-        openMenu(overlay)
+        setMenuOpen(open = true, vm = vm, overlay = overlay)
 
         rule.onNodeWithText(rule.activity.getString(R.string.shell_account_signed_in)).assertIsDisplayed()
     }
 
     @Test
-    fun `AccountMenuSheet does not render content when overlay is Hidden`() {
+    fun `AccountDropdownMenu does not render content when collapsed`() {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         every { vm.email } returns MutableStateFlow("op@example.com")
-        val overlay = OverlayViewModel() // starts Hidden
+        val overlay = OverlayViewModel()
 
-        rule.setContent {
-            AccountMenuSheet(viewModel = vm, overlay = overlay)
-        }
+        setMenuOpen(open = false, vm = vm, overlay = overlay)
 
         rule.onNodeWithText("op@example.com").assertDoesNotExist()
         rule.onNodeWithText(rule.activity.getString(R.string.nav_account_profile)).assertDoesNotExist()
     }
 
     @Test
-    fun `AccountMenuSheet does not invoke signOut on initial Sign out tap (confirm dialog gates it)`() {
+    fun `AccountDropdownMenu does not invoke signOut on initial Sign out tap (confirm dialog gates it)`() {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         every { vm.email } returns MutableStateFlow("op@example.com")
         val overlay = OverlayViewModel()
 
-        rule.setContent {
-            AccountMenuSheet(viewModel = vm, overlay = overlay)
-        }
-        openMenu(overlay)
-        // Give ModalBottomSheet time to animate in; without this the touch
-        // injection can land on a transitioning layout node and be swallowed.
-        rule.waitForIdle()
+        setMenuOpen(open = true, vm = vm, overlay = overlay)
 
         rule.onNodeWithTag("account_menu_sign_out").performClick()
         rule.waitForIdle()
@@ -103,22 +99,13 @@ class AccountMenuSheetTest {
     }
 
     @Test
-    fun `AccountMenuSheet invokes viewModel signOut after confirm`() {
+    fun `AccountDropdownMenu invokes viewModel signOut after confirm`() {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         every { vm.email } returns MutableStateFlow("op@example.com")
         val overlay = OverlayViewModel()
 
-        rule.setContent {
-            AccountMenuSheet(viewModel = vm, overlay = overlay)
-        }
-        openMenu(overlay)
-        rule.waitForIdle()
+        setMenuOpen(open = true, vm = vm, overlay = overlay)
 
-        // The "Sign out" row's clickable region is tagged on the row itself
-        // (mirrors QuickCreateBasePanel's working pattern); clicking the Text
-        // node does not always dispatch through Compose's gesture handling
-        // inside ModalBottomSheet under Robolectric, so dispatch through the
-        // testTag instead.
         rule.onNodeWithTag("account_menu_sign_out").performClick()
         rule.waitForIdle()
         // The AlertDialog renders the confirm button in its own DialogWindow
