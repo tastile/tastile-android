@@ -1,7 +1,6 @@
 package app.tastile.android.ui.mobile.calendar
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,35 +13,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import java.time.LocalDate
-import java.time.ZoneId
 
 /**
- * Static Frame half of the Day view (Phase v37 / Task 3).
+ * Static Frame half of the Day view (Phase v37 / Task 3.5).
  *
  * Renders the **non-timeline** layer of the Day grid: the canvas of 25
  * horizontal hour grid lines and the tap-to-create gesture that converts a
  * tap-y in pixels to a (hour, 15-minute) bucket and emits via [onCreateAt].
  *
- * Deliberately holds **no reference** to `blocks` or `_timeline` — when the
- * upstream timeline list changes, Compose's stability pass keeps the Frame's
- * Canvas pinned (no recomposition, no re-draw), so the only dynamic layer
- * affected is the sibling [DayViewTile].
+ * Deliberately holds **no reference** to `blocks` or to time-keeping state
+ * (no `date`, no `zone`, no `scrollState`) — when the upstream timeline list
+ * changes, Compose's stability pass keeps the Frame's Canvas pinned (no
+ * recomposition, no re-draw), so the only dynamic layer affected is the
+ * sibling [DayViewTile].
  *
  * Sizing is dictated by the modifier passed in by [DayView]; this composable
  * assumes it fills the content column to the right of the time gutter.
- * [scrollState] is the shared vertical scroll owned by [DayView] — the Frame
- * does not attach its own verticalScroll because translation must stay
- * synchronized with the sibling Tile. The parameter is reserved for future
- * scroll-aware behaviours (e.g. hit-test against the visible viewport).
  */
-@Suppress("UNUSED_PARAMETER")
 @Composable
 fun DayViewFrame(
-    date: LocalDate,
     pxPerMin: Float,
-    zone: ZoneId,
-    scrollState: ScrollState,
     onCreateAt: (hour: Int, minute: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {

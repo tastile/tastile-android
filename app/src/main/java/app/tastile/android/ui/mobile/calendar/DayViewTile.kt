@@ -1,6 +1,5 @@
 package app.tastile.android.ui.mobile.calendar
 
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,7 +38,7 @@ import java.time.ZoneId
 import java.util.Locale
 
 /**
- * Dynamic Tile half of the Day view (Phase v37 / Task 3).
+ * Dynamic Tile half of the Day view (Phase v37 / Task 3.5).
  *
  * Renders the **timeline-dependent** layer: one [EventChip] per block laid out
  * via px/lane math, and the [NowIndicator] overlay on top. Recomposes when
@@ -50,20 +49,19 @@ import java.util.Locale
  * Tile fills the same content column the Frame occupies so the event chips
  * overlay the grid lines exactly.
  *
- * [scrollState] is the shared vertical scroll owned by [DayView] — reserved
- * for future scroll-aware hit-testing and passed through to the NowIndicator
- * tick loop below.
+ * [nowProvider] drives the NowIndicator overlay; defaults to `Instant.now()`
+ * so production callers do not need to pass anything. Tests inject a fixed
+ * value to lock wall time deterministically.
  */
-@Suppress("UNUSED_PARAMETER")
 @Composable
 fun DayViewTile(
     blocks: List<PlacedBlock>,
     date: LocalDate,
     pxPerMin: Float,
     zone: ZoneId,
-    scrollState: ScrollState,
     onEditEvent: (CoreTimelineItem) -> Unit,
     modifier: Modifier = Modifier,
+    nowProvider: () -> Instant? = { Instant.now() },
 ) {
     val startHour = GridConstants.DAY_START_HOUR
 
@@ -93,18 +91,19 @@ fun DayViewTile(
         // navigating to a past/future page does not render a misleading dot.
         // The Tile owns the now-line because it depends on live wall time,
         // which is logically a "tick" rather than a static frame property.
-        val isToday = date == java.time.LocalDate.now()
+        val isToday = date == LocalDate.now()
         if (isToday) {
             // Refresh the provider every minute so the indicator slides even
             // when the user is passively viewing the day. Without this loop,
             // the line stays where it was when the Composable entered the
             // composition — fine for a single-app-session, wrong for an app
-            // left open across hour boundaries.
-            var nowInstant by remember { mutableStateOf<Instant?>(Instant.now()) }
-            LaunchedEffect(Unit) {
+            // left open across hour boundaries. Re-keying on the provider
+            // lambda lets tests inject a clock they control.
+            var nowInstant by remember(nowProvider) { mutableStateOf<Instant?>(nowProvider()) }
+            LaunchedEffect(nowProvider) {
                 while (true) {
                     delay(60_000L)
-                    nowInstant = Instant.now()
+                    nowInstant = nowProvider()
                 }
             }
             NowIndicator(

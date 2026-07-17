@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -249,45 +250,32 @@ private fun DayViewScaffold(
                 // Content area: Frame and Tile are siblings inside one Box
                 // and overlay each other so their vertical translation
                 // stays identical (one scroll source → no drift).
-                BoxWithConstraints(
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(totalHeight),
                 ) {
-                    val canvasWidth = maxWidth
                     // Frame — Canvas + tap. Lays out via the modifier chain
                     // so the Canvas fillMaxSize() inside it is exactly the
                     // same area as the Tile's fillMaxSize() below.
                     DayViewFrame(
-                        date = day,
                         pxPerMin = pxPerMin,
-                        zone = zone,
-                        scrollState = scrollState,
                         onCreateAt = onCreateAt,
                         modifier = Modifier.fillMaxSize(),
                     )
                     // Tile — blocks + NowIndicator overlay. Lane width
-                    // scaled by the Box's measured `maxWidth` so the chips
-                    // line up over the grid lines Frame drew.
+                    // is driven by fillMaxWidth() inside DayViewTile so
+                    // the chips line up over the grid lines Frame drew.
                     DayViewTile(
                         blocks = blocks,
                         date = day,
                         pxPerMin = pxPerMin,
                         zone = zone,
-                        scrollState = scrollState,
                         onEditEvent = onEditEvent,
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("day-view-tile-wrapper"),
                     )
-                    // Silence unused-variable warning for canvasWidth:
-                    // previously used for explicit per-block lane math;
-                    // DayViewTile now uses fillMaxWidth() and relocates
-                    // lane-width concerns inside the tile body. Keeping
-                    // the variable here as a no-op so the call site stays
-                    // a drop-in replacement for the prior DayGrid.
-                    @Suppress("UNUSED_VARIABLE")
-                    val _canvasWidth = canvasWidth
                 }
             }
         }
@@ -339,7 +327,6 @@ private fun DayGutter(startHour: Int, endHour: Int, pxPerHour: Dp, totalHeight: 
  * `anchoredZoomScrollTarget` inside TimelineScreen.kt; the function is
  * structurally identical and lifts verbatim — only the file location moves.
  */
-@Suppress("UNUSED_PARAMETER")
 private fun anchoredZoomScrollTarget(
     currentScrollPx: Int,
     anchorYpx: Float,
