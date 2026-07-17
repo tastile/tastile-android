@@ -73,7 +73,7 @@
     <string name="panels_references_label_hint">ラベル</string>
 
     <!-- Settings (C9 — web→android parity sweep) -->
-    <string name="settings_title">環境設定</string>
+    <string name="settings_title">Setting</string>
     <string name="settings_theme">テーマ</string>
     <string name="settings_theme_light">ライト</string>
     <string name="settings_theme_dark">ダーク</string>
@@ -201,6 +201,7 @@
     <string name="nav_schedule">スケジュール</string>
     <string name="nav_references">参照</string>
     <string name="nav_preferences">環境設定</string>
+    <string name="nav_setting">Setting</string>
 
     <!-- shell.activityBar.* -->
     <string name="shell_activity_bar_execute">実行</string>

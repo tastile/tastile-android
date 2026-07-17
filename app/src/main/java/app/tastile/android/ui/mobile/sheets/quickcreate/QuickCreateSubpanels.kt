@@ -41,8 +41,8 @@ import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.PlaylistAdd
-import androidx.compose.material.icons.outlined.PlaylistAddCheck
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAddCheck
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.RepeatOne
 import androidx.compose.material.icons.outlined.Schedule
@@ -682,8 +682,8 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     LocalSectionHeader(title = "Logic")
     val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT")
     val logicIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
-        0 -> Icons.Outlined.PlaylistAddCheck
-        1 -> Icons.Outlined.PlaylistAdd
+        0 -> Icons.AutoMirrored.Outlined.PlaylistAddCheck
+        1 -> Icons.AutoMirrored.Outlined.PlaylistAdd
         else -> Icons.Outlined.Block
     } }
     // M3 Phase 4b: single-choice completion logic → FilterChip group.
@@ -821,8 +821,8 @@ private fun updateTimeRequirement(
 @Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit, path: String = "root", allowTermKind: Boolean = true) {
     val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").filter { allowTermKind || it.first != 3 }
     val logicIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
-        0 -> Icons.Outlined.PlaylistAddCheck
-        1 -> Icons.Outlined.PlaylistAdd
+        0 -> Icons.AutoMirrored.Outlined.PlaylistAddCheck
+        1 -> Icons.AutoMirrored.Outlined.PlaylistAdd
         2 -> Icons.Outlined.Block
         else -> Icons.Outlined.TextFields
     } }

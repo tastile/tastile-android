@@ -27,30 +27,32 @@
 ```kotlin
 package app.tastile.android.core.designsystem.theme
 
-import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class PanelTokensTest {
-    @Test fun `LeadingColumnWidth equals 56dp — M3 ListItem slot`() {
-        assertThat(PanelTokens.LeadingColumnWidth.value).isEqualTo(56f)
+    @Test fun `LeadingColumnWidth equals 56dp - M3 ListItem slot`() {
+        assertEquals(56f, PanelTokens.LeadingColumnWidth.value)
     }
 
-    @Test fun `LeadingIconSize equals 24dp — M3 ListItem leading icon`() {
-        assertThat(PanelTokens.LeadingIconSize.value).isEqualTo(24f)
+    @Test fun `LeadingIconSize equals 24dp - M3 ListItem leading icon`() {
+        assertEquals(24f, PanelTokens.LeadingIconSize.value)
     }
 
-    @Test fun `LeadingColumnGap equals 16dp — M3 ListItem leading-to-text gap`() {
-        assertThat(PanelTokens.LeadingColumnGap.value).isEqualTo(16f)
+    @Test fun `LeadingColumnGap equals 16dp - M3 ListItem leading-to-text gap`() {
+        assertEquals(16f, PanelTokens.LeadingColumnGap.value)
     }
 
     @Test fun `LeadingColumnWidth is the sum of icon size plus gap plus 16dp start padding`() {
         val expected = PanelTokens.LeadingIconSize.value +
             PanelTokens.LeadingColumnGap.value +
             16f
-        assertThat(PanelTokens.LeadingColumnWidth.value).isEqualTo(expected)
+        assertEquals(expected, PanelTokens.LeadingColumnWidth.value)
     }
 }
 ```
+
+> **Note**: this project's `app/build.gradle.kts` does not declare a Truth dependency; existing tests (~70 files) all use `org.junit.Assert.assertEquals`. Future tasks in this plan should follow the same convention.
 
 **Step 1.2: Run test, verify it fails (file missing)**
 

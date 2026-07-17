@@ -90,13 +90,7 @@ class AccountDropdownMenuTest {
         every { vm.email } returns MutableStateFlow("op@example.com")
         val overlay = OverlayViewModel()
 
-        rule.setContent {
-            AccountMenuSheet(viewModel = vm, overlay = overlay)
-        }
-        openMenu(overlay)
-        // Give ModalBottomSheet time to animate in; without this the touch
-        // injection can land on a transitioning layout node and be swallowed.
-        rule.waitForIdle()
+        setMenuOpen(open = true, vm = vm, overlay = overlay)
 
         rule.onNodeWithTag("account_menu_sign_out").performClick()
         rule.waitForIdle()
@@ -111,11 +105,7 @@ class AccountDropdownMenuTest {
         every { vm.email } returns MutableStateFlow("op@example.com")
         val overlay = OverlayViewModel()
 
-        rule.setContent {
-            AccountMenuSheet(viewModel = vm, overlay = overlay)
-        }
-        openMenu(overlay)
-        rule.waitForIdle()
+        setMenuOpen(open = true, vm = vm, overlay = overlay)
 
         // The "Sign out" row's clickable region is tagged on the row itself
         // (mirrors QuickCreateBasePanel's working pattern); clicking the Text

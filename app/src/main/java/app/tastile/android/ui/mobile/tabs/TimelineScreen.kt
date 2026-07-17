@@ -27,7 +27,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
-import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 import app.tastile.android.ui.mobile.Overlay
@@ -57,7 +56,6 @@ fun TimelineScreen(
     overlay: OverlayViewModel,
 ) {
     val timeline by viewModel.timeline.collectAsStateWithLifecycle()
-    val loading by viewModel.loading.collectAsStateWithLifecycle()
     val selectedDay by viewModel.selectedDay.collectAsStateWithLifecycle()
     val scale by viewModel.scale.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
@@ -128,11 +126,6 @@ fun TimelineScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
-            loading && timeline.isEmpty() && scale == TimelineScale.Day -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    NiaLoadingWheel(contentDesc = "Loading")
-                }
-            }
             scale == TimelineScale.Day -> HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),

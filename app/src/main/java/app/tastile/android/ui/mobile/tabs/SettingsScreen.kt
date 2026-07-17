@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -103,60 +104,79 @@ fun SettingsScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        ThemeSection(
-            current = theme,
-            onPick = { viewModel.setThemeMode(it) },
-        )
-        LanguageSection(
-            current = locale,
-            onPick = { viewModel.setLocale(it) },
-        )
-        SecurityLockSection(
-            enabled = securityLockEnabled,
-            timeoutMinutes = timeoutMin,
-            onToggle = { viewModel.setSecurityLockEnabled(it) },
-            onDecrement = {
-                viewModel.setSecurityLockTimeoutMinutes(timeoutMin - TIMEOUT_STEP)
-            },
-            onIncrement = {
-                viewModel.setSecurityLockTimeoutMinutes(timeoutMin + TIMEOUT_STEP)
-            },
-        )
-        NotificationsSection(
-            granted = notificationGranted,
-            status = notificationStatus,
-            onAllow = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    notificationGranted = true
-                    notificationStatus = context.getString(
-                        R.string.settings_notifications_status_allowed,
-                    )
-                }
-            },
-            onTest = {
-                val grantedNow = canPostNotifications(context)
-                notificationGranted = grantedNow
-                if (grantedNow) {
-                    postTestNotification(context)
-                    notificationStatus = context.getString(
-                        R.string.settings_notifications_test,
-                    )
-                } else {
-                    notificationStatus = context.getString(
-                        R.string.settings_notifications_status_denied,
-                    )
-                }
-            },
-        )
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            CenterAlignedTopAppBar(
+                modifier = Modifier.testTag("settings-app-bar"),
+                title = { Text(stringResource(R.string.settings_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            ThemeSection(
+                current = theme,
+                onPick = { viewModel.setThemeMode(it) },
+            )
+            LanguageSection(
+                current = locale,
+                onPick = { viewModel.setLocale(it) },
+            )
+            SecurityLockSection(
+                enabled = securityLockEnabled,
+                timeoutMinutes = timeoutMin,
+                onToggle = { viewModel.setSecurityLockEnabled(it) },
+                onDecrement = {
+                    viewModel.setSecurityLockTimeoutMinutes(timeoutMin - TIMEOUT_STEP)
+                },
+                onIncrement = {
+                    viewModel.setSecurityLockTimeoutMinutes(timeoutMin + TIMEOUT_STEP)
+                },
+            )
+            NotificationsSection(
+                granted = notificationGranted,
+                status = notificationStatus,
+                onAllow = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        notificationGranted = true
+                        notificationStatus = context.getString(
+                            R.string.settings_notifications_status_allowed,
+                        )
+                    }
+                },
+                onTest = {
+                    val grantedNow = canPostNotifications(context)
+                    notificationGranted = grantedNow
+                    if (grantedNow) {
+                        postTestNotification(context)
+                        notificationStatus = context.getString(
+                            R.string.settings_notifications_test,
+                        )
+                    } else {
+                        notificationStatus = context.getString(
+                            R.string.settings_notifications_status_denied,
+                        )
+                    }
+                },
+            )
+        }
     }
 }
 

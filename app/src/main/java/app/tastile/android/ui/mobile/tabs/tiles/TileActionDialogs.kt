@@ -7,7 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Send
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.foundation.text.KeyboardOptions
 // m2-allow: m3-component
@@ -153,7 +153,7 @@ fun PromptRequestDialog(tileTitle: String?, onConfirm: () -> Unit, onCancel: () 
                 onClick = onConfirm,
                 modifier = Modifier.testTag("prompt-request-confirm"),
                 text = { Text("Request") },
-                leadingIcon = { Icon(Icons.Outlined.Send, contentDescription = null) },
+                leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = null) },
             )
         },
         dismissButton = {

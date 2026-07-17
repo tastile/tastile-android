@@ -2,7 +2,7 @@ package app.tastile.android.ui.mobile.tabs.tiles
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChangeHistory
-import androidx.compose.material.icons.outlined.FormatListBulleted
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.Timeline
 // m2-allow: primitive
 import androidx.compose.material3.Icon
@@ -42,7 +42,7 @@ fun TilesTabSwitcher(
                 icon = {
                     Icon(
                         imageVector = when (tab) {
-                            TilesTab.LIST -> Icons.Outlined.FormatListBulleted
+                            TilesTab.LIST -> Icons.AutoMirrored.Outlined.FormatListBulleted
                             TilesTab.TIMELINE -> Icons.Outlined.Timeline
                             TilesTab.CHANGES -> Icons.Outlined.ChangeHistory
                         },

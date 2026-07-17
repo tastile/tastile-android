@@ -9,6 +9,14 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.ui.dashboard.DashboardViewModel
+import app.tastile.android.ui.dashboard.TimelineScale
+import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.tabs.TimelineScreen
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -25,13 +33,17 @@ import java.time.ZoneId
  * [DayView] composable with **zero blocks**, asserts the Frame's grid-line
  * Canvas (testTag `day-view-frame-grid-lines`) is displayed.
  *
- * The test is scoped to [DayView] rather than the full `TimelineScreen`
- * because the latter pulls Hilt-injected VMs + auth/profile state —
- * a separate concern with its own test harness. The Frame-first property
- * is owned by the split between [DayViewFrame] and [DayViewTile]; if
- * that boundary ever gets crossed (e.g. someone re-introduces a
- * `LaunchedEffect { timeline.collect { ... } }` that gates the Frame
- * on data arrival), the assertion below will start failing.
+ * Two layers are pinned:
+ *   1. [frame_rendersImmediately_whenTimelineEmpty] mounts [DayView] with
+ *      zero blocks — the Frame/Tile split's own invariant.
+ *   2. [frame_rendersImmediately_whenScreenLoadingWithEmptyTimeline] mounts
+ *      the real `TimelineScreen` with a mocked VM in the initial-load state
+ *      (`loading = true`, empty timeline, `scale = Day`). This is the layer
+ *      that regressed: a `when` branch in `TimelineScreen` was swapping the
+ *      whole Day pager for a full-screen loading wheel, defeating the split
+ *      at the screen level even though [DayView] itself was frame-first.
+ *      `TimelineScreen` takes its VMs as parameters, so a mockk double
+ *      sidesteps Hilt entirely — no auth/profile harness needed.
  *
  * Matches the sibling Frame/Tile JVM tests: `@RunWith(Robolectric)`.
  */
@@ -64,6 +76,32 @@ class TimelineScreenLoadingTest {
         // Frame rendered without waiting for timeline data). This is the
         // core v37 invariant the design doc pins as the Frame / Tile
         // split's primary motivation.
+        compose
+            .onNodeWithTag("day-view-frame-grid-lines", useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    @Test fun frame_rendersImmediately_whenScreenLoadingWithEmptyTimeline() = runTest {
+        // Initial-load state: a refresh is in flight (`loading = true`) and
+        // no timeline data has arrived yet. The Frame must still render.
+        val vm = mockk<DashboardViewModel>(relaxed = true)
+        every { vm.timeline } returns MutableStateFlow<List<CoreTimelineItem>>(emptyList())
+        every { vm.loading } returns MutableStateFlow(true)
+        every { vm.selectedDay } returns MutableStateFlow(pageDay)
+        every { vm.scale } returns MutableStateFlow(TimelineScale.Day)
+
+        compose.setContent {
+            MaterialTheme {
+                Box(Modifier.requiredSize(400.dp, 1440.dp)) {
+                    TimelineScreen(viewModel = vm, overlay = OverlayViewModel())
+                }
+            }
+        }
+        compose.waitForIdle()
+
+        // The Day pager (→ DayView → DayViewFrame) must be on screen even
+        // while loading. If the screen-level loading-wheel gate comes back,
+        // the pager is replaced by a spinner and this node disappears.
         compose
             .onNodeWithTag("day-view-frame-grid-lines", useUnmergedTree = true)
             .assertIsDisplayed()
