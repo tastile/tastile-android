@@ -151,7 +151,13 @@ private fun DayViewScaffold(
         val minPxPerMin: Float = pxPerMinBase
 
         val effectiveZoom = pinchZoom ?: zoom
-        val pxPerMin: Float = (pxPerMinBase * effectiveZoom).coerceAtLeast(minPxPerMin)
+        // Delegate the actual formula to the top-level pure helper so
+        // [PxPerMinTest] can exercise it without spinning up Compose.
+        val pxPerMin: Float = computePxPerMin(
+            availableHeightPx = availableHeightPx,
+            totalMinutes = totalMinutes,
+            zoom = effectiveZoom,
+        )
         val totalHeight: Dp = (pxPerMin * totalMinutes).dp
         val pxPerHour: Dp = (pxPerMin * 60).dp
 
@@ -340,6 +346,39 @@ private fun anchoredZoomScrollTarget(
     return (minutesAtAnchor * newPxPerMin - anchorYpx)
         .coerceIn(0f, maxScroll)
         .toInt()
+}
+
+/**
+ * Pure-function formulation of the day-view `pxPerMin` math. Lifted out of
+ * the Compose `[DayViewScaffold]` body so [PxPerMinTest] can lock the
+ * invariants without spinning up a Compose runtime:
+ *
+ *  - At `zoom = ZOOM_DEFAULT` and a 24h-fit-available viewport the value
+ *    equals `availableHeightPx / totalMinutes` (the v34 baseline that
+ *    "the whole day fits on one screen at min zoom").
+ *  - The result is `coerceAtLeast(minPxPerMin)` so zooming below the
+ *    baseline never makes the day overflow the viewport.
+ *  - Zoom is clamped to `[ZOOM_MIN, ZOOM_MAX]` so an out-of-range gesture
+ *    cannot invalidate the day-range `0..24` invariant.
+ *
+ * The day range is forced via the composable site (`startHour = 0`,
+ * `endHour = 24`) rather than via this function — `totalMinutes = 1440 +
+ * 2 * SCROLL_BUFFER_MIN` keeps the 15-min buffer above and below the
+ * labeled range (matches the existing v34 behavior).
+ *
+ * `density` is intentionally omitted: the helper operates in raw px so
+ * the composable caller can multiply by `LocalDensity.current.density`
+ * once for the DrawScope and once for the gesture path, matching the
+ * existing pixel-alignment logic.
+ */
+internal fun computePxPerMin(
+    availableHeightPx: Float,
+    totalMinutes: Int,
+    zoom: Float,
+): Float {
+    val zoomClamped = zoom.coerceIn(GridConstants.ZOOM_MIN, GridConstants.ZOOM_MAX)
+    val pxPerMinBase = if (totalMinutes <= 0) 0f else availableHeightPx / totalMinutes
+    return (pxPerMinBase * zoomClamped).coerceAtLeast(pxPerMinBase)
 }
 
 /**

@@ -169,6 +169,17 @@ class DashboardViewModel @Inject constructor(
         _tiles.value = list
     }
 
+    /**
+     * Test-only seam for the timeline StateFlow. Sibling of
+     * [replaceTilesForTest] / [replaceExecutionControlStatesForTest]; lets
+     * [DayViewRefreshSnapshotTest] seed a pre-call snapshot before kicking
+     * off a refresh that throws, so the test can assert the catch-block
+     * leaves the prior list intact. Not invoked from production.
+     */
+    internal fun replaceTimelineForTest(list: List<CoreTimelineItem>) {
+        _timeline.value = list
+    }
+
     internal fun replaceExecutionControlStatesForTest(states: Map<String, ExecutionControlState>) {
         _executionControlStates.value = states
     }
