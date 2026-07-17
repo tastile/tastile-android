@@ -7,8 +7,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -119,19 +120,24 @@ class MobileTopBarTest {
 
         rule.onNodeWithContentDescription("Scale: Day").performClick()
 
-        rule.onNodeWithTag("dropdown-today").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-nav-prev").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-nav-next").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-mode-scope").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-mode-around").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-mode-future").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-min-0").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-min-5").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-min-15").assertIsDisplayed()
-        rule.onNodeWithTag("dropdown-min-30").assertIsDisplayed()
+        // DropdownMenu renders in a popup window, so the items exist in the
+        // semantics tree but fail the screen-bounds check used by
+        // assertIsDisplayed. assertExists is the right check for popup items.
+        rule.onNodeWithTag("dropdown-today").assertExists()
+        rule.onNodeWithTag("dropdown-nav-prev").assertExists()
+        rule.onNodeWithTag("dropdown-nav-next").assertExists()
+        rule.onNodeWithTag("dropdown-mode-scope").assertExists()
+        rule.onNodeWithTag("dropdown-mode-around").assertExists()
+        rule.onNodeWithTag("dropdown-mode-future").assertExists()
+        rule.onNodeWithTag("dropdown-min-0").assertExists()
+        rule.onNodeWithTag("dropdown-min-5").assertExists()
+        rule.onNodeWithTag("dropdown-min-15").assertExists()
+        rule.onNodeWithTag("dropdown-min-30").assertExists()
 
         rule.onNodeWithTag("dropdown-today").performClick()
+        rule.onNodeWithContentDescription("Scale: Day").performClick()
         rule.onNodeWithTag("dropdown-mode-future").performClick()
+        rule.onNodeWithContentDescription("Scale: Day").performClick()
         rule.onNodeWithTag("dropdown-min-15").performClick()
 
         assertEquals(Unit, today.get())
@@ -155,10 +161,10 @@ class MobileTopBarTest {
 
         rule.onNodeWithContentDescription("Scale: Day").performClick()
 
-        rule.onNodeWithTag("dropdown-today").assertDoesNotExist()
-        rule.onNodeWithTag("dropdown-nav-prev").assertDoesNotExist()
-        rule.onNodeWithTag("dropdown-nav-next").assertDoesNotExist()
-        rule.onNodeWithTag("dropdown-mode-scope").assertDoesNotExist()
-        rule.onNodeWithTag("dropdown-min-0").assertDoesNotExist()
+        assert(rule.onAllNodesWithTag("dropdown-today").fetchSemanticsNodes().isEmpty())
+        assert(rule.onAllNodesWithTag("dropdown-nav-prev").fetchSemanticsNodes().isEmpty())
+        assert(rule.onAllNodesWithTag("dropdown-nav-next").fetchSemanticsNodes().isEmpty())
+        assert(rule.onAllNodesWithTag("dropdown-mode-scope").fetchSemanticsNodes().isEmpty())
+        assert(rule.onAllNodesWithTag("dropdown-min-0").fetchSemanticsNodes().isEmpty())
     }
 }
