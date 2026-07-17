@@ -1,41 +1,22 @@
 package app.tastile.android.ui.mobile.tabs
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import app.tastile.android.core.designsystem.component.NiaFloatingActionButton
-// m2-allow: primitive
-import androidx.compose.material3.HorizontalDivider
 // m2-allow: primitive
 import androidx.compose.material3.Icon
 // m2-allow: primitive
@@ -44,25 +25,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.changedToDown
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -76,34 +43,25 @@ import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.panels.ProjectsViewModel
 import app.tastile.android.ui.mobile.calendar.DayView
-import app.tastile.android.ui.mobile.calendar.EventChipContent
-import app.tastile.android.ui.mobile.calendar.GridConstants
 import app.tastile.android.ui.mobile.calendar.MonthView
-import app.tastile.android.ui.mobile.calendar.NowIndicator
-import app.tastile.android.ui.mobile.calendar.PlacedBlock
+import app.tastile.android.ui.mobile.calendar.TOP_BAR_TOTAL_HEIGHT
 import app.tastile.android.ui.mobile.calendar.WeekView
 import app.tastile.android.ui.mobile.calendar.toDayBlocks
-
-import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 private const val PAGER_CENTER = 365
 private const val PAGER_TOTAL = 731
 private const val INITIAL_ZOOM = 1.5f  // day is 1.5× screen → always scrollable
 
-// Total top-bar height the table-control rows must clear:
-//   status bar + 56dp content (56.dp).
-// MobileScaffold sets contentWindowInsets = WindowInsets(0) and ignores innerPadding,
-// so consumers must pad themselves if they want to sit below the top bar.
-@Composable
-internal fun topBarTotalHeight(): Dp =
-    WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 56.dp
-
+/**
+ * Top-level timeline screen. Hosts the HorizontalPager that switches
+ * between Day / Week / Month views, the toolbar / filter panel, and the
+ * quick-create FAB. The actual per-scale renderers live in the
+ * `ui.mobile.calendar` package; this file only owns scale dispatch and
+ * shell chrome.
+ */
 @Composable
 fun TimelineScreen(
     viewModel: DashboardViewModel,
@@ -121,10 +79,7 @@ fun TimelineScreen(
 
     val today = remember { LocalDate.now() }
     val zone = remember { ZoneId.systemDefault() }
-
-    val activeTimeline = remember(timeline) {
-        timeline
-    }
+    val activeTimeline = remember(timeline) { timeline }
 
     val onOpenDay: (LocalDate) -> Unit = { day ->
         viewModel.setSelectedDay(day)
@@ -195,67 +150,64 @@ fun TimelineScreen(
                     NiaLoadingWheel(contentDesc = "Loading")
                 }
             }
-            scale == TimelineScale.Day -> {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    key = { it },
-                ) { page ->
-                    val pageDay = today.plusDays((page - PAGER_CENTER).toLong())
-                    val pageBlocks = remember(activeTimeline, pageDay) {
-                        toDayBlocks(activeTimeline, pageDay, zone)
-                    }
-                    DayView(
-                        date = pageDay,
-                        zoom = dayZoom,
-                        blocks = pageBlocks,
-                        zone = zone,
-                        onZoomChange = { dayZoom = it },
-                        onCreateAt = { hour, minute ->
-                            val start = pageDay.atTime(hour, minute).atZone(zone).toInstant()
-                            overlay.show(Overlay.QuickCreateAt(start.toString(), start.plusSeconds(60 * 60).toString()))
-                        },
-                        onEditEvent = onEditEvent,
-                    )
+            scale == TimelineScale.Day -> HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { it },
+            ) { page ->
+                val pageDay = today.plusDays((page - PAGER_CENTER).toLong())
+                val pageBlocks = remember(activeTimeline, pageDay) {
+                    toDayBlocks(activeTimeline, pageDay, zone)
                 }
+                DayView(
+                    date = pageDay,
+                    zoom = dayZoom,
+                    blocks = pageBlocks,
+                    zone = zone,
+                    onZoomChange = { dayZoom = it },
+                    onCreateAt = { hour, minute ->
+                        val start = pageDay.atTime(hour, minute).atZone(zone).toInstant()
+                        overlay.show(
+                            Overlay.QuickCreateAt(
+                                start.toString(),
+                                start.plusSeconds(60 * 60).toString(),
+                            ),
+                        )
+                    },
+                    onEditEvent = onEditEvent,
+                )
             }
-            scale == TimelineScale.Week -> {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    key = { it },
-                ) { page ->
-                    val anchor = today.plusWeeks((page - PAGER_CENTER).toLong())
-                    val pageWeekStart = anchor.minusDays((anchor.dayOfWeek.value - 1).toLong())
-                    WeekView(
-                        items = activeTimeline,
-                        weekStart = pageWeekStart,
-                        zone = zone,
-                        onOpenDay = onOpenDay,
-                        zoom = weekZoom,
-                        onZoomChange = { weekZoom = it },
-                        onEditEvent = onEditEvent,
-                    )
-                }
+            scale == TimelineScale.Week -> HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { it },
+            ) { page ->
+                val anchor = today.plusWeeks((page - PAGER_CENTER).toLong())
+                val pageWeekStart = anchor.minusDays((anchor.dayOfWeek.value - 1).toLong())
+                WeekView(
+                    items = activeTimeline,
+                    weekStart = pageWeekStart,
+                    zone = zone,
+                    onOpenDay = onOpenDay,
+                    zoom = weekZoom,
+                    onZoomChange = { weekZoom = it },
+                    onEditEvent = onEditEvent,
+                )
             }
-            scale == TimelineScale.Month -> {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    key = { it },
-                ) { page ->
-                    val pageMonthStart = today.plusMonths((page - PAGER_CENTER).toLong()).withDayOfMonth(1)
-                    MonthView(
-                        monthStart = pageMonthStart,
-                        selectedDate = selectedDay,
-                        items = activeTimeline,
-                        zone = zone,
-                        onOpenDay = onOpenDay,
-                    )
-                }
+            scale == TimelineScale.Month -> HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { it },
+            ) { page ->
+                val pageMonthStart = today.plusMonths((page - PAGER_CENTER).toLong()).withDayOfMonth(1)
+                MonthView(
+                    monthStart = pageMonthStart,
+                    selectedDate = selectedDay,
+                    items = activeTimeline,
+                    zone = zone,
+                    onOpenDay = onOpenDay,
+                )
             }
-            scale == TimelineScale.List -> TimelineListView(activeTimeline, zone, onEditEvent)
-            else -> EmptyState(scale)
         }
 
         CalendarToolbar(
@@ -268,7 +220,7 @@ fun TimelineScreen(
             onMinimumDuration = viewModel::setCalendarMinimumDuration,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = topBarTotalHeight()),
+                .padding(top = TOP_BAR_TOTAL_HEIGHT()),
         )
 
         CalendarFilterPanel(
@@ -281,7 +233,7 @@ fun TimelineScreen(
             onOwnerIdsChange = { ownerIds -> viewModel.setOwnerFilters(ownerIds) },
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = topBarTotalHeight() + 76.dp),
+                .padding(top = TOP_BAR_TOTAL_HEIGHT() + 76.dp),
         )
 
         // Quick-create FAB: bottom-right round + button. Sits on top of every
@@ -355,20 +307,13 @@ private fun CalendarToolbar(
     }
 }
 
-@Composable
-private fun EmptyState(scale: TimelineScale) {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "No blocks in this ${scale.name.lowercase(Locale.ROOT)} view. Create a tile to seed the timeline.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
+/**
+ * Pure math helper. The same implementation lives as a `private` copy in
+ * DayView.kt (used by the gesture handler); this public copy exists for
+ * [app.tastile.android.ui.mobile.tabs.TimelineZoomMathTest] which calls
+ * it from the same package and verifies the anchor math invariants. Kept
+ * verbatim so the test fixture does not change.
+ */
 internal fun anchoredZoomScrollTarget(
     currentScrollPx: Int,
     anchorYpx: Float,
@@ -383,78 +328,4 @@ internal fun anchoredZoomScrollTarget(
     return (minutesAtAnchor * newPxPerMin - anchorYpx)
         .coerceIn(0f, maxScroll)
         .toInt()
-}
-
-private fun filterForScale(
-    items: List<CoreTimelineItem>,
-    scale: TimelineScale,
-    today: LocalDate,
-    zone: ZoneId,
-): List<CoreTimelineItem> {
-    return when (scale) {
-        TimelineScale.Day -> emptyList()
-        TimelineScale.Week -> {
-            val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong()).atStartOfDay(zone).toInstant()
-            val weekEnd = weekStart.plusSeconds(7 * 24 * 60 * 60L)
-            items.filter { item ->
-                val start = parseInstantOrNull(item.startAt) ?: return@filter false
-                val end = parseInstantOrNull(item.endAt) ?: start
-                start.isBefore(weekEnd) && end.isAfter(weekStart)
-            }
-        }
-        TimelineScale.Month -> {
-            val monthStart = today.withDayOfMonth(1).atStartOfDay(zone).toInstant()
-            val monthEnd = today.withDayOfMonth(1).plusMonths(1).atStartOfDay(zone).toInstant()
-            items.filter { item ->
-                val start = parseInstantOrNull(item.startAt) ?: return@filter false
-                val end = parseInstantOrNull(item.endAt) ?: start
-                start.isBefore(monthEnd) && end.isAfter(monthStart)
-            }
-        }
-        TimelineScale.List -> items.sortedBy { it.startAt }
-    }
-}
-
-@Composable
-private fun TimelineListView(items: List<CoreTimelineItem>, zone: ZoneId, onEditEvent: (CoreTimelineItem) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = topBarTotalHeight(), start = 16.dp, end = 16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items.sortedBy { it.startAt }.forEach { item ->
-            val start = parseInstantOrNull(item.startAt)?.atZone(zone)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { onEditEvent(item) }
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = start?.format(DateTimeFormatter.ofPattern("MMM d HH:mm", Locale.getDefault())) ?: "—",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(item.title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-            }
-        }
-    }
-}
-
-private fun parseInstantOrNull(value: String?): Instant? {
-    if (value.isNullOrBlank()) return null
-    return try {
-        Instant.parse(value)
-    } catch (_: Exception) {
-        try {
-            java.time.OffsetDateTime.parse(value).toInstant()
-        } catch (_: Exception) {
-            null
-        }
-    }
 }

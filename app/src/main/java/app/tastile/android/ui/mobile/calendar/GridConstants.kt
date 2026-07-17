@@ -1,5 +1,9 @@
 package app.tastile.android.ui.mobile.calendar
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -16,3 +20,15 @@ internal object GridConstants {
     const val MONTH_GRID_ROWS: Int = 6
     const val WEEK_DAYS: Int = 7
 }
+
+/**
+ * Total top-bar height the table-control rows must clear:
+ *   status bar + 56dp content (56.dp).
+ * MobileScaffold sets contentWindowInsets = WindowInsets(0) and ignores
+ * innerPadding, so consumers must pad themselves if they want to sit below
+ * the top bar. Lifted from TimelineScreen.kt (T6) so the calendar package
+ * can resolve it without depending on the tabs package.
+ */
+@Composable
+internal fun TOP_BAR_TOTAL_HEIGHT(): Dp =
+    WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 56.dp

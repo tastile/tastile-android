@@ -37,7 +37,6 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -416,20 +415,3 @@ internal fun assignLanes(blocks: List<PlacedBlock>): List<PlacedBlock> {
     }
 }
 
-/**
- * Local mirror of `parseInstantOrNull`. The original is private inside
- * `TimelineScreen.kt`; duplicating here keeps the calendar package
- * self-contained (no cross-file private access).
- */
-private fun parseInstantOrNull(value: String?): Instant? {
-    if (value.isNullOrBlank()) return null
-    return try {
-        Instant.parse(value)
-    } catch (_: Exception) {
-        try {
-            java.time.OffsetDateTime.parse(value).toInstant()
-        } catch (_: Exception) {
-            null
-        }
-    }
-}

@@ -18,8 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.ui.mobile.tabs.topBarTotalHeight
-import java.time.Instant
+import app.tastile.android.ui.mobile.calendar.TOP_BAR_TOTAL_HEIGHT
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -65,7 +64,7 @@ fun MonthView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(top = topBarTotalHeight()),
+            .padding(top = TOP_BAR_TOTAL_HEIGHT()),
     ) {
         // Day-of-week header row (Mon..Sun, locale-aware).
         Row(
@@ -140,7 +139,7 @@ private fun countEventsByDate(
 ): Map<LocalDate, Int> {
     val map = mutableMapOf<LocalDate, Int>()
     items.forEach { item ->
-        val start = parseInstantOrNullLocal(item.startAt) ?: return@forEach
+        val start = parseInstantOrNull(item.startAt) ?: return@forEach
         val day = start.atZone(zone).toLocalDate()
         if (day.month != monthStart.month || day.year != monthStart.year) return@forEach
         map[day] = (map[day] ?: 0) + 1
@@ -148,22 +147,3 @@ private fun countEventsByDate(
     return map
 }
 
-/**
- * Tiny parse helper scoped to Month view. Duplicated here (instead of
- * deduplicating with `TimelineScreen.parseInstantOrNull`) to keep the
- * calendar package self-contained — general helper dedup is T6's job and
- * pulling TimelineScreen's private helper out of scope would require
- * touching unrelated files.
- */
-private fun parseInstantOrNullLocal(value: String?): Instant? {
-    if (value.isNullOrBlank()) return null
-    return try {
-        Instant.parse(value)
-    } catch (_: Exception) {
-        try {
-            java.time.OffsetDateTime.parse(value).toInstant()
-        } catch (_: Exception) {
-            null
-        }
-    }
-}
