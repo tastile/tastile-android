@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -36,8 +37,10 @@ import java.time.ZoneId
  * Top-level Week view (Phase v37 / Task 4).
  *
  * Owns the single shared vertical scroll state and routes data to:
- *   - [WeekViewFrame] (static 7-column DOW header + grid lines)
- *   - [WeekViewTile] (per-day event chips + today's NowIndicator)
+ *   - [WeekHeaderRow] (pinned DOW header, above the scroll area)
+ *   - [WeekViewFrame] (static 7-column grid lines, scrolls with body)
+ *   - [WeekViewTile] (per-day event chips + today's NowIndicator,
+ *     overlaid on the Frame inside one weighted Box)
  *
  * Week has no pinch zoom in v37; the body height is computed from
  * [GridConstants.DAY_END_HOUR] and the caller's `zoom` value.
@@ -118,23 +121,24 @@ fun WeekView(
                 totalHeight = totalHeight,
                 modifier = Modifier.width(GridConstants.TIME_GUTTER_WIDTH),
             )
-            // Frame: 7-column hour grid (sibling of Tile in one scroll)
-            WeekViewFrame(
-                weekStart = weekStart,
-                pxPerMin = pxPerMin,
-                onOpenDay = onOpenDay,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(totalHeight),
-            )
-            // Tile: 7 columns of event chips + today's NowIndicator.
-            // The Tile is overlaid via a sibling Box so the chips
-            // translate with the Frame's grid under the same scroll.
+            // Frame + Tile overlay inside one weighted Box so the Tile gets
+            // nonzero width (single-scroll multi-layer pattern, identical
+            // to DayView's Scaffold body Box).
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .height(totalHeight),
             ) {
+                // Frame: 7-column hour grid (sibling of Tile in the Box)
+                WeekViewFrame(
+                    weekStart = weekStart,
+                    pxPerMin = pxPerMin,
+                    onOpenDay = onOpenDay,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                // Tile: 7 columns of event chips + today's NowIndicator.
+                // Sibling of Frame so the chips translate with the Frame's
+                // grid under the shared scroll.
                 WeekViewTile(
                     weekStart = weekStart,
                     blocksByDay = blocksByDay,
@@ -177,7 +181,8 @@ private fun WeekHeaderRow(
                     .weight(1f)
                     .fillMaxHeight()
                     .clickable { onOpenDay(day) }
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 4.dp)
+                    .testTag("week-view-pin-header-day-column"),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {

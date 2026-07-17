@@ -63,7 +63,8 @@ fun WeekViewTile(
                         width = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant,
                     )
-                    .clickable { /* day-column tap is handled in the Frame */ },
+                    .clickable { /* day-column tap is handled in the Frame */ }
+                    .testTag("week-view-tile-event-column"),
             ) {
                 // Event chips for this day
                 for (b in blocks) {
