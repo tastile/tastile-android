@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -89,7 +90,13 @@ class AccountDropdownMenuTest {
         every { vm.email } returns MutableStateFlow("op@example.com")
         val overlay = OverlayViewModel()
 
-        setMenuOpen(open = true, vm = vm, overlay = overlay)
+        rule.setContent {
+            AccountMenuSheet(viewModel = vm, overlay = overlay)
+        }
+        openMenu(overlay)
+        // Give ModalBottomSheet time to animate in; without this the touch
+        // injection can land on a transitioning layout node and be swallowed.
+        rule.waitForIdle()
 
         rule.onNodeWithTag("account_menu_sign_out").performClick()
         rule.waitForIdle()
@@ -104,22 +111,37 @@ class AccountDropdownMenuTest {
         every { vm.email } returns MutableStateFlow("op@example.com")
         val overlay = OverlayViewModel()
 
-        setMenuOpen(open = true, vm = vm, overlay = overlay)
+        rule.setContent {
+            AccountMenuSheet(viewModel = vm, overlay = overlay)
+        }
+        openMenu(overlay)
+        rule.waitForIdle()
 
+        // The "Sign out" row's clickable region is tagged on the row itself
+        // (mirrors QuickCreateBasePanel's working pattern); clicking the Text
+        // node does not always dispatch through Compose's gesture handling
+        // inside ModalBottomSheet under Robolectric, so dispatch through the
+        // testTag instead.
         rule.onNodeWithTag("account_menu_sign_out").performClick()
         rule.waitForIdle()
         // The AlertDialog renders the confirm button in its own DialogWindow
-        // which `createAndroidComposeRule`'s main tree does not see. Poll the
-        // dialog node deterministically with waitUntil (no sleep loop) so the
-        // test stays stable under CI load.
-        rule.waitUntil(timeoutMillis = 5_000) {
-            runCatching {
+        // which `createAndroidComposeRule`'s main tree does not see. The
+        // dialog confirm Button has testTag `account_menu_sign_out_confirm`
+        // and reuses the "Sign out" label; we click it via that tag after
+        // allowing a few frames for the dialog to settle.
+        for (attempt in 1..5) {
+            val found = runCatching {
                 rule.onNodeWithTag("account_menu_sign_out_confirm").assertExists()
                 true
             }.getOrDefault(false)
+            if (found) {
+                rule.onNodeWithTag("account_menu_sign_out_confirm").performClick()
+                rule.waitForIdle()
+                break
+            }
+            rule.waitForIdle()
+            Thread.sleep(60L * attempt)
         }
-        rule.onNodeWithTag("account_menu_sign_out_confirm").performClick()
-        rule.waitForIdle()
 
         verify(exactly = 1) { vm.signOut() }
     }

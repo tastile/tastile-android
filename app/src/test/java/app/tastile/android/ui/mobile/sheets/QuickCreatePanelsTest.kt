@@ -60,7 +60,7 @@ class QuickCreatePanelsTest {
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-behavior-card").performScrollTo().performClick()
         rule.waitForIdle()
-assertEquals(QuickCreatePanel.Behavior, store.state.value.activePanel)
+        assertEquals(QuickCreatePanel.Behavior, store.state.value.activePanel)
         rule.onNodeWithTag("behavior-role-label").performScrollTo().assertIsDisplayed()
         assertTrue(rule.onAllNodesWithTag("quick-create-row-0").fetchSemanticsNodes().isEmpty())
     }

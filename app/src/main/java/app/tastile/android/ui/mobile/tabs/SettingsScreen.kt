@@ -103,39 +103,22 @@ fun SettingsScreen(
         )
     }
 
-Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = stringResource(R.string.common_back),
-                        )
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            ThemeSection(
-                current = theme,
-                onPick = { viewModel.setThemeMode(it) },
-            )
-            LanguageSection(
-                current = locale,
-                onPick = { viewModel.setLocale(it) },
-            )
-            SecurityLockSection(
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        ThemeSection(
+            current = theme,
+            onPick = { viewModel.setThemeMode(it) },
+        )
+        LanguageSection(
+            current = locale,
+            onPick = { viewModel.setLocale(it) },
+        )
+        SecurityLockSection(
             enabled = securityLockEnabled,
             timeoutMinutes = timeoutMin,
             onToggle = { viewModel.setSecurityLockEnabled(it) },
@@ -174,7 +157,6 @@ Scaffold(
                 }
             },
         )
-        }
     }
 }
 
