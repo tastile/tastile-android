@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,11 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Link
@@ -28,6 +31,8 @@ import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Tune
+// m2-allow: m3-component
+import androidx.compose.material3.ButtonDefaults
 // m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
 // m2-allow: primitive
@@ -36,6 +41,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
+import androidx.compose.material3.OutlinedButton
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
@@ -58,9 +65,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.core.designsystem.component.NiaListItem
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
-import app.tastile.android.core.designsystem.component.NiaSegmentedButton
-import app.tastile.android.core.designsystem.component.NiaSegmentedButtonDefaults
-import app.tastile.android.core.designsystem.component.NiaSingleChoiceSegmentedButtonRow
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlan
@@ -152,18 +156,38 @@ private fun QuickCreateBaseComposition(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-NiaSingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 QuickCreateTileKind.entries.forEachIndexed { index, kind ->
-                    NiaSegmentedButton(
-                        selected = draft.identity.kind == kind,
+                    val selected = draft.identity.kind == kind
+                    OutlinedButton(
                         onClick = { store.updateIdentity(draft.identity.copy(kind = kind)) },
-                        shape = NiaSegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = QuickCreateTileKind.entries.size,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("quick-create-kind-${kind.name}"),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = if (selected) {
+                            ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        } else {
+                            ButtonDefaults.outlinedButtonColors()
+                        },
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outline,
                         ),
-                        modifier = Modifier.testTag("quick-create-kind-${kind.name}"),
-                        label = { Text(kind.name) },
-                    )
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                    ) {
+                        if (selected) {
+                            Icon(Icons.Outlined.Check, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                        }
+                        Text(kind.name)
+                    }
                 }
             }
         }
@@ -205,6 +229,7 @@ NiaSingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             onClick = { store.openSubpanel(QuickCreatePanel.Intent) },
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .testTag("quick-create-condition-add"),
             contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
         ) {
@@ -253,6 +278,7 @@ NiaSingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             },
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .testTag("quick-create-add-task"),
             contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
         ) {
@@ -281,6 +307,7 @@ NiaSingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             onClick = { store.openSubpanel(QuickCreatePanel.References) },
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .testTag("quick-create-references-link"),
             contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
         ) {

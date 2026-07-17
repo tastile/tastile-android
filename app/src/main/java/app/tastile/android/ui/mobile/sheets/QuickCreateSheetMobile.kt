@@ -18,7 +18,6 @@ import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.panels.ProjectsViewModel
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateSubmissionViewModel
-import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateSubpanel
 import app.tastile.android.ui.mobile.sheets.quickcreate.quickCreateSubmissionValidation
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,8 +41,7 @@ fun QuickCreateSheetMobile(
             .map(String::trim)
             .distinct()
             .sortedBy { it.lowercase() }
-        val baseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        val subpanelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val initialDraft = (current as? Overlay.QuickCreateAt)?.let { slot ->
             QuickCreateDraftState(
                 time = QuickCreateTime(
@@ -67,66 +65,48 @@ fun QuickCreateSheetMobile(
         val canSubmit = validation.isValid && !submission.isSubmitting
         val projects = projectsState.workspaces.map { QuickCreateProject(it.id, it.displayName) }
 
-        // M3 Phase 2: dispatch on (activePanel, screenWidthDp).
-        // - Base panel → full PanelSheet (current behaviour, hosts submit CTA).
-        // - Subpanel on narrow phones (<600.dp) → full PanelSheet so the M3
-        //   drag handle / scrim stay consistent with the base flow.
-        // - Subpanel on wide screens (≥600.dp, tablets / foldables) → NiaSideSheet
-        //   (widthIn(max = 480.dp), side-anchored) so the parent context stays
-        //   visible behind the panel.
+        // Multi-layer panel navigation: one sheet hosts both the base
+        // composition and the routed subpanel. The sheet itself never
+        // dismisses/re-opens when navigating between panels — only the content
+        // swaps. Close X dismisses the sheet; if a subpanel is currently
+        // active, Close X pops back to the base composition first so the
+        // user can confirm before tearing down the whole draft.
         val active = draft.activePanel
         val isSubpanel = active != null && active != QuickCreatePanel.Base
         val isWideScreen = LocalConfiguration.current.screenWidthDp >= 600
-        when {
-            isSubpanel && isWideScreen -> {
-                NiaSideSheet(
-                    sheetState = subpanelSheetState,
-                    onDismissRequest = { quickCreateStore.backToBase() },
-                ) {
-                    QuickCreateSubpanel(
-                        panel = active,
-                        draft = draft,
-                        store = quickCreateStore,
-                        onBack = quickCreateStore::backToBase,
-                        projects = projects,
-                        knownTags = knownTags,
-                    )
-                }
+        val handleDismiss: () -> Unit = {
+            if (isSubpanel) quickCreateStore.backToBase() else overlay.dismiss()
+        }
+        if (isWideScreen) {
+            NiaSideSheet(
+                sheetState = sheetState,
+                onDismissRequest = handleDismiss,
+            ) {
+                QuickCreatePanelContent(
+                    store = quickCreateStore,
+                    onClose = handleDismiss,
+                    projects = projects,
+                    knownTags = knownTags,
+                )
             }
-            isSubpanel -> {
-                PanelSheet(
-                    sheetState = subpanelSheetState,
-                    onDismiss = { quickCreateStore.backToBase() },
-                ) {
-                    QuickCreateSubpanel(
-                        panel = active,
-                        draft = draft,
-                        store = quickCreateStore,
-                        onBack = quickCreateStore::backToBase,
-                        projects = projects,
-                        knownTags = knownTags,
-                    )
-                }
-            }
-            else -> {
-                PanelSheet(
-                    sheetState = baseSheetState,
-                    onDismiss = { overlay.dismiss() },
+        } else {
+            PanelSheet(
+                sheetState = sheetState,
+                onDismiss = handleDismiss,
+                onSubmit = { resolvedSubmissionViewModel.submit(draft) },
+                submitEnabled = canSubmit,
+                submitLabel = "Create",
+                submitTestTag = "quick-create-submit",
+            ) {
+                QuickCreatePanelContent(
+                    store = quickCreateStore,
+                    onClose = handleDismiss,
                     onSubmit = { resolvedSubmissionViewModel.submit(draft) },
-                    submitEnabled = canSubmit,
-                    submitLabel = "Create",
-                    submitTestTag = "quick-create-submit",
-                ) {
-                    QuickCreatePanelContent(
-                        store = quickCreateStore,
-                        onClose = { overlay.dismiss() },
-                        onSubmit = { resolvedSubmissionViewModel.submit(draft) },
-                        isSubmitting = submission.isSubmitting,
-                        submitError = submission.error,
-                        projects = projects,
-                        knownTags = knownTags,
-                    )
-                }
+                    isSubmitting = submission.isSubmitting,
+                    submitError = submission.error,
+                    projects = projects,
+                    knownTags = knownTags,
+                )
             }
         }
     }
