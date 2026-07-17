@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
 // m2-allow: primitive
 import androidx.compose.material3.CircularProgressIndicator
 // m2-allow: theme-bridge
@@ -24,6 +23,7 @@ import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.component.NiaOutlinedTextField
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineSubScale
+import app.tastile.android.ui.mobile.components.AppSectionHeader
 
 /**
  * Timeline pane body. Mirrors web `/dashboard/timeline` surface in
@@ -101,24 +101,28 @@ private fun CustomDateRow(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = "${startIso ?: "—"}  →  ${endIso ?: "—"}",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         // Date picker dialogs intentionally deferred — the existing
         // v1 /v1/timeline endpoint accepts ISO-8601 instants, so the
         // initial release uses the day's pill selector for non-custom
-        // scales. Custom range in this release is a stub row showing
-        // the active ISO strings; Material3 DatePickerDialog wiring is
-        // tracked as a follow-up so this PR stays under the closed-test
-        // deadline.
-        Text(
-            text = "setCustomRange hook · ${onStartChange.hashCode()}/${onEndChange.hashCode()}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        // scales. Custom range in this release shows the active ISO
+        // strings via two read-only NiaOutlinedTextFields; wiring up
+        // interactive DatePickerDialog is tracked as a follow-up so
+        // this PR stays under the closed-test deadline.
+        NiaOutlinedTextField(
+            readOnly = true,
+            label = { Text("Start") },
+            value = startIso ?: "—",
+            onValueChange = { onStartChange(it) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        NiaOutlinedTextField(
+            readOnly = true,
+            label = { Text("End") },
+            value = endIso ?: "—",
+            onValueChange = { onEndChange(it) },
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -142,21 +146,6 @@ private fun TimelineLoadingOverlay() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-@Composable
-private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

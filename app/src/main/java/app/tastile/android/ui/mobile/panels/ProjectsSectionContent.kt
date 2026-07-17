@@ -29,8 +29,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
+import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaTextButton
-import app.tastile.android.data.api.Workspace
 import app.tastile.android.ui.mobile.panels.projects.NewProjectForm
 import app.tastile.android.ui.mobile.panels.projects.ProjectsList
 import app.tastile.android.ui.mobile.panels.projects.ProjectEditForm
@@ -107,12 +107,24 @@ fun ProjectsSectionContent(
         }
 
         when {
-            state.loading -> Text(
-                text = stringResource(R.string.panels_projects_loading_projects),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 12.dp),
-            )
+            state.loading -> Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .testTag("projects-section-loading"),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NiaLoadingWheel(
+                    contentDesc = stringResource(R.string.panels_projects_loading_projects),
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = stringResource(R.string.panels_projects_loading_projects),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             state.error != null -> Text(
                 text = state.error.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
@@ -122,9 +134,12 @@ fun ProjectsSectionContent(
             else -> ProjectsList(
                 workspaces = state.workspaces,
                 selectedOwnerId = selectedOwnerId,
-                onSelect = projectsViewModel::selectOwner,
-                onEditRequest = { ws -> editCandidate = ws },
-                onDeleteRequest = { ws -> deleteCandidate = ws },
+                onSelect = { id ->
+                    projectsViewModel.selectOwner(id)
+                    dashboardViewModel.setOwnerFilter(id)
+                },
+                onEditRequest = projectsViewModel::requestEdit,
+                onDeleteRequest = projectsViewModel::requestDelete,
                 modifier = Modifier.padding(horizontal = 8.dp),
             )
         }
@@ -178,7 +193,7 @@ fun ProjectsSectionContent(
             dismissButton = {
                 NiaTextButton(
                     text = { Text(stringResource(R.string.panels_projects_cancel)) },
-                    onClick = { deleteCandidate = null },
+                    onClick = projectsViewModel::cancelDelete,
                     leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
                 )
             },
