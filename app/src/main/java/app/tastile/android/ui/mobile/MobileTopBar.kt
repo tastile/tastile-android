@@ -253,42 +253,6 @@ private fun ScaleDropdown(
  * outline border so the top-bar dropdown trigger matches the Material 3
  * surface interaction behaviour (built-in ripple via [Surface]).
  */
-@Composable
-private fun CompactPickerButton(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(50),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Icon(
-                Icons.Outlined.ArrowDropDown,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
-/**
- * Compact pill-shaped picker button — wraps [Surface] with a pill shape and
- * outline border so the top-bar dropdown trigger matches the Material 3
- * surface interaction behaviour (built-in ripple via [Surface]).
- */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun CompactPickerButton(
@@ -372,45 +336,6 @@ private fun TopBarAvatarAction(
             AccountDropdownMenu(
                 expanded = menuOpen,
                 onDismiss = { menuOpen = false },
-            )
-        }
-    }
-}
-
-/**
- * Circular avatar used by the top-bar avatar action. Renders a 40dp circular
- * surface; if [imageUrl] is non-blank it loads with [AsyncImage], otherwise it
- * shows the first letter of [fallbackText] on the primary-container surface.
- */
-@Composable
-private fun AvatarCircle(
-    imageUrl: String?,
-    fallbackText: String,
-    modifier: Modifier = Modifier,
-) {
-    val size = 40.dp
-    val hasImage = !imageUrl.isNullOrBlank()
-    if (hasImage) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = "Avatar",
-            modifier = modifier
-                .size(size)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
-        )
-    } else {
-        Box(
-            modifier = modifier
-                .size(size)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = fallbackText.take(1).uppercase(),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
