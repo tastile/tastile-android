@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tastile icon — derived from tastile-brands/svg/icons/icon.svg.
+  Squircle body in deep ink + signature blue tab.
+  For light backgrounds.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+    <group android:translateX="512.75" android:translateY="512.5">
+        <group android:rotation="-45">
+            <group android:scaleX="0.86" android:scaleY="0.86">
+                <group android:translateX="-272" android:translateY="-272">
+                    <path
+                        android:fillColor="#111111"
+                        android:pathData="M48 0L304 0A48 48 0 0 1 352 48L352 304A48 48 0 0 1 304 352L48 352A48 48 0 0 1 0 304L0 48A48 48 0 0 1 48 0Z" />
+                    <path
+                        android:fillColor="#2563EB"
+                        android:pathData="M432 192L496 192A48 48 0 0 1 544 240L544 496A48 48 0 0 1 496 544L240 544A48 48 0 0 1 192 496L192 432A48 48 0 0 1 240 384L304 384A80 80 0 0 0 384 304L384 240A48 48 0 0 1 432 192Z" />
+                </group>
+            </group>
+        </group>
+    </group>
+</vector>

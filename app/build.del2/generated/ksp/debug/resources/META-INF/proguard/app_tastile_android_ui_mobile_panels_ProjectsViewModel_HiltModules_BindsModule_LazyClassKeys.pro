@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class app.tastile.android.ui.mobile.panels.ProjectsViewModel

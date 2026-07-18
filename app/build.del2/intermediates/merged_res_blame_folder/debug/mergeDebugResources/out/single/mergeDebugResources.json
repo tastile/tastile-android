@@ -1,0 +1,54 @@
+[
+    {
+        "merged": "app.tastile.android.app-debug-72:/xml_network_security_config.xml.flat",
+        "source": "app.tastile.android.app-main-74:/xml/network_security_config.xml"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/drawable_ic_tastile_icon_dark.xml.flat",
+        "source": "app.tastile.android.app-main-74:/drawable/ic_tastile_icon_dark.xml"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "app.tastile.android.app-main-74:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/font_rubik_variable.ttf.flat",
+        "source": "app.tastile.android.app-main-74:/font/rubik_variable.ttf"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "app.tastile.android.app-main-74:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "app.tastile.android.app-main-74:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/xml_backup_rules.xml.flat",
+        "source": "app.tastile.android.app-main-74:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/drawable_ic_tastile_icon.xml.flat",
+        "source": "app.tastile.android.app-main-74:/drawable/ic_tastile_icon.xml"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "app.tastile.android.app-main-74:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/drawable_splash_background.xml.flat",
+        "source": "app.tastile.android.app-main-74:/drawable/splash_background.xml"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "app.tastile.android.app-main-74:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/xml_data_extraction_rules.xml.flat",
+        "source": "app.tastile.android.app-main-74:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "app.tastile.android.app-debug-72:/drawable_ic_notification_tastile.xml.flat",
+        "source": "app.tastile.android.app-main-74:/drawable/ic_notification_tastile.xml"
+    }
+]

@@ -1,0 +1,386 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="app.tastile.android"
+4    android:versionCode="31"
+5    android:versionName="0.3.0" >
+6
+7    <uses-sdk
+7-->INJECTED
+8        android:minSdkVersion="26"
+8-->INJECTED
+9        android:targetSdkVersion="35" />
+9-->INJECTED
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:3:5-67
+11-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:3:22-64
+12    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+12-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:4:5-77
+12-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:4:22-74
+13    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+13-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:5:5-81
+13-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:5:22-78
+14    <uses-permission android:name="android.permission.VIBRATE" />
+14-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:6:5-66
+14-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:6:22-63
+15    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+15-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:7:5-79
+15-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:7:22-76
+16    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+16-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:8:5-81
+16-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:8:22-78
+17    <uses-permission android:name="android.permission.USE_BIOMETRIC" /> <!-- suppress DeprecatedClassUsageInspection -->
+17-->[androidx.biometric:biometric:1.1.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\4ff1b52334a52177e7437aac0127b0b2\transformed\biometric-1.1.0\AndroidManifest.xml:24:5-72
+17-->[androidx.biometric:biometric:1.1.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\4ff1b52334a52177e7437aac0127b0b2\transformed\biometric-1.1.0\AndroidManifest.xml:24:22-69
+18    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+18-->[androidx.biometric:biometric:1.1.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\4ff1b52334a52177e7437aac0127b0b2\transformed\biometric-1.1.0\AndroidManifest.xml:27:5-74
+18-->[androidx.biometric:biometric:1.1.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\4ff1b52334a52177e7437aac0127b0b2\transformed\biometric-1.1.0\AndroidManifest.xml:27:22-71
+19
+20    <permission
+20-->[androidx.core:core:1.15.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2b4f171f9bf81e7d39905f24b91b36cf\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
+21        android:name="app.tastile.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+21-->[androidx.core:core:1.15.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2b4f171f9bf81e7d39905f24b91b36cf\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
+22        android:protectionLevel="signature" />
+22-->[androidx.core:core:1.15.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2b4f171f9bf81e7d39905f24b91b36cf\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
+23
+24    <uses-permission android:name="app.tastile.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+24-->[androidx.core:core:1.15.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2b4f171f9bf81e7d39905f24b91b36cf\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
+24-->[androidx.core:core:1.15.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2b4f171f9bf81e7d39905f24b91b36cf\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
+25
+26    <application
+26-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:10:5-78:19
+27        android:name="app.tastile.android.TastileApp"
+27-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:11:9-35
+28        android:allowBackup="false"
+28-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:12:9-36
+29        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+29-->[androidx.core:core:1.15.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2b4f171f9bf81e7d39905f24b91b36cf\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
+30        android:dataExtractionRules="@xml/data_extraction_rules"
+30-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:13:9-65
+31        android:debuggable="true"
+32        android:extractNativeLibs="false"
+32-->INJECTED
+33        android:fullBackupContent="@xml/backup_rules"
+33-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:14:9-54
+34        android:icon="@mipmap/ic_launcher"
+34-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:15:9-43
+35        android:label="@string/app_name"
+35-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:16:9-41
+36        android:networkSecurityConfig="@xml/network_security_config"
+36-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:17:9-69
+37        android:supportsRtl="true"
+37-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:18:9-35
+38        android:theme="@style/Theme.Tastile" >
+38-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:19:9-45
+39        <activity
+39-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:20:9-47:20
+40            android:name="app.tastile.android.MainActivity"
+40-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:21:13-41
+41            android:exported="true"
+41-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:22:13-36
+42            android:launchMode="singleTask"
+42-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:24:13-44
+43            android:theme="@style/Theme.Tastile" >
+43-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:23:13-49
+44            <intent-filter>
+44-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:25:13-28:29
+45                <action android:name="android.intent.action.MAIN" />
+45-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:26:17-69
+45-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:26:25-66
+46
+47                <category android:name="android.intent.category.LAUNCHER" />
+47-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:27:17-77
+47-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:27:27-74
+48            </intent-filter>
+49
+50            <!-- Deep link for OAuth callback (custom scheme) -->
+51            <intent-filter>
+51-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:31:13-36:29
+52                <action android:name="android.intent.action.VIEW" />
+52-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:32:17-69
+52-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:32:25-66
+53
+54                <category android:name="android.intent.category.DEFAULT" />
+54-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:33:17-76
+54-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:33:27-73
+55                <category android:name="android.intent.category.BROWSABLE" />
+55-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:34:17-78
+55-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:34:27-75
+56
+57                <data
+57-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:35:17-101
+58                    android:host="auth"
+58-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:35:48-67
+59                    android:pathPrefix="/callback"
+59-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:35:68-98
+60                    android:scheme="tastile" />
+60-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:35:23-47
+61            </intent-filter>
+62
+63            <!--
+64                 Web callback fallback for auth and billing entrypoints.
+65                 autoVerify="false" because Digital Asset Links for app.tastile.app are
+66                 not configured; this is a deep link, not an Android App Link.
+67            -->
+68            <intent-filter android:autoVerify="false" >
+68-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:41:13-46:29
+68-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:41:28-54
+69                <action android:name="android.intent.action.VIEW" />
+69-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:32:17-69
+69-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:32:25-66
+70
+71                <category android:name="android.intent.category.DEFAULT" />
+71-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:33:17-76
+71-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:33:27-73
+72                <category android:name="android.intent.category.BROWSABLE" />
+72-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:34:17-78
+72-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:34:27-75
+73
+74                <data
+74-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:35:17-101
+75                    android:host="app.tastile.app"
+75-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:35:48-67
+76                    android:pathPrefix="/auth/callback"
+76-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:35:68-98
+77                    android:scheme="https" />
+77-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:35:23-47
+78            </intent-filter>
+79        </activity>
+80        <activity
+80-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:49:9-56:43
+81            android:name="app.tastile.android.notifications.ExecutionAlarmActivity"
+81-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:50:13-65
+82            android:excludeFromRecents="true"
+82-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:51:13-46
+83            android:exported="false"
+83-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:52:13-37
+84            android:launchMode="singleTop"
+84-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:53:13-43
+85            android:showWhenLocked="true"
+85-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:54:13-42
+86            android:theme="@style/Theme.Tastile"
+86-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:55:13-49
+87            android:turnScreenOn="true" />
+87-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:56:13-40
+88
+89        <receiver
+89-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:58:9-60:40
+90            android:name="app.tastile.android.notifications.ExecutionAlarmReceiver"
+90-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:59:13-65
+91            android:exported="false" />
+91-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:60:13-37
+92        <receiver
+92-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:62:9-64:40
+93            android:name="app.tastile.android.notifications.ExecutionAlarmTestReceiver"
+93-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:63:13-69
+94            android:exported="false" />
+94-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:64:13-37
+95        <receiver
+95-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:66:9-77:20
+96            android:name="app.tastile.android.notifications.ExecutionAlarmRescheduleReceiver"
+96-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:67:13-75
+97            android:enabled="true"
+97-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:68:13-35
+98            android:exported="false" >
+98-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:69:13-37
+99            <intent-filter>
+99-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:70:13-76:29
+100                <action android:name="android.intent.action.BOOT_COMPLETED" />
+100-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:71:17-79
+100-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:71:25-76
+101                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+101-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:72:17-81
+101-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:72:25-78
+102                <action android:name="android.intent.action.TIME_SET" />
+102-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:73:17-73
+102-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:73:25-70
+103                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+103-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:74:17-84
+103-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:74:25-81
+104                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+104-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:75:17-107
+104-->C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\AndroidManifest.xml:75:25-104
+105            </intent-filter>
+106        </receiver>
+107
+108        <activity
+108-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\rebui\.gradle\caches\9.6.0\transforms\960705d28db7facfdb94f68ee774fcc6\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+109            android:name="androidx.compose.ui.tooling.PreviewActivity"
+109-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\rebui\.gradle\caches\9.6.0\transforms\960705d28db7facfdb94f68ee774fcc6\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+110            android:exported="true" />
+110-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\rebui\.gradle\caches\9.6.0\transforms\960705d28db7facfdb94f68ee774fcc6\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+111        <activity
+111-->[androidx.compose.ui:ui-test-manifest:1.7.6] C:\Users\rebui\.gradle\caches\9.6.0\transforms\b46a58a7cc3b1f0bcf7d014b57a76581\transformed\ui-test-manifest-1.7.6\AndroidManifest.xml:23:9-25:39
+112            android:name="androidx.activity.ComponentActivity"
+112-->[androidx.compose.ui:ui-test-manifest:1.7.6] C:\Users\rebui\.gradle\caches\9.6.0\transforms\b46a58a7cc3b1f0bcf7d014b57a76581\transformed\ui-test-manifest-1.7.6\AndroidManifest.xml:24:13-63
+113            android:exported="true" />
+113-->[androidx.compose.ui:ui-test-manifest:1.7.6] C:\Users\rebui\.gradle\caches\9.6.0\transforms\b46a58a7cc3b1f0bcf7d014b57a76581\transformed\ui-test-manifest-1.7.6\AndroidManifest.xml:25:13-36
+114
+115        <service
+115-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:24:9-32:19
+116            android:name="androidx.credentials.playservices.CredentialProviderMetadataHolder"
+116-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:25:13-94
+117            android:enabled="true"
+117-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:26:13-35
+118            android:exported="false" >
+118-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:27:13-37
+119            <meta-data
+119-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:29:13-31:104
+120                android:name="androidx.credentials.CREDENTIAL_PROVIDER_KEY"
+120-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:30:17-76
+121                android:value="androidx.credentials.playservices.CredentialProviderPlayServicesImpl" />
+121-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:31:17-101
+122        </service>
+123
+124        <activity
+124-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:34:9-41:20
+125            android:name="androidx.credentials.playservices.controllers.identityauth.HiddenActivity"
+125-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:35:13-101
+126            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+126-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:36:13-87
+127            android:enabled="true"
+127-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:37:13-35
+128            android:exported="false"
+128-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:38:13-37
+129            android:fitsSystemWindows="true"
+129-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:39:13-45
+130            android:theme="@style/Theme.Hidden" >
+130-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:40:13-48
+131        </activity>
+132        <activity
+132-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:42:9-49:20
+133            android:name="androidx.credentials.playservices.controllers.identitycredentials.IdentityCredentialApiHiddenActivity"
+133-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:43:13-129
+134            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+134-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:44:13-87
+135            android:enabled="true"
+135-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:45:13-35
+136            android:exported="false"
+136-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:46:13-37
+137            android:fitsSystemWindows="true"
+137-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:47:13-45
+138            android:theme="@style/Theme.Hidden" >
+138-->[androidx.credentials:credentials-play-services-auth:1.6.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6ad99ee7c136051b9929a9e35fdd8425\transformed\credentials-play-services-auth-1.6.0\AndroidManifest.xml:48:13-48
+139        </activity>
+140        <activity
+140-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:23:9-27:75
+141            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+141-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:24:13-93
+142            android:excludeFromRecents="true"
+142-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:25:13-46
+143            android:exported="false"
+143-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:26:13-37
+144            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+144-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:27:13-72
+145        <!--
+146            Service handling Google Sign-In user revocation. For apps that do not integrate with
+147            Google Sign-In, this service will never be started.
+148        -->
+149        <service
+149-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:33:9-37:51
+150            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+150-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:34:13-89
+151            android:exported="true"
+151-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:35:13-36
+152            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+152-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:36:13-107
+153            android:visibleToInstantApps="true" />
+153-->[com.google.android.gms:play-services-auth:21.1.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\2d641a45a615105be25fa559021659c7\transformed\play-services-auth-21.1.1\AndroidManifest.xml:37:13-48
+154
+155        <activity
+155-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\321b8d5f7bf5f4d0e9139bd5dd8f3949\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:9-173
+156            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+156-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\321b8d5f7bf5f4d0e9139bd5dd8f3949\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:19-85
+157            android:exported="false"
+157-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\321b8d5f7bf5f4d0e9139bd5dd8f3949\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:146-170
+158            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+158-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\321b8d5f7bf5f4d0e9139bd5dd8f3949\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:86-145
+159
+160        <meta-data
+160-->[com.google.android.gms:play-services-basement:18.5.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\382681eff0b4f29d3064c4fcf0a5edff\transformed\play-services-basement-18.5.0\AndroidManifest.xml:21:9-23:69
+161            android:name="com.google.android.gms.version"
+161-->[com.google.android.gms:play-services-basement:18.5.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\382681eff0b4f29d3064c4fcf0a5edff\transformed\play-services-basement-18.5.0\AndroidManifest.xml:22:13-58
+162            android:value="@integer/google_play_services_version" />
+162-->[com.google.android.gms:play-services-basement:18.5.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\382681eff0b4f29d3064c4fcf0a5edff\transformed\play-services-basement-18.5.0\AndroidManifest.xml:23:13-66
+163
+164        <provider
+164-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\42af02bdb3a7c242652d5ddf39bebd38\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+165            android:name="androidx.startup.InitializationProvider"
+165-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\42af02bdb3a7c242652d5ddf39bebd38\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+166            android:authorities="app.tastile.android.androidx-startup"
+166-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\42af02bdb3a7c242652d5ddf39bebd38\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+167            android:exported="false" >
+167-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\42af02bdb3a7c242652d5ddf39bebd38\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+168            <meta-data
+168-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\42af02bdb3a7c242652d5ddf39bebd38\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+169                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+169-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\42af02bdb3a7c242652d5ddf39bebd38\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+170                android:value="androidx.startup" />
+170-->[androidx.emoji2:emoji2:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\42af02bdb3a7c242652d5ddf39bebd38\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+171            <meta-data
+171-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6489e31d70e22a74786c896d2aeb4c6e\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+172                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+172-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6489e31d70e22a74786c896d2aeb4c6e\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+173                android:value="androidx.startup" />
+173-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\rebui\.gradle\caches\9.6.0\transforms\6489e31d70e22a74786c896d2aeb4c6e\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+174            <meta-data
+174-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+175                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+175-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+176                android:value="androidx.startup" />
+176-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+177        </provider>
+178
+179        <uses-library
+179-->[androidx.window:window:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\e4312791a45a5a4ed5cc3981fb29f6a2\transformed\window-1.3.0\AndroidManifest.xml:23:9-25:40
+180            android:name="androidx.window.extensions"
+180-->[androidx.window:window:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\e4312791a45a5a4ed5cc3981fb29f6a2\transformed\window-1.3.0\AndroidManifest.xml:24:13-54
+181            android:required="false" />
+181-->[androidx.window:window:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\e4312791a45a5a4ed5cc3981fb29f6a2\transformed\window-1.3.0\AndroidManifest.xml:25:13-37
+182        <uses-library
+182-->[androidx.window:window:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\e4312791a45a5a4ed5cc3981fb29f6a2\transformed\window-1.3.0\AndroidManifest.xml:26:9-28:40
+183            android:name="androidx.window.sidecar"
+183-->[androidx.window:window:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\e4312791a45a5a4ed5cc3981fb29f6a2\transformed\window-1.3.0\AndroidManifest.xml:27:13-51
+184            android:required="false" />
+184-->[androidx.window:window:1.3.0] C:\Users\rebui\.gradle\caches\9.6.0\transforms\e4312791a45a5a4ed5cc3981fb29f6a2\transformed\window-1.3.0\AndroidManifest.xml:28:13-37
+185
+186        <receiver
+186-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+187            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+187-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+188            android:directBootAware="false"
+188-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+189            android:enabled="true"
+189-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+190            android:exported="true"
+190-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+191            android:permission="android.permission.DUMP" >
+191-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+192            <intent-filter>
+192-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+193                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+193-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+193-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+194            </intent-filter>
+195            <intent-filter>
+195-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+196                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+196-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+196-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+197            </intent-filter>
+198            <intent-filter>
+198-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+199                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+199-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+199-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+200            </intent-filter>
+201            <intent-filter>
+201-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+202                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+202-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+202-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\rebui\.gradle\caches\9.6.0\transforms\766d48228e4f8de87ccfe73ac4d208d7\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+203            </intent-filter>
+204        </receiver>
+205    </application>
+206
+207</manifest>

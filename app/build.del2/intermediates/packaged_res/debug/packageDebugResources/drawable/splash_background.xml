@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launch window background — branded dark surface with the T mark centered.
+  Displayed for the brief window between Activity creation and the first Compose
+  frame, so the user never sees a pure-black blank canvas.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/tastile_launch_bg" />
+    <item
+        android:width="120dp"
+        android:height="120dp"
+        android:gravity="center"
+        android:drawable="@drawable/ic_tastile_icon_dark" />
+</layer-list>

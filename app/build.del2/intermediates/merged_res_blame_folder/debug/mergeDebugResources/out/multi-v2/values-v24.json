@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "app.tastile.android.app-mergeDebugResources-70:/values-v24/values-v24.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\rebui\\.gradle\\caches\\9.6.0\\transforms\\f63c07bf7ed362111ad1f6fd5bd41511\\transformed\\appcompat-1.6.1\\res\\values-v24\\values-v24.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,212",
+                        "endColumns": "156,134",
+                        "endOffsets": "207,342"
+                    }
+                }
+            ]
+        }
+    ]
+}
