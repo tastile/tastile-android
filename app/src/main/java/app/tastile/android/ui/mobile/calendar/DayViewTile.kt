@@ -91,31 +91,62 @@ fun DayViewTile(
         // navigating to a past/future page does not render a misleading dot.
         // The Tile owns the now-line because it depends on live wall time,
         // which is logically a "tick" rather than a static frame property.
+        //
+        // Implementation note: the wall-clock state lives in `MinuteTicker`,
+        // a leaf composable that re-reads itself every minute. The parent
+        // Tile here observes nothing — only `MinuteTicker` recomposes when
+        // `nowInstant` advances. Keying the `LaunchedEffect` on `date` keeps
+        // the per-minute timer alive for the displayed day and tears it down
+        // (and its always-active coroutine) when the user navigates to a
+        // different day.
         val isToday = date == LocalDate.now()
         if (isToday) {
-            // Refresh the provider every minute so the indicator slides even
-            // when the user is passively viewing the day. Without this loop,
-            // the line stays where it was when the Composable entered the
-            // composition — fine for a single-app-session, wrong for an app
-            // left open across hour boundaries. Re-keying on the provider
-            // lambda lets tests inject a clock they control.
-            var nowInstant by remember(nowProvider) { mutableStateOf<Instant?>(nowProvider()) }
-            LaunchedEffect(nowProvider) {
-                while (true) {
-                    delay(60_000L)
-                    nowInstant = nowProvider()
-                }
-            }
-            NowIndicator(
-                nowProvider = { nowInstant },
+            MinuteTicker(
+                dateKey = date,
                 zone = zone,
                 pxPerMin = pxPerMin,
-                dayRangeStartHour = GridConstants.DAY_START_HOUR,
-                dayRangeEndHour = GridConstants.DAY_END_HOUR,
+                nowProvider = nowProvider,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     }
+}
+
+/**
+ * Self-contained now-line overlay. Owns its own `nowInstant` state so that the
+ * surrounding tile does NOT recompose every minute when the wall clock ticks.
+ *
+ * - Re-keys `LaunchedEffect` on [dateKey] so navigating to a different day
+ *   cancels and restarts the per-minute timer (the prior code keyed only on
+ *   `nowProvider` which never changed during normal use, so the looping
+ *   coroutine survived across day switches — a small leak we close here).
+ * - State is private to this Composable; the upstream tree reads
+ *   `nowProvider()` via the indirection in [NowIndicator], so changing
+ *   `nowInstant` only invalidates the inner Box of [NowIndicator].
+ */
+@Composable
+private fun MinuteTicker(
+    dateKey: LocalDate,
+    zone: ZoneId,
+    pxPerMin: Float,
+    nowProvider: () -> Instant?,
+    modifier: Modifier = Modifier,
+) {
+    var nowInstant by remember(nowProvider) { mutableStateOf<Instant?>(nowProvider()) }
+    LaunchedEffect(dateKey, nowProvider) {
+        while (true) {
+            delay(60_000L)
+            nowInstant = nowProvider()
+        }
+    }
+    NowIndicator(
+        nowProvider = { nowInstant },
+        zone = zone,
+        pxPerMin = pxPerMin,
+        dayRangeStartHour = GridConstants.DAY_START_HOUR,
+        dayRangeEndHour = GridConstants.DAY_END_HOUR,
+        modifier = modifier,
+    )
 }
 
 /**

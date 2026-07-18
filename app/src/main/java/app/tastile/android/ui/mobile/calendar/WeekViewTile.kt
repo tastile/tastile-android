@@ -82,24 +82,17 @@ fun WeekViewTile(
                         EventChipContent(b, onEditEvent)
                     }
                 }
-                // NowIndicator only on today's column.
+                // NowIndicator only on today's column. State and per-minute
+                // ticker live inside `WeekMinuteTicker` so the surrounding
+                // tile does NOT recompose on each tick; only the inner Box
+                // (the red dot + line) re-positions. The LaunchedEffect is
+                // keyed on the displayed `day` so a week-page switch tears
+                // down the previous day's looping coroutine.
                 if (isToday) {
-                    val nowProvider = remember(isToday) {
-                        var now: Instant? = Instant.now()
-                        now
-                    }
-                    var nowInstant by remember { mutableStateOf<Instant?>(nowProvider) }
-                    LaunchedEffect(isToday) {
-                        while (true) {
-                            delay(60_000L)
-                            nowInstant = Instant.now()
-                        }
-                    }
-                    NowIndicator(
-                        nowProvider = { nowInstant },
+                    WeekMinuteTicker(
+                        dayKey = day,
                         zone = zone,
                         pxPerMin = pxPerMin,
-                        dayRangeStartHour = GridConstants.DAY_START_HOUR,
                         dayRangeEndHour = endHour,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -109,4 +102,38 @@ fun WeekViewTile(
             }
         }
     }
+}
+
+/**
+ * Self-contained now-line overlay for the Week column. Owns its own
+ * `nowInstant` state and per-minute ticker so the surrounding
+ * [WeekViewTile] / row / column does NOT recompose when the wall clock
+ * advances — only the inner [NowIndicator] Box re-positions.
+ *
+ * The [LaunchedEffect] is keyed on [dayKey] so navigating away from today
+ * (or switching the visible week) cancels the per-minute coroutine.
+ */
+@Composable
+private fun WeekMinuteTicker(
+    dayKey: LocalDate,
+    zone: ZoneId,
+    pxPerMin: Float,
+    dayRangeEndHour: Int,
+    modifier: Modifier = Modifier,
+) {
+    var nowInstant by remember { mutableStateOf<Instant?>(Instant.now()) }
+    LaunchedEffect(dayKey) {
+        while (true) {
+            delay(60_000L)
+            nowInstant = Instant.now()
+        }
+    }
+    NowIndicator(
+        nowProvider = { nowInstant },
+        zone = zone,
+        pxPerMin = pxPerMin,
+        dayRangeStartHour = GridConstants.DAY_START_HOUR,
+        dayRangeEndHour = dayRangeEndHour,
+        modifier = modifier,
+    )
 }
