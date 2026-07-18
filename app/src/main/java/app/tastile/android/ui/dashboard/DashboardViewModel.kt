@@ -662,7 +662,6 @@ class DashboardViewModel @Inject constructor(
                 tileRepository.startTile(tileId)
                 reloadVisibleTilesAndExecutionControls(_tileFilter.value)
                 _lastActionMessage.value = "Started"
-                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to start tile"
             }
@@ -689,7 +688,6 @@ class DashboardViewModel @Inject constructor(
                 _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Active)
                 _lastActionMessage.value = "Execution started"
                 reloadVisibleTilesAndExecutionControls(_tileFilter.value)
-                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to start execution"
             } finally {
@@ -707,7 +705,6 @@ class DashboardViewModel @Inject constructor(
                 _executionControlStates.value = _executionControlStates.value - tileId
                 _lastActionMessage.value = "Execution finished"
                 reloadVisibleTilesAndExecutionControls(_tileFilter.value)
-                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to finish execution"
             } finally {
@@ -727,7 +724,6 @@ class DashboardViewModel @Inject constructor(
                 schedulePausedExpiry(tileId, expiresAt)
                 reloadVisibleTilesAndExecutionControls(_tileFilter.value)
                 _lastActionMessage.value = "Paused"
-                refreshAll()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to pause execution"
             } finally {
@@ -745,7 +741,6 @@ class DashboardViewModel @Inject constructor(
                 _executionControlStates.value = _executionControlStates.value + (tileId to ExecutionControlState.Active)
                 reloadVisibleTilesAndExecutionControls(_tileFilter.value)
                 _lastActionMessage.value = "Resumed"
-                refreshAll()
             } catch (e: Exception) {
                 // A resume failure can mean that the locally cached paused
                 // execution has become terminal or no longer belongs to this

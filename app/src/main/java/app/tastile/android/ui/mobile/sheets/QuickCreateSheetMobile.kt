@@ -37,11 +37,13 @@ fun QuickCreateSheetMobile(
         val resolvedSubmissionViewModel = submissionViewModel ?: hiltViewModel()
         val projectsState by resolvedProjectsViewModel.state.collectAsStateWithLifecycle()
         val submission by resolvedSubmissionViewModel.state.collectAsStateWithLifecycle()
-        val knownTags = tiles.flatMap { it.labels }
-            .filter { it.isNotBlank() && !it.startsWith("project:") }
-            .map(String::trim)
-            .distinct()
-            .sortedBy { it.lowercase() }
+        val knownTags = remember(tiles) {
+            tiles.flatMap { it.labels }
+                .filter { it.isNotBlank() && !it.startsWith("project:") }
+                .map(String::trim)
+                .distinct()
+                .sortedBy { it.lowercase() }
+        }
         val baseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val subpanelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val initialDraft = (current as? Overlay.QuickCreateAt)?.let { slot ->
