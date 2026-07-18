@@ -27,6 +27,11 @@ typealias AuthTokenProvider = suspend () -> String?
 internal object V1Endpoints {
     const val CREATE_TILE = "/v1/tiles"
     const val CREATE_PLACEMENT = "/v1/placements"
+    const val SOURCE_TILES = "/v1/source-tiles"
+
+    fun sourceTile(sourceTileId: String) = "$SOURCE_TILES/$sourceTileId"
+    fun reflowSourceTile(sourceTileId: String) = "${sourceTile(sourceTileId)}/reflow"
+    fun sourceTilePlacements(sourceTileId: String) = "${sourceTile(sourceTileId)}/placements"
 
     fun setPlan(tileId: String) = "/v1/tiles/$tileId/plan"
     fun materializeRecurring(tileId: String, frameRuleId: String) =
@@ -151,6 +156,14 @@ class V1ApiClient @Inject constructor(
             MaterializeRecurringPayload.serializer(),
             CommandResponse.serializer(),
         )
+
+    suspend fun reflowSourceTile(sourceTileId: String, payload: ReflowSourceTilePayload, expectedRevision: Long): CommandResponse =
+        postCommand(V1Endpoints.reflowSourceTile(sourceTileId), payload, ReflowSourceTilePayload.serializer(), CommandResponse.serializer(), expectedRevision)
+
+    suspend fun readSourceTile(sourceTileId: String): SourceTileDetailRead = get(V1Endpoints.sourceTile(sourceTileId))
+
+    suspend fun listSourceTilePlacements(sourceTileId: String): List<SourcePlacementRead> =
+        get(V1Endpoints.sourceTilePlacements(sourceTileId))
 
     suspend fun listRuntimePaths(): V1ListRuntimePathsResponse =
         get("/v1/runtime/paths")

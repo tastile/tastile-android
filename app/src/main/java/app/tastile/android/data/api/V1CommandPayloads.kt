@@ -256,3 +256,41 @@ data class CreatePromptRequestPayload(
     val kind: Short,
     val payload: kotlinx.serialization.json.JsonObject
 )
+
+@Serializable
+data class SourceSchedulePayload(
+    @SerialName("required_duration_ms") val requiredDurationMs: Long,
+    val generation: SourceGenerationPayload,
+    val window: SourceWindowPayload,
+    @SerialName("split_policy") val splitPolicy: SourceSplitPolicyPayload,
+    val priority: Int,
+)
+
+@Serializable
+data class SourceGenerationPayload(
+    val kind: Short,
+    val at: String? = null,
+    @SerialName("starts_at") val startsAt: String? = null,
+    @SerialName("interval_ms") val intervalMs: Long? = null,
+    @SerialName("ends_at") val endsAt: String? = null,
+    @SerialName("weekday_mask") val weekdayMask: Byte? = null,
+    @SerialName("date_range_start") val dateRangeStart: String? = null,
+    @SerialName("date_range_end") val dateRangeEnd: String? = null,
+)
+
+@Serializable
+data class SourceWindowPayload(
+    @SerialName("start_offset_ms") val startOffsetMs: Long,
+    @SerialName("end_offset_ms") val endOffsetMs: Long,
+)
+
+@Serializable
+data class SourceSplitPolicyPayload(
+    val kind: Short,
+    @SerialName("min_segment_ms") val minSegmentMs: Long? = null,
+    @SerialName("max_segment_ms") val maxSegmentMs: Long? = null,
+    @SerialName("max_segments") val maxSegments: Int? = null,
+)
+
+@Serializable
+data class ReflowSourceTilePayload(val range: PlacementSpanPayload)

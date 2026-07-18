@@ -177,6 +177,58 @@ data class V1ListRuntimePathsResponse(
     val paths: List<RuntimePathView> = emptyList()
 )
 
+@Serializable
+data class SourceTileRead(
+    @SerialName("source_tile_id") val sourceTileId: String,
+    @SerialName("plan_id") val planId: String,
+    @SerialName("owner_id") val ownerId: String,
+    val revision: Long,
+    val title: String,
+    val description: String? = null,
+    val color: String? = null,
+    val icon: String? = null,
+    @SerialName("external_id") val externalId: String? = null,
+    @SerialName("plan_role") val planRole: Short,
+    val schedule: SourceSchedulePayload,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class SourceOccurrenceRead(
+    @SerialName("occurrence_id") val occurrenceId: String,
+    @SerialName("source_tile_id") val sourceTileId: String,
+    @SerialName("sequence_no") val sequenceNo: Long,
+    @SerialName("nominal_at") val nominalAt: String,
+    @SerialName("window_start") val windowStart: String,
+    @SerialName("window_end") val windowEnd: String,
+    @SerialName("required_duration_ms") val requiredDurationMs: Long,
+    val state: Short,
+    val revision: Long,
+)
+
+@Serializable
+data class SourcePlacementRead(
+    @SerialName("placement_id") val placementId: String,
+    @SerialName("source_tile_id") val sourceTileId: String,
+    @SerialName("occurrence_id") val occurrenceId: String,
+    @SerialName("split_index") val splitIndex: Int,
+    @SerialName("split_count") val splitCount: Int,
+    @SerialName("split_group_id") val splitGroupId: String,
+    val start: String,
+    val end: String,
+    val closed: Boolean,
+    @SerialName("closed_at") val closedAt: String? = null,
+    val revision: Long,
+)
+
+@Serializable
+data class SourceTileDetailRead(
+    val source: SourceTileRead,
+    val occurrences: List<SourceOccurrenceRead> = emptyList(),
+    val placements: List<SourcePlacementRead> = emptyList(),
+)
+
 // --- Step 5 lookup models -----------------------------------------------
 //
 // The dispatcher uses these to translate v0 `tile.start / pause / continue /
