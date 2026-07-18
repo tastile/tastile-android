@@ -77,10 +77,16 @@ internal object V1WorkspaceWire {
 class V1ApiClient @Inject constructor(
     private val tokenProvider: AuthTokenProvider
 ) {
+    private var coreUrlOverride: String? = null
+
+    internal constructor(tokenProvider: AuthTokenProvider, coreUrl: String) : this(tokenProvider) {
+        coreUrlOverride = coreUrl.trim().trimEnd('/')
+    }
+
     private val json = Json { ignoreUnknownKeys = true }
 
     private fun baseUrl(): String =
-        BuildConfig.TASTILE_CORE_URL.trim().trimEnd('/')
+        coreUrlOverride ?: BuildConfig.TASTILE_CORE_URL.trim().trimEnd('/')
 
     private fun webAuthBaseUrl(): String =
         BuildConfig.COGNITO_WEB_AUTH_BASE_URL.trim().trimEnd('/')

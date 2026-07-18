@@ -271,8 +271,7 @@ data class SourceSchedulePayload(
 data class SourceTileWritePayload(
     val tile: SourceTileDefinitionPayload,
     val plan: SourcePlanDefinitionPayload,
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val flows: List<kotlinx.serialization.json.JsonElement> = emptyList(),
+    val flows: List<kotlinx.serialization.json.JsonObject>,
     val schedule: SourceSchedulePayload,
     val horizon: PlacementSpanPayload,
 )
@@ -291,29 +290,32 @@ data class SourceTileDefinitionPayload(
 )
 
 /**
- * Core keeps Plan sub-definitions extensible and structurally typed.  Keep
- * their JSON values explicit here rather than serializing arbitrary maps;
- * callers must supply the exact Core-defined shape.
+ * Plan sub-definitions are a recursive Core AST. Android deliberately does
+ * not fabricate a partial AST: callers must supply validated Core wire
+ * objects. This preserves fields added by Core without silently dropping
+ * them, while rejecting the only incomplete shapes Android can detect.
  */
 @Serializable
 data class SourcePlanDefinitionPayload(
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val role: Short = 0,
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val references: kotlinx.serialization.json.JsonArray = kotlinx.serialization.json.JsonArray(emptyList()),
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val completion: kotlinx.serialization.json.JsonElement = kotlinx.serialization.json.Json.parseToJsonElement(
-        "{\"root\":{\"All\":[]},\"time_requirements\":[],\"tasks\":[]}",
-    ),
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val planning: kotlinx.serialization.json.JsonElement = kotlinx.serialization.json.Json.parseToJsonElement(
-        "{\"placement_rules\":[],\"nesting_rules\":[]}",
-    ),
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val metrics: kotlinx.serialization.json.JsonArray = kotlinx.serialization.json.JsonArray(emptyList()),
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val decisions: kotlinx.serialization.json.JsonArray = kotlinx.serialization.json.JsonArray(emptyList()),
-)
+    val role: Short,
+    val references: kotlinx.serialization.json.JsonArray,
+    val completion: kotlinx.serialization.json.JsonObject,
+    val planning: kotlinx.serialization.json.JsonObject,
+    val metrics: kotlinx.serialization.json.JsonArray,
+    val decisions: kotlinx.serialization.json.JsonArray,
+) {
+    init {
+        require(completion["root"] is kotlinx.serialization.json.JsonObject) {
+            "SourceTile plan completion must include the Core condition root"
+        }
+        require(planning["placement_rules"] is kotlinx.serialization.json.JsonArray) {
+            "SourceTile plan planning.placement_rules must be an array"
+        }
+        require(planning["nesting_rules"] is kotlinx.serialization.json.JsonArray) {
+            "SourceTile plan planning.nesting_rules must be an array"
+        }
+    }
+}
 
 @Serializable
 data class SourceGenerationPayload(
