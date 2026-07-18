@@ -149,6 +149,26 @@ class V1ApiClient @Inject constructor(
     suspend fun createPlacement(payload: CreatePlacementPayload): CommandResponse =
         postCommand(V1Endpoints.CREATE_PLACEMENT, payload, CreatePlacementPayload.serializer(), CommandResponse.serializer())
 
+    suspend fun createSourceTile(payload: SourceTileWritePayload): CommandResponse =
+        postCommand(
+            V1Endpoints.SOURCE_TILES,
+            payload,
+            SourceTileWritePayload.serializer(),
+            CommandResponse.serializer(),
+        )
+
+    suspend fun updateSourceTile(
+        sourceTileId: String,
+        payload: SourceTileWritePayload,
+        expectedRevision: Long,
+    ): CommandResponse = putCommand(
+        V1Endpoints.sourceTile(sourceTileId),
+        payload,
+        SourceTileWritePayload.serializer(),
+        CommandResponse.serializer(),
+        expectedRevision,
+    )
+
     suspend fun materializeRecurring(payload: MaterializeRecurringPayload): CommandResponse =
         postCommand(
             V1Endpoints.materializeRecurring(payload.recurringId, payload.frameRuleId),
@@ -236,6 +256,46 @@ class V1ApiClient @Inject constructor(
             val url = URL("${baseUrl()}$path")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
+                doOutput = true
+                doInput = true
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000
+                readTimeout = 15_000
+            }
+            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+            val status = connection.responseCode
+            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                ?.bufferedReader()?.use { it.readText() }
+                .orEmpty()
+            if (status !in 200..299) {
+                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
+                if (err != null) throw V1Error.fromApiBody(err)
+                throw V1Error.Unknown(status, body.take(200))
+            }
+            json.decodeFromString(responseSerializer, body)
+        } catch (e: IOException) {
+            throw V1Error.Network(e)
+        }
+    }
+
+    suspend fun <Req, Resp> putCommand(
+        path: String,
+        payload: Req,
+        payloadSerializer: KSerializer<Req>,
+        responseSerializer: KSerializer<Resp>,
+        expectedRevision: Long? = null,
+    ): Resp = withContext(Dispatchers.IO) {
+        try {
+            val token = tokenProvider()
+            if (token.isNullOrBlank()) throw V1Error.Auth()
+            val envelope = V1Wire.commandEnvelope(
+                payload = json.encodeToJsonElement(payloadSerializer, payload),
+                expectedRevision = expectedRevision,
+            )
+            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                requestMethod = "PUT"
                 doOutput = true
                 doInput = true
                 setRequestProperty("Authorization", "Bearer $token")

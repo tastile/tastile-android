@@ -266,6 +266,55 @@ data class SourceSchedulePayload(
     val priority: Int,
 )
 
+/** Canonical body shared by SourceTile create and update commands. */
+@Serializable
+data class SourceTileWritePayload(
+    val tile: SourceTileDefinitionPayload,
+    val plan: SourcePlanDefinitionPayload,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val flows: List<kotlinx.serialization.json.JsonElement> = emptyList(),
+    val schedule: SourceSchedulePayload,
+    val horizon: PlacementSpanPayload,
+)
+
+@Serializable
+data class SourceTileDefinitionPayload(
+    val title: String,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val description: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val color: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val icon: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    @SerialName("external_id") val externalId: String? = null,
+)
+
+/**
+ * Core keeps Plan sub-definitions extensible and structurally typed.  Keep
+ * their JSON values explicit here rather than serializing arbitrary maps;
+ * callers must supply the exact Core-defined shape.
+ */
+@Serializable
+data class SourcePlanDefinitionPayload(
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val role: Short = 0,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val references: kotlinx.serialization.json.JsonArray = kotlinx.serialization.json.JsonArray(emptyList()),
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val completion: kotlinx.serialization.json.JsonElement = kotlinx.serialization.json.Json.parseToJsonElement(
+        "{\"root\":{\"All\":[]},\"time_requirements\":[],\"tasks\":[]}",
+    ),
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val planning: kotlinx.serialization.json.JsonElement = kotlinx.serialization.json.Json.parseToJsonElement(
+        "{\"placement_rules\":[],\"nesting_rules\":[]}",
+    ),
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val metrics: kotlinx.serialization.json.JsonArray = kotlinx.serialization.json.JsonArray(emptyList()),
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val decisions: kotlinx.serialization.json.JsonArray = kotlinx.serialization.json.JsonArray(emptyList()),
+)
+
 @Serializable
 data class SourceGenerationPayload(
     val kind: Short,
@@ -276,6 +325,8 @@ data class SourceGenerationPayload(
     @SerialName("weekday_mask") val weekdayMask: Byte? = null,
     @SerialName("date_range_start") val dateRangeStart: String? = null,
     @SerialName("date_range_end") val dateRangeEnd: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    @SerialName("excluded_dates") val excludedDates: List<String> = emptyList(),
 )
 
 @Serializable
