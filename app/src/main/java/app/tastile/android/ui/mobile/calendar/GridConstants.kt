@@ -30,5 +30,5 @@ internal object GridConstants {
  * can resolve it without depending on the tabs package.
  */
 @Composable
-internal fun TOP_BAR_TOTAL_HEIGHT(): Dp =
+internal fun topBarTotalHeight(): Dp =
     WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 56.dp

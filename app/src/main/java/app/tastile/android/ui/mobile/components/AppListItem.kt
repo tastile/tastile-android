@@ -14,10 +14,10 @@ import app.tastile.android.core.designsystem.component.AppListItem as CoreAppLis
 @Composable
 fun AppListItem(
     headline: String,
+    modifier: Modifier = Modifier,
     leading: ImageVector? = null,
     trailing: ImageVector? = null,
     onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
     supporting: String? = null,
 ) {
     CoreAppListItem(

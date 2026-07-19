@@ -54,7 +54,7 @@ fun NiaTimePicker(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NiaRememberTimePickerState(
+fun rememberNiaTimePickerState(
     initialHour: Int = 0,
     initialMinute: Int = 0,
     is24Hour: Boolean = true,

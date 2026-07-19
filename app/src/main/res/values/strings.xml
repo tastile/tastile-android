@@ -1,27 +1,15 @@
 <resources>
     <string name="app_name" translatable="false">Tastile</string>
     <string name="mobile_top_menu">Open menu</string>
-    <string name="mobile_top_search">Search</string>
     <string name="mobile_top_notifications">Notifications</string>
     <string name="mobile_top_avatar">Account menu</string>
     <string name="mobile_top_title_action">Change date</string>
-
-    <!-- Timeline title-tap date pickers (Day/Month → DatePicker, Week → DateRangePicker) -->
     <string name="date_picker_confirm">OK</string>
     <string name="date_picker_cancel">Cancel</string>
-
-    <!-- Tiles tab (C4 — web→android parity sweep) -->
     <string name="dashboard_tiles_title">Tiles Workspace</string>
     <string name="dashboard_tiles_tab_list">List</string>
     <string name="dashboard_tiles_tab_timeline">Timeline</string>
     <string name="dashboard_tiles_tab_changes">Changes</string>
-    <string name="dashboard_tiles_section_main">Main</string>
-    <string name="dashboard_tiles_section_sub">Sub</string>
-    <string name="dashboard_tiles_empty_main">No active main task</string>
-    <string name="dashboard_tiles_empty_sub">No sub tasks</string>
-    <string name="dashboard_tiles_summary_open_count">Open tiles</string>
-    <string name="dashboard_tiles_summary_estimated">Estimated total</string>
-    <string name="dashboard_tiles_summary_sections">Sections</string>
     <string name="dashboard_tiles_search_placeholder">Search…</string>
     <string name="dashboard_tiles_filter_range_label">Range:</string>
     <string name="dashboard_tiles_filter_range_all">All</string>
@@ -40,8 +28,10 @@
     <string name="dashboard_tiles_filter_limit_100">100</string>
     <string name="dashboard_tiles_filter_limit_500">500</string>
     <string name="dashboard_tiles_filter_limit_unlimited">Unlimited</string>
-    <string name="dashboard_tiles_omitted_more">+%1$d more ▼</string>
-    <string name="dashboard_tiles_no_changes">No changes yet</string>
+    <plurals name="dashboard_tiles_omitted_more">
+        <item quantity="one">+%1$d more ▼</item>
+        <item quantity="other">+%1$d more ▼</item>
+    </plurals>
     <string name="dashboard_tiles_delete_dialog_title">Delete this tile?</string>
     <string name="dashboard_tiles_delete_dialog_body">This permanently deletes the tile.</string>
     <string name="dashboard_tiles_delete_dialog_confirm">Delete</string>
@@ -52,8 +42,6 @@
     <string name="dashboard_tiles_changes_empty">No changes yet</string>
     <string name="tiles_duration">Duration</string>
     <string name="tiles_start_at">Start</string>
-
-    <!-- Projects side panel (C5 — web→android parity sweep) -->
     <string name="panels_projects_title">Projects</string>
     <string name="panels_projects_all_projects">All Projects</string>
     <string name="panels_projects_loading_projects">Loading projects…</string>
@@ -61,24 +49,14 @@
     <string name="panels_projects_name_placeholder">Project name</string>
     <string name="panels_projects_slug_placeholder">slug (optional)</string>
     <string name="panels_projects_slug_hint">Lowercase letters, numbers, dashes only</string>
-    <string name="panels_projects_color_label">Color</string>
     <string name="panels_projects_create">Create</string>
     <string name="panels_projects_creating">Creating…</string>
     <string name="panels_projects_cancel">Cancel</string>
     <string name="panels_projects_delete">Delete</string>
-    <string name="panels_projects_delete_hint">Long-press × to delete</string>
     <string name="panels_projects_delete_confirm_title">Delete project \"%1$s\"?</string>
     <string name="panels_projects_delete_confirm_body">This permanently deletes the project and its associations.</string>
-    <string name="panels_projects_error_empty">name required</string>
-    <string name="panels_projects_error_slug">Slug conflict</string>
-    <string name="panels_projects_error_create">Failed to create</string>
-
-    <!-- References (C6 — web→android parity sweep) -->
     <string name="panels_references_title">References</string>
     <string name="panels_references_empty">No labels yet. Tiles with labels will appear here.</string>
-    <string name="panels_references_label_hint">Label</string>
-
-    <!-- Settings (C9 — web→android parity sweep) -->
     <string name="settings_title">Setting</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_light">Light</string>
@@ -97,21 +75,16 @@
     <string name="settings_notifications_status_allowed">Notifications enabled</string>
     <string name="settings_notifications_status_denied">Notifications denied</string>
     <string name="settings_notifications_status_unsupported">Notifications unsupported</string>
-
-    <!-- Account dropdown (C8 — web→android parity sweep) -->
     <string name="nav_account_profile">Profile</string>
     <string name="nav_account_subscription">Subscription</string>
     <string name="nav_account_tokens">Access Tokens</string>
     <string name="nav_account_sign_out">Sign out</string>
     <string name="shell_account_signed_in">Signed in</string>
     <string name="shell_account_sign_out_confirm">You\'ll need to sign in again to use the app.</string>
-
-    <!-- Preferences sidebar + account sub-sheets (C7 — web→android parity sweep) -->
     <string name="preferences_nav_general">General Preferences</string>
     <string name="preferences_nav_profile">Profile</string>
     <string name="preferences_nav_subscription">Subscription</string>
     <string name="preferences_nav_tokens">Access Tokens</string>
-
     <string name="preferences_account_title">Account Settings</string>
     <string name="preferences_account_profile_heading">Profile Information</string>
     <string name="preferences_account_profile_guide">Manage your email and sign-in methods.</string>
@@ -133,12 +106,6 @@
     <string name="preferences_account_email_otp_relogin">Re-login with email OTP</string>
     <string name="preferences_account_subscription_heading">Subscription</string>
     <string name="preferences_account_subscription_guide">Manage your plan and billing.</string>
-    <string name="preferences_account_notice_load_failed">Could not load account info. Please sign in again.</string>
-    <string name="preferences_account_notice_email_start_failed">Could not send email change code.</string>
-    <string name="preferences_account_notice_email_start_sent">A verification code has been sent to your new email.</string>
-    <string name="preferences_account_notice_email_verify_failed">Could not verify the code. Please check the code.</string>
-    <string name="preferences_account_notice_email_updated">Your email has been updated.</string>
-
     <string name="account_tokens_heading">API Tokens</string>
     <string name="account_tokens_description">Issue unlimited-lived API tokens and manage names and usage history like API keys.</string>
     <string name="account_tokens_new_token_heading">New token</string>
@@ -146,196 +113,22 @@
     <string name="account_tokens_issue">Issue token</string>
     <string name="account_tokens_issued_heading">Issued tokens</string>
     <string name="account_tokens_empty">No API tokens yet.</string>
-    <string name="account_tokens_copied">Copied</string>
     <string name="account_tokens_copy">Copy</string>
     <string name="account_tokens_revoked">Revoked</string>
-    <string name="account_tokens_rename">Rename</string>
     <string name="account_tokens_revoke">Revoke</string>
-    <string name="account_tokens_meta_created_at">Created</string>
-    <string name="account_tokens_meta_last_used">Last used</string>
-    <string name="account_tokens_meta_last_used_path">Last used path</string>
-    <string name="account_tokens_error_load_failed">Could not load token list.</string>
-    <string name="account_tokens_error_load_fallback">Failed to load token list.</string>
-    <string name="account_tokens_error_create_failed">Could not create the token.</string>
-    <string name="account_tokens_error_create_fallback">Failed to create the token.</string>
-    <string name="account_tokens_error_update_failed">Could not update the name.</string>
-    <string name="account_tokens_error_update_fallback">Failed to update the name.</string>
-    <string name="account_tokens_error_revoke_failed">Could not revoke the token.</string>
-    <string name="account_tokens_error_revoke_fallback">Failed to revoke the token.</string>
-
-    <string name="account_subscription_title">Plan</string>
     <string name="account_subscription_current_plan">Current Plan</string>
-    <string name="account_subscription_pro_badge">Pro</string>
     <string name="account_subscription_free_badge">Free</string>
-    <string name="account_subscription_pro_description">You have access to all Pro features</string>
     <string name="account_subscription_free_description">Upgrade to unlock advanced features</string>
     <string name="account_subscription_upgrade">Upgrade to Pro</string>
     <string name="account_subscription_manage">Manage Billing</string>
-    <string name="account_subscription_monthly">Monthly</string>
-    <string name="account_subscription_yearly">Yearly</string>
-    <string name="account_subscription_per_month">/month</string>
-    <string name="account_subscription_per_year">/year</string>
-    <string name="account_subscription_price_monthly">$4</string>
-    <string name="account_subscription_price_yearly">$40</string>
-    <string name="account_subscription_year_hint">Save 2 months with yearly</string>
-    <string name="account_subscription_status_active">Active</string>
-    <string name="account_subscription_status_trialing">Trialing</string>
-    <string name="account_subscription_status_past_due">Past due</string>
-    <string name="account_subscription_status_canceled">Canceled</string>
-    <string name="account_subscription_status_free">Free plan</string>
-    <string name="account_subscription_next_billing">Next billing</string>
-    <string name="account_subscription_auto_renew">Auto-renew on</string>
-    <string name="account_subscription_auto_renew_off">Auto-renew off</string>
-    <string name="account_subscription_free_plan_name">Free</string>
-    <string name="account_subscription_free_plan_price">$0</string>
-    <string name="account_subscription_pro_plan_name">Pro</string>
-    <string name="account_subscription_pro_plan_price">$4</string>
-    <string name="account_subscription_loading">Loading…</string>
-    <string name="account_subscription_error">Could not load subscription info</string>
-
-    <!-- C12 — i18n keys consolidation (web parity namespaces) -->
-
-    <!-- nav.* (top tab/section navigation) -->
-    <string name="nav_execute">Execute</string>
-    <string name="nav_tiles">Tiles</string>
-    <string name="nav_integrations">Integrations</string>
-    <string name="nav_settings">Settings</string>
-    <string name="nav_new">New</string>
-    <string name="nav_timeline">Timeline</string>
-    <string name="nav_tasks">Tasks</string>
-    <string name="nav_projects">Projects</string>
-    <string name="nav_schedule">Schedule</string>
-    <string name="nav_references">References</string>
     <string name="nav_preferences">Preferences</string>
     <string name="nav_setting">Setting</string>
-
-    <!-- shell.activityBar.* -->
-    <string name="shell_activity_bar_execute">Execute</string>
-    <string name="shell_activity_bar_tiles">Tiles</string>
-    <string name="shell_activity_bar_integrations">Integrations</string>
-    <string name="shell_activity_bar_settings">Settings</string>
-    <string name="shell_activity_bar_new">New</string>
-    <string name="shell_activity_bar_timeline">Timeline</string>
-
-    <!-- shell.floatingHeader.* -->
-    <string name="shell_floating_header_title">Title</string>
-    <string name="shell_floating_header_subtitle">Subtitle</string>
-    <string name="shell_floating_header_search">Search</string>
-    <string name="shell_floating_header_notifications">Notifications</string>
-    <string name="shell_floating_header_account">Account</string>
-    <string name="shell_floating_header_menu">Menu</string>
-    <string name="shell_floating_header_close">Close</string>
-    <string name="shell_floating_header_open">Open</string>
-    <string name="shell_floating_header_more">More</string>
-    <string name="shell_floating_header_loading">Loading</string>
-    <string name="shell_floating_header_synced">Synced</string>
-    <string name="shell_floating_header_syncing">Syncing</string>
-    <string name="shell_floating_header_offline">Offline</string>
-
-    <!-- notifications.* (8 kinds) -->
-    <string name="notifications_kind_reminder">Reminder</string>
-    <string name="notifications_kind_alert">Alert</string>
-    <string name="notifications_kind_prompt">Prompt</string>
-    <string name="notifications_kind_break">Break</string>
-    <string name="notifications_kind_resume">Resume</string>
-    <string name="notifications_kind_sync">Sync</string>
-    <string name="notifications_kind_error">Error</string>
-    <string name="notifications_kind_default">Notification</string>
-
-    <!-- header.* (sync states + general) -->
-    <string name="header_sync_idle">Idle</string>
-    <string name="header_sync_syncing">Syncing</string>
-    <string name="header_sync_error">Sync error</string>
-    <string name="header_sync_offline">Offline</string>
-    <string name="header_general_title">Title</string>
-    <string name="header_general_subtitle">Subtitle</string>
-
-    <!-- languageToggle.* -->
-    <string name="language_toggle_label">Language</string>
-    <string name="language_toggle_hint">Switch language</string>
-
-    <!-- execution.* (5 prompt options) -->
-    <string name="execution_prompt_continue">Continue</string>
-    <string name="execution_prompt_pause">Pause</string>
-    <string name="execution_prompt_stop">Stop</string>
-    <string name="execution_prompt_skip">Skip</string>
-    <string name="execution_prompt_extend">Extend</string>
-
-    <!-- sidebar.* -->
-    <string name="sidebar_open">Open</string>
-    <string name="sidebar_close">Close</string>
-    <string name="sidebar_resize">Resize</string>
-    <string name="sidebar_collapse">Collapse</string>
-
-    <!-- common.* -->
-    <string name="common_save">Save</string>
     <string name="common_cancel">Cancel</string>
-    <string name="common_delete">Delete</string>
-    <string name="common_edit">Edit</string>
-    <string name="common_close">Close</string>
-    <string name="common_loading">Loading</string>
     <string name="common_confirm">Confirm</string>
     <string name="common_back">Back</string>
-
-    <!-- auth.mfaSetup.* -->
-    <string name="auth_mfa_setup_title">MFA setup</string>
-    <string name="auth_mfa_setup_subtitle">Enable two-factor authentication</string>
-    <string name="auth_mfa_setup_qr">QR code</string>
-    <string name="auth_mfa_setup_manual">Manual entry</string>
-    <string name="auth_mfa_setup_secret">Secret</string>
-    <string name="auth_mfa_setup_code">Code</string>
-    <string name="auth_mfa_setup_verify">Verify</string>
-    <string name="auth_mfa_setup_skip">Skip</string>
-    <string name="auth_mfa_setup_success">Setup complete</string>
-    <string name="auth_mfa_setup_error">Error</string>
-    <string name="auth_mfa_setup_help">Help</string>
-    <string name="auth_mfa_setup_required">Required</string>
-    <string name="auth_mfa_setup_optional">Optional</string>
-
-    <!-- prompt.actions.* -->
-    <string name="prompt_actions_continue">Continue</string>
-    <string name="prompt_actions_pause">Pause</string>
-    <string name="prompt_actions_stop">Stop</string>
-    <string name="prompt_actions_skip">Skip</string>
-    <string name="prompt_actions_extend">Extend</string>
-    <string name="prompt_actions_reschedule">Reschedule</string>
-    <string name="prompt_actions_defer">Defer</string>
-
-    <!-- tiles.* (actions, dialogs, metadata) -->
-    <string name="tiles_end_at">End</string>
-    <string name="tiles_labels">Labels</string>
-    <string name="tiles_project">Project</string>
-    <string name="tiles_recurrence">Recurrence</string>
-    <string name="tiles_complete">Complete</string>
-    <string name="tiles_start">Start</string>
-    <string name="tiles_defer">Defer</string>
-    <string name="tiles_delete">Delete</string>
-
-    <!-- panels.tasks.* -->
-    <string name="panels_tasks_title">Tasks</string>
-    <string name="panels_tasks_empty">No tasks</string>
-    <string name="panels_tasks_new">New task</string>
-    <string name="panels_tasks_search">Search</string>
-    <string name="panels_tasks_filter_all">All</string>
-    <string name="panels_tasks_filter_active">Active</string>
-    <string name="panels_tasks_filter_completed">Completed</string>
-    <string name="panels_tasks_sort_title">By title</string>
-    <string name="panels_tasks_sort_due">By due date</string>
-    <string name="panels_tasks_sort_created">By creation date</string>
-    <string name="panels_tasks_complete">Complete</string>
-    <string name="panels_tasks_edit">Edit</string>
-    <string name="panels_tasks_delete">Delete</string>
-    <string name="panels_tasks_due_today">Due today</string>
-    <string name="panels_tasks_due_overdue">Overdue</string>
-    <string name="panels_tasks_due_future">Upcoming</string>
-
-    <!-- Schedule panel (C11 — web→android parity sweep) -->
     <string name="panels_schedule_recurring">Recurring Tiles</string>
     <string name="panels_schedule_upcoming">Upcoming Deadlines</string>
     <string name="panels_schedule_projects">Projects</string>
-
-    <!-- Calendar/Timeline panel (C10 — web→android parity sweep) -->
-    <string name="panels_calendar_scale">Scale</string>
     <string name="panels_calendar_day">Day</string>
     <string name="panels_calendar_week">Week</string>
     <string name="panels_calendar_month">Month</string>
@@ -345,16 +138,12 @@
     <string name="panels_timeline_meta_blocks">blocks</string>
     <string name="panels_timeline_meta_work">work</string>
     <string name="panels_timeline_meta_breaks">breaks</string>
-
-    <!-- MUI Redesign — parity strings (mobile UI) -->
     <string name="empty_tiles_title">No tiles yet</string>
     <string name="empty_tiles_hint">Create a tile from the Projects tab to seed the timeline.</string>
     <string name="empty_projects_title">No projects yet</string>
     <string name="empty_projects_hint">Add a project to start organising tiles.</string>
     <string name="empty_schedule_title">Nothing scheduled</string>
     <string name="empty_schedule_hint">Quick-create a tile or pick a time window to begin.</string>
-    <string name="empty_blocks_title">No blocks in this view</string>
-    <string name="empty_blocks_hint">Create a tile to seed the timeline.</string>
     <string name="tile_occurrence_label">Occurrence: %1$s</string>
     <string name="execute_next_label">Next: %1$s</string>
     <string name="tiles_stat_open">Open · %1$d</string>
@@ -366,5 +155,4 @@
     <string name="picker_date_end">End date</string>
     <string name="picker_duration_label">Duration</string>
     <string name="picker_reference_label">Reference</string>
-    <string name="common_dismiss">Dismiss</string>
 </resources>

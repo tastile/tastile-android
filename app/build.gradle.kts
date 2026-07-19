@@ -271,7 +271,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("io.mockk:mockk-android:1.13.12")
+    androidTestImplementation("io.mockk:mockk-android:1.14.6")
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.59.2")
     androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.3.3")
 

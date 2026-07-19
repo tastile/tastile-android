@@ -25,11 +25,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun NowIndicator(
     nowProvider: () -> java.time.Instant?,
-    zone: java.time.ZoneId = java.time.ZoneId.systemDefault(),
     pxPerMin: Float,
     dayRangeStartHour: Int,
     dayRangeEndHour: Int,
     modifier: Modifier = Modifier,
+    zone: java.time.ZoneId = java.time.ZoneId.systemDefault(),
 ) {
     val now = nowProvider() ?: return
     val localTime = now.atZone(zone).toLocalTime()

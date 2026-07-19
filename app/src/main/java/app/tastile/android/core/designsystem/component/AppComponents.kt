@@ -384,8 +384,8 @@ fun AppInlineError(
 @Stable
 @Composable
 fun AppEmptyState(
-    message: String = "",
     modifier: Modifier = Modifier,
+    message: String = "",
     title: String = "",
     hint: String? = null,
     actionLabel: String? = null,
@@ -573,10 +573,10 @@ fun AppListRow(
 @Composable
 fun AppListItem(
     headline: String,
+    modifier: Modifier = Modifier,
     leading: ImageVector? = null,
     trailing: ImageVector? = null,
     onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
     supporting: String? = null,
 ) {
     val baseModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
@@ -723,16 +723,4 @@ fun StatChip(
             Text(text = " $value", color = foreground, style = MaterialTheme.typography.labelSmall)
         }
     }
-}
-
-/**
- * Toggle via `MaterialTheme.shapes` corner rounding. Used by panels for
- * consistent surface rounding.
- */
-@Suppress("unused")
-@Composable
-private fun _cornerRenderRedundant() {
-    // Kept here only as documentation: callers reference [AppCornerShape] above;
-    // some old call-sites invoked `AppCorner { ... }` as a composable. They
-    // already reach the rounded-corner surface via the underlying wrapper.
 }

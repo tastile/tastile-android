@@ -2,6 +2,7 @@ package app.tastile.android.data.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1ApiTokenCreateRequest
 import app.tastile.android.data.api.V1ApiTokenCreateResponse
@@ -66,16 +67,16 @@ class ApiTokenManager @Inject constructor(
     /** Clears both the in-memory cache and the encrypted prefs entry. */
     fun signOut() {
         cachedToken = null
-        EncryptedTokenStorage.apiTokenPrefs(context).edit().clear().apply()
+        EncryptedTokenStorage.apiTokenPrefs(context).edit { clear() }
     }
 
     private fun persistToken(response: V1ApiTokenCreateResponse) {
-        EncryptedTokenStorage.apiTokenPrefs(context).edit()
-            .putString(KEY_API_TOKEN, response.token)
-            .putString(KEY_TOKEN_ID, response.tokenId)
-            .putString(KEY_LABEL, response.label)
-            .putString(KEY_MINTED_AT, System.currentTimeMillis().toString())
-            .apply()
+        EncryptedTokenStorage.apiTokenPrefs(context).edit {
+            putString(KEY_API_TOKEN, response.token)
+            putString(KEY_TOKEN_ID, response.tokenId)
+            putString(KEY_LABEL, response.label)
+            putString(KEY_MINTED_AT, System.currentTimeMillis().toString())
+        }
     }
 
     private fun loadCachedToken(): String? =

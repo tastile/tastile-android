@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 fun NiaModalBottomSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    sheetState: SheetState = NiaRememberModalBottomSheetState(),
+    sheetState: SheetState = rememberNiaModalBottomSheetState(),
     sheetMaxWidth: Dp = BottomSheetDefaults.SheetMaxWidth,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -69,7 +69,7 @@ fun NiaModalBottomSheet(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NiaRememberModalBottomSheetState(
+fun rememberNiaModalBottomSheetState(
     skipPartiallyExpanded: Boolean = false,
 ): SheetState = materialRememberModalBottomSheetState(skipPartiallyExpanded = skipPartiallyExpanded)
 
@@ -89,8 +89,8 @@ fun NiaRememberModalBottomSheetState(
 @Composable
 fun NiaSideSheet(
     onDismissRequest: () -> Unit,
-    sheetState: SheetState = NiaRememberModalBottomSheetState(),
     modifier: Modifier = Modifier,
+    sheetState: SheetState = rememberNiaModalBottomSheetState(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme

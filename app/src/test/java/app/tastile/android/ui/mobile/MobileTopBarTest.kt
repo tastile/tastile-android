@@ -2,7 +2,6 @@ package app.tastile.android.ui.mobile
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -39,16 +38,14 @@ class MobileTopBarTest {
 
     @Test
     fun `top bar renders menu, scale, notifications, avatar controls`() {
-        var menu: String = ""
-        var notifications: String = ""
-        var avatar: String = ""
+        // Resolve string resources against the Activity up-front so the
+        // composable doesn't call `context.getString()` (lint
+        // LocalContextGetResourceValueCall). The values are stable per test.
+        val menu = rule.activity.getString(R.string.mobile_top_menu)
+        val notifications = rule.activity.getString(R.string.mobile_top_notifications)
+        val avatar = rule.activity.getString(R.string.mobile_top_avatar)
 
         rule.setContent {
-            val context = LocalContext.current
-            menu = context.getString(R.string.mobile_top_menu)
-            notifications = context.getString(R.string.mobile_top_notifications)
-            avatar = context.getString(R.string.mobile_top_avatar)
-
             MobileTopBar(
                 title = "Execute",
                 scale = TimelineScale.Day,

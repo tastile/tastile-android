@@ -1,10 +1,15 @@
 package app.tastile.android.data.repository
 
+import android.util.Base64
 import app.tastile.android.data.api.CognitoAccountApi
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -27,6 +32,25 @@ class AccountRepositoryTest {
     private val mockApi = mockk<CognitoAccountApi>(relaxed = true)
     private val mockAuth = mockk<AuthRepository>(relaxed = true)
     private val repository = AccountRepository(mockApi, mockAuth)
+
+    init {
+        // Robolectric's android.util.Base64 shadow was removed in SDK 35
+        // and the real Android jar's Base64 returns null for these flag
+        // combinations, so [AccountRepository.decodeClaims] would fall
+        // through with `fallbackClaims == null` and re-throw the API
+        // error. Stub the static decoder to mirror the JVM behaviour so
+        // the fallback path is testable end-to-end.
+        mockkStatic(Base64::class)
+        every { Base64.decode(any<String>(), any<Int>()) } answers {
+            val raw = firstArg<String>()
+            java.util.Base64.getUrlDecoder().decode(raw)
+        }
+    }
+
+    @After
+    fun tearDownBase64Mock() {
+        unmockkStatic(Base64::class)
+    }
 
     @Test
     fun loadProfile_delegatesToCognitoAccountApi() = runTest {
@@ -139,7 +163,12 @@ class AccountRepositoryTest {
         // unreachable / dev / staging), the repository decodes the
         // cached Cognito id_token so the user still sees email + sub.
         val jwt = makeIdToken(sub = "sub-xyz", email = "alice@example.com", emailVerified = true)
-        coEvery { mockAuth.currentIdToken() } returns jwt
+        // `currentIdToken()` is not a suspend function — use `every` so mockk
+        // registers the stub under the synchronous dispatcher chain that
+        // `withContext(Dispatchers.IO)` runs on. (With `coEvery`, the stub
+        // sometimes fails to register on the relaxed mock and the call
+        // resolves to `null`, defeating the fallback path.)
+        every { mockAuth.currentIdToken() } returns jwt
         coEvery { mockApi.getProfile() } throws java.io.IOException("http 502")
 
         val profile = repository.loadProfile()

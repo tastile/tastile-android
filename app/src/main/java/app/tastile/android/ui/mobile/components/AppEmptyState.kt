@@ -18,8 +18,8 @@ import app.tastile.android.core.designsystem.component.AppEmptyState as CoreAppE
 
 @Composable
 fun AppEmptyState(
-    message: String = "",
     modifier: Modifier = Modifier,
+    message: String = "",
     title: String = "",
     hint: String? = null,
     actionLabel: String? = null,

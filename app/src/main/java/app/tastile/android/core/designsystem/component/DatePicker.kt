@@ -80,6 +80,6 @@ fun NiaDatePickerDialog(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NiaRememberDatePickerState(
+fun rememberNiaDatePickerState(
     initialSelectedDateMillis: Long? = null,
 ): DatePickerState = materialRememberDatePickerState(initialSelectedDateMillis = initialSelectedDateMillis)

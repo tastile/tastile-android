@@ -39,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -116,6 +117,7 @@ fun MobileScaffold(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: START
+    val locale = LocalLocale.current.platformLocale
     val selectedDay by dashboardViewModel.selectedDay.collectAsStateWithLifecycle()
     val email by dashboardViewModel.email.collectAsStateWithLifecycle()
     val avatarUrl by dashboardViewModel.avatarUrl.collectAsStateWithLifecycle()
@@ -129,11 +131,11 @@ fun MobileScaffold(
     }
     val weekEnd = remember(weekStart) { weekStart.plusDays(6) }
     val monthStart = remember(selectedDay) { selectedDay.withDayOfMonth(1) }
-    val dayFormatter = remember {
-        DateTimeFormatter.ofPattern("M月d日 (EEE)", Locale.getDefault())
+    val dayFormatter = remember(locale) {
+        DateTimeFormatter.ofPattern("M月d日 (EEE)", locale)
     }
-    val monthFormatter = remember {
-        DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+    val monthFormatter = remember(locale) {
+        DateTimeFormatter.ofPattern("MMMM yyyy", locale)
     }
     // Week keeps the date at titleMedium and shrinks the parenthesized weekday
     // so the range stays clear of the scale pill.
@@ -328,7 +330,7 @@ internal fun MonthPickerDialog(
     val listState = rememberLazyListState(
         initialFirstVisibleItemIndex = maxOf(selectedYearStart, selectedMonthIndex - 2),
     )
-    val locale = Locale.getDefault()
+    val locale = LocalLocale.current.platformLocale
     val monthLabelFormatter = remember(locale) {
         DateTimeFormatter.ofPattern("MMM", locale)
     }

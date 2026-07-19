@@ -4,9 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.repository.AppLocale
@@ -84,7 +83,7 @@ class QuickCreateSheetMobileTest {
     }
 
     @Test
-    fun `QuickCreateSheetMobile shows Quick Create title when overlay is QuickCreate`() {
+    fun `QuickCreateSheetMobile shows Quick Create sheet when overlay is QuickCreate`() {
         val overlay = OverlayViewModel()
         val vm = newDashboardViewModel()
         val projectsVm = newProjectsViewModel()
@@ -99,16 +98,20 @@ class QuickCreateSheetMobileTest {
             )
         }
         rule.waitForIdle()
-        rule.onAllNodesWithText("Quick Create").assertCountEquals(0)
+        // The submit button (Create) and the close button are part of the
+        // header chrome; before the sheet opens they must not exist.
+        rule.onAllNodesWithTag("quick-create-handle-submit").assertCountEquals(0)
+        rule.onAllNodesWithTag("quick-create-close").assertCountEquals(0)
 
         rule.runOnUiThread {
             overlay.show(Overlay.QuickCreate)
         }
         rule.waitForIdle()
-        // PanelSheet renders the title once and QuickCreateSheet itself renders
-        // a second "Quick Create" header, so two nodes match — assert the
-        // first is displayed rather than requiring an exact match.
-        rule.onAllNodesWithText("Quick Create").onFirst().assertIsDisplayed()
+        // After opening, the sheet chrome is visible: Close icon on the left,
+        // Create submit on the right. (The legacy "Quick Create" title text
+        // was removed when the sheet header was redesigned to icon-only.)
+        rule.onNodeWithTag("quick-create-handle-submit").assertIsDisplayed()
+        rule.onNodeWithTag("quick-create-close").assertIsDisplayed()
     }
 
     @Test
@@ -127,6 +130,9 @@ class QuickCreateSheetMobileTest {
             )
         }
 
-        rule.onAllNodesWithText("Quick Create").assertCountEquals(0)
+        // Sheet chrome (close + submit) is only rendered while the overlay is
+        // showing QuickCreate; with the default Hidden overlay both must be absent.
+        rule.onAllNodesWithTag("quick-create-handle-submit").assertCountEquals(0)
+        rule.onAllNodesWithTag("quick-create-close").assertCountEquals(0)
     }
 }

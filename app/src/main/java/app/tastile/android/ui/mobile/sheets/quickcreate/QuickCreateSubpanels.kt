@@ -1144,8 +1144,8 @@ internal fun LocalNumberField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    suffix: String? = null,
     modifier: Modifier = Modifier,
+    suffix: String? = null,
 ) {
     OutlinedTextField(
         value = value,

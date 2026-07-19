@@ -17,7 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.data.model.Tile
@@ -86,7 +86,7 @@ fun TilesSectionColumn(
                 }
                 if (omitted > 0) {
                     Text(
-                        text = stringResource(R.string.dashboard_tiles_omitted_more, omitted),
+                        text = pluralStringResource(R.plurals.dashboard_tiles_omitted_more, omitted, omitted),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.testTag("tiles-section-expand-$groupId"),

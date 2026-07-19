@@ -2,7 +2,7 @@ package com.tastile.avatar
 
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.compose.runtime.Composable
+import androidx.core.graphics.scale
 
 /**
  * AvatarUpload — Avatar upload component (v1/15 §3).
@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
  * 3-step flow: pick file → resize to WebP → upload via presigned URL → commit.
  * Phase A: skeleton. Full implementation with BitmapFactory in Phase X.
  */
-@Composable
 fun AvatarUpload(
     onUploaded: (String) -> Unit
 ) {
@@ -30,5 +29,5 @@ fun resizeBitmap(source: Bitmap, targetSize: Int): Bitmap {
     val x = (source.width - size) / 2
     val y = (source.height - size) / 2
     val cropped = Bitmap.createBitmap(source, x, y, size, size)
-    return Bitmap.createScaledBitmap(cropped, targetSize, targetSize, true)
+    return cropped.scale(targetSize, targetSize)
 }

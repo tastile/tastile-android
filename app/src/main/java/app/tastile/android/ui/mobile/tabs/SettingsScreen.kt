@@ -40,6 +40,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -84,12 +85,17 @@ fun SettingsScreen(
 
     val context = LocalContext.current
     var notificationGranted by remember { mutableStateOf(canPostNotifications(context)) }
-    var notificationStatus by remember {
-        mutableStateOf(
+    // Store the resource id (not the resolved string) so the UI can pick up
+    // locale changes via `stringResource()`. Lint flags
+    // LocalContextGetResourceValueCall when `context.getString()` runs inside
+    // a composable; resolving through `stringResource` makes the read
+    // configuration-aware.
+    var notificationStatusRes by remember {
+        mutableIntStateOf(
             if (canPostNotifications(context)) {
-                context.getString(R.string.settings_notifications_status_allowed)
+                R.string.settings_notifications_status_allowed
             } else {
-                context.getString(R.string.settings_notifications_status_unsupported)
+                R.string.settings_notifications_status_unsupported
             },
         )
     }
@@ -98,10 +104,9 @@ fun SettingsScreen(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
         notificationGranted = granted
-        notificationStatus = context.getString(
+        notificationStatusRes =
             if (granted) R.string.settings_notifications_status_allowed
-            else R.string.settings_notifications_status_denied,
-        )
+            else R.string.settings_notifications_status_denied
     }
 
     Scaffold(
@@ -150,15 +155,13 @@ fun SettingsScreen(
             )
             NotificationsSection(
                 granted = notificationGranted,
-                status = notificationStatus,
+                status = stringResource(notificationStatusRes),
                 onAllow = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
                         notificationGranted = true
-                        notificationStatus = context.getString(
-                            R.string.settings_notifications_status_allowed,
-                        )
+                        notificationStatusRes = R.string.settings_notifications_status_allowed
                     }
                 },
                 onTest = {
@@ -166,13 +169,9 @@ fun SettingsScreen(
                     notificationGranted = grantedNow
                     if (grantedNow) {
                         postTestNotification(context)
-                        notificationStatus = context.getString(
-                            R.string.settings_notifications_test,
-                        )
+                        notificationStatusRes = R.string.settings_notifications_test
                     } else {
-                        notificationStatus = context.getString(
-                            R.string.settings_notifications_status_denied,
-                        )
+                        notificationStatusRes = R.string.settings_notifications_status_denied
                     }
                 },
             )

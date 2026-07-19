@@ -51,9 +51,7 @@
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"
-            android:showWhenLocked="true"
-            android:theme="@style/Theme.Tastile"
-            android:turnScreenOn="true" />
+            android:theme="@style/Theme.Tastile" />
 
         <receiver
             android:name=".notifications.ExecutionAlarmReceiver"

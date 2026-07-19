@@ -85,11 +85,11 @@ fun DayView(
     zoom: Float,
     blocks: List<PlacedBlock>,
     zone: ZoneId,
+    modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
     onCreateAt: (hour: Int, minute: Int) -> Unit,
     onEditEvent: (CoreTimelineItem) -> Unit,
     onZoomChange: (Float) -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     DayViewScaffold(
         blocks = blocks,

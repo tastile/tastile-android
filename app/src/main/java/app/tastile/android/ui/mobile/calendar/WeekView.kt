@@ -89,8 +89,8 @@ fun WeekView(
     zoom: Float,
     onZoomChange: (Float) -> Unit,
     onEditEvent: (CoreTimelineItem) -> Unit,
-    scrollState: ScrollState = rememberScrollState(),
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
 ) {
     val latestZoom by rememberUpdatedState(zoom)
     var pendingZoomScroll by remember { mutableStateOf<Int?>(null) }
@@ -245,7 +245,7 @@ fun WeekView(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .fillMaxWidth()
-                    .padding(top = TOP_BAR_TOTAL_HEIGHT())
+                    .padding(top = topBarTotalHeight())
                     .height(GridConstants.WEEK_HEADER_HEIGHT),
             ) {
                 // Transparent gutter column — no gradient here so the time

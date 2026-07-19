@@ -53,16 +53,30 @@ class WrapperStabilityDetector : Detector(), Detector.UastScanner {
 
     private fun UParameter.isUnstableParameter(): Boolean {
         val typeText = type.canonicalText
+        // When the test client compiles with `allowCompilationErrors()`,
+        // imports may not resolve and the canonical text collapses to the
+        // short name ("Color") instead of the FQN. Match either form.
         return typeText.contains("kotlin.Function") ||
             typeText.contains(".Function") ||
-            typeText == "androidx.compose.ui.graphics.Color"
+            typeText == "androidx.compose.ui.graphics.Color" ||
+            typeText == "Color"
     }
 
-    private fun UMethod.hasStableOrImmutableAnnotation(): Boolean =
-        annotations.any {
-            it.qualifiedName == "androidx.compose.runtime.Stable" ||
-                it.qualifiedName == "androidx.compose.runtime.Immutable"
+    private fun UMethod.hasStableOrImmutableAnnotation(): Boolean {
+        if (annotations.any {
+                it.qualifiedName == "androidx.compose.runtime.Stable" ||
+                    it.qualifiedName == "androidx.compose.runtime.Immutable"
+            }
+        ) {
+            return true
         }
+        // Fallback for unresolved annotations in the test client (when
+        // `allowCompilationErrors()` is on, the qualified name may be empty).
+        // Walk the raw PSI text for `@Stable` / `@Immutable` markers.
+        val psi = sourcePsi ?: return false
+        val text = psi.text
+        return text.contains("@Stable") || text.contains("@Immutable")
+    }
 
     private fun UMethod.isComposable(): Boolean {
         // First, use UAnnotation.qualifiedName when the annotation resolves.

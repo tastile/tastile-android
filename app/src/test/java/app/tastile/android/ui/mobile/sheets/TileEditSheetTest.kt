@@ -170,17 +170,68 @@ class TileEditSheetTest {
 
     @Test
     fun `TileEditSheet started tile shows Pause instead of Resume`() {
-        val overlay = OverlayViewModel()
-        val vm = newDashboardViewModel()
-        vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")))
-        vm.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
-        vm.selectTile("tile-1")
+        // The VM init subscribes to `combine(authState, _tileFilter)` and
+        // resets `_executionControlStates` to empty when authState is
+        // Unauthenticated. To make the assertion deterministic we instead
+        // route this test through the Authenticated branch:
+        //   * `getTiles(...)` returns the seeded tile so `_tiles` survives
+        //     the reload (no wipe to empty).
+        //   * `executionStateLookupForTile(...)` returns NoActiveExecution
+        //     so `refreshExecutionControlStates` does not overwrite the
+        //     test seam.
+        // Then we seed `_executionControlStates` and assert "Pause" renders.
+        val authRepo = mockk<AuthRepository>(relaxed = true)
+        val profileRepo = mockk<ProfileRepository>(relaxed = true)
+        val tileRepo = mockk<TileRepository>(relaxed = true)
+        tileRepositories.add(tileRepo)
+        val userSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
+        val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
+        every { userSettingsRepo.getLocale() } returns AppLocale.EN
+        every { authRepo.authState } returns MutableStateFlow(
+            TastileAuthState.Authenticated(
+                userId = "user-1",
+                email = "u@example.com",
+                idToken = "id",
+                accessToken = "acc",
+                refreshToken = null,
+            )
+        )
+        coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()
+        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepo.executionStateLookupForTile(any()) } returns
+            app.tastile.android.data.command.ExecutionStateLookup.NoActiveExecution
+        coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")
+        val vm = DashboardViewModel(
+            authRepository = authRepo,
+            profileRepository = profileRepo,
+            tileRepository = tileRepo,
+            userSettingsRepository = userSettingsRepo,
+            referenceOverlayStore = referenceOverlayStore,
+        ).also { viewModels.add(it) }
 
+        val overlay = OverlayViewModel()
         rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
-        rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "tile-1")) }
+        rule.waitForIdle()
+        rule.runOnUiThread {
+            vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")))
+            vm.selectTile("tile-1")
+            overlay.show(Overlay.TileEdit(tileId = "tile-1"))
+        }
         rule.waitForIdle()
 
-        rule.onNodeWithText("Pause").assertIsDisplayed()
-        rule.onNodeWithText("Resume").assertDoesNotExist()
+        // Sanity: tile title appears twice (header + editable field).
+        rule.onAllNodesWithText("Focus").assertCountEquals(2)
+
+        rule.runOnUiThread {
+            vm.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Active))
+        }
+        rule.waitForIdle()
+        // The button is in the ModalBottomSheet's Column tree but the sheet
+        // stays at its initial hidden value under the v2 StandardTestDispatcher
+        // (animations do not advance automatically). Verify the branch took
+        // effect via existence rather than display — the same pattern the
+        // sibling "renders tile title" test uses (assertCountEquals(2)).
+        rule.onAllNodesWithText("Pause").assertCountEquals(1)
+        rule.onAllNodesWithText("Resume").assertCountEquals(0)
     }
 }

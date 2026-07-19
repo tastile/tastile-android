@@ -145,14 +145,9 @@ class ExecutionAlarmActivity : ComponentActivity() {
             getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
         runCatching {
-            vibrator?.let { vib ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vib.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 600, 350, 600, 900), 0))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vib.vibrate(longArrayOf(0, 600, 350, 600, 900), 0)
-                }
-            }
+            vibrator?.vibrate(
+                VibrationEffect.createWaveform(longArrayOf(0, 600, 350, 600, 900), 0)
+            )
         }
     }
 

@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.ui.mobile.calendar.TOP_BAR_TOTAL_HEIGHT
+import app.tastile.android.ui.mobile.calendar.topBarTotalHeight
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -64,7 +64,7 @@ fun MonthView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(top = TOP_BAR_TOTAL_HEIGHT()),
+            .padding(top = topBarTotalHeight()),
     ) {
         // Day-of-week header row (Mon..Sun, locale-aware).
         Row(

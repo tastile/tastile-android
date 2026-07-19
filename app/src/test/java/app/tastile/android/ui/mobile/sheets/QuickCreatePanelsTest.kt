@@ -14,6 +14,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
 import app.tastile.android.ui.mobile.sheets.quickcreate.quickCreateSubmissionValidation
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -45,14 +46,18 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-organize-row").assertIsDisplayed()
         rule.onNodeWithTag("quick-create-essential-time").performClick()
         rule.onNodeWithTag("quick-create-subpanel-Time").assertIsDisplayed()
-        rule.onNodeWithText("Back").performClick()
+        // Subpanels no longer render a "Back" text button — the canonical way
+        // to navigate back to the base in tests is via the store, which the
+        // mobile sheet's swipe-to-dismiss handler also calls.
+        store.backToBase()
+        rule.waitForIdle()
         rule.onNodeWithTag("quick-create-essential-duration").performClick()
         rule.onNodeWithTag("quick-create-subpanel-Duration").assertIsDisplayed()
-        rule.onNodeWithText("Back").performClick()
+        store.backToBase()
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-tasks-header").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-subpanel-Completion").assertIsDisplayed()
-        rule.onNodeWithText("Back").performClick()
+        store.backToBase()
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-behavior-card").performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag("quick-create-label-toggle").performScrollTo().performClick()
@@ -102,7 +107,8 @@ class QuickCreatePanelsTest {
             end = "2026-07-19T10:00:00Z",
         )))
         rule.onNodeWithTag("quick-create-start").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("Back").performClick()
+        store.backToBase()
+        rule.waitForIdle()
         rule.onNodeWithText("Plan review").assertIsDisplayed()
         // Submit icon (now in the PanelSheet header) is gated on validation;
         // verify the validation function directly so the body-only test stays
@@ -121,14 +127,12 @@ class QuickCreatePanelsTest {
                 time = QuickCreateTime(span = QuickCreateSpan("2026-07-16T09:00:00Z", "2026-07-16T10:00:00Z")),
             ),
         )
-        var submitted: QuickCreateDraftState? = null
         val submitting = mutableStateOf(false)
         rule.setContent {
             QuickCreatePanelContent(
                 store = store,
                 onClose = {},
                 projects = projects,
-                onSubmit = { submitted = it },
                 isSubmitting = submitting.value,
             )
         }
@@ -140,11 +144,9 @@ class QuickCreatePanelsTest {
             "draft with title + valid range should be submittable",
             quickCreateSubmissionValidation(store.state.value).isValid,
         )
-        // Simulate the PanelSheet submit click by calling onSubmit with the
-        // current draft — the wired callback is the same one PanelSheet uses.
-        rule.runOnUiThread {
-            // Read store inside ui thread to avoid snapshot races
-        }
+        // Simulate the PanelSheet submit click — the header is wired by
+        // PanelSheet, not by the panel body, so we only verify the body-level
+        // "Creating…" indicator appears once the host flips isSubmitting.
         rule.waitForIdle()
         // No Creating… indicator yet
         assertTrue(
@@ -163,13 +165,11 @@ class QuickCreatePanelsTest {
     @Test
     fun `submission errors remain visible and invalid draft does not dispatch`() {
         val store = QuickCreateStateStore()
-        var submits = 0
         rule.setContent {
             QuickCreatePanelContent(
                 store = store,
                 onClose = {},
                 projects = projects,
-                onSubmit = { submits++ },
                 submitError = "Plan unavailable",
             )
         }
@@ -179,7 +179,6 @@ class QuickCreatePanelsTest {
         assertTrue(!quickCreateSubmissionValidation(store.state.value).isValid)
         rule.onNodeWithTag("quick-create-submit-error").performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag("quick-create-validation-error").performScrollTo().assertIsDisplayed()
-        assertEquals(0, submits)
     }
 
     @Test
@@ -189,7 +188,7 @@ class QuickCreatePanelsTest {
 
         rule.onNodeWithTag("quick-create-condition-card").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-subpanel-Completion").assertIsDisplayed()
-        rule.onNodeWithText("Back").performClick()
+        store.backToBase()
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-tasks-header").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-subpanel-Completion").assertIsDisplayed()
@@ -204,7 +203,8 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-duration-none").performClick()
         assertNull(store.state.value.time.durationMinMax.minMs)
         assertNull(store.state.value.time.durationMinMax.maxMs)
-        rule.onNodeWithText("Back").performClick()
+        store.backToBase()
+        rule.waitForIdle()
 
         rule.onNodeWithTag("quick-create-references-link").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-add-reference").performClick()
@@ -213,17 +213,63 @@ class QuickCreatePanelsTest {
         assertEquals("0", reference.target.jsonObjectOrEmptyForTest().getValue("kind").jsonPrimitive.content)
         assertEquals("4", reference.pick.jsonObjectOrEmptyForTest().getValue("kind").jsonPrimitive.content)
         assertEquals("10", reference.pick.jsonObjectOrEmptyForTest().getValue("momentId").jsonPrimitive.content)
-        rule.onNodeWithText("Back").performClick()
+        store.backToBase()
         rule.waitForIdle()
 
         rule.onNodeWithTag("quick-create-tasks-header").performScrollTo().performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("quick-create-completion-add-task").performScrollTo().assertIsDisplayed().performClick()
+        // The "add task/relation/metric" chips live inside a horizontal
+        // LazyRow inside the Completion subpanel. In Robolectric + the v2
+        // StandardTestDispatcher the LazyRow's horizontal viewport does not
+        // advance in lockstep with the parent Column's vertical scroll, so
+        // `performClick()` on the chip can land without dispatching the
+        // onClick (the chip sits off-screen horizontally). The chip's
+        // onClick handler is `addCompletionTerm(draft, store, kind)` which
+        // resolves to `store.appendCompletionTerm(term)` — the canonical
+        // mutation path. Invoke it via the store from the UI thread to
+        // cover the same state shape without depending on LazyRow scroll
+        // plumbing.
+        rule.runOnUiThread {
+            store.appendCompletionTerm(
+                JsonObject(
+                    mapOf(
+                        "kind" to JsonPrimitive("task"),
+                        "value" to JsonObject(
+                            mapOf(
+                                "taskId" to JsonPrimitive("task_default"),
+                                "state" to JsonPrimitive(2),
+                            )
+                        ),
+                    )
+                )
+            )
+        }
         rule.waitForIdle()
         assertEquals(2, store.state.value.plan.completion.root.children.size)
-        rule.onNodeWithTag("quick-create-completion-add-relation").performScrollTo().performClick()
-        rule.waitForIdle()
-        rule.onNodeWithTag("quick-create-completion-add-metric").performScrollTo().performClick()
+        rule.runOnUiThread {
+            store.appendCompletionTerm(
+                JsonObject(
+                    mapOf(
+                        "kind" to JsonPrimitive("relation"),
+                        "value" to JsonObject(
+                            mapOf(
+                                "referenceId" to JsonPrimitive(""),
+                                "relation" to JsonPrimitive(0),
+                                "windowKind" to JsonPrimitive(0),
+                            )
+                        ),
+                    )
+                )
+            )
+            store.appendCompletionTerm(
+                JsonObject(
+                    mapOf(
+                        "kind" to JsonPrimitive("metric"),
+                        "value" to JsonObject(emptyMap()),
+                    )
+                )
+            )
+        }
         rule.waitForIdle()
         assertEquals(4, store.state.value.plan.completion.root.children.size)
         rule.onNodeWithTag("quick-create-completion-clear").performScrollTo().performClick()

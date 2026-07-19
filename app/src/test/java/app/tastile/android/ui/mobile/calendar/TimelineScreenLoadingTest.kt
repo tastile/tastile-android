@@ -89,11 +89,12 @@ class TimelineScreenLoadingTest {
         every { vm.loading } returns MutableStateFlow(true)
         every { vm.selectedDay } returns MutableStateFlow(pageDay)
         every { vm.scale } returns MutableStateFlow(TimelineScale.Day)
+        val overlayVm = mockk<OverlayViewModel>(relaxed = true)
 
         compose.setContent {
             MaterialTheme {
                 Box(Modifier.requiredSize(400.dp, 1440.dp)) {
-                    TimelineScreen(viewModel = vm, overlay = OverlayViewModel())
+                    TimelineScreen(viewModel = vm, overlay = overlayVm)
                 }
             }
         }
