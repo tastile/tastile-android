@@ -55,7 +55,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -275,12 +274,12 @@ fun ProfileCard(
 fun PlanBadge(plan: String) {
     val isPro = plan == Plan.PRO.value
     val backgroundColor = if (isPro) {
-        Color(0xFFFFD700).copy(alpha = 0.2f)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
     } else {
         MaterialTheme.colorScheme.surfaceVariant
     }
     val textColor = if (isPro) {
-        Color(0xFFB8860B)
+        MaterialTheme.colorScheme.onPrimaryContainer
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
