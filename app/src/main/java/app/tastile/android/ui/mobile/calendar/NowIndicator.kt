@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
@@ -41,7 +41,7 @@ fun NowIndicator(
             modifier = Modifier
                 .offset(y = nowY - 5.dp)
                 .size(10.dp)
-                .background(Color.Red, CircleShape)
+                .background(MaterialTheme.colorScheme.error, CircleShape)
                 .testTag("now-indicator-dot"),
         )
         Box(
@@ -49,7 +49,7 @@ fun NowIndicator(
                 .offset(y = nowY - 1.dp)
                 .fillMaxWidth()
                 .height(2.dp)
-                .background(Color.Red)
+                .background(MaterialTheme.colorScheme.error)
                 .testTag("now-indicator-line"),
         )
     }
