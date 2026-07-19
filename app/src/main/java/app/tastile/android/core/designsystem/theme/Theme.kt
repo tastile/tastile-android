@@ -193,7 +193,7 @@ val DarkAndroidBackgroundTheme = BackgroundTheme(color = Color.Black)
 fun NiaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     androidTheme: Boolean = false,
-    disableDynamicTheming: Boolean = true,
+    disableDynamicTheming: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     // Color scheme
