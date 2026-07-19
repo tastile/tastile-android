@@ -3,6 +3,7 @@ package app.tastile.android.ui.mobile.calendar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHeightIsEqualTo
@@ -78,5 +79,28 @@ class NowIndicatorTest {
         compose.onNodeWithTag("now-indicator-line").assertHeightIsEqualTo(2.dp)
         compose.onNodeWithTag("now-indicator-dot").assertExists()
         compose.onNodeWithTag("now-indicator-dot").assertHeightIsEqualTo(10.dp)
+    }
+
+    @Test fun nowIndicator_usesM3ErrorToken_notColorRed() = runTest {
+        var captured: Color = Color.Unspecified
+        compose.setContent {
+            MaterialTheme {
+                captured = MaterialTheme.colorScheme.error
+                Box(Modifier.size(400.dp, 1200.dp)) {
+                    NowIndicator(
+                        nowProvider = { now },
+                        pxPerMin = 1f,
+                        dayRangeStartHour = 0,
+                        dayRangeEndHour = 24,
+                        modifier = Modifier.testTag("now-indicator-color"),
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("now-indicator-color").assertExists()
+        check(captured != Color.Red) {
+            "NowIndicator must derive color from M3 colorScheme.error, not Color.Red"
+        }
     }
 }
