@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,9 +35,6 @@ import app.tastile.android.ui.dashboard.DashboardViewModel
  * type, and a locale-aware timestamp.
  */
 private const val MAX_VISIBLE_CHANGES = 120
-
-// Mirrors the legacy MobileTokens.Status.started success-green (0xFF0D8A72).
-private val StatusStartedGreen = Color(0xFF0D8A72)
 
 @Composable
 fun TilesChangesBody(
@@ -73,7 +69,11 @@ fun TilesChangesBody(
 @Composable
 private fun ChangeRow(item: CoreTimelineItem, locale: AppLocale) {
     val ended = item.type.endsWith("_ended") || item.status == "done" || item.status == "completed"
-    val dotColor = if (ended) StatusStartedGreen else MaterialTheme.colorScheme.primary
+    val dotColor = if (ended) {
+        MaterialTheme.colorScheme.tertiary
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
