@@ -259,7 +259,7 @@ fun ActivePromptCard(
                     onClick = onComplete,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.Green
+                        contentColor = MaterialTheme.colorScheme.tertiary
                     )
                 ) {
                     Text("Complete Task")
