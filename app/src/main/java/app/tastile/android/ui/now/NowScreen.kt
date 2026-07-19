@@ -44,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -182,7 +181,7 @@ fun ActiveTileCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .border(2.dp, Color.Green, RoundedCornerShape(12.dp)),
+            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -198,10 +197,10 @@ fun ActiveTileCard(
                 Text(
                     text = "Active",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.Green,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
-                
+
                 LifecycleBadge(lifecycle = TileLifecycle.STARTED)
             }
             
@@ -285,7 +284,7 @@ fun TileCard(
                             Icon(
                                 Icons.Default.Check,
                                 contentDescription = "Complete",
-                                tint = Color.Green
+                                tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
                     }
@@ -314,7 +313,7 @@ fun LifecycleBadge(lifecycle: TileLifecycle) {
     val (color, text) = when (lifecycle) {
         TileLifecycle.READY -> MaterialTheme.colorScheme.outline to "Ready"
         TileLifecycle.STARTED -> MaterialTheme.colorScheme.primary to "Started"
-        TileLifecycle.DONE -> Color.Green to "Done"
+        TileLifecycle.DONE -> MaterialTheme.colorScheme.tertiary to "Done"
         TileLifecycle.ARCHIVED -> MaterialTheme.colorScheme.outlineVariant to "Archived"
     }
     
