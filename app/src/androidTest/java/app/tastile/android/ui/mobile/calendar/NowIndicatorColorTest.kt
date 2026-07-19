@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertLeftPositionInRootIsEqualTo
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -47,5 +48,25 @@ class NowIndicatorColorTest {
         val linePixel = lineImage.toPixelMap()[lineImage.width / 2, lineImage.height / 2]
         assertEquals(expectedColor, linePixel)
         assertNotEquals(Color.Red, linePixel)
+    }
+
+    @Test
+    fun nowIndicator_dotCenterAlignsWithGridLeftEdge() {
+        compose.setContent {
+            MaterialTheme {
+                Box(Modifier.size(400.dp, 1200.dp)) {
+                    NowIndicator(
+                        nowProvider = { Instant.parse("2026-07-17T08:30:00Z") },
+                        zone = ZoneOffset.UTC,
+                        pxPerMin = 1f,
+                        dayRangeStartHour = 0,
+                        dayRangeEndHour = 24,
+                    )
+                }
+            }
+        }
+
+        compose.onNodeWithTag("now-indicator-dot")
+            .assertLeftPositionInRootIsEqualTo((-5).dp)
     }
 }

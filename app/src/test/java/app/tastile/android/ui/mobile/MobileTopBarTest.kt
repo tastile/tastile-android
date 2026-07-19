@@ -8,19 +8,25 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.R
-import app.tastile.android.ui.dashboard.CalendarMode
 import app.tastile.android.ui.dashboard.TimelineScale
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -91,12 +97,7 @@ class MobileTopBarTest {
     }
 
     @Test
-    fun `dropdown exposes nav, mode, and minimum-duration sections when configured`() {
-        val today = AtomicReference<Unit>()
-        val previous = AtomicReference<Unit>()
-        val next = AtomicReference<Unit>()
-        val modeRef = AtomicReference<CalendarMode?>(null)
-        val minRef = AtomicReference<Int?>(null)
+    fun `dropdown contains only Day, Week, Month items`() {
         val currentScale = mutableStateOf(TimelineScale.Day)
 
         rule.setContent {
@@ -106,55 +107,82 @@ class MobileTopBarTest {
                 onScaleChange = { currentScale.value = it },
                 onMenu = {},
                 onNotifications = {},
-                calendarMode = CalendarMode.Scope,
-                onCalendarModeChange = { modeRef.set(it) },
-                onToday = { today.set(Unit) },
-                onPrevious = { previous.set(Unit) },
-                onNext = { next.set(Unit) },
-                canNavigate = true,
-                minimumDuration = 0,
-                onMinimumDurationChange = { minRef.set(it) },
             )
         }
 
         rule.onNodeWithContentDescription("Scale: Day").performClick()
 
         // DropdownMenu renders in a popup window, so the items exist in the
-        // semantics tree but fail the screen-bounds check used by
-        // assertIsDisplayed. The performClick calls below double as the
-        // existence check — clicking a missing node fails the test — so we
-        // do not pre-assert each item.
-        rule.onNodeWithTag("dropdown-today").performClick()
-        rule.onNodeWithContentDescription("Scale: Day").performClick()
-        rule.onNodeWithTag("dropdown-mode-future").performClick()
-        rule.onNodeWithContentDescription("Scale: Day").performClick()
-        rule.onNodeWithTag("dropdown-min-15").performClick()
-
-        assertEquals(Unit, today.get())
-        assertEquals(CalendarMode.Future, modeRef.get())
-        assertEquals(15, minRef.get())
+        // semantics tree. Use onAllNodesWithText and verify count == 2
+        // (one for the trigger pill, one for the dropdown item) since the
+        // trigger pill also renders the current scale name.
+        assertEquals(2, rule.onAllNodesWithText("Day").fetchSemanticsNodes().size)
+        assertEquals(1, rule.onAllNodesWithText("Week").fetchSemanticsNodes().size)
+        assertEquals(1, rule.onAllNodesWithText("Month").fetchSemanticsNodes().size)
     }
 
     @Test
-    fun `dropdown hides nav, mode, and minimum sections when no callbacks are configured`() {
-        val currentScale = mutableStateOf(TimelineScale.Day)
+    fun `week title wraps small weekdays in parentheses`() {
+        val title = formatWeekTitle(
+            weekStart = LocalDate.of(2026, 7, 13),
+            weekEnd = LocalDate.of(2026, 7, 19),
+            locale = Locale.JAPAN,
+        )
+
+        assertEquals("7/13(月)–7/19(日)", title.text)
+        assertEquals(
+            listOf("(月)", "(日)"),
+            title.spanStyles.map { title.text.substring(it.start, it.end) },
+        )
+        assertEquals(listOf(11.sp, 11.sp), title.spanStyles.map { it.item.fontSize })
+    }
+
+    @Test
+    fun `month picker confirms the selected month`() {
+        val selected = AtomicReference<YearMonth?>(null)
+        val august = YearMonth.of(2026, 8)
+        val augustDescription = august.format(
+            DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()),
+        )
 
         rule.setContent {
-            MobileTopBar(
-                title = "Execute",
-                scale = currentScale.value,
-                onScaleChange = { currentScale.value = it },
-                onMenu = {},
-                onNotifications = {},
+            MonthPickerDialog(
+                initialMonth = YearMonth.of(2026, 7),
+                onDismissRequest = {},
+                onMonthSelected = selected::set,
             )
         }
 
-        rule.onNodeWithContentDescription("Scale: Day").performClick()
+        rule.onNodeWithContentDescription(augustDescription)
+            .performScrollTo()
+            .performClick()
+            .assertIsSelected()
+        rule.onNodeWithText(rule.activity.getString(R.string.date_picker_confirm)).performClick()
 
-        assert(rule.onAllNodesWithTag("dropdown-today").fetchSemanticsNodes().isEmpty())
-        assert(rule.onAllNodesWithTag("dropdown-nav-prev").fetchSemanticsNodes().isEmpty())
-        assert(rule.onAllNodesWithTag("dropdown-nav-next").fetchSemanticsNodes().isEmpty())
-        assert(rule.onAllNodesWithTag("dropdown-mode-scope").fetchSemanticsNodes().isEmpty())
-        assert(rule.onAllNodesWithTag("dropdown-min-0").fetchSemanticsNodes().isEmpty())
+        rule.runOnIdle { assertEquals(august, selected.get()) }
+    }
+
+    @Test
+    fun `month picker cancel leaves the selection unchanged`() {
+        val selected = AtomicReference<YearMonth?>(null)
+        val august = YearMonth.of(2026, 8)
+        val augustDescription = august.format(
+            DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()),
+        )
+
+        rule.setContent {
+            MonthPickerDialog(
+                initialMonth = YearMonth.of(2026, 7),
+                onDismissRequest = {},
+                onMonthSelected = selected::set,
+            )
+        }
+
+        rule.onNodeWithContentDescription(augustDescription)
+            .performScrollTo()
+            .performClick()
+        rule.onNodeWithText(rule.activity.getString(R.string.date_picker_cancel)).performClick()
+
+        rule.runOnIdle { assertNull(selected.get()) }
     }
 }

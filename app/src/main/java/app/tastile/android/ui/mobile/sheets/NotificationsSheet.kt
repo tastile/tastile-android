@@ -44,19 +44,22 @@ fun NotificationsSheet(
     val items by repository.pending.collectAsStateWithLifecycle()
 
     if (current is Overlay.Notifications) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val sheetState = rememberModalBottomSheetState()
         PanelSheet(
-            title = stringResource(R.string.mobile_top_notifications),
             sheetState = sheetState,
             onDismiss = { overlay.dismiss() },
         ) {
-            if (items.isEmpty()) {
-                NotificationsEmptyState()
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.mobile_top_notifications),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                if (items.isEmpty()) {
+                    NotificationsEmptyState()
+                } else {
                     items.forEach {
                         ListItem(
                             headlineContent = { Text(it.label, style = MaterialTheme.typography.bodyLarge) },

@@ -33,18 +33,21 @@ fun SearchOverlaySheet(overlay: OverlayViewModel) {
     val current by overlay.current.collectAsStateWithLifecycle()
 
     if (current is Overlay.Search) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val sheetState = rememberModalBottomSheetState()
         var query by remember { mutableStateOf("") }
 
         PanelSheet(
-            title = "Search",
             sheetState = sheetState,
             onDismiss = { overlay.dismiss() },
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                Text(
+                    text = "Search",
+                    style = MaterialTheme.typography.titleLarge,
+                )
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },

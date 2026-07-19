@@ -73,14 +73,22 @@ fun TokensSheet(
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
     if (current !is Overlay.Tokens) return
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState()
 
     PanelSheet(
-        title = stringResource(R.string.account_tokens_heading),
         sheetState = sheetState,
         onDismiss = { overlay.dismiss() },
     ) {
-        TokensBody(viewModel = viewModel)
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.account_tokens_heading),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            TokensBody(viewModel = viewModel)
+        }
     }
 }
 

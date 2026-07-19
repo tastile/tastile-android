@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertLeftPositionInRootIsEqualTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,8 @@ class NowIndicatorTest {
         compose.waitForIdle()
         compose.onNodeWithTag("now-indicator-dot").assertExists()
         compose.onNodeWithTag("now-indicator-dot").assertHeightIsEqualTo(10.dp)
+        compose.onNodeWithTag("now-indicator-dot")
+            .assertLeftPositionInRootIsEqualTo((-5).dp)
         compose.onNodeWithTag("now-indicator-line").assertExists()
         compose.onNodeWithTag("now-indicator-line").assertHeightIsEqualTo(2.dp)
     }

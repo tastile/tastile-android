@@ -1,10 +1,12 @@
 package app.tastile.android.ui.mobile
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.FolderOpen
@@ -31,12 +33,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -58,10 +61,11 @@ private val drawerRoutes = listOf(
 
 /**
  * Material 3 modal navigation drawer that replaces the bottom-anchored
- * `SidePanelSheet` 2-page pager. Four primary-nav destinations followed by a
- * separate Setting group (a labeled section heading plus a dedicated nav row);
- * the active route is highlighted via [NavigationDrawerItem]'s built-in
- * selection styling, and tapping any item navigates + closes the drawer.
+ * `SidePanelSheet` 2-page pager. A brand header (icon + app title) sits above
+ * the four primary-nav destinations; the dedicated Settings row sits below a
+ * thin divider. The active route is highlighted via [NavigationDrawerItem]'s
+ * built-in selection styling, and tapping any item navigates + closes the
+ * drawer.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +81,7 @@ fun SidePanelDrawerContent(
 
     ModalDrawerSheet(modifier = modifier) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Spacer(modifier = Modifier.height(16.dp))
+            BrandHeader()
             drawerRoutes.forEach { item ->
                 NavigationDrawerItem(
                     label = { Text(item.label) },
@@ -102,14 +106,6 @@ fun SidePanelDrawerContent(
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
-            Text(
-                text = settingLabel,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier
-                    .padding(horizontal = 28.dp, vertical = 8.dp)
-                    .testTag("side-panel-section-settings")
-                    .semantics { heading() },
-            )
             NavigationDrawerItem(
                 label = { Text(settingLabel) },
                 selected = currentRoute == "settings",
@@ -130,5 +126,29 @@ fun SidePanelDrawerContent(
                 modifier = Modifier.testTag("side-panel-row-settings"),
             )
         }
+    }
+}
+
+@Composable
+private fun BrandHeader() {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val markRes = if (isDark) R.drawable.ic_tastile_icon_dark else R.drawable.ic_tastile_icon
+    Row(
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Image(
+            painter = painterResource(id = markRes),
+            contentDescription = null,
+            modifier = Modifier
+                .size(24.dp)
+                .testTag("side-panel-brand-mark"),
+        )
+        Text(
+            text = stringResource(R.string.app_name),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.testTag("side-panel-brand-title"),
+        )
     }
 }

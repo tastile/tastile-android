@@ -68,14 +68,22 @@ fun AccountSheet(
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
     if (current !is Overlay.AccountSettings) return
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState()
 
     PanelSheet(
-        title = stringResource(R.string.preferences_account_title),
         sheetState = sheetState,
         onDismiss = { overlay.dismiss() },
     ) {
-        AccountSheetBody(viewModel = viewModel, overlay = overlay)
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.preferences_account_title),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            AccountSheetBody(viewModel = viewModel, overlay = overlay)
+        }
     }
 }
 

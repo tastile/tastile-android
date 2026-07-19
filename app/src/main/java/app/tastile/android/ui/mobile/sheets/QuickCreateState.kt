@@ -12,7 +12,7 @@ import java.time.Instant
 import java.util.UUID
 
 /** The Web quick-create base composition and its routed detail panels. */
-enum class QuickCreatePanel { Base, Intent, Time, Duration, Recurring, References, Completion, Meta, Behavior }
+enum class QuickCreatePanel { Base, Intent, Time, Duration, References, Completion, Meta }
 
 enum class QuickCreateTileKind { Recurring, Placement }
 enum class QuickCreatePlanRole { Executable, Label }
@@ -192,8 +192,8 @@ class QuickCreateStateStore(initial: QuickCreateDraftState = QuickCreateDraftSta
     fun updateRecurring(recurring: QuickCreateRecurring) = mutate { it.copy(recurring = recurring) }
     fun updateMeta(meta: QuickCreateMeta) = mutate { it.copy(meta = meta) }
 
-    /** The behavior panel selects the plan's role; it does not introduce a second behavior model. */
-    fun updateBehavior(role: QuickCreatePlanRole) = mutate { it.copy(plan = it.plan.copy(role = role)) }
+    /** Toggle whether this tile is rendered as a label. */
+    fun updateRole(role: QuickCreatePlanRole) = mutate { it.copy(plan = it.plan.copy(role = role)) }
 
     private inline fun mutate(transform: (QuickCreateDraftState) -> QuickCreateDraftState) {
         mutableState.value = transform(mutableState.value)

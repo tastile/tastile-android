@@ -44,14 +44,22 @@ fun SubscriptionSheet(
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
     if (current !is Overlay.Subscription) return
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState()
 
     PanelSheet(
-        title = stringResource(R.string.preferences_account_subscription_heading),
         sheetState = sheetState,
         onDismiss = { overlay.dismiss() },
     ) {
-        SubscriptionBody()
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.preferences_account_subscription_heading),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            SubscriptionBody()
+        }
     }
 }
 

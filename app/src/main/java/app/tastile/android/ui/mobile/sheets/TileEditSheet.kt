@@ -60,9 +60,8 @@ fun TileEditSheet(
         var editedTitle by remember(tile?.id) { mutableStateOf(tile?.title.orEmpty()) }
         var confirmSave by remember(tile?.id) { mutableStateOf(false) }
         var confirmExecutionAction by remember(tile?.id) { mutableStateOf<Boolean?>(null) }
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val sheetState = rememberModalBottomSheetState()
         PanelSheet(
-            title = tile?.title ?: "Tile",
             sheetState = sheetState,
             onDismiss = {
                 viewModel.clearSelectedTile()
@@ -70,9 +69,13 @@ fun TileEditSheet(
             },
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                Text(
+                    text = tile?.title ?: "Tile",
+                    style = MaterialTheme.typography.titleLarge,
+                )
                 Text(
                     text = tile?.lifecycle ?: "—",
                     style = MaterialTheme.typography.bodySmall,

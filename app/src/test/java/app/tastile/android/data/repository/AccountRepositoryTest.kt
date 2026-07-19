@@ -178,8 +178,7 @@ class AccountRepositoryTest {
     }
 
     private fun base64Url(value: String): String =
-        android.util.Base64.encodeToString(
+        java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
             value.toByteArray(Charsets.UTF_8),
-            android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP,
         )
 }

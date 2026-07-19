@@ -124,7 +124,7 @@ class QuickCreateStateTest {
         val populated = populatedDraft()
         val store = QuickCreateStateStore(populated)
 
-        store.openSubpanel(QuickCreatePanel.Recurring)
+        store.openSubpanel(QuickCreatePanel.Time)
         store.backToBase()
         assertEquals(populated.copy(activePanel = QuickCreatePanel.Base), store.state.value)
 

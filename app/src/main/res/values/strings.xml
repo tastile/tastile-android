@@ -4,6 +4,11 @@
     <string name="mobile_top_search">Search</string>
     <string name="mobile_top_notifications">Notifications</string>
     <string name="mobile_top_avatar">Account menu</string>
+    <string name="mobile_top_title_action">Change date</string>
+
+    <!-- Timeline title-tap date pickers (Day/Month → DatePicker, Week → DateRangePicker) -->
+    <string name="date_picker_confirm">OK</string>
+    <string name="date_picker_cancel">Cancel</string>
 
     <!-- Tiles tab (C4 — web→android parity sweep) -->
     <string name="dashboard_tiles_title">Tiles Workspace</string>

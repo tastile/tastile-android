@@ -36,32 +36,33 @@ class QuickCreatePanelsTest {
     )
 
     @Test
-    fun `base renders Web order and routes its essential and behavior controls`() {
+    fun `base renders the compact header and routes its essential rows with inline behavior toggle`() {
         val store = QuickCreateStateStore()
         rule.setContent { QuickCreatePanelContent(store, {}, projects, listOf("health", "weekly")) }
 
         rule.onNodeWithTag("quick-create-base").assertIsDisplayed()
         rule.onNodeWithTag("quick-create-title").assertIsDisplayed()
         rule.onNodeWithTag("quick-create-organize-row").assertIsDisplayed()
-        rule.onNodeWithTag("quick-create-tile-kind").assertIsDisplayed()
         rule.onNodeWithTag("quick-create-essential-time").performClick()
         rule.onNodeWithTag("quick-create-subpanel-Time").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithTag("quick-create-essential-duration").performClick()
         rule.onNodeWithTag("quick-create-subpanel-Duration").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
-        rule.onNodeWithTag("quick-create-essential-repeat").performScrollTo().performClick()
-        rule.onNodeWithTag("quick-create-subpanel-Recurring").assertIsDisplayed()
-        rule.onNodeWithText("Back").performClick()
         rule.waitForIdle()
         rule.onNodeWithTag("quick-create-tasks-header").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-subpanel-Completion").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("quick-create-behavior-card").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-behavior-card").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag("quick-create-label-toggle").performScrollTo().performClick()
         rule.waitForIdle()
-        assertEquals(QuickCreatePanel.Behavior, store.state.value.activePanel)
-        rule.onNodeWithTag("behavior-role-label").performScrollTo().assertIsDisplayed()
+        assertEquals(QuickCreatePlanRole.Label, store.state.value.plan.role)
+        // Toggling again drops the executable-default flag without opening a subpanel.
+        assertEquals(QuickCreatePanel.Base, store.state.value.activePanel)
+        rule.onNodeWithTag("quick-create-label-toggle").performScrollTo().performClick()
+        rule.waitForIdle()
+        assertEquals(QuickCreatePlanRole.Executable, store.state.value.plan.role)
         assertTrue(rule.onAllNodesWithTag("quick-create-row-0").fetchSemanticsNodes().isEmpty())
     }
 
@@ -95,6 +96,11 @@ class QuickCreatePanelsTest {
         rule.onNodeWithTag("quick-create-title").performTextReplacement("Plan review")
         rule.onNodeWithTag("quick-create-essential-time").performClick()
         rule.onNodeWithTag("quick-create-when-day").performClick()
+        // Day mode only exposes start; validation also needs start + end.
+        store.updateTime(store.state.value.time.copy(span = store.state.value.time.span.copy(
+            start = "2026-07-19T09:00:00Z",
+            end = "2026-07-19T10:00:00Z",
+        )))
         rule.onNodeWithTag("quick-create-start").performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithText("Plan review").assertIsDisplayed()
@@ -177,17 +183,15 @@ class QuickCreatePanelsTest {
     }
 
     @Test
-    fun `base condition card routes through intent and intent routes to Web panels`() {
+    fun `completion logic card plus icon opens the completion subpanel directly`() {
         val store = QuickCreateStateStore()
         rule.setContent { QuickCreatePanelContent(store, {}, projects) }
 
-        rule.onNodeWithTag("quick-create-condition-add").performScrollTo().performClick()
-        rule.onNodeWithTag("quick-create-subpanel-Intent").assertIsDisplayed()
-        rule.onNodeWithTag("quick-create-intent-time").performClick()
-        rule.onNodeWithTag("quick-create-subpanel-Time").assertIsDisplayed()
+        rule.onNodeWithTag("quick-create-condition-card").performScrollTo().performClick()
+        rule.onNodeWithTag("quick-create-subpanel-Completion").assertIsDisplayed()
         rule.onNodeWithText("Back").performClick()
-        rule.onNodeWithTag("quick-create-condition-add").performScrollTo().performClick()
-        rule.onNodeWithTag("quick-create-intent-completion").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("quick-create-tasks-header").performScrollTo().performClick()
         rule.onNodeWithTag("quick-create-subpanel-Completion").assertIsDisplayed()
     }
 

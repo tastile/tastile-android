@@ -39,7 +39,7 @@ fun NowIndicator(
     Box(modifier) {
         Box(
             modifier = Modifier
-                .offset(y = nowY - 5.dp)
+                .offset(x = (-5).dp, y = nowY - 5.dp)
                 .size(10.dp)
                 .background(MaterialTheme.colorScheme.error, CircleShape)
                 .testTag("now-indicator-dot"),

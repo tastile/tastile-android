@@ -1,7 +1,6 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -9,20 +8,21 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Anchor
-import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -33,24 +33,22 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteSweep
-import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.HorizontalRule
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAddCheck
 import androidx.compose.material.icons.outlined.Repeat
-import androidx.compose.material.icons.outlined.RepeatOne
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.Task
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material.icons.outlined.WbSunny
+// m2-allow: m3-component
+import androidx.compose.material3.AssistChip
 // m2-allow: m3-component
 import androidx.compose.material3.DatePicker
 // m2-allow: m3-component
@@ -66,13 +64,7 @@ import androidx.compose.material3.HorizontalDivider
 // m2-allow: primitive
 import androidx.compose.material3.Icon
 // m2-allow: m3-component
-import androidx.compose.material3.ListItem
-// m2-allow: m3-component
-import androidx.compose.material3.ListItemDefaults
-// m2-allow: m3-component
 import androidx.compose.material3.MaterialTheme
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedButton
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: m3-component
@@ -96,7 +88,6 @@ import app.tastile.android.core.designsystem.component.AppSecondaryButton
 import app.tastile.android.core.designsystem.component.AppTertiaryButton
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
-import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.ui.mobile.components.picker.DatePickerSheet
 import app.tastile.android.ui.mobile.components.picker.ReferenceOption
@@ -105,10 +96,7 @@ import app.tastile.android.ui.mobile.components.picker.TimePickerSheet
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreateDurationRange
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
-import app.tastile.android.ui.mobile.sheets.QuickCreatePlanRole
-import app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode
 import app.tastile.android.ui.mobile.sheets.QuickCreateStateStore
-import app.tastile.android.ui.mobile.sheets.QuickCreateTileKind
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlanReference
 import app.tastile.android.ui.mobile.sheets.QuickCreateTaskContent
 import app.tastile.android.ui.mobile.sheets.QuickCreateTaskDefinition
@@ -116,9 +104,6 @@ import app.tastile.android.ui.mobile.sheets.QuickCreateTimeRequirement
 import app.tastile.android.ui.mobile.sheets.QuickCreateTimeOfDayMode
 import app.tastile.android.ui.mobile.sheets.QuickCreateWhenMode
 import app.tastile.android.ui.mobile.sheets.QuickCreateWindow
-import app.tastile.android.ui.mobile.sheets.QuickCreateFrameGenerator
-import app.tastile.android.ui.mobile.sheets.QuickCreateFrameRule
-import app.tastile.android.ui.mobile.sheets.QuickCreateRecurringRule
 import app.tastile.android.ui.mobile.sheets.QuickCreateConditionNode
 import app.tastile.android.ui.mobile.sheets.QuickCreateWindowRule
 import app.tastile.android.ui.mobile.sheets.QuickCreateDateRange
@@ -153,25 +138,18 @@ internal fun QuickCreateSubpanel(
     Column(
         Modifier
             .testTag("quick-create-subpanel-${panel.name}")
+            .fillMaxHeight()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = panel.name,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        HorizontalDivider()
         when (panel) {
             QuickCreatePanel.Intent -> IntentPanel(store)
             QuickCreatePanel.Time -> TimePanel(draft, store)
             QuickCreatePanel.Duration -> DurationPanel(draft, store)
-            QuickCreatePanel.Recurring -> RecurringPanel(draft, store)
             QuickCreatePanel.References -> ReferencesPanel(draft, store)
             QuickCreatePanel.Completion -> CompletionPanel(draft, store)
             QuickCreatePanel.Meta -> MetaPanel(draft, store, projects, knownTags, onBack)
-            QuickCreatePanel.Behavior -> BehaviorPanel(draft, store)
             QuickCreatePanel.Base -> Unit
         }
     }
@@ -201,10 +179,11 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             ReferenceOption(id = refId, label = ref.id.ifBlank { refId })
         }
     }
-    NiaOutlinedButton(
+    FilterChip(
+        selected = draft.time.whenMode == QuickCreateWhenMode.None,
         onClick = { setWhen(QuickCreateWhenMode.None) },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-when-none"),
-        text = { Text("No date or time") },
+        label = { Text("No date or time") },
         leadingIcon = { Icon(Icons.Outlined.EventBusy, contentDescription = null) },
     )
     LocalSectionHeader(title = "When")
@@ -217,14 +196,15 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             QuickCreateWhenMode.Reference -> Icons.Outlined.Tag
         }
     }
-    // M3 Phase 4b: when-modes are single-choice — render as FilterChip group
-    // in a FlowRow so selection state is visible without scrolling. Per-option
-    // tags (`quick-create-when-day` etc.) are preserved verbatim for tests.
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-when-chips"),
+    // M3 Phase 4b: when-modes are single-choice — render as a horizontally
+    // scrollable FilterChip row. Per-option tags (`quick-create-when-day` etc.)
+    // are preserved verbatim for tests.
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-when-chips"),
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        whenModes.forEach { mode ->
+        items(whenModes, key = { it }) { mode ->
             FilterChip(
                 selected = draft.time.whenMode == mode,
                 onClick = { setWhen(mode) },
@@ -252,12 +232,13 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
     if (draft.time.whenMode != QuickCreateWhenMode.None) {
         LocalSectionHeader(title = "Time of day")
         val timeOfDayModes = QuickCreateTimeOfDayMode.entries.toList()
-        // M3 Phase 4b: single-choice time-of-day → FilterChip group.
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-time-of-day-chips"),
+        // M3 Phase 4b: single-choice time-of-day → horizontally scrollable FilterChip row.
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-time-of-day-chips"),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            timeOfDayModes.forEach { mode ->
+            items(timeOfDayModes, key = { it }) { mode ->
                 FilterChip(
                     selected = draft.time.timeOfDayMode == mode,
                     onClick = {
@@ -321,26 +302,32 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                 Triple("midday", "09:00" to "18:00", Icons.Outlined.LightMode),
                 Triple("night", "18:00" to "24:00", Icons.Outlined.DarkMode),
             )
-            LocalSelectList(
-                options = quickRanges,
-                selected = quickRanges.firstOrNull { (_, range, _) ->
-                    draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range &&
-                        draft.time.timeOfDayStart == range.first &&
-                        draft.time.timeOfDayEnd == range.second
-                },
-                label = { it.first },
-                leading = { it.third },
-                onSelect = { (_, range, _) ->
-                    store.updateTime(
-                        draft.time.copy(
-                            timeOfDayMode = QuickCreateTimeOfDayMode.Range,
-                            timeOfDayStart = range.first,
-                            timeOfDayEnd = range.second,
-                        ),
+            // Single-choice quick-range → horizontally scrollable FilterChip row.
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().testTag("quick-create-time-quick-chips"),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(quickRanges, key = { it.first }) { (name, range, icon) ->
+                    FilterChip(
+                        selected = draft.time.timeOfDayMode == QuickCreateTimeOfDayMode.Range &&
+                            draft.time.timeOfDayStart == range.first &&
+                            draft.time.timeOfDayEnd == range.second,
+                        onClick = {
+                            store.updateTime(
+                                draft.time.copy(
+                                    timeOfDayMode = QuickCreateTimeOfDayMode.Range,
+                                    timeOfDayStart = range.first,
+                                    timeOfDayEnd = range.second,
+                                ),
+                            )
+                        },
+                        label = { Text(name) },
+                        leadingIcon = { Icon(icon, contentDescription = null) },
+                        modifier = Modifier.testTag("quick-create-time-quick-$name"),
                     )
-                },
-                testTag = { "quick-create-time-quick-${it.first}" },
-            )
+                }
+            }
         }
     }
     FilledTonalButton(
@@ -369,14 +356,22 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             2 -> Icons.Outlined.Schedule
             else -> Icons.Outlined.Repeat
         } }
-        LocalSelectList(
-            options = windowKinds,
-            selected = window.kind,
-            label = windowKindLabel,
-            leading = windowKindIcon,
-            onSelect = { kind -> store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) },
-            testTag = { "quick-create-window-$index-kind-$it" },
-        )
+        // Single-choice window-kind → horizontally scrollable FilterChip row.
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-window-$index-kind-chips"),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(windowKinds, key = { it }) { kind ->
+                FilterChip(
+                    selected = window.kind == kind,
+                    onClick = { store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) },
+                    label = { Text(windowKindLabel(kind)) },
+                    leadingIcon = { Icon(windowKindIcon(kind), contentDescription = null) },
+                    modifier = Modifier.testTag("quick-create-window-$index-kind-$kind"),
+                )
+            }
+        }
         LocalPickerField(
             label = stringResource(R.string.picker_date_start),
             value = window.bounds.start.ifBlank { "—" },
@@ -456,10 +451,11 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
 @Composable
 private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     val duration = draft.time.durationMinMax
-    NiaOutlinedButton(
+    FilterChip(
+        selected = duration.minMs == null && duration.maxMs == null,
         onClick = { store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(null, null))) },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none"),
-        text = { Text("No duration") },
+        label = { Text("No duration") },
         leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
     )
     LocalNumberField(
@@ -472,64 +468,12 @@ private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
         suffix = "min",
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-minutes"),
     )
-    NiaOutlinedButton(
+    NiaFilledTonalButton(
         onClick = { /* wired by caller if needed */ },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-completion-link"),
-        text = { Text("Use for completion") },
         leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
+        text = { Text("Use for completion") },
     )
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    Column(Modifier.testTag("quick-create-recurring-controls")) {
-        val repeatModes = QuickCreateRepeatMode.entries.toList()
-        val repeatIcon: (QuickCreateRepeatMode) -> androidx.compose.ui.graphics.vector.ImageVector = { mode ->
-            when (mode) {
-                QuickCreateRepeatMode.Once -> Icons.Outlined.Event
-                QuickCreateRepeatMode.Daily -> Icons.Outlined.Today
-                QuickCreateRepeatMode.Weekly -> Icons.Outlined.DateRange
-                QuickCreateRepeatMode.Interval -> Icons.Outlined.Repeat
-                QuickCreateRepeatMode.Condition -> Icons.Outlined.Autorenew
-            }
-        }
-        // M3 Phase 4b: single-choice repeat-mode → FilterChip group.
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-repeat-chips"),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            repeatModes.forEach { mode ->
-                FilterChip(
-                    selected = draft.recurring.repeatMode == mode,
-                    onClick = {
-                        store.updateRecurring(draft.recurring.copy(repeatMode = mode))
-                        if (mode != QuickCreateRepeatMode.Once) store.updateIdentity(draft.identity.copy(kind = QuickCreateTileKind.Recurring))
-                    },
-                    label = { Text(mode.name) },
-                    leadingIcon = { Icon(repeatIcon(mode), contentDescription = null) },
-                    modifier = Modifier.testTag("quick-create-repeat-${mode.name.lowercase()}"),
-                )
-            }
-        }
-        LocalSectionHeader(
-            title = "Weekdays",
-            subtitle = if (draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly) null else "Weekly only",
-        )
-        LocalWeekdayPicker(
-            selectedMask = draft.recurring.weekdayMask,
-            onToggle = { bit -> store.updateRecurring(draft.recurring.copy(weekdayMask = draft.recurring.weekdayMask xor (1 shl bit))) },
-            enabled = draft.recurring.repeatMode == QuickCreateRepeatMode.Weekly,
-            testTag = { "quick-create-weekday-$it" },
-        )
-        NiaOutlinedButton(
-            onClick = { store.updateRecurring(draft.recurring.copy(endDate = if (draft.recurring.endDate.isBlank()) LocalDate.now().toString() else "")) },
-            modifier = Modifier.testTag("quick-create-recurring-end-switch"),
-            text = { Text("End date") },
-            leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null) },
-        )
-        if (draft.recurring.endDate.isNotBlank()) NativeDateField("End date", draft.recurring.endDate, "quick-create-recurring-end-date") { value -> store.updateRecurring(draft.recurring.copy(endDate = value)) }
-    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -555,12 +499,13 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             else -> "Filter"
         } }
         val targetKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> if (kind == 0) Icons.Outlined.Tag else Icons.Outlined.Link }
-        // M3 Phase 4b: single-choice target-kind → FilterChip group.
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-reference-record-$index-target-kind-chips"),
+        // M3 Phase 4b: single-choice target-kind → horizontally scrollable FilterChip row.
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-record-$index-target-kind-chips"),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            targetKinds.forEach { kind ->
+            items(targetKinds, key = { it }) { kind ->
                 FilterChip(
                     selected = target["kind"]?.jsonPrimitive?.content?.toIntOrNull() == kind,
                     onClick = { updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) },
@@ -579,12 +524,13 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             3 -> "Before"
             else -> "After"
         } }
-        // M3 Phase 4b: single-choice relation → FilterChip group.
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-reference-record-$index-relation-chips"),
+        // M3 Phase 4b: single-choice relation → horizontally scrollable FilterChip row.
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-record-$index-relation-chips"),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            relations.forEach { relation ->
+            items(relations, key = { it }) { relation ->
                 FilterChip(
                     selected = pick["kind"]?.jsonPrimitive?.content?.toIntOrNull() == relation,
                     onClick = { updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) },
@@ -624,7 +570,6 @@ private fun IntentPanel(store: QuickCreateStateStore) {
     val intentTargets = listOf(
         Triple("Time", QuickCreatePanel.Time, Icons.Outlined.Schedule),
         Triple("References", QuickCreatePanel.References, Icons.Outlined.Link),
-        Triple("Recurring", QuickCreatePanel.Recurring, Icons.Outlined.Repeat),
         Triple("Meta", QuickCreatePanel.Meta, Icons.Outlined.Tag),
         Triple("Completion", QuickCreatePanel.Completion, Icons.Outlined.Check),
     )
@@ -686,12 +631,13 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         1 -> Icons.AutoMirrored.Outlined.PlaylistAdd
         else -> Icons.Outlined.Block
     } }
-    // M3 Phase 4b: single-choice completion logic → FilterChip group.
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("quick-create-completion-logic-chips"),
+    // M3 Phase 4b: single-choice completion logic → horizontally scrollable FilterChip row.
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-completion-logic-chips"),
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        logicKinds.forEach { (kind, label) ->
+        items(logicKinds, key = { it.first }) { (kind, label) ->
             FilterChip(
                 selected = draft.plan.completion.root.kind == kind,
                 onClick = {
@@ -710,25 +656,26 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         }
     }
     ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }, allowTermKind = false)
-    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        NiaFilledTonalButton(
-            onClick = { addCompletionTerm(draft, store, "task") },
-            modifier = Modifier.testTag("quick-create-completion-add-task"),
-            leadingIcon = { Icon(Icons.Outlined.Task, contentDescription = null) },
-            text = { Text("Task") },
-        )
-        NiaFilledTonalButton(
-            onClick = { addCompletionTerm(draft, store, "relation") },
-            modifier = Modifier.testTag("quick-create-completion-add-relation"),
-            leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
-            text = { Text("Relation") },
-        )
-        NiaFilledTonalButton(
-            onClick = { addCompletionTerm(draft, store, "metric") },
-            modifier = Modifier.testTag("quick-create-completion-add-metric"),
-            leadingIcon = { Icon(Icons.Outlined.BarChart, contentDescription = null) },
-            text = { Text("Metric") },
-        )
+    val completionAddTerms = listOf(
+        Triple("task", "Task", Icons.Outlined.Task),
+        Triple("relation", "Relation", Icons.Outlined.Link),
+        Triple("metric", "Metric", Icons.Outlined.BarChart),
+    )
+    // M3 Phase 4b: action-trigger chips → horizontally scrollable AssistChip row,
+    // visually unified with the surrounding FilterChip groups.
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-completion-add-chips"),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(completionAddTerms, key = { it.first }) { (kind, label, icon) ->
+            AssistChip(
+                onClick = { addCompletionTerm(draft, store, kind) },
+                label = { Text(label) },
+                leadingIcon = { Icon(icon, contentDescription = null) },
+                modifier = Modifier.testTag("quick-create-completion-add-$kind"),
+            )
+        }
     }
     NiaFilledTonalButton(
         onClick = {
@@ -826,14 +773,22 @@ private fun updateTimeRequirement(
         2 -> Icons.Outlined.Block
         else -> Icons.Outlined.TextFields
     } }
-    LocalSelectList(
-        options = logicKinds,
-        selected = logicKinds.firstOrNull { it.first == node.kind },
-        label = { it.second },
-        leading = { logicIcon(it.first) },
-        onSelect = { (kind, _) -> onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) defaultTermValue("calendar") else null)) },
-        testTag = { "condition-$path-logic-${it.second.lowercase()}" },
-    )
+    // Single-choice logic → horizontally scrollable FilterChip row.
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().testTag("condition-$path-logic-chips"),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(logicKinds, key = { it.first }) { (kind, label) ->
+            FilterChip(
+                selected = node.kind == kind,
+                onClick = { onChange(node.copy(kind = kind, children = if (kind == 3) emptyList() else node.children, term = if (kind == 3) defaultTermValue("calendar") else null)) },
+                label = { Text(label) },
+                leadingIcon = { Icon(logicIcon(kind), contentDescription = null) },
+                modifier = Modifier.testTag("condition-$path-logic-${label.lowercase()}"),
+            )
+        }
+    }
     if (node.kind == 3) {
         val termTypes = listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life")
         val termIcon: (String) -> androidx.compose.ui.graphics.vector.ImageVector = { type -> when (type) {
@@ -848,12 +803,13 @@ private fun updateTimeRequirement(
             "life" -> Icons.Outlined.Favorite
             else -> Icons.Outlined.TextFields
         } }
-        // M3 Phase 4b: single-choice term-type → FilterChip group.
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("condition-$path-term-chips"),
+        // M3 Phase 4b: single-choice term-type → horizontally scrollable FilterChip row.
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().testTag("condition-$path-term-chips"),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            termTypes.forEach { type ->
+            items(termTypes, key = { it }) { type ->
                 FilterChip(
                     selected = node.term?.jsonObjectOrEmpty()?.string("kind") == type,
                     onClick = { onChange(node.copy(term = defaultTermValue(type))) },
@@ -940,12 +896,13 @@ private fun updateTimeRequirement(
         3 -> "Before"
         else -> "After"
     } }
-    // M3 Phase 4b: single-choice relation → FilterChip group.
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("condition-relation-kind-chips"),
+    // M3 Phase 4b: single-choice relation → horizontally scrollable FilterChip row.
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().testTag("condition-relation-kind-chips"),
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        relations.forEach { relation ->
+        items(relations, key = { it }) { relation ->
             FilterChip(
                 selected = value.string("relation", "0").toIntOrNull() == relation,
                 onClick = { onChange(term.withValue("relation", relation)) },
@@ -962,12 +919,13 @@ private fun updateTimeRequirement(
         2 -> "Parent span"
         else -> "Gap"
     } }
-    // M3 Phase 4b: single-choice window-kind → FilterChip group.
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("condition-relation-window-chips"),
+    // M3 Phase 4b: single-choice window-kind → horizontally scrollable FilterChip row.
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().testTag("condition-relation-window-chips"),
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        windowKinds.forEach { kind ->
+        items(windowKinds, key = { it }) { kind ->
             FilterChip(
                 selected = value.string("windowKind", "0").toIntOrNull() == kind,
                 onClick = { onChange(term.withValue("windowKind", kind)) },
@@ -1102,11 +1060,11 @@ private fun MetaPanel(
         }
     }
     LocalSectionHeader(title = "Tags")
-    FlowRow(Modifier.testTag("meta-tag-chips")) {
-        knownTags.filterNot { it in draft.meta.tags }.forEach { tag ->
+    LazyRow(Modifier.testTag("meta-tag-chips")) {
+        items(knownTags.filterNot { it in draft.meta.tags }, key = { it }) { tag ->
             FilterChip(false, { store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag)) }, { Text("#$tag") }, Modifier.testTag("meta-tag-suggestion-$tag"))
         }
-        draft.meta.tags.forEach { tag ->
+        items(draft.meta.tags, key = { it }) { tag ->
             FilterChip(true, { store.updateMeta(draft.meta.copy(tags = draft.meta.tags - tag)) }, { Text("#$tag ×") }, Modifier.testTag("meta-tag-selected-$tag"))
         }
     }
@@ -1146,25 +1104,6 @@ private fun MetaPanel(
 }
 
 @Composable
-private fun BehaviorPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    val planRoles = QuickCreatePlanRole.entries.toList()
-    val roleIcon: (QuickCreatePlanRole) -> androidx.compose.ui.graphics.vector.ImageVector = { role ->
-        when (role) {
-            QuickCreatePlanRole.Label -> Icons.Outlined.Flag
-            QuickCreatePlanRole.Executable -> Icons.Outlined.PlayArrow
-        }
-    }
-    LocalSelectList(
-        options = planRoles,
-        selected = draft.plan.role,
-        label = { it.name },
-        leading = roleIcon,
-        onSelect = { store.updateBehavior(it) },
-        testTag = { "behavior-role-${it.name.lowercase()}" },
-    )
-}
-
-@Composable
 private fun JsonEditor(label: String, value: JsonElement, tag: String? = null, onValidValue: (JsonElement) -> Unit) {
     val encoded = Json.encodeToString(JsonElement.serializer(), value)
     var text by remember(encoded) { mutableStateOf(encoded) }
@@ -1197,47 +1136,6 @@ internal fun LocalSectionHeader(title: String, subtitle: String? = null) {
             )
         }
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun <T> LocalSelectList(
-    options: List<T>,
-    selected: T?,
-    label: (T) -> String,
-    leading: ((T) -> androidx.compose.ui.graphics.vector.ImageVector)? = null,
-    onSelect: (T) -> Unit,
-    testTag: ((T) -> String)? = null,
-) {
-    Column(Modifier.fillMaxWidth()) {
-        options.forEach { option ->
-            val isSelected = option == selected
-            ListItem(
-                headlineContent = { Text(label(option)) },
-                leadingContent = if (leading != null) {
-                    { Icon(leading(option), contentDescription = null) }
-                } else {
-                    null
-                },
-                trailingContent = if (isSelected) {
-                    { Icon(Icons.Outlined.Check, contentDescription = null) }
-                } else {
-                    null
-                },
-                colors = if (isSelected) {
-                    ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                } else {
-                    ListItemDefaults.colors()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onSelect(option) }
-                    .then(
-                        if (testTag != null) Modifier.testTag(testTag(option)) else Modifier,
-                    ),
-            )
-        }
     }
 }
 
@@ -1305,7 +1203,6 @@ internal fun LocalPickerField(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun LocalWeekdayPicker(
     selectedMask: Int,
@@ -1314,12 +1211,12 @@ internal fun LocalWeekdayPicker(
     testTag: (Int) -> String,
 ) {
     val days = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
-    FlowRow(
+    LazyRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        days.forEachIndexed { index, name ->
+        items(days.size, key = { it }) { index ->
+            val name = days[index]
             val bit = 1 shl index
             FilterChip(
                 selected = (selectedMask and bit) != 0,

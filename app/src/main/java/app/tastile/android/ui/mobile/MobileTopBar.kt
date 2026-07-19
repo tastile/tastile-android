@@ -3,6 +3,7 @@ package app.tastile.android.ui.mobile
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,14 +19,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.CalendarViewDay
+import androidx.compose.material.icons.outlined.CalendarViewMonth
+import androidx.compose.material.icons.outlined.CalendarViewWeek
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.NotificationsNone
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
-// m2-allow: m3-component
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +47,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -53,16 +54,16 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.ui.dashboard.CalendarMode
 import app.tastile.android.ui.dashboard.TimelineScale
 import coil.compose.AsyncImage
 
 @Composable
 fun MobileTopBar(
-    title: String,
+    title: CharSequence,
     scale: TimelineScale,
     onScaleChange: (TimelineScale) -> Unit,
     onMenu: () -> Unit,
@@ -71,14 +72,7 @@ fun MobileTopBar(
     avatarUrl: String? = null,
     avatarFallback: String = "U",
     showScale: Boolean = true,
-    calendarMode: CalendarMode? = null,
-    onCalendarModeChange: ((CalendarMode) -> Unit)? = null,
-    onToday: (() -> Unit)? = null,
-    onPrevious: (() -> Unit)? = null,
-    onNext: (() -> Unit)? = null,
-    canNavigate: Boolean = true,
-    minimumDuration: Int? = null,
-    onMinimumDurationChange: ((Int) -> Unit)? = null,
+    onTitleClick: (() -> Unit)? = null,
 ) {
     val background = MaterialTheme.colorScheme.background
     Row(
@@ -104,25 +98,53 @@ fun MobileTopBar(
             descriptionRes = R.string.mobile_top_menu,
             onClick = onMenu,
         )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 4.dp),
-        )
+        // Clickable title: tapping opens the scale-appropriate Material3 picker
+        // (Day/Month → DatePicker, Week → DateRangePicker). The wrapped title
+        // and the picker plumbing live in MobileScaffold; this composable just
+        // forwards the optional callback. When null the title is plain text.
+        // The Text is wrapped in a Box with `contentAlignment = CenterStart`
+        // so the title lineBox centers inside a fixed-height container —
+        // matching how IconButton visuals center inside their 48.dp box.
+        // Without the Box wrapper, Row.CenterVertically aligns to the Text's
+        // line-box center while siblings sit in a 48.dp IconButton, leaving
+        // the title visually drifting up (most obvious on Week when the
+        // longer "M/d(E) – M/d(E)" string lands higher than the icons).
+        val titleClickModifier = if (onTitleClick != null) {
+            Modifier.clickable(
+                onClickLabel = stringResource(R.string.mobile_top_title_action),
+                role = Role.Button,
+                onClick = onTitleClick,
+            )
+        } else {
+            Modifier
+        }
+        Box(
+            modifier = Modifier
+                .padding(start = 4.dp)
+                .heightIn(min = 48.dp)
+                .then(titleClickModifier),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            // Compose's `Text` overloads resolve on `String` and `AnnotatedString`
+            // — there's no `CharSequence` overload — so we coerce at the call
+            // site to preserve per-glyph SpanStyle (Week uses an AnnotatedString
+            // to shrink the weekday label and drop the parens around it).
+            val titleText = if (title is AnnotatedString) {
+                title
+            } else {
+                AnnotatedString(title.toString())
+            }
+            Text(
+                text = titleText,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
         Box(modifier = Modifier.weight(1f))
         if (showScale) {
             ScaleDropdown(
                 scale = scale,
                 onScaleChange = onScaleChange,
-                calendarMode = calendarMode,
-                onCalendarModeChange = onCalendarModeChange,
-                onToday = onToday,
-                onPrevious = onPrevious,
-                onNext = onNext,
-                canNavigate = canNavigate,
-                minimumDuration = minimumDuration,
-                onMinimumDurationChange = onMinimumDurationChange,
             )
             Spacer(Modifier.width(4.dp))
         }
@@ -143,19 +165,8 @@ fun MobileTopBar(
 private fun ScaleDropdown(
     scale: TimelineScale,
     onScaleChange: (TimelineScale) -> Unit,
-    calendarMode: CalendarMode?,
-    onCalendarModeChange: ((CalendarMode) -> Unit)?,
-    onToday: (() -> Unit)?,
-    onPrevious: (() -> Unit)?,
-    onNext: (() -> Unit)?,
-    canNavigate: Boolean,
-    minimumDuration: Int?,
-    onMinimumDurationChange: ((Int) -> Unit)?,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val hasNav = onToday != null || onPrevious != null || onNext != null
-    val hasMode = calendarMode != null && onCalendarModeChange != null
-    val hasMin = minimumDuration != null && onMinimumDurationChange != null
     Box {
         CompactPickerButton(
             label = scale.name,
@@ -166,7 +177,13 @@ private fun ScaleDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
-            TimelineScale.entries.forEach { entry ->
+            listOf(TimelineScale.Day, TimelineScale.Week, TimelineScale.Month).forEach { entry ->
+                val icon = when (entry) {
+                    TimelineScale.Day -> Icons.Outlined.CalendarViewDay
+                    TimelineScale.Week -> Icons.Outlined.CalendarViewWeek
+                    TimelineScale.Month -> Icons.Outlined.CalendarViewMonth
+                    else -> Icons.Outlined.CalendarViewMonth
+                }
                 DropdownMenuItem(
                     text = {
                         Text(
@@ -174,75 +191,18 @@ private fun ScaleDropdown(
                             fontWeight = if (entry == scale) FontWeight.SemiBold else FontWeight.Normal,
                         )
                     },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
                     onClick = {
                         onScaleChange(entry)
                         expanded = false
                     },
                 )
-            }
-            if (hasNav || hasMode || hasMin) {
-                HorizontalDivider()
-            }
-            if (hasNav) {
-                onPrevious?.let {
-                    DropdownMenuItem(
-                        text = { Text("‹ Previous") },
-                        enabled = canNavigate,
-                        modifier = Modifier.testTag("dropdown-nav-prev"),
-                        onClick = { it(); expanded = false },
-                    )
-                }
-                onToday?.let {
-                    DropdownMenuItem(
-                        text = { Text("Today") },
-                        modifier = Modifier.testTag("dropdown-today"),
-                        onClick = { it(); expanded = false },
-                    )
-                }
-                onNext?.let {
-                    DropdownMenuItem(
-                        text = { Text("Next ›") },
-                        enabled = canNavigate,
-                        modifier = Modifier.testTag("dropdown-nav-next"),
-                        onClick = { it(); expanded = false },
-                    )
-                }
-            }
-            if (hasMode) {
-                HorizontalDivider()
-                CalendarMode.entries.forEach { mode ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = mode.name,
-                                fontWeight = if (mode == calendarMode) FontWeight.SemiBold else FontWeight.Normal,
-                            )
-                        },
-                        modifier = Modifier.testTag("dropdown-mode-${mode.name.lowercase()}"),
-                        onClick = {
-                            onCalendarModeChange?.invoke(mode)
-                            expanded = false
-                        },
-                    )
-                }
-            }
-            if (hasMin) {
-                HorizontalDivider()
-                listOf(0, 5, 15, 30).forEach { minutes ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = if (minutes == 0) "Any" else "${minutes}m",
-                                fontWeight = if (minutes == minimumDuration) FontWeight.SemiBold else FontWeight.Normal,
-                            )
-                        },
-                        modifier = Modifier.testTag("dropdown-min-$minutes"),
-                        onClick = {
-                            onMinimumDurationChange?.invoke(minutes)
-                            expanded = false
-                        },
-                    )
-                }
             }
         }
     }

@@ -26,7 +26,7 @@ val hasReleaseSigning =
 
 extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     namespace = "app.tastile.android"
-    compileSdk = 35
+    compileSdk = 37
     ndkVersion = "27.1.12297006"
 
     signingConfigs {
@@ -219,7 +219,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha24")
     implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.0.0")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.coil-kt:coil-compose:2.7.0")

@@ -1,10 +1,14 @@
 package app.tastile.android.ui.mobile.calendar
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,10 +23,23 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -37,24 +54,30 @@ import java.time.ZoneId
  * Top-level Week view (Phase v37 / Task 4).
  *
  * Owns the single shared vertical scroll state and routes data to:
- *   - [WeekHeaderRow] (pinned DOW header, above the scroll area)
+ *   - [WeekHeaderRow] (pinned DOW header, overlaid on the body with a
+ *     translucent gradient so the scrolled grid is visible through it,
+ *     mirroring the Day top bar)
  *   - [WeekViewFrame] (static 7-column grid lines, scrolls with body)
  *   - [WeekViewTile] (per-day event chips + today's NowIndicator,
  *     overlaid on the Frame inside one weighted Box)
  *
- * Week has no pinch zoom in v37; the body height is computed from
- * [GridConstants.DAY_END_HOUR] and the caller's `zoom` value.
+ * Week uses the same anchored two-finger zoom behavior as Day while the
+ * gutter, grid, and event tiles remain in one shared scroll space.
  *
  * Layout shape:
- *   Column {
- *     Frame (DOW header row, no scroll)
- *     Row(verticalScroll) {
- *       TimeGutter (scrolls with body)
- *       Box {
- *         (Frame grid lines — overlaid so the grid + chips translate together)
- *         Tile (per-day columns)
+ *   BoxWithConstraints {
+ *     Column(pointerInput, verticalScroll) {   // body: extends behind top bar
+ *       Row(graphicsLayer) {
+ *         TimeGutter
+ *         Box {
+ *           WeekViewFrame (grid lines)
+ *           WeekViewTile    (event chips)
+ *         }
  *       }
  *     }
+ *     Row(align=TopStart, padding top for top bar) // pinned header only
+ *       | Spacer over TimeGutter (transparent)
+ *       | WeekHeaderRow (7 day columns)
  *   }
  */
 @Composable
@@ -66,9 +89,22 @@ fun WeekView(
     zoom: Float,
     onZoomChange: (Float) -> Unit,
     onEditEvent: (CoreTimelineItem) -> Unit,
+    scrollState: ScrollState = rememberScrollState(),
     modifier: Modifier = Modifier,
 ) {
-    val scrollState = rememberScrollState()
+    val latestZoom by rememberUpdatedState(zoom)
+    var pendingZoomScroll by remember { mutableStateOf<Int?>(null) }
+    var pinchZoom by remember { mutableStateOf<Float?>(null) }
+    var pinchTranslationY by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(zoom, pendingZoomScroll) {
+        pendingZoomScroll?.let { target ->
+            withFrameNanos { }
+            scrollState.scrollTo(target)
+            pendingZoomScroll = null
+            pinchZoom = null
+            pinchTranslationY = 0f
+        }
+    }
     val blocksByDay = remember(items, weekStart, zone) {
         (0 until GridConstants.WEEK_DAYS).associate { offset ->
             val day = weekStart.plusDays(offset.toLong())
@@ -76,81 +112,173 @@ fun WeekView(
         }
     }
     val totalMinutes = GridConstants.DAY_END_HOUR * 60 + GridConstants.SCROLL_BUFFER_MIN * 2
-    val pxPerMin = computeWeekPxPerMin(zoom = zoom, totalMinutes = totalMinutes)
-    val totalHeight: Dp = (pxPerMin * totalMinutes).dp
+    val background = MaterialTheme.colorScheme.background
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        // Header (DOW + day number) lives in the Frame. It does not scroll.
-        Box(
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val density = LocalDensity.current.density
+        val viewportPx = maxHeight.value * density
+        val effectiveZoom = pinchZoom ?: zoom
+        val pxPerMin = computeWeekPxPerMin(zoom = effectiveZoom, totalMinutes = totalMinutes)
+        val totalHeight: Dp = (pxPerMin * totalMinutes).dp
+        // Body: gutter + Frame grid + Tile columns share one scroll.
+        // It starts at the screen top so the top-bar gradient reveals the
+        // timeline instead of a reserved background band.
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(GridConstants.WEEK_HEADER_HEIGHT),
+                .fillMaxSize()
+                .background(background)
+                .testTag("week-view-body")
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        var initialDistance = 0f
+                        var initialZoom = 0f
+                        var initialScroll = 0
+                        var initialCentroidY = 0f
+                        var finalZoom = latestZoom
+                        var finalScroll: Int? = null
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val pressed = event.changes.filter { it.pressed }
+                            if (pressed.size >= 2) {
+                                val first = pressed[0]
+                                val second = pressed[1]
+                                event.changes.forEach { it.consume() }
+
+                                val firstNew = first.changedToDown()
+                                val secondNew = second.changedToDown()
+                                if (firstNew || secondNew) continue
+
+                                val currentDistance = (first.position - second.position).getDistance()
+                                if (currentDistance <= 0f) continue
+
+                                if (initialDistance == 0f) {
+                                    initialDistance = currentDistance
+                                    initialZoom = latestZoom
+                                    initialScroll = scrollState.value
+                                    initialCentroidY = (first.position.y + second.position.y) / 2f
+                                    finalZoom = initialZoom
+                                    finalScroll = initialScroll
+                                    pinchZoom = initialZoom
+                                    pinchTranslationY = 0f
+                                } else {
+                                    val newZoom = (initialZoom * currentDistance / initialDistance)
+                                        .coerceIn(GridConstants.ZOOM_MIN, GridConstants.ZOOM_MAX)
+                                    val targetScroll = anchoredWeekZoomScrollTarget(
+                                        currentScrollPx = initialScroll,
+                                        anchorYpx = initialCentroidY,
+                                        oldPxPerMin = computeWeekPxPerMin(initialZoom, totalMinutes) * density,
+                                        newPxPerMin = computeWeekPxPerMin(newZoom, totalMinutes) * density,
+                                        totalMinutes = totalMinutes,
+                                        viewportPx = viewportPx,
+                                    )
+                                    finalZoom = newZoom
+                                    finalScroll = targetScroll
+                                    pinchZoom = newZoom
+                                    pinchTranslationY = (initialScroll - targetScroll).toFloat()
+                                }
+                            } else {
+                                initialDistance = 0f
+                            }
+                        } while (event.changes.any { it.pressed })
+
+                        finalScroll?.let { targetScroll ->
+                            pendingZoomScroll = targetScroll
+                            onZoomChange(finalZoom)
+                        } ?: run {
+                            pinchZoom = null
+                            pinchTranslationY = 0f
+                        }
+                    }
+                }
+                .verticalScroll(scrollState),
         ) {
-            Row(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(totalHeight)
+                    .graphicsLayer { translationY = pinchTranslationY },
+            ) {
+                WeekTimeGutter(
+                    endHour = GridConstants.DAY_END_HOUR,
+                    pxPerHour = (pxPerMin * 60).dp,
+                    totalHeight = totalHeight,
+                    modifier = Modifier.width(GridConstants.TIME_GUTTER_WIDTH),
+                )
+                // Frame + Tile overlay inside one weighted Box so the Tile gets
+                // nonzero width (single-scroll multi-layer pattern, identical
+                // to DayView's Scaffold body Box).
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(totalHeight),
+                ) {
+                    // Frame: 7-column hour grid (sibling of Tile in the Box)
+                    WeekViewFrame(
+                        weekStart = weekStart,
+                        pxPerMin = pxPerMin,
+                        onOpenDay = onOpenDay,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // Tile: 7 columns of event chips + today's NowIndicator.
+                    // Sibling of Frame so the chips translate with the Frame's
+                    // grid under the shared scroll.
+                    WeekViewTile(
+                        weekStart = weekStart,
+                        blocksByDay = blocksByDay,
+                        pxPerMin = pxPerMin,
+                        zone = zone,
+                        scrollState = scrollState,
+                        onEditEvent = onEditEvent,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+        }
+        // Translucent WeekHeaderRow overlay — sibling of the body inside the
+        // root BoxWithConstraints, aligned below the top bar. The gradient (0.65 → 0.35 → 0.0) is applied to the
+            // 7-column area only, NOT the gutter, so the left time labels
+            // stay visible right under the title bar — mirroring Day, where
+            // the gutter is never masked.
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .padding(top = TOP_BAR_TOTAL_HEIGHT())
+                    .height(GridConstants.WEEK_HEADER_HEIGHT),
+            ) {
+                // Transparent gutter column — no gradient here so the time
+                // gutter labels (00, 01, 02, ...) show through cleanly, the
+                // same way the Day gutter is never masked.
                 Spacer(
                     modifier = Modifier
                         .width(GridConstants.TIME_GUTTER_WIDTH)
-                        .height(GridConstants.WEEK_HEADER_HEIGHT)
-                        .background(MaterialTheme.colorScheme.background),
+                        .height(GridConstants.WEEK_HEADER_HEIGHT),
                 )
-                // 7 header text composables — slotted here to keep them
-                // visually aligned with the body columns. The
-                // `WeekViewFrame` composable separately owns the
-                // `week-view-frame` testTag for unit tests; the visible
-                // headers here are equivalent Composables.
-                WeekHeaderRow(
-                    weekStart = weekStart,
-                    onOpenDay = onOpenDay,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to background.copy(alpha = 0.65f),
+                                0.50f to background.copy(alpha = 0.35f),
+                                1f to Color.Transparent,
+                            ),
+                        ),
+                ) {
+                    // 7 header text composables — slotted here to keep them
+                    // visually aligned with the body columns. The
+                    // `WeekViewFrame` composable separately owns the
+                    // `week-view-frame` testTag for unit tests; the visible
+                    // headers here are equivalent Composables.
+                    WeekHeaderRow(
+                        weekStart = weekStart,
+                        onOpenDay = onOpenDay,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
-        }
-        // Body: gutter + Frame grid + Tile columns share one scroll.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(scrollState),
-        ) {
-            WeekTimeGutter(
-                endHour = GridConstants.DAY_END_HOUR,
-                pxPerHour = (pxPerMin * 60).dp,
-                totalHeight = totalHeight,
-                modifier = Modifier.width(GridConstants.TIME_GUTTER_WIDTH),
-            )
-            // Frame + Tile overlay inside one weighted Box so the Tile gets
-            // nonzero width (single-scroll multi-layer pattern, identical
-            // to DayView's Scaffold body Box).
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(totalHeight),
-            ) {
-                // Frame: 7-column hour grid (sibling of Tile in the Box)
-                WeekViewFrame(
-                    weekStart = weekStart,
-                    pxPerMin = pxPerMin,
-                    onOpenDay = onOpenDay,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                // Tile: 7 columns of event chips + today's NowIndicator.
-                // Sibling of Frame so the chips translate with the Frame's
-                // grid under the shared scroll.
-                WeekViewTile(
-                    weekStart = weekStart,
-                    blocksByDay = blocksByDay,
-                    pxPerMin = pxPerMin,
-                    zone = zone,
-                    scrollState = scrollState,
-                    onEditEvent = onEditEvent,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        }
-        // Week has no pinch zoom yet; onZoomChange matches DayView for forward symmetry.
     }
 }
 
@@ -203,11 +331,26 @@ private fun WeekHeaderRow(
     }
 }
 
+private fun anchoredWeekZoomScrollTarget(
+    currentScrollPx: Int,
+    anchorYpx: Float,
+    oldPxPerMin: Float,
+    newPxPerMin: Float,
+    totalMinutes: Int,
+    viewportPx: Float,
+): Int {
+    if (oldPxPerMin <= 0f || newPxPerMin <= 0f) return currentScrollPx
+    val minutesAtAnchor = (currentScrollPx + anchorYpx) / oldPxPerMin
+    val maxScroll = (newPxPerMin * totalMinutes - viewportPx).coerceAtLeast(0f)
+    return (minutesAtAnchor * newPxPerMin - anchorYpx)
+        .coerceIn(0f, maxScroll)
+        .toInt()
+}
+
 /**
  * Compute the week body's `pxPerMin` (dp/min) from the caller's zoom
- * value. Week has no pinch zoom in v37, so this is a passthrough
- * clamped to [GridConstants.ZOOM_MIN] floor; kept as a named
- * function so T7's planned PxPerMinTest can target it later.
+ * value. The pinch gesture clamps zoom to [GridConstants.ZOOM_MIN] and
+ * [GridConstants.ZOOM_MAX] before this helper lays out the shared body.
  */
 internal fun computeWeekPxPerMin(zoom: Float, totalMinutes: Int): Float {
     val base = 1f
@@ -244,12 +387,17 @@ internal fun WeekTimeGutter(
             val yLine = h * pxPerHourPx
             val label = "%02d".format(h)
             val measured = textMeasurer.measure(label, labelStyle)
+            // Clamp the top so the first label ("00") sits flush at the
+            // canvas top instead of being half-clipped above it. For h>=1
+            // yLine is well below the clamp so the label stays centered on
+            // its grid line.
+            val yTop = (yLine - measured.size.height / 2f).coerceAtLeast(0f)
             drawText(
                 textMeasurer = textMeasurer,
                 text = label,
                 topLeft = Offset(
                     x = size.width - measured.size.width - padRight,
-                    y = yLine - measured.size.height / 2f,
+                    y = yTop,
                 ),
                 style = labelStyle,
             )
