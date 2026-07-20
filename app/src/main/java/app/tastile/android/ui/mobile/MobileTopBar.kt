@@ -28,6 +28,7 @@ import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
+// m2-allow: m3-component
 import androidx.compose.material3.IconButton
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme

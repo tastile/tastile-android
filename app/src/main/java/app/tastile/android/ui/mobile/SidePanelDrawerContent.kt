@@ -19,6 +19,7 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 // m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
 import androidx.compose.material3.Icon
 // m2-allow: m3-component
 import androidx.compose.material3.MaterialTheme

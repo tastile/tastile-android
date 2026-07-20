@@ -9,9 +9,11 @@ import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.WorkspacePremium
 // m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: m3-component
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
+// m2-allow: primitive
 import androidx.compose.material3.HorizontalDivider
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme

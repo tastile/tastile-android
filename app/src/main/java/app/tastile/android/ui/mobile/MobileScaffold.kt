@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 // m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
+// m2-allow: m3-component
 import androidx.compose.material3.DatePicker as MaterialDatePicker
 // m2-allow: state-holder
 import androidx.compose.material3.DrawerValue
@@ -26,6 +27,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 // m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: m3-component
 import androidx.compose.material3.TextButton
 // m2-allow: state-holder
 import androidx.compose.material3.rememberDrawerState
