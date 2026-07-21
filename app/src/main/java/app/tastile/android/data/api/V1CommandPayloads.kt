@@ -270,7 +270,7 @@ data class SourceSchedulePayload(
 @Serializable
 data class SourceTileWritePayload(
     val tile: SourceTileDefinitionPayload,
-    val plan: SourcePlanDefinitionPayload,
+    val plan: SchedulePlanDefinitionPayloadTyped,
     val flows: List<kotlinx.serialization.json.JsonObject>,
     val schedule: SourceSchedulePayload,
     val horizon: PlacementSpanPayload,

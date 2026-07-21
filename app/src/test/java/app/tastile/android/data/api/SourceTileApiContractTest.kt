@@ -96,17 +96,20 @@ class SourceTileApiContractTest {
 
     private fun sourceWritePayload() = SourceTileWritePayload(
             tile = SourceTileDefinitionPayload(title = "授業"),
-            plan = SourcePlanDefinitionPayload(
+            plan = SchedulePlanDefinitionPayloadTyped(
                 role = 0,
-                references = Json.parseToJsonElement("[]").jsonArray,
-                completion = Json.parseToJsonElement(
-                    "{\"root\":{\"Any\":[]},\"time_requirements\":[],\"tasks\":[]}",
-                ).jsonObject,
-                planning = Json.parseToJsonElement(
-                    "{\"placement_rules\":[],\"nesting_rules\":[]}",
-                ).jsonObject,
-                metrics = Json.parseToJsonElement("[]").jsonArray,
-                decisions = Json.parseToJsonElement("[]").jsonArray,
+                references = emptyList(),
+                completion = CompletionSchema(
+                    root = Json.parseToJsonElement("{\"Any\":[]}"),
+                    time_requirements = emptyList(),
+                    tasks = emptyList(),
+                ),
+                planning = SchedulingPlanningDefinitionSchema(
+                    placement_rules = emptyList(),
+                    nesting_rules = emptyList(),
+                ),
+                metrics = emptyList(),
+                decisions = emptyList(),
             ),
             flows = emptyList(),
             schedule = SourceSchedulePayload(
