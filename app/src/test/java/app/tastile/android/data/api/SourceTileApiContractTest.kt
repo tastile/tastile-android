@@ -100,7 +100,7 @@ class SourceTileApiContractTest {
                 role = 0,
                 references = emptyList(),
                 completion = CompletionSchema(
-                    root = Json.parseToJsonElement("{\"Any\":[]}"),
+                    root = ConditionRef(ConditionAny(emptyList())),
                     time_requirements = emptyList(),
                     tasks = emptyList(),
                 ),

@@ -228,7 +228,7 @@ data class CompletionSchema(
      * variants). Kept as JsonElement to avoid a custom polymorphic
      * serializer; documented as the next-batch task.
      */
-    val root: JsonElement,
+    val root: ConditionRef,
         @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS)
     val time_requirements: List<TimeRequirementSchema> = emptyList(),
         @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS)
