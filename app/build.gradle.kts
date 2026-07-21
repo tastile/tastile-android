@@ -197,7 +197,7 @@ tasks.register("verifyNoEmbeddedServerSecrets") {
             "x-tastile-web-bridge-" + "secret",
         )
         val sources = fileTree("src/main") { include("**/*.kt", "**/*.java") }.files
-        val buildScript = project.file("build.gradle.kts")
+        val buildScript = layout.projectDirectory.file("build.gradle.kts").asFile
         val offenders = (sources + buildScript).filter { file ->
             val content = file.readText()
             forbidden.any(content::contains)
@@ -276,5 +276,5 @@ dependencies {
     androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.3.3")
 
     // Custom lint rules (M2-T4): WrapperParameterOrderDetector (L0 C1 + C2).
-    lintChecks(project(":lint-rules"))
+    lintChecks(dependencyFactory.createProjectDependency(":lint-rules"))
 }
