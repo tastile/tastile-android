@@ -30,7 +30,7 @@ class UserSettingsRepository @Inject constructor(
         prefs.edit { putString(KEY_LOCALE, locale.value) }
     }
 
-    fun getSecurityLockEnabled(): Boolean = prefs.getBoolean(KEY_SECURITY_LOCK_ENABLED, true)
+    fun getSecurityLockEnabled(): Boolean = prefs.getBoolean(KEY_SECURITY_LOCK_ENABLED, false)
 
     fun setSecurityLockEnabled(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_SECURITY_LOCK_ENABLED, enabled) }
