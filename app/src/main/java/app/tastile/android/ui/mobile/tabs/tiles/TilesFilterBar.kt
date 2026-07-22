@@ -219,8 +219,7 @@ private fun GenericDropdown(
                         text = { Text(labelText) },
                         leadingIcon = { Icon(Icons.Outlined.FilterList, contentDescription = null) },
                         onClick = {
-                        @Suppress("UNCHECKED_CAST")
-                        onPick(value as Any)
+                        onPick(value)
                         expanded = false
                     })
                 }
@@ -255,8 +254,7 @@ private fun GenericSegmented(
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (active) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant)
                     .clickable {
-                        @Suppress("UNCHECKED_CAST")
-                        onPick(value as Any)
+                        onPick(value)
                     }
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             )

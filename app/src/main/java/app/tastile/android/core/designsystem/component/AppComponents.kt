@@ -492,7 +492,6 @@ fun AppScreenTitle(
 fun AppAvatar(
     initials: String,
     modifier: Modifier = Modifier,
-    @Suppress("UNUSED_PARAMETER") size: Dp = 32.dp,
     background: Color = MaterialTheme.colorScheme.secondaryContainer,
     foreground: Color = MaterialTheme.colorScheme.onSecondaryContainer,
 ) {
@@ -540,7 +539,6 @@ fun AppListRow(
     trailing: (@Composable RowScope.() -> Unit)? = null,
     supporting: String? = null,
     onClick: (() -> Unit)? = null,
-    @Suppress("UNUSED_PARAMETER") description: String? = null,
 ) {
     val baseModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
     NiaListItem(

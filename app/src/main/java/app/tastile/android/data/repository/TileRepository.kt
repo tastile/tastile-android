@@ -461,7 +461,7 @@ class TileRepository @Inject constructor(
 
     fun latestReadDiagnostics(): String = latestReadDiagnostics
 
-    private suspend fun refreshCloudCacheAfterCommand(@Suppress("UNUSED_PARAMETER") ack: CoreCommandAck) {
+    private suspend fun refreshCloudCacheAfterCommand(_ack: CoreCommandAck) {
         // After a v1 mutation, re-read the cloud tile list so subsequent
         // getTiles() / getTileById() calls see the new state without an
         // explicit refresh.
