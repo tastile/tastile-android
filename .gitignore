@@ -4,6 +4,9 @@
 local.properties
 .idea/
 .claude/
+.agents/
+.cursor/
+.vscode/
 .DS_Store
 build/
 captures/
@@ -20,3 +23,7 @@ reference/
 .build-logs/
 .tools/
 *.bak
+keystore.properties
+release-keystore.*
+google-services.json
+*.hprof

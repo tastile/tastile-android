@@ -52,13 +52,19 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         // so per-test Hilt @TestInstallIn modules can swap repositories.
         testInstrumentationRunner = "app.tastile.android.util.TastileTestRunner"
 
+        // R18 (android refactor 2026-07-22): no Kotlin-level fallback defaults.
+        // All production values must come from gradle.properties (committed
+        // blank for CI override) or `~/.gradle/gradle.properties` for local dev.
+        // Empty strings are validated at the bottom of this file via the
+        // requireGradleProperty guard so a partial config fails the build fast
+        // instead of silently embedding the wrong environment.
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
-        buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: "3f14cs42nkc0v3qf6k57gthlfe"}\"")
-        buildConfigField("String", "COGNITO_REGION", "\"${cognitoRegion.orNull ?: "ap-northeast-1"}\"")
-        buildConfigField("String", "COGNITO_HOSTED_UI_DOMAIN", "\"${cognitoHostedUiDomain.orNull ?: "tastile-v1-app"}\"")
-        buildConfigField("String", "COGNITO_REDIRECT_URI", "\"${cognitoRedirectUri.orNull ?: "tastile://auth/callback"}\"")
-        buildConfigField("String", "COGNITO_WEB_AUTH_BASE_URL", "\"${cognitoWebAuthBaseUrl.orNull ?: "https://app.tastile.app"}\"")
-        buildConfigField("String", "TASTILE_CORE_URL", "\"${tastileCoreUrl.orNull ?: "https://api.tastile.app"}\"")
+        buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: ""}\"")
+        buildConfigField("String", "COGNITO_REGION", "\"${cognitoRegion.orNull ?: ""}\"")
+        buildConfigField("String", "COGNITO_HOSTED_UI_DOMAIN", "\"${cognitoHostedUiDomain.orNull ?: ""}\"")
+        buildConfigField("String", "COGNITO_REDIRECT_URI", "\"${cognitoRedirectUri.orNull ?: ""}\"")
+        buildConfigField("String", "COGNITO_WEB_AUTH_BASE_URL", "\"${cognitoWebAuthBaseUrl.orNull ?: ""}\"")
+        buildConfigField("String", "TASTILE_CORE_URL", "\"${tastileCoreUrl.orNull ?: ""}\"")
     }
 
     buildTypes {
@@ -277,4 +283,34 @@ dependencies {
 
     // Custom lint rules (M2-T4): WrapperParameterOrderDetector (L0 C1 + C2).
     lintChecks(dependencyFactory.createProjectDependency(":lint-rules"))
+}
+
+// R18 (android refactor 2026-07-22): fail-fast guard.
+// Every BuildConfig.* field that ships into runtime (Cognito client/region/hosted-ui,
+// web-auth base, TASTILE_CORE_URL, Google web client ID) MUST be supplied by
+// gradle.properties — empty strings cause silent auth breakage on a release build.
+// Set them in:
+//   - gradle.properties (CI / shared values), or
+//   - ~/.gradle/gradle.properties (local-dev override), or
+//   - -PKEY=value on the gradle command line.
+gradle.projectsEvaluated {
+    val requiredProps = listOf(
+        "GOOGLE_WEB_CLIENT_ID",
+        "COGNITO_CLIENT_ID",
+        "COGNITO_REGION",
+        "COGNITO_HOSTED_UI_DOMAIN",
+        "COGNITO_REDIRECT_URI",
+        "COGNITO_WEB_AUTH_BASE_URL",
+        "TASTILE_CORE_URL",
+    )
+    requiredProps.forEach { name ->
+        val value = providers.gradleProperty(name).orNull
+        if (value.isNullOrBlank()) {
+            throw GradleException(
+                "Missing required gradle property '$name'. Set it in gradle.properties " +
+                    "(or ~/.gradle/gradle.properties for local dev, or pass -P$name=… on " +
+                    "the gradle command line). See README for the contract."
+            )
+        }
+    }
 }

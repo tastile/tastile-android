@@ -1,15 +1,42 @@
-# Security
+# Security Policy
 
-## Sensitive Material
+## Supported Versions
 
-- Release keystores, keystore passwords, and machine-local Gradle settings must stay out of this repository.
-- Publishable Cognito client values may exist in source control, but server secrets must not.
+| AAB version | Supported |
+| ----------- | --------- |
+| latest      | ✅ Active |
+| <latest     | ❌ EOL    |
 
-## Reporting
+Only the latest AAB (`versionCode` is incremented each release) receives
+security backports. Identify your installed version in the Play Store or
+APK info; older versions are not maintained.
 
-If you discover a security issue in this repository or in the mobile release process, report it privately to the project maintainers before opening a public issue.
+## Reporting a Vulnerability
 
-## Operational Expectations
+**Please do not file public GitHub issues for security vulnerabilities.**
 
-- Rotate any upload key immediately if it was ever committed or shared improperly.
-- Treat cloned working directories as disposable. Re-clone rather than carrying forward unknown local state.
+Use one of these channels:
+
+1. **GitHub Security Advisories** (preferred; private thread with the
+   maintainers): https://github.com/tastile/tastile-android/security/advisories/new
+2. **X (Twitter) DM** to `@361do_sleep` for urgent pre-disclosure matters.
+
+We acknowledge within 2 business days and aim to ship a fix within 30 days
+for high-impact issues.
+
+## Build / Local Security Checks
+
+`./gradlew verify` requires JDK 17 and the Android SDK 35 platform. See
+`docs/setup.md` (added in a later step). Use `./gradlew --scan` to enable
+the Gradle build-scan server, which logs dependency hashes for supply-chain
+review.
+
+## Security Scope
+
+This client is a thin shell over the `tastile-core` REST API. Auth,
+authorization, and multi-tenant isolation live in `tastile-core` (private);
+report API-layer vulnerabilities there instead.
+
+Android-specific concerns (compromised device, malicious intent,
+CVE in dependencies) are within scope; please report in the channels
+above.
