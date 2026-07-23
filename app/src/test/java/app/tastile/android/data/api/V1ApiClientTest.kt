@@ -161,6 +161,33 @@ class V1ApiClientTest {
     }
 
     @Test
+    fun v1_list_tiles_response_decodes_core_bare_array_shape() {
+        // Core's `GET /v1/tiles` returns a bare `[TileListView, ...]` array,
+        // not the `{tiles: [...]}` envelope the original Android serializer
+        // matched. `V1ApiClient.getTiles` wraps the bare-array wire into the
+        // envelope shape before passing it to the kotlinx decoder; this test
+        // pins the wrapping logic so a future "fix" can't silently drop it.
+        val body = """
+            [
+              {"id":"019f8a33-4825-7c13-9c2c-000000000001","title":"Daily review","plan_id":"plan-1"},
+              {"id":"019f8a33-4825-7c13-9c2c-000000000002","title":"Inbox item"}
+            ]
+        """.trimIndent()
+
+        val json = Json { ignoreUnknownKeys = true }
+        val trimmed = body.trimStart()
+        val wrapped = if (trimmed.startsWith("[")) "{\"tiles\":$body}" else body
+        val parsed = json.decodeFromString<V1ListTilesResponse>(wrapped)
+
+        assertEquals(2, parsed.tiles.size)
+        assertEquals("Daily review", parsed.tiles[0].title)
+        assertEquals("plan-1", parsed.tiles[0].planId)
+        assertEquals("Inbox item", parsed.tiles[1].title)
+        assertNull(parsed.nextActionableTileId)
+        assertNull(parsed.nextActionableStartAt)
+    }
+
+    @Test
     fun recurring_frame_rule_and_placement_source_ref_match_web_full_wire_shapes() {
         val frameRule = FrameRulePayload(
             id = "00000000-0000-0000-0000-000000000000",

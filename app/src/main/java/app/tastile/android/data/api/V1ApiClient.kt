@@ -91,7 +91,10 @@ class V1ApiClient @Inject constructor(
     private fun webAuthBaseUrl(): String =
         BuildConfig.COGNITO_WEB_AUTH_BASE_URL.trim().trimEnd('/')
 
-    private suspend inline fun <reified T> get(path: String): T = withContext(Dispatchers.IO) {
+    private suspend inline fun <reified T> get(path: String): T =
+        json.decodeFromString(getRaw(path))
+
+    private suspend fun getRaw(path: String): String = withContext(Dispatchers.IO) {
         try {
             val token = tokenProvider()
             if (token.isNullOrBlank()) throw V1Error.Auth()
@@ -113,19 +116,30 @@ class V1ApiClient @Inject constructor(
                 if (err != null) throw V1Error.fromApiBody(err)
                 throw V1Error.Unknown(status, body.take(200))
             }
-            json.decodeFromString<T>(body)
+            body
         } catch (e: IOException) {
             throw V1Error.Network(e)
         }
     }
 
+    /**
+     * `/v1/tiles` from core returns a bare `[TileListView, ...]` array; the original
+     * envelope `{tiles: [...]}` is legacy. When the response is bare, we wrap it before
+     * handing the body to `V1ListTilesResponse`'s serializer so `nextActionableTileId`
+     * / `nextActionableStartAt` fall back to `null` (they're nullable in the DTO).
+     */
     suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): V1ListTilesResponse {
         val query = filter.toQueryString()
-        return if (query.isEmpty()) {
-            get("/v1/tiles")
+        val path = if (query.isEmpty()) "/v1/tiles" else "/v1/tiles?$query"
+        val body = getRaw(path)
+        val trimmed = body.trimStart()
+        // Core returns a bare `[TileListView, ...]` array; envelope `{tiles: [...]}` is legacy.
+        val wrapped = if (trimmed.startsWith("[")) {
+            "{\"tiles\":$body}"
         } else {
-            get("/v1/tiles?$query")
+            body
         }
+        return json.decodeFromString(wrapped)
     }
 
     suspend fun readTile(tileId: String): TileDetailView =
