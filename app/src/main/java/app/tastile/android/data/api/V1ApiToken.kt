@@ -39,7 +39,7 @@ data class V1ApiTokenCreateResponse(
     @SerialName("token") val token: String,
     @SerialName("token_id") val tokenId: String,
     @SerialName("label") val label: String? = null,
-    @SerialName("scopes") val scopes: List<String> = emptyList(),
+    @SerialName("scopes") val scopes: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("expires_at") val expiresAt: String? = null,
 )
@@ -52,7 +52,7 @@ data class V1ApiTokenCreateResponse(
 data class V1ApiTokenView(
     @SerialName("id") val id: String,
     @SerialName("label") val label: String? = null,
-    @SerialName("scopes") val scopes: List<String> = emptyList(),
+    @SerialName("scopes") val scopes: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("last_used_at") val lastUsedAt: String? = null,
     @SerialName("expires_at") val expiresAt: String? = null,

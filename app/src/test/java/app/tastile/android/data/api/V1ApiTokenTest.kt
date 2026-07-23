@@ -35,12 +35,12 @@ class V1ApiTokenTest {
 
     @Test
     fun `create response decodes token id label and scopes`() {
-        val body = """{"token":"raw-secret","token_id":"tok-1","label":"android-client","scopes":[]}"""
+        val body = """{"token":"raw-secret","token_id":"tok-1","label":"android-client","scopes":"all"}"""
         val resp = json.decodeFromString<V1ApiTokenCreateResponse>(body)
         assertEquals("raw-secret", resp.token)
         assertEquals("tok-1", resp.tokenId)
         assertEquals("android-client", resp.label)
-        assertTrue(resp.scopes.isEmpty())
+        assertEquals("all", resp.scopes)
     }
 
     @Test
@@ -52,7 +52,7 @@ class V1ApiTokenTest {
 
     @Test
     fun `token view handles null label and missing optional fields`() {
-        val body = """{"id":"abc","label":null,"scopes":[]}"""
+        val body = """{"id":"abc","label":null}"""
         val view = json.decodeFromString<V1ApiTokenView>(body)
         assertEquals("abc", view.id)
         assertNull(view.label)
@@ -63,7 +63,7 @@ class V1ApiTokenTest {
         val view = V1ApiTokenView(
             id = "tk",
             label = "L",
-            scopes = emptyList(),
+            scopes = "all",
             createdAt = "2026-07-01T00:00:00Z",
             lastUsedAt = null,
             expiresAt = null,
