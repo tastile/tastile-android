@@ -61,7 +61,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -81,7 +80,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -95,7 +93,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -117,7 +114,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -179,7 +175,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/update",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -197,7 +192,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/update",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -213,7 +207,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/defer",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -228,7 +221,6 @@ class V1CommandDispatcherTest {
         coVerify {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/defer",
-                commandKind = null,
                 payload = capture(payload),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -238,7 +230,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/defer",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -263,7 +254,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/executions/ex-1/finish",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>(),
@@ -272,7 +262,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/complete",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -290,7 +279,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/complete",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -312,7 +300,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 0) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/extend-phase",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -328,7 +315,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/memos",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -342,7 +328,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/memos",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -358,7 +343,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -387,7 +371,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -425,7 +408,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/start",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -434,7 +416,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/placements/t-123/executions",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>(),
@@ -451,7 +432,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/tiles/t-123/start",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -460,7 +440,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/placements/t-123/executions",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>(),
@@ -690,7 +669,6 @@ class V1CommandDispatcherTest {
         coEvery {
             apiClient.postCommand(
                 path = "/v1/placements/pl-1/changes",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -707,7 +685,6 @@ class V1CommandDispatcherTest {
         coVerify {
             apiClient.postCommand(
                 path = "/v1/placements/pl-1/changes",
-                commandKind = null,
                 payload = capture(payload),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()
@@ -724,7 +701,6 @@ class V1CommandDispatcherTest {
         coVerify(exactly = 1) {
             apiClient.postCommand(
                 path = "/v1/placements/pl-1/changes",
-                commandKind = null,
                 payload = any<Any>(),
                 payloadSerializer = any<KSerializer<Any>>(),
                 responseSerializer = any<KSerializer<Any>>()

@@ -2,7 +2,6 @@ package app.tastile.android.data.repository
 
 import app.tastile.android.data.api.CreateWorkspaceInput
 import app.tastile.android.data.api.V1ApiClient
-import app.tastile.android.data.api.V1ApiErrorBody
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.data.api.UpdateWorkspaceInput
 import javax.inject.Inject
@@ -55,7 +54,3 @@ internal fun Throwable.asWorkspaceSlugConflict(): Boolean {
     }
     return false
 }
-
-@Suppress("UnusedReceiverParameter")
-internal val V1ApiErrorBody.Companion.ConflictKind
-    get() = app.tastile.android.data.api.V1NumericConstants.ApiErrorKind.CONFLICT

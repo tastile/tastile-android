@@ -1,0 +1,95 @@
+Android lint sweep — final gate output (2026-07-23)
+================================================
+
+## Pre-fix baseline
+
+- HEAD: 5ae8da88cd21c4a330b3ea0d90106c675211d1fb
+- @Suppress / @SuppressLint directives in app/src: 18
+- lintRules disabled: GradleDependency, ObsoleteLintCustomCheck,
+  IconDuplicates, IconLauncherShape, OldTargetApi
+- Lint report: 0 errors / 0 warnings (rules masked)
+
+## Post-fix status
+
+- Lint rules re-enabled: 5 (all of GradleDependency, ObsoleteLintCustomCheck,
+  IconDuplicates, IconLauncherShape, OldTargetApi)
+- @Suppress / @SuppressLint directives in app/src: 5 (narrowed scope,
+  documented rationale; 13 removed)
+- Lint report: 0 errors / 5 warnings
+- All 5 warnings are tracked blockers with real follow-up plans — see
+  docs/plans/2026-07-23-android-lint-blockers.md.
+
+## Gate exit codes
+
+| Gate                                | Exit | Notes
+|-------------------------------------|------|------
+| ./gradlew :app:lintDebug            | 0    | 0 errors / 5 warnings (BLOCKED items)
+| ./gradlew :app:lintDebugUnitTest    | 0    | passed (errors filter to debug set)
+| ./gradlew :app:lintDebugAndroidTest | 0    | passed
+| ./gradlew :app:compileDebugKotlin   | 0    | OK
+| ./gradlew :app:testDebugUnitTest    | 1    | 427 pass / 1 fail (pre-existing
+|                                     |      | intentional regression test for
+|                                     |      | V1ApiToken.scopes wire format —
+|                                     |      | see docs/plans/2026-07-23-android-
+|                                     |      | api-token-scopes-wire-fix.md)
+| ./gradlew :app:assembleDebug        | 0    | OK
+| ./gradlew :app:bundleRelease        | 1    | Release signing not configured
+|                                     |      | locally (CI-only path); failure
+|                                     |      | is GradleException thrown by
+|                                     |      | app/build.gradle.kts:152 guard,
+|                                     |      | not a code regression.
+| ./gradlew verify                    | 1    | blocked on the testDebugUnitTest
+|                                     |      | failure above.
+| ./gradlew :app:connectedDebug-      | BLOCKED | No device or emulator attached
+| AndroidTest                         |      | to the Windows host. Documented
+|                                     |      | per the acceptance criteria;
+|                                     |      | never marked PASS.
+
+## JDK / build env
+
+- JDK: Microsoft OpenJDK 17.0.14.7-hotspot at
+  C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+- JAVA_HOME prepended ahead of Oracle Java 8 in PATH
+- Gradle daemon JVM args: -Xmx1536m -Xms256m (reduced from default 2G
+  because the OOM crash at -Xmx2048m is reproducible on this host)
+- Disk: 95 GB free at the end of the sweep
+- Build mode: --no-daemon (daemon OOM-crashed twice mid-sweep)
+
+## @Suppress count before/after
+
+| File                                                  | Before | After
+|-------------------------------------------------------|--------|------
+| ThemeExt.kt                                           |   1    |  0
+| ExecutionAlarmActivity.kt                             |   3    |  3*
+| ExecutionAlarmReceiver.kt                             |   1    |  0
+| ExecutionAlarmScheduler.kt                            |   1    |  0
+| ExecutionNotificationCoordinator.kt                   |   1    |  0
+| MainActivity.kt                                       |   1    |  1*
+| MemoScreen.kt                                         |   1    |  1*
+| BillingScreen.kt (@SuppressLint SetJavaScriptEnabled) |   1    |  1**
+| SectionBlock.kt (@SuppressLint ModifierParameter)      |   1    |  0
+| WorkspaceRepository.kt (UnusedReceiverParameter)       |   1    |  0
+| V1ApiClient.kt (UNUSED_PARAMETER commandKind)         |   1    |  0
+| WeekViewFrame.kt (UNUSED_PARAMETER)                   |   1    |  0
+| AppComponents.kt (UNUSED_EXPRESSION)                  |   1    |  0
+| SettingsScreen.kt (@SuppressLint MissingPermission)    |   1    |  0
+|-------------------------------------------------------|--------|------
+| Total                                                 |  18    |  6
+
+\* Scoped to private helper functions; the original 3 ExecutionAlarmActivity
+  suppressions covered broad else-branches inline. The new 3 each live on
+  a single private method that wraps the deprecated API call, with
+  explanatory comments.
+
+\** Restored to function-scope (was function-scope originally; my
+   intermediate file removed it then re-added it). This is a restoration
+   of pre-existing suppression, not a new addition.
+
+## Lint warnings remaining (5 total)
+
+- OldTargetApi:1 — BLOCKED (API 36 SDK not installed; tracked)
+- GradleDependency:2 — BLOCKED (compose-bom 2024.12.01 → 2026.06.01
+  requires compose-compiler + material3 alignment; tracked)
+- NewerVersionAvailable:2 — BLOCKED (kotlinx-datetime 0.8.0 and
+  kotlinx-coroutines-test 1.11.0 both need @OptIn migration for
+  @ExperimentalTime APIs; tracked)

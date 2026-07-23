@@ -98,6 +98,12 @@ fun BillingScreen(
                         )
                         
                         settings.apply {
+                            // Stripe's hosted checkout widget on
+                            // tastile.app/pricing requires JS. The WebView
+                            // is locked to a single allowlisted origin
+                            // (tastile.app) via shouldOverrideUrlLoading,
+                            // and Stripe is loaded over HTTPS — JS access
+                            // is scoped to that origin only.
                             javaScriptEnabled = true
                             domStorageEnabled = true
                             setSupportZoom(true)

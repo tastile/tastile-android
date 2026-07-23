@@ -1,11 +1,12 @@
 package app.tastile.android.notifications
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.annotation.RequiresPermission
 import androidx.core.content.edit
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
@@ -58,7 +59,7 @@ class ExecutionAlarmScheduler @Inject constructor(
         prefs.edit { remove(KEY_SCHEDULED_ALARMS) }
     }
 
-    @SuppressLint("MissingPermission")
+    @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
     private fun schedule(spec: ScheduledAlarmSpec) {
         val pendingIntent = buildPendingIntent(createIntentPayload(spec.id, spec.type, spec.tileId, spec.tileTitle))
         val triggerAtMillis = spec.triggerAt.toEpochMilliseconds()

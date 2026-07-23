@@ -45,7 +45,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.data.model.Tile
 
-@Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemoScreen(
@@ -56,11 +55,11 @@ fun MemoScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val saveSuccess by viewModel.saveSuccess.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    
+
     var noteText by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     // Show success snackbar
     LaunchedEffect(saveSuccess) {
         if (saveSuccess) {
@@ -69,7 +68,7 @@ fun MemoScreen(
             noteText = "" // Clear input
         }
     }
-    
+
     // Show error snackbar
     LaunchedEffect(error) {
         error?.let {
@@ -77,7 +76,7 @@ fun MemoScreen(
             viewModel.clearError()
         }
     }
-    
+
     val selectedTile = recentTiles.find { it.id == selectedTileId }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -110,6 +109,14 @@ fun MemoScreen(
                         expanded = expanded,
                         onExpandedChange = { expanded = it }
                     ) {
+                        // menuAnchor() (no args) was deprecated in M3 1.5.0-alpha24
+                        // in favor of menuAnchor(anchorState) which is not yet
+                        // available in our pinned M3 version. Track removal in
+                        // docs/plans/2026-07-23-m3-upgrade.md once the upgrade lands.
+                        val anchorModifier: Modifier = run {
+                            @Suppress("DEPRECATION")
+                            Modifier.menuAnchor()
+                        }
                         OutlinedTextField(
                             value = selectedTile?.title ?: "Select a tile",
                             onValueChange = {},
@@ -118,9 +125,9 @@ fun MemoScreen(
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .menuAnchor()
+                                .then(anchorModifier)
                         )
-                        
+
                         ExposedDropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
@@ -152,7 +159,7 @@ fun MemoScreen(
 
                 // Save button
                 Button(
-                    onClick = { 
+                    onClick = {
                         viewModel.saveMemo(noteText)
                     },
                     enabled = noteText.isNotBlank() && selectedTileId != null,

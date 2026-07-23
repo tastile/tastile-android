@@ -94,17 +94,14 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     // Captured baseline lives at docs/superpowers/m3/before-reports/.
     // AGP 9.x removed the AndroidExtension.composeOptions DSL; the compose
     // plugin wires these via kotlin.compilerOptions.freeCompilerArgs.
+    // (2026-07-23) Re-enabled all 5 disabled lint rules. OldTargetApi stays
+    // active; if the API-36 SDK remains unavailable, the warning will surface
+    // and must be addressed by either installing the platform or bumping
+    // targetSdk down — see app/lint-baseline-old-target-api.md for tracking.
     lint {
-        // OldTargetApi is suppressed deliberately: this box only has API 35 and 37 installed
-        // (commit a2c508c). Bumping targetSdk to 36 is blocked until the missing SDK is
-        // restored on the build host.
-        disable += setOf(
-            "GradleDependency",
-            "ObsoleteLintCustomCheck",
-            "IconDuplicates",
-            "IconLauncherShape",
-            "OldTargetApi"
-        )
+        // No `disable +=` block: every lint rule must surface so warnings
+        // are root-fixed rather than hidden. Track any unaddressable rule
+        // in a tracking doc with a hard BLOCKED rationale, never here.
     }
 
     testOptions {
@@ -226,28 +223,32 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3:1.5.0-alpha24")
-    implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.0.0")
+    implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.4.0")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation("androidx.activity:activity-compose:1.9.3")
-    implementation("androidx.navigation:navigation-compose:2.8.5")
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.navigation:navigation-compose:2.9.8")
 
-    implementation("io.ktor:ktor-client-okhttp:3.1.3")
+    implementation("io.ktor:ktor-client-okhttp:3.5.1")
 
     // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
     // Date/Time
+    // Pinned at 0.6.1: 0.8.0 promoted `kotlinx.datetime.Instant` arithmetic APIs to
+    // `@ExperimentalTime`, which breaks `ExecutionAlarmPlanner` and
+    // `ExecutionStateProjector`. Track the opt-in migration in
+    // docs/plans/2026-07-23-datetime-08-optin.md before bumping.
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.59.2")
-    ksp("com.google.dagger:hilt-compiler:2.59.2")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("com.google.dagger:hilt-android:2.60.1")
+    ksp("com.google.dagger:hilt-compiler:2.60.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.4.0")
 
     // Lifecycle
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
     implementation("androidx.security:security-crypto:1.1.0")
 
     // Credential Manager / Google Identity
@@ -256,11 +257,16 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.2.0")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation("androidx.test.ext:junit:1.3.0")
     testImplementation("androidx.compose.ui:ui-test-junit4")
+    // kotlinx-coroutines-test pinned at 1.9.0 to match the runtime
+    // kotlinx-coroutines version pulled in transitively by the Hilt+KSP
+    // toolchain; bumping to 1.11.0 surfaces a `kotlin.time.ExperimentalTime`
+    // opt-in requirement in test dispatchers. Track opt-in migration in
+    // docs/plans/2026-07-23-coroutines-1-11-migration.md.
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
-    testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("org.robolectric:robolectric:4.14")
+    testImplementation("io.mockk:mockk:1.14.11")
+    testImplementation("org.robolectric:robolectric:4.16.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
@@ -271,15 +277,15 @@ dependencies {
     // `test` classpath (which would conflict with @HiltAndroidTest subclasses
     // that try to use HiltTestApplication).
     androidTestImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("io.mockk:mockk-android:1.14.6")
-    androidTestImplementation("com.google.dagger:hilt-android-testing:2.59.2")
-    androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.3.3")
+    androidTestImplementation("io.mockk:mockk-android:1.14.11")
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.60.1")
+    androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.4.1")
 
     // Custom lint rules (M2-T4): WrapperParameterOrderDetector (L0 C1 + C2).
     lintChecks(dependencyFactory.createProjectDependency(":lint-rules"))

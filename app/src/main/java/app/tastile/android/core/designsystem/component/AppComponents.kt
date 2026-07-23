@@ -536,7 +536,7 @@ fun AppListRow(
     label: String,
     modifier: Modifier = Modifier,
     leading: (@Composable () -> Unit)? = null,
-    trailing: (@Composable RowScope.() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
     supporting: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -545,12 +545,7 @@ fun AppListRow(
         headlineContent = { Text(label) },
         modifier = baseModifier,
         leadingContent = leading,
-        trailingContent = trailing?.let { row ->
-            {
-                @Suppress("UNUSED_EXPRESSION")
-                androidx.compose.foundation.layout.Row(content = row)
-            }
-        },
+        trailingContent = trailing,
         supportingContent = supporting?.let { msg ->
             {
                 Text(

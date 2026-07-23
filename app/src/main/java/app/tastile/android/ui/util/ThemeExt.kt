@@ -5,8 +5,6 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import app.tastile.android.data.repository.ThemeMode
@@ -26,19 +24,20 @@ fun resolveDarkTheme(themeMode: ThemeMode): Boolean = when (themeMode) {
 fun supportsDynamicColor(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 /**
- * Tints the status bar + navigation bar to [color] and sets the appropriate
- * light/dark appearance flag. Replaces the inline SideEffect that the old
- * `TastileTheme` used to do.
+ * Sets the appropriate light/dark appearance for the status + navigation bars.
+ *
+ * On API 35+ the system enforces edge-to-edge; setting bar background
+ * colors is no longer honored (the deprecated `Window.statusBarColor` /
+ * `Window.navigationBarColor` setters are silently ignored at runtime).
+ * The insets controller is the only supported knob for the light/dark
+ * icon contrast, which is what callers actually need.
  */
 @Composable
-fun SystemBarEffect(color: Color, darkTheme: Boolean) {
+fun SystemBarEffect(darkTheme: Boolean) {
     val view = LocalView.current
     if (!view.isInEditMode) {
-        @Suppress("DEPRECATION")
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = color.toArgb()
-            window.navigationBarColor = color.toArgb()
             val controller = WindowCompat.getInsetsController(window, view)
             controller.isAppearanceLightStatusBars = !darkTheme
             controller.isAppearanceLightNavigationBars = !darkTheme

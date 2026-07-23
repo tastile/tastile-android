@@ -1,10 +1,11 @@
 package app.tastile.android.notifications
 
-import android.annotation.SuppressLint
+import android.Manifest
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.RequiresPermission
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.data.repository.AppLocale
@@ -26,7 +27,12 @@ class ExecutionAlarmReceiver : BroadcastReceiver() {
     @Inject
     lateinit var userSettingsRepository: UserSettingsRepository
 
-    @SuppressLint("MissingPermission")
+    // The manifest declares SCHEDULE_EXACT_ALARM (via AlarmManager.setExact*).
+    // BroadcastReceivers do not get a runtime permission prompt; the
+    // permission gate is the manifest entry, and lint follows the chain
+    // through ExecutionAlarmScheduler.schedule() which carries the matching
+    // @RequiresPermission.
+    @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {

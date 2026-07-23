@@ -218,10 +218,8 @@ fun WeekView(
                 ) {
                     // Frame: 7-column hour grid (sibling of Tile in the Box)
                     WeekViewFrame(
-                        weekStart = weekStart,
-                        pxPerMin = pxPerMin,
-                        onOpenDay = onOpenDay,
                         modifier = Modifier.fillMaxSize(),
+                        pxPerMin = pxPerMin,
                     )
                     // Tile: 7 columns of event chips + today's NowIndicator.
                     // Sibling of Frame so the chips translate with the Frame's

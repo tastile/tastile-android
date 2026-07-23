@@ -28,12 +28,9 @@ import java.time.LocalDate
  * chips and the NowIndicator live in [WeekViewTile].
  */
 @Composable
-@Suppress("UNUSED_PARAMETER")
 fun WeekViewFrame(
-    weekStart: LocalDate,
-    pxPerMin: Float,
-    onOpenDay: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
+    pxPerMin: Float,
 ) {
     val endHour = GridConstants.DAY_END_HOUR
     val outlineColor = MaterialTheme.colorScheme.outlineVariant

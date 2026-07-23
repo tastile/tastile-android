@@ -1,0 +1,5 @@
+app/src/main/java/app/tastile/android/MainActivity.kt:183:        @Suppress("DEPRECATION")
+app/src/main/java/app/tastile/android/notifications/ExecutionAlarmActivity.kt:114:    @Suppress("DEPRECATION") // FLAG_* constants were superseded by Activity.setShowWhenLocked /
+app/src/main/java/app/tastile/android/notifications/ExecutionAlarmActivity.kt:126:    @Suppress("DEPRECATION") // SYSTEM_UI_FLAG_* were superseded by WindowInsetsController in
+app/src/main/java/app/tastile/android/notifications/ExecutionAlarmActivity.kt:164:    @Suppress("DEPRECATION") // Context.VIBRATOR_SERVICE was superseded by
+app/src/main/java/app/tastile/android/ui/memo/MemoScreen.kt:117:                            @Suppress("DEPRECATION")

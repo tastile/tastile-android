@@ -249,7 +249,6 @@ class V1ApiClient @Inject constructor(
         payloadSerializer: KSerializer<Req>,
         responseSerializer: KSerializer<Resp>,
         expectedRevision: Long? = null,
-        @Suppress("UNUSED_PARAMETER") commandKind: String? = null,
     ): Resp = withContext(Dispatchers.IO) {
         try {
             val token = tokenProvider()

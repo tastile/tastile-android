@@ -9,7 +9,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -25,10 +24,8 @@ class WeekViewFrameTest {
             MaterialTheme {
                 Box(Modifier.requiredSize(800.dp, 600.dp)) {
                     WeekViewFrame(
-                        weekStart = LocalDate.of(2026, 7, 13),
-                        pxPerMin = 1f,
-                        onOpenDay = {},
                         modifier = Modifier.fillMaxSize(),
+                        pxPerMin = 1f,
                     )
                 }
             }

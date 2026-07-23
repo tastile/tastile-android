@@ -1,7 +1,6 @@
 package app.tastile.android.notifications
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -40,7 +39,6 @@ class ExecutionNotificationCoordinator @Inject constructor(
         alarmScheduler.cancelAll()
     }
 
-    @SuppressLint("MissingPermission")
     fun syncOnce() {
         val userId = authRepository.currentUserId()
         if (userId.isNullOrBlank()) {

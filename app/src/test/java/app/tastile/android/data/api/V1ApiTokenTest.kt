@@ -73,4 +73,27 @@ class V1ApiTokenTest {
         assertTrue("created_at missing: $encoded", encoded.contains("created_at"))
         assertTrue("camelCase leaked: $encoded", !encoded.contains("createdAt"))
     }
+
+    @Test
+    fun `V1ApiTokenCreateResponse parses Core wire format with scopes string`() {
+        val wire = """
+            {
+              "token": "tastile_f7496c3d9c2a",
+              "token_id": "8e6c0e74-1f33-7c8b-9a8e-8c3f4a1d2b6e",
+              "label": "android-client",
+              "scopes": "all",
+              "created_at": "2026-07-23T07:53:01Z",
+              "expires_at": null
+            }
+        """.trimIndent()
+
+        val resp = Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }.decodeFromString<V1ApiTokenCreateResponse>(wire)
+
+        assertEquals("all", resp.scopes)
+        assertEquals("tastile_f7496c3d9c2a", resp.token)
+        assertEquals("8e6c0e74-1f33-7c8b-9a8e-8c3f4a1d2b6e", resp.tokenId)
+    }
 }

@@ -383,20 +383,25 @@ private fun canPostNotifications(context: android.content.Context): Boolean {
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 }
 
-@SuppressLint("MissingPermission")
 private fun postTestNotification(context: android.content.Context) {
-    if (!canPostNotifications(context)) return
+    val granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    if (!granted) return
     ExecutionNotificationChannels.ensure(context)
-    NotificationManagerCompat.from(context).notify(
-        TEST_NOTIFICATION_ID,
-        NotificationCompat.Builder(context, ExecutionNotificationChannels.ALERTS)
-            .setSmallIcon(R.drawable.ic_notification_tastile)
-            .setContentTitle("Tastile")
-            .setContentText("This is a test notification from Tastile.")
-            .setStyle(NotificationCompat.BigTextStyle().bigText("This is a test notification from Tastile."))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setAutoCancel(true)
-            .build(),
-    )
+    try {
+        NotificationManagerCompat.from(context).notify(
+            TEST_NOTIFICATION_ID,
+            NotificationCompat.Builder(context, ExecutionNotificationChannels.ALERTS)
+                .setSmallIcon(R.drawable.ic_notification_tastile)
+                .setContentTitle("Tastile")
+                .setContentText("This is a test notification from Tastile.")
+                .setStyle(NotificationCompat.BigTextStyle().bigText("This is a test notification from Tastile."))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setAutoCancel(true)
+                .build(),
+        )
+    } catch (_: SecurityException) {
+        // POST_NOTIFICATIONS revoked at runtime — ignore.
+    }
 }

@@ -89,7 +89,7 @@ class MainActivity : ComponentActivity() {
                 androidTheme = supportsDynamicColor(),
                 disableDynamicTheming = !supportsDynamicColor(),
             ) {
-                SystemBarEffect(color = MaterialTheme.colorScheme.background, darkTheme = darkTheme)
+                SystemBarEffect(darkTheme = darkTheme)
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -167,7 +167,6 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    @Suppress("DEPRECATION") // createConfirmDeviceCredentialIntent is the only API that reuses the device's existing PIN/pattern/password prompt without pulling in androidx.biometric.
     private fun requestSecurityUnlockIfNeeded() {
         if (securityUnlockInProgress || !userSettingsRepository.shouldRequireSecurityUnlock()) {
             return
@@ -176,6 +175,12 @@ class MainActivity : ComponentActivity() {
         if (!keyguard.isDeviceSecure) {
             return
         }
+        // createConfirmDeviceCredentialIntent is the only API that reuses the
+        // device's existing PIN/pattern/password prompt without pulling in
+        // androidx.biometric. BiometricPrompt is a richer replacement but adds
+        // ~2 MB to the APK and forces the user through a biometric prompt
+        // even when they've already configured a non-biometric lock screen.
+        @Suppress("DEPRECATION")
         val intent = keyguard.createConfirmDeviceCredentialIntent(
             "Unlock Tastile",
             "Confirm your device lock to continue."

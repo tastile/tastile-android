@@ -75,7 +75,7 @@ class ExecutionAlarmActivity : ComponentActivity() {
                 androidTheme = false,
                 disableDynamicTheming = true,
             ) {
-                SystemBarEffect(color = MaterialTheme.colorScheme.background, darkTheme = darkTheme)
+                SystemBarEffect(darkTheme = darkTheme)
                 AlarmSurface(
                     title = title,
                     body = body,
@@ -96,13 +96,7 @@ class ExecutionAlarmActivity : ComponentActivity() {
             setTurnScreenOn(true)
             (getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager)?.requestDismissKeyguard(this, null)
         } else {
-            @Suppress("DEPRECATION")
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-            )
+            applyLegacyShowWhenLockedFlags()
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -113,12 +107,29 @@ class ExecutionAlarmActivity : ComponentActivity() {
                 }
             }
         } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility =
-                android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
-                    android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                    android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            applyLegacyImmersiveFlags()
         }
+    }
+
+    @Suppress("DEPRECATION") // FLAG_* constants were superseded by Activity.setShowWhenLocked /
+    // setTurnScreenOn in API 27; this branch only runs on API 26 (minSdk) where they are
+    // the only API available.
+    private fun applyLegacyShowWhenLockedFlags() {
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+        )
+    }
+
+    @Suppress("DEPRECATION") // SYSTEM_UI_FLAG_* were superseded by WindowInsetsController in
+    // API 30; this branch only runs on API 26-29 where the controller is unavailable.
+    private fun applyLegacyImmersiveFlags() {
+        window.decorView.systemUiVisibility =
+            android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
+                android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
     }
 
     private fun startAlarmSignal() {
@@ -141,8 +152,7 @@ class ExecutionAlarmActivity : ComponentActivity() {
         vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
         } else {
-            @Suppress("DEPRECATION")
-            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            obtainLegacyVibrator()
         }
         runCatching {
             vibrator?.vibrate(
@@ -150,6 +160,12 @@ class ExecutionAlarmActivity : ComponentActivity() {
             )
         }
     }
+
+    @Suppress("DEPRECATION") // Context.VIBRATOR_SERVICE was superseded by
+    // Context.VIBRATOR_MANAGER_SERVICE in API 31; this branch only runs on
+    // API 26-30 where the manager service does not exist.
+    private fun obtainLegacyVibrator(): Vibrator =
+        getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
     private fun stopAlarmSignal() {
         runCatching { mediaPlayer?.stop() }
