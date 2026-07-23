@@ -32,7 +32,7 @@ import java.time.ZoneId
  *      grid line the Frame drew for that hour).
  *   3. NowIndicator overlay appears only when `date == today`. The
  *      `date = today - 1` case must not render the now-line.
- *   4. NowIndicator is driven by an injectable `nowProvider` so tests
+ *   4. NowIndicator is driven by an injectable `nowInstant` so tests
  *      can pin wall time deterministically.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -71,6 +71,7 @@ class DayViewTileTest {
                         pxPerMin = 1f,
                         zone = ZoneId.of("UTC"),
                         onEditEvent = {},
+                        today = today,
                         modifier = Modifier.testTag("day-view-tile"),
                     )
                 }
@@ -91,6 +92,7 @@ class DayViewTileTest {
                         pxPerMin = 1f,
                         zone = ZoneId.of("UTC"),
                         onEditEvent = {},
+                        today = today,
                         modifier = Modifier.testTag("day-view-tile"),
                     )
                 }
@@ -119,6 +121,7 @@ class DayViewTileTest {
                         pxPerMin = 1f,
                         zone = ZoneId.of("UTC"),
                         onEditEvent = {},
+                        today = today,
                         modifier = Modifier.testTag("day-view-tile"),
                     )
                 }
@@ -138,6 +141,8 @@ class DayViewTileTest {
                         pxPerMin = 1f,
                         zone = ZoneId.of("UTC"),
                         onEditEvent = {},
+                        today = today,
+                        nowInstant = Instant.now(),
                         modifier = Modifier.testTag("day-view-tile"),
                     )
                 }
@@ -166,7 +171,8 @@ class DayViewTileTest {
                         pxPerMin = 1f,
                         zone = zone,
                         onEditEvent = {},
-                        nowProvider = { nowInstant },
+                        today = today,
+                        nowInstant = nowInstant,
                         modifier = Modifier.testTag("day-view-tile"),
                     )
                 }

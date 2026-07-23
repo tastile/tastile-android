@@ -23,7 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
@@ -60,21 +60,28 @@ fun TimelineScreen(
     val scale by viewModel.scale.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
     val zone = remember { ZoneId.systemDefault() }
-    val activeTimeline = remember(timeline) { timeline }
 
-    val onOpenDay: (LocalDate) -> Unit = { day ->
-        viewModel.setSelectedDay(day)
-        viewModel.setScale(TimelineScale.Day)
+    // Stable callbacks so children (DayView / WeekView / MonthView / Tiles)
+    // don't see a new lambda on every TimelineScreen recompose. Without this
+    // memoization, Pager swipes and scale changes would propagate fresh
+    // closures to deeply nested composables and trigger recomposition cascades.
+    val onOpenDay = remember(viewModel) {
+        { day: LocalDate ->
+            viewModel.setSelectedDay(day)
+            viewModel.setScale(TimelineScale.Day)
+        }
     }
-    val onEditEvent: (CoreTimelineItem) -> Unit = { item ->
-        when (val target = calendarEventTarget(item)) {
-            is CalendarEventTarget.RecurringTile -> {
-                viewModel.selectTile(target.tileId)
-                overlay.show(Overlay.TileEdit(tileId = target.tileId))
-            }
-            is CalendarEventTarget.Placement -> {
-                target.tileId?.let(viewModel::selectTile)
-                overlay.show(Overlay.TileEdit(tileId = target.tileId, placementId = target.placementId))
+    val onEditEvent = remember(viewModel, overlay) {
+        { item: CoreTimelineItem ->
+            when (val target = calendarEventTarget(item)) {
+                is CalendarEventTarget.RecurringTile -> {
+                    viewModel.selectTile(target.tileId)
+                    overlay.show(Overlay.TileEdit(tileId = target.tileId))
+                }
+                is CalendarEventTarget.Placement -> {
+                    target.tileId?.let(viewModel::selectTile)
+                    overlay.show(Overlay.TileEdit(tileId = target.tileId, placementId = target.placementId))
+                }
             }
         }
     }
@@ -132,14 +139,15 @@ fun TimelineScreen(
                 key = { it },
             ) { page ->
                 val pageDay = today.plusDays((page - PAGER_CENTER).toLong())
-                val pageBlocks = remember(activeTimeline, pageDay) {
-                    toDayBlocks(activeTimeline, pageDay, zone)
+                val pageBlocks = remember(timeline, pageDay) {
+                    toDayBlocks(timeline, pageDay, zone)
                 }
                 DayView(
                     date = pageDay,
                     zoom = dayZoom,
                     blocks = pageBlocks,
                     zone = zone,
+                    today = today,
                     onZoomChange = { dayZoom = it },
                     onCreateAt = { hour, minute ->
                         val start = pageDay.atTime(hour, minute).atZone(zone).toInstant()
@@ -161,9 +169,10 @@ fun TimelineScreen(
                 val anchor = today.plusWeeks((page - PAGER_CENTER).toLong())
                 val pageWeekStart = anchor.minusDays((anchor.dayOfWeek.value - 1).toLong())
                 WeekView(
-                    items = activeTimeline,
+                    items = timeline,
                     weekStart = pageWeekStart,
                     zone = zone,
+                    today = today,
                     onOpenDay = onOpenDay,
                     zoom = weekZoom,
                     onZoomChange = { weekZoom = it },
@@ -176,13 +185,13 @@ fun TimelineScreen(
                 key = { it },
             ) { page ->
                 val pageMonthStart = today.plusMonths((page - PAGER_CENTER).toLong()).withDayOfMonth(1)
-                MonthView(
-                    monthStart = pageMonthStart,
-                    selectedDate = selectedDay,
-                    items = activeTimeline,
-                    zone = zone,
-                    onOpenDay = onOpenDay,
-                )
+                    MonthView(
+                        monthStart = pageMonthStart,
+                        selectedDate = selectedDay,
+                        items = timeline,
+                        zone = zone,
+                        onOpenDay = onOpenDay,
+                    )
             }
         }
 

@@ -1,7 +1,7 @@
 package app.tastile.android.ui.mobile
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import app.tastile.android.notifications.NotificationRepository
 import app.tastile.android.ui.dashboard.DashboardViewModel

@@ -87,6 +87,7 @@ fun WeekView(
     items: List<CoreTimelineItem>,
     weekStart: LocalDate,
     zone: ZoneId,
+    today: LocalDate,
     onOpenDay: (LocalDate) -> Unit,
     zoom: Float,
     onZoomChange: (Float) -> Unit,
@@ -229,6 +230,7 @@ fun WeekView(
                         blocksByDay = blocksByDay,
                         pxPerMin = pxPerMin,
                         zone = zone,
+                        today = today,
                         scrollState = scrollState,
                         onEditEvent = onEditEvent,
                         modifier = Modifier.fillMaxSize(),
@@ -274,6 +276,7 @@ fun WeekView(
                     // headers here are equivalent Composables.
                     WeekHeaderRow(
                         weekStart = weekStart,
+                        today = today,
                         onOpenDay = onOpenDay,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -291,13 +294,14 @@ fun WeekView(
 @Composable
 private fun WeekHeaderRow(
     weekStart: LocalDate,
+    today: LocalDate,
     onOpenDay: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier) {
         for (offset in 0 until GridConstants.WEEK_DAYS) {
             val day = weekStart.plusDays(offset.toLong())
-            val isToday = day == java.time.LocalDate.now()
+            val isToday = day == today
             val label = remember(day) {
                 day.format(java.time.format.DateTimeFormatter.ofPattern("EEE", java.util.Locale.getDefault()))
             }
@@ -376,27 +380,27 @@ internal fun WeekTimeGutter(
     val labelStyle = MaterialTheme.typography.labelSmall.copy(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    val padRight = 6.dp
+    val measurements = rememberGutterMeasurements(textMeasurer, labelStyle, 0, endHour)
     Canvas(
         modifier = modifier
             .fillMaxWidth()
             .height(totalHeight),
     ) {
         val pxPerHourPx = pxPerHour.toPx()
-        val padRight = 6.dp.toPx()
-        for (h in 0..endHour) {
+        val padRightPx = padRight.toPx()
+        for ((h, m) in measurements.withIndex()) {
             val yLine = h * pxPerHourPx
-            val label = "%02d".format(h)
-            val measured = textMeasurer.measure(label, labelStyle)
             // Clamp the top so the first label ("00") sits flush at the
             // canvas top instead of being half-clipped above it. For h>=1
             // yLine is well below the clamp so the label stays centered on
             // its grid line.
-            val yTop = (yLine - measured.size.height / 2f).coerceAtLeast(0f)
+            val yTop = (yLine - m.size.height / 2f).coerceAtLeast(0f)
             drawText(
                 textMeasurer = textMeasurer,
-                text = label,
+                text = "%02d".format(h),
                 topLeft = Offset(
-                    x = size.width - measured.size.width - padRight,
+                    x = size.width - m.size.width - padRightPx,
                     y = yTop,
                 ),
                 style = labelStyle,

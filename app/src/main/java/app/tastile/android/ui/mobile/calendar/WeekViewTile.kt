@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +47,7 @@ fun WeekViewTile(
     blocksByDay: Map<LocalDate, List<PlacedBlock>>,
     pxPerMin: Float,
     zone: ZoneId,
+    today: LocalDate,
     scrollState: ScrollState,
     onEditEvent: (CoreTimelineItem) -> Unit,
     modifier: Modifier = Modifier,
@@ -55,7 +57,7 @@ fun WeekViewTile(
         for (offset in 0 until GridConstants.WEEK_DAYS) {
             val day = weekStart.plusDays(offset.toLong())
             val blocks = blocksByDay[day].orEmpty()
-            val isToday = day == java.time.LocalDate.now()
+            val isToday = day == today
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -67,20 +69,24 @@ fun WeekViewTile(
                     .clickable { /* day-column tap is handled in the Frame */ }
                     .testTag("week-view-tile-event-column"),
             ) {
-                // Event chips for this day
+                // Event chips for this day. `key(b.id)` gives Compose a
+                // stable slot per chip so reorder / replace operations
+                // reuse composition rather than recreating each chip.
                 for (b in blocks) {
-                    val topDp = (b.startMinutes * pxPerMin).dp
-                    val heightDp = ((b.endMinutes - b.startMinutes) * pxPerMin)
-                        .coerceAtLeast(GridConstants.MIN_EVENT_HEIGHT_DP.value).dp
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset(y = topDp)
-                            .height(heightDp)
-                            .padding(horizontal = 1.dp)
-                            .testTag("week-view-tile-event-chip"),
-                    ) {
-                        EventChipContent(b, onEditEvent)
+                    key(b.id) {
+                        val topDp = (b.startMinutes * pxPerMin).dp
+                        val heightDp = ((b.endMinutes - b.startMinutes) * pxPerMin)
+                            .coerceAtLeast(GridConstants.MIN_EVENT_HEIGHT_DP.value).dp
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .offset(y = topDp)
+                                .height(heightDp)
+                                .padding(horizontal = 1.dp)
+                                .testTag("week-view-tile-event-chip"),
+                        ) {
+                            EventChipContent(b, onEditEvent)
+                        }
                     }
                 }
                 // NowIndicator only on today's column. State and per-minute

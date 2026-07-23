@@ -25,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.delay
+import java.time.Instant
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
@@ -85,6 +87,7 @@ fun DayView(
     zoom: Float,
     blocks: List<PlacedBlock>,
     zone: ZoneId,
+    today: LocalDate,
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
     onCreateAt: (hour: Int, minute: Int) -> Unit,
@@ -94,6 +97,7 @@ fun DayView(
     DayViewScaffold(
         blocks = blocks,
         day = date,
+        today = today,
         zoom = zoom,
         zone = zone,
         scrollState = scrollState,
@@ -112,6 +116,7 @@ fun DayView(
 private fun DayViewScaffold(
     blocks: List<PlacedBlock>,
     day: LocalDate,
+    today: LocalDate,
     zoom: Float,
     zone: ZoneId,
     scrollState: ScrollState,
@@ -120,6 +125,20 @@ private fun DayViewScaffold(
     onZoomChange: (Float) -> Unit,
     modifier: Modifier,
 ) {
+    // Single per-minute now-instant source hoisted to the scaffold so the
+    // tile's `LaunchedEffect` is keyed on `day` only — a stale lambda
+    // default can no longer churn the coroutine on every recompose.
+    // `nowInstant` is `null` whenever the visible day is not today; the
+    // tile renders nothing in that case.
+    val isToday = day == today
+    var nowInstant by remember { mutableStateOf<Instant?>(if (isToday) Instant.now() else null) }
+    LaunchedEffect(day) {
+        if (!isToday) return@LaunchedEffect
+        while (true) {
+            delay(60_000L)
+            nowInstant = Instant.now()
+        }
+    }
     val latestZoom by rememberUpdatedState(zoom)
     var pendingZoomScroll by remember { mutableStateOf<Int?>(null) }
     var pinchZoom by remember { mutableStateOf<Float?>(null) }
@@ -277,6 +296,8 @@ private fun DayViewScaffold(
                         pxPerMin = pxPerMin,
                         zone = zone,
                         onEditEvent = onEditEvent,
+                        today = today,
+                        nowInstant = nowInstant,
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("day-view-tile-wrapper"),
@@ -299,6 +320,8 @@ private fun DayGutter(startHour: Int, endHour: Int, pxPerHour: Dp, totalHeight: 
     val labelStyle = MaterialTheme.typography.labelSmall.copy(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    val padRight = 6.dp
+    val measurements = rememberGutterMeasurements(textMeasurer, labelStyle, startHour, endHour)
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
@@ -308,17 +331,15 @@ private fun DayGutter(startHour: Int, endHour: Int, pxPerHour: Dp, totalHeight: 
         // with the grid-line y positions in DayViewFrame. drawText centers
         // glyphs at the given y via size.height / 2 in the offset.
         val pxPerHourPx = pxPerHour.toPx()
-        val padRight = 6.dp.toPx()
-        for (h in startHour..endHour) {
+        val padRightPx = padRight.toPx()
+        for ((h, m) in measurements.withIndex()) {
             val yLine = (h - startHour) * pxPerHourPx
-            val label = "%02d".format(h)
-            val measured = textMeasurer.measure(label, labelStyle)
             drawText(
                 textMeasurer = textMeasurer,
-                text = label,
+                text = "%02d".format(startHour + h),
                 topLeft = Offset(
-                    x = size.width - measured.size.width - padRight,
-                    y = yLine - measured.size.height / 2f,
+                    x = size.width - m.size.width - padRightPx,
+                    y = yLine - m.size.height / 2f,
                 ),
                 style = labelStyle,
             )

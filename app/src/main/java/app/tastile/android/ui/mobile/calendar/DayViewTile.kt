@@ -19,11 +19,7 @@ import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,7 +27,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
-import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -49,9 +44,10 @@ import java.util.Locale
  * Tile fills the same content column the Frame occupies so the event chips
  * overlay the grid lines exactly.
  *
- * [nowProvider] drives the NowIndicator overlay; defaults to `Instant.now()`
- * so production callers do not need to pass anything. Tests inject a fixed
- * value to lock wall time deterministically.
+ * [nowInstant] is the live wall-clock value hoisted from
+ * [DayView] (a single minute-tick coroutine lives there so the per-minute
+ * re-read does not fork across this composable). Pass `null` to suppress the
+ * now-line (e.g. when navigating to a past/future day).
  */
 @Composable
 fun DayViewTile(
@@ -60,30 +56,35 @@ fun DayViewTile(
     pxPerMin: Float,
     zone: ZoneId,
     onEditEvent: (CoreTimelineItem) -> Unit,
+    today: LocalDate,
     modifier: Modifier = Modifier,
-    nowProvider: () -> Instant? = { Instant.now() },
+    nowInstant: Instant? = null,
 ) {
     val startHour = GridConstants.DAY_START_HOUR
 
     Box(modifier = modifier.fillMaxSize().testTag("day-view-tile")) {
-        // Event blocks
+        // Event blocks. `key(b.id)` gives Compose a stable slot per block so
+        // reorders / replace-changes reuse existing chip composition instead
+        // of tearing every chip down and recreating it.
         blocks.forEach { b ->
-            val topDp = ((b.startMinutes - startHour * 60) * pxPerMin).dp
-            val heightDp = ((b.endMinutes - b.startMinutes) * pxPerMin)
-                .coerceAtLeast(GridConstants.MIN_EVENT_HEIGHT_DP.value).dp
-            // Lane geometry is supplied by the assigned lanes (assignLanes
-            // already computed laneIndex / laneCount from a positional sort);
-            // render each block at the canvas's full width / laneCount, offset
-            // by laneIndex × laneWidth. Leaving the width externally driven
-            // (maxWidth equivalent) keeps the layout Row-agnostic.
-            Box(
-                modifier = Modifier
-                    .offset(y = topDp)
-                    .fillMaxWidth()
-                    .height(heightDp)
-                    .padding(horizontal = 2.dp),
-            ) {
-                EventChipContent(b, onEditEvent)
+            key(b.id) {
+                val topDp = ((b.startMinutes - startHour * 60) * pxPerMin).dp
+                val heightDp = ((b.endMinutes - b.startMinutes) * pxPerMin)
+                    .coerceAtLeast(GridConstants.MIN_EVENT_HEIGHT_DP.value).dp
+                // Lane geometry is supplied by the assigned lanes (assignLanes
+                // already computed laneIndex / laneCount from a positional sort);
+                // render each block at the canvas's full width / laneCount, offset
+                // by laneIndex × laneWidth. Leaving the width externally driven
+                // (maxWidth equivalent) keeps the layout Row-agnostic.
+                Box(
+                    modifier = Modifier
+                        .offset(y = topDp)
+                        .fillMaxWidth()
+                        .height(heightDp)
+                        .padding(horizontal = 2.dp),
+                ) {
+                    EventChipContent(b, onEditEvent)
+                }
             }
         }
 
@@ -91,62 +92,19 @@ fun DayViewTile(
         // navigating to a past/future page does not render a misleading dot.
         // The Tile owns the now-line because it depends on live wall time,
         // which is logically a "tick" rather than a static frame property.
-        //
-        // Implementation note: the wall-clock state lives in `MinuteTicker`,
-        // a leaf composable that re-reads itself every minute. The parent
-        // Tile here observes nothing — only `MinuteTicker` recomposes when
-        // `nowInstant` advances. Keying the `LaunchedEffect` on `date` keeps
-        // the per-minute timer alive for the displayed day and tears it down
-        // (and its always-active coroutine) when the user navigates to a
-        // different day.
-        val isToday = date == LocalDate.now()
-        if (isToday) {
-            MinuteTicker(
-                dateKey = date,
+        // The tick itself is hoisted to [DayView] so the per-minute coroutine
+        // is started once per page, not once per recompose.
+        if (date == today) {
+            NowIndicator(
+                nowProvider = { nowInstant },
                 zone = zone,
                 pxPerMin = pxPerMin,
-                nowProvider = nowProvider,
+                dayRangeStartHour = GridConstants.DAY_START_HOUR,
+                dayRangeEndHour = GridConstants.DAY_END_HOUR,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     }
-}
-
-/**
- * Self-contained now-line overlay. Owns its own `nowInstant` state so that the
- * surrounding tile does NOT recompose every minute when the wall clock ticks.
- *
- * - Re-keys `LaunchedEffect` on [dateKey] so navigating to a different day
- *   cancels and restarts the per-minute timer (the prior code keyed only on
- *   `nowProvider` which never changed during normal use, so the looping
- *   coroutine survived across day switches — a small leak we close here).
- * - State is private to this Composable; the upstream tree reads
- *   `nowProvider()` via the indirection in [NowIndicator], so changing
- *   `nowInstant` only invalidates the inner Box of [NowIndicator].
- */
-@Composable
-private fun MinuteTicker(
-    dateKey: LocalDate,
-    zone: ZoneId,
-    pxPerMin: Float,
-    nowProvider: () -> Instant?,
-    modifier: Modifier = Modifier,
-) {
-    var nowInstant by remember(nowProvider) { mutableStateOf<Instant?>(nowProvider()) }
-    LaunchedEffect(dateKey, nowProvider) {
-        while (true) {
-            delay(60_000L)
-            nowInstant = nowProvider()
-        }
-    }
-    NowIndicator(
-        nowProvider = { nowInstant },
-        zone = zone,
-        pxPerMin = pxPerMin,
-        dayRangeStartHour = GridConstants.DAY_START_HOUR,
-        dayRangeEndHour = GridConstants.DAY_END_HOUR,
-        modifier = modifier,
-    )
 }
 
 /**

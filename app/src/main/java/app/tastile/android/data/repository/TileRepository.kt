@@ -55,7 +55,6 @@ class TileRepository @Inject constructor(
     suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): TilesResponse {
         val token = currentUserProvider.currentIdToken()
         if (token.isNullOrBlank()) {
-            android.util.Log.w("TileRepository", "getTiles skipped: no id_token (filter=$filter)")
             latestReadDiagnostics = "source=v1_skipped reason=no_token count=0 user_match=true"
             return TilesResponse(emptyList(), null, null)
         }
@@ -359,7 +358,7 @@ class TileRepository @Inject constructor(
         return try {
             val response = v1ApiClient.getTimeline(start, end, ownerIds)
             val mapped = response.mapNotNull { it.toCoreTimelineItem(start, end) }
-            android.util.Log.i("TileRepository", "v1 timeline: raw=${response.size} mapped=${mapped.size} range=[$start,$end] owners=${ownerIds.size}")
+            android.util.Log.d("TileRepository", "v1 timeline: ${response.size} items, mapped=${mapped.size}")
             mapped
         } catch (e: V1Error) {
             android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)

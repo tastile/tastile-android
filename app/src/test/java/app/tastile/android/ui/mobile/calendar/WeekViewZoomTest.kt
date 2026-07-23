@@ -41,6 +41,7 @@ class WeekViewZoomTest {
                         items = emptyList(),
                         weekStart = LocalDate.of(2026, 7, 13),
                         zone = ZoneId.of("UTC"),
+                        today = LocalDate.now(),
                         onOpenDay = {},
                         zoom = zoom,
                         onZoomChange = {
@@ -82,6 +83,7 @@ class WeekViewZoomTest {
                         items = emptyList(),
                         weekStart = LocalDate.of(2026, 7, 13),
                         zone = ZoneId.of("UTC"),
+                        today = LocalDate.now(),
                         onOpenDay = {},
                         zoom = observedZoom,
                         onZoomChange = { observedZoom = it },

@@ -25,6 +25,7 @@ class WeekViewTileTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun tile_emptyColumns_rootIsDisplayed() = runTest {
+        val today = LocalDate.now()
         compose.setContent {
             MaterialTheme {
                 Box(Modifier.requiredSize(800.dp, 600.dp)) {
@@ -33,6 +34,7 @@ class WeekViewTileTest {
                         blocksByDay = emptyMap(),
                         pxPerMin = 1f,
                         zone = ZoneId.of("UTC"),
+                        today = today,
                         scrollState = rememberScrollState(),
                         onEditEvent = {},
                         modifier = Modifier.fillMaxSize(),
@@ -70,6 +72,7 @@ class WeekViewTileTest {
                         blocksByDay = blocks,
                         pxPerMin = 1f,
                         zone = ZoneId.of("UTC"),
+                        today = today,
                         scrollState = rememberScrollState(),
                         onEditEvent = {},
                         modifier = Modifier.fillMaxSize(),
@@ -91,6 +94,7 @@ class WeekViewTileTest {
                         blocksByDay = emptyMap(),
                         pxPerMin = 1f,
                         zone = ZoneId.of("UTC"),
+                        today = today,
                         scrollState = rememberScrollState(),
                         onEditEvent = {},
                         modifier = Modifier.fillMaxSize(),

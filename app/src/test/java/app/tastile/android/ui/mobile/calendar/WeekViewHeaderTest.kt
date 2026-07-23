@@ -46,6 +46,7 @@ class WeekViewHeaderTest {
                         items = emptyList(),
                         weekStart = LocalDate.of(2026, 7, 13),
                         zone = ZoneId.of("UTC"),
+                        today = LocalDate.now(),
                         onOpenDay = {},
                         zoom = 1f,
                         onZoomChange = {},

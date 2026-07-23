@@ -63,6 +63,7 @@ class TimelineScreenLoadingTest {
                         zoom = 1f,
                         blocks = emptyList(),
                         zone = zone,
+                        today = pageDay,
                         onCreateAt = { _, _ -> },
                         onEditEvent = {},
                         modifier = Modifier.testTag("timeline-loading-day-view"),

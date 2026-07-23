@@ -3,7 +3,7 @@ package app.tastile.android.ui.mobile
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.ui.dashboard.DashboardViewModel

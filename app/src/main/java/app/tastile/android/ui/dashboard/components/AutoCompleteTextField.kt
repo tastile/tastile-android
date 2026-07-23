@@ -10,7 +10,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 // m2-allow: m3-component
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 // m2-allow: m3-component
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
@@ -47,7 +47,7 @@ fun AutoCompleteTextField(
             },
             modifier = modifier
                 .fillMaxWidth()
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
             placeholder = { Text(placeholder) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = visible) },
             singleLine = true
