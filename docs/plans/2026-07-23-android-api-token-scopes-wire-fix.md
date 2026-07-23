@@ -2,15 +2,15 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Fix `V1ApiTokenCreateResponse.scopes` so that minting succeeds when Core returns `"scopes": "all"`, restoring tile/timeline rendering on `tastile-android`.
+**Goal:** Fix the two confirmed Android read-path wire mismatches so Core API-token minting and `GET /v1/tiles` decoding both succeed, restoring tile/timeline rendering on `tastile-android`.
 
-**Architecture:** One DTO field type change (`List<String>` → `String?`) in `V1ApiToken.kt`. The wire format lives in `tastile-core/crates-v1/storage/src/migrations.rs:1531` (`scopes text NOT NULL DEFAULT 'all'`) and `crates-v1/api/src/handlers/auth.rs:validate_api_token_scopes` only accepts `"all"`. Android never serializes `scopes` outbound — only the mint response carries it — so the fix is read-side only.
+**Architecture:** Keep Core unchanged because its live handlers and OpenAPI are canonical: API-token `scopes` is the string `"all"`, and `GET /v1/tiles` returns a bare `TileListView[]`. The first fix changes the token DTO field to `String?`; the second makes `V1ApiClient.getTiles` decode `List<TileListView>` and wrap it in the existing Android-internal `V1ListTilesResponse`, leaving next-actionable metadata null because Core does not return it.
 
 **Tech Stack:** Kotlin 2.x, kotlinx.serialization, JUnit4, AGP 9.2.1, Gradle 9.6.0, JDK 17. Xiaomi `pm install --user 0 -r` reinstall.
 
 ---
 
-## Background (why this fix is the entire problem)
+## Background: first confirmed blocker
 
 Smoke gun from on-device logcat (2026-07-23):
 
@@ -29,7 +29,7 @@ Failure chain (already verified end-to-end):
 5. → caught in `TileRepository.getTiles`, replaced with `TilesResponse(emptyList(), source=v1_unavailable)`
 6. → UI renders empty state (no tiles, no timeline)
 
-Fixing the DTO restores the mint path → token is non-null → reads succeed → UI renders.
+Fixing the DTO restores token minting. Device verification then exposed a second, independent read-path mismatch documented below.
 
 ---
 
@@ -236,20 +236,70 @@ Open the dashboard. Confirm:
 
 If either is empty, capture another logcat window and re-check the failure chain (most likely another silent swallow in `TileRepository`; do not "fix forward" — stop and re-trace).
 
-**Step 4: Capture verification screenshot + log snippet for the commit message**
+**Step 4: Capture local-only verification evidence**
 
 ```bash
 adb shell screencap -p /sdcard/verify.png
-adb pull /sdcard/verify.png ./verify-2026-07-23-android-tiles.png
-adb logcat -d > ./verify-2026-07-23-android-tiles.log
+adb pull /sdcard/verify.png "$TEMP/verify-2026-07-23-android-tiles.png"
+adb logcat -d | grep -E "ApiTokenManager|TileRepository|V1ApiClient" > "$TEMP/verify-2026-07-23-android-tiles.log"
 ```
 
-**Step 5: Commit verification artifacts**
+Inspect the filtered log for tokens or user data and keep both artifacts outside the repository. Do not commit screenshots, raw logcat, API tokens, Cognito tokens, or user identifiers.
+
+---
+
+## Addendum: second confirmed blocker — bare `/v1/tiles` array
+
+Device logcat after the token and URL fixes showed:
+
+```text
+v1 getTiles failed: Unexpected JSON token at offset 0:
+Expected start of the object '{', but had '[' instead at path: $
+JSON input: [{"id":"019f8a33-4825-7c13-9c2.....
+```
+
+The contract is confirmed in `tastile-core/crates-v1/api/src/handlers/read.rs`: the handler returns `Json<Vec<TileListView>>`, and its OpenAPI response body is `[TileListView]`. Android currently asks kotlinx.serialization to decode that body as `V1ListTilesResponse`, which requires an object envelope.
+
+### Task 6: Add a failing HTTP contract regression test
+
+**Files:**
+- Modify: `app/src/test/java/app/tastile/android/data/api/V1ApiClientTest.kt`
+
+**Step 1:** Add a test backed by JDK `HttpServer` that returns a representative production `TileListView` bare array from `/v1/tiles`, calls `V1ApiClient.getTiles()`, and asserts that the single tile is available through `response.tiles` while both next-actionable fields are null.
+
+**Step 2:** Run only the new test with JDK 17.
 
 ```bash
-git add verify-2026-07-23-android-tiles.png verify-2026-07-23-android-tiles.log
-git commit -m "verify(v1): tiles + timeline render after scopes wire fix"
+./gradlew :app:testDebugUnitTest --tests "app.tastile.android.data.api.V1ApiClientTest.getTiles decodes Core bare array"
 ```
+
+Expected before the implementation: FAIL with `Expected start of the object '{', but had '[' instead at path: $`.
+
+### Task 7: Decode the canonical array and retain the internal wrapper
+
+**Files:**
+- Modify: `app/src/main/java/app/tastile/android/data/api/V1ApiClient.kt`
+
+Change `getTiles` so the selected path is decoded as `List<TileListView>`, then return `V1ListTilesResponse(tiles = tiles)`. Do not change Core, `V1ListTilesResponse`, repository interfaces, or unrelated next-actionable UI state.
+
+Run:
+
+```bash
+./gradlew :app:testDebugUnitTest --tests "app.tastile.android.data.api.V1ApiClientTest"
+./gradlew :app:testDebugUnitTest
+```
+
+Expected: both commands pass. Commit the test and implementation together:
+
+```bash
+git add app/src/main/java/app/tastile/android/data/api/V1ApiClient.kt \
+  app/src/test/java/app/tastile/android/data/api/V1ApiClientTest.kt
+git commit -m "fix(v1): decode tile list bare array response"
+```
+
+### Task 8: Rebuild and repeat device verification
+
+Repeat Tasks 3–5 with a fresh APK. The diagnostic pass must show no `$.scopes` failure and no `Expected start of the object` failure. Confirm non-empty tile cards and timeline blocks visually. After confirmation, remove only the temporary diagnostic logging changes, rebuild/reinstall once more, and repeat the visual check against the clean APK.
 
 ---
 
@@ -270,10 +320,13 @@ The app falls back to "no tiles rendered" — the pre-fix observable behavior. N
 ## Definition of done
 
 - [ ] Task 1 regression test fails before Task 2, passes after
+- [ ] Task 6 HTTP contract test fails against object-envelope decoding, passes after Task 7
 - [ ] Full `:app:testDebugUnitTest` green
 - [ ] New APK installed on device
 - [ ] On-device: `mintApiToken failed` absent from logcat
+- [ ] On-device: no bare-array/object-envelope decode failure for `/v1/tiles`
 - [ ] On-device: tile count > 0 in logcat (`source=v1`, not `v1_unavailable`)
 - [ ] On-device: tiles list and timeline grid render non-empty
-- [ ] Verification screenshot + log committed
-- [ ] `tastile-core/HARNESS.md` §実装履歴 updated per the post-implementation note in the repo `CLAUDE.md`
+- [ ] Clean APK without temporary diagnostic logs is reinstalled and still renders
+- [ ] Local-only verification screenshot + sanitized log inspected (not committed)
+- [ ] No `tastile-core` source or HARNESS change; the canonical Core wire contract is unchanged
