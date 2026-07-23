@@ -76,7 +76,7 @@ private fun ScheduleRow(
     onClick: () -> Unit,
 ) {
     NiaListItem(
-        headlineContent = { Text(tile.title, style = MaterialTheme.typography.bodyLarge) },
+        content = { Text(tile.title, style = MaterialTheme.typography.bodyLarge) },
         leadingContent = {
             Icon(
                 imageVector = if (recurring) Icons.Outlined.Replay else Icons.Outlined.Schedule,

@@ -542,7 +542,7 @@ fun AppListRow(
 ) {
     val baseModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
     NiaListItem(
-        headlineContent = { Text(label) },
+        content = { Text(label) },
         modifier = baseModifier,
         leadingContent = leading,
         trailingContent = trailing,
@@ -574,7 +574,7 @@ fun AppListItem(
 ) {
     val baseModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
     NiaListItem(
-        headlineContent = { Text(headline) },
+        content = { Text(headline) },
         modifier = baseModifier,
         leadingContent = leading?.let { icon -> { Icon(icon, contentDescription = null) } },
         trailingContent = trailing?.let { icon -> { Icon(icon, contentDescription = null) } },

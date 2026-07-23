@@ -32,7 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
-import androidx.compose.material3.rememberModalBottomSheetState
+import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -68,7 +68,7 @@ fun AccountSheet(
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
     if (current !is Overlay.AccountSettings) return
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberNiaModalBottomSheetState()
 
     PanelSheet(
         sheetState = sheetState,
@@ -317,7 +317,7 @@ private fun LoginMethodsPanel() {
 @Composable
 private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     ListItem(
-        headlineContent = {
+        content = {
             Text(
                 title,
                 style = MaterialTheme.typography.titleSmall,
@@ -338,7 +338,7 @@ private fun AccountListItem(
 ) {
     val baseModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     ListItem(
-        headlineContent = { Text(headline, style = MaterialTheme.typography.bodyLarge) },
+        content = { Text(headline, style = MaterialTheme.typography.bodyLarge) },
         supportingContent = supporting?.let {
             {
                 Text(

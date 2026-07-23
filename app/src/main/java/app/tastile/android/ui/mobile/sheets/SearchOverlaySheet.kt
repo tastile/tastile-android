@@ -14,7 +14,7 @@ import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
-import androidx.compose.material3.rememberModalBottomSheetState
+import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +33,7 @@ fun SearchOverlaySheet(overlay: OverlayViewModel) {
     val current by overlay.current.collectAsStateWithLifecycle()
 
     if (current is Overlay.Search) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberNiaModalBottomSheetState()
         var query by remember { mutableStateOf("") }
 
         PanelSheet(

@@ -194,7 +194,7 @@ private fun ThemeSection(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         NiaListItem(
-            headlineContent = { Text(stringResource(R.string.settings_theme)) },
+            content = { Text(stringResource(R.string.settings_theme)) },
             supportingContent = { Text(themeLabel(current)) },
             leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
@@ -235,7 +235,7 @@ private fun LanguageSection(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         NiaListItem(
-            headlineContent = { Text(stringResource(R.string.settings_language)) },
+            content = { Text(stringResource(R.string.settings_language)) },
             supportingContent = { Text(localeLabel(current)) },
             leadingContent = { Icon(Icons.Outlined.Language, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
@@ -270,7 +270,7 @@ private fun SecurityLockSection(
     ) {
         val a11yLabel = stringResource(R.string.settings_security_lock_off)
         NiaListItem(
-            headlineContent = {
+            content = {
                 Text(
                     stringResource(
                         if (enabled) R.string.settings_security_lock_on

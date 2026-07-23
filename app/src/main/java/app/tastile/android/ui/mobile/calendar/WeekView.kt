@@ -25,14 +25,12 @@ import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -96,18 +94,8 @@ fun WeekView(
     scrollState: ScrollState = rememberScrollState(),
 ) {
     val latestZoom by rememberUpdatedState(zoom)
-    var pendingZoomScroll by remember { mutableStateOf<Int?>(null) }
     var pinchZoom by remember { mutableStateOf<Float?>(null) }
     var pinchTranslationY by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(zoom, pendingZoomScroll) {
-        pendingZoomScroll?.let { target ->
-            withFrameNanos { }
-            scrollState.scrollTo(target)
-            pendingZoomScroll = null
-            pinchZoom = null
-            pinchTranslationY = 0f
-        }
-    }
     val blocksByDay = remember(items, weekStart, zone) {
         (0 until GridConstants.WEEK_DAYS).associate { offset ->
             val day = weekStart.plusDays(offset.toLong())
@@ -187,8 +175,10 @@ fun WeekView(
                         } while (event.changes.any { it.pressed })
 
                         finalScroll?.let { targetScroll ->
-                            pendingZoomScroll = targetScroll
+                            scrollState.scrollTo(targetScroll)
                             onZoomChange(finalZoom)
+                            pinchZoom = null
+                            pinchTranslationY = 0f
                         } ?: run {
                             pinchZoom = null
                             pinchTranslationY = 0f

@@ -155,7 +155,7 @@ private fun QuickCreateBaseComposition(
         )
         HorizontalDivider()
         NiaListItem(
-            headlineContent = { Text("Completion logic") },
+            content = { Text("Completion logic") },
             supportingContent = { Text(conditionSummary(draft.plan.completion.root.kind)) },
             leadingContent = { Icon(Icons.Outlined.Checklist, contentDescription = null) },
             trailingContent = { Icon(Icons.Outlined.Add, contentDescription = null) },
@@ -166,7 +166,7 @@ private fun QuickCreateBaseComposition(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
         NiaListItem(
-            headlineContent = { Text("Completion requires") },
+            content = { Text("Completion requires") },
             supportingContent = { Text("${draft.plan.completion.tasks.size} item(s)") },
             leadingContent = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
             trailingContent = { Icon(Icons.Outlined.Add, contentDescription = null) },
@@ -178,7 +178,7 @@ private fun QuickCreateBaseComposition(
         )
         draft.plan.completion.tasks.forEachIndexed { index, task ->
             NiaListItem(
-                headlineContent = { Text(task.content.title.ifBlank { "Untitled" }) },
+                content = { Text(task.content.title.ifBlank { "Untitled" }) },
                 leadingContent = { Icon(Icons.Outlined.CheckBox, contentDescription = null) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -190,7 +190,7 @@ private fun QuickCreateBaseComposition(
         HorizontalDivider()
         val isLabel = draft.plan.role == QuickCreatePlanRole.Label
         NiaListItem(
-            headlineContent = { Text("Label") },
+            content = { Text("Label") },
             supportingContent = {
                 Text(if (isLabel) "Markers only" else "Executable when scheduled")
             },
@@ -211,7 +211,7 @@ private fun QuickCreateBaseComposition(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
         NiaListItem(
-            headlineContent = { Text("References") },
+            content = { Text("References") },
             leadingContent = { Icon(Icons.Outlined.Link, contentDescription = null) },
             trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
             modifier = Modifier
@@ -267,7 +267,7 @@ private fun EssentialRow(
     onClick: () -> Unit,
 ) {
     NiaListItem(
-        headlineContent = { Text(label) },
+        content = { Text(label) },
         supportingContent = { Text(summary) },
         leadingContent = { Icon(leadingIcon, contentDescription = null) },
         trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },

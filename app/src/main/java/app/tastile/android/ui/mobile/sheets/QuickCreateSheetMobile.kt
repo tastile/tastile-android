@@ -38,7 +38,7 @@ import androidx.compose.material3.ModalBottomSheet
 // m2-allow: m3-component
 import androidx.compose.material3.Text
 // m2-allow: state-holder
-import androidx.compose.material3.rememberModalBottomSheetState
+import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -120,7 +120,7 @@ fun QuickCreateSheetMobile(
         val isSubpanel = active != null && active != QuickCreatePanel.Base
 
         // Base sheet — always rendered while the overlay is QuickCreate.
-        val baseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val baseSheetState = rememberNiaModalBottomSheetState(skipPartiallyExpanded = true)
         val baseValidation = quickCreateSubmissionValidation(draft)
         ModalBottomSheet(
             onDismissRequest = { overlay.dismiss() },
@@ -171,7 +171,7 @@ fun QuickCreateSheetMobile(
         // Subpanel sheet — stacked on top of the base; its dismiss only
         // pops the subpanel via backToBase, leaving the base sheet open.
         if (isSubpanel) {
-            val subpanelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            val subpanelSheetState = rememberNiaModalBottomSheetState(skipPartiallyExpanded = true)
             ModalBottomSheet(
                 onDismissRequest = { quickCreateStore.backToBase() },
                 sheetState = subpanelSheetState,

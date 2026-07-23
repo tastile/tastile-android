@@ -23,7 +23,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet as MaterialModalBottomSheet
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.rememberModalBottomSheetState as materialRememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState as materialRememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
@@ -59,19 +60,30 @@ fun NiaModalBottomSheet(
 
 /**
  * Tastile remembered modal bottom sheet state. Delegates to Material 3
- * [androidx.compose.material3.rememberModalBottomSheetState]. Not annotated
+ * [androidx.compose.material3.rememberBottomSheetState]. Not annotated
  * `@Stable` because [SheetState] is itself `@Stable` on the Material side but
  * the underlying functions are `@ExperimentalMaterial3Api`; callers must opt
  * in the same way they would with the raw M3 function.
  *
  * @param skipPartiallyExpanded Whether the sheet should skip the partially
- * expanded state and snap directly to expanded.
+ * expanded state and snap directly to expanded. Maps to the
+ * [SheetState] `enabledValues` set so the sheet excludes [SheetValue.PartiallyExpanded].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun rememberNiaModalBottomSheetState(
     skipPartiallyExpanded: Boolean = false,
-): SheetState = materialRememberModalBottomSheetState(skipPartiallyExpanded = skipPartiallyExpanded)
+): SheetState {
+    val enabledValues = if (skipPartiallyExpanded) {
+        setOf(SheetValue.Hidden, SheetValue.Expanded)
+    } else {
+        setOf(SheetValue.Hidden, SheetValue.PartiallyExpanded, SheetValue.Expanded)
+    }
+    return materialRememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = enabledValues,
+    )
+}
 
 /**
  * Tastile side-anchored variant of [NiaModalBottomSheet]. Same visual language

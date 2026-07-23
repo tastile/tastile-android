@@ -174,7 +174,7 @@ private fun TokensBody(viewModel: AccountViewModel) {
 @Composable
 private fun SectionHeader(title: String) {
     ListItem(
-        headlineContent = {
+        content = {
             Text(
                 title,
                 style = MaterialTheme.typography.titleSmall,
@@ -314,7 +314,7 @@ private fun TokenRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ListItem(
-            headlineContent = {
+            content = {
                 Text(
                     token.displayName.ifBlank { stringResource(R.string.account_tokens_issued_heading) },
                     style = MaterialTheme.typography.bodyLarge,

@@ -66,7 +66,7 @@ fun ProjectRow(
             .testTag("project-select-${workspace.id}"),
     ) {
         ListItem(
-            headlineContent = {
+            content = {
                 Text(
                     workspace.displayName,
                     style = MaterialTheme.typography.bodyLarge,

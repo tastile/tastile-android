@@ -50,7 +50,7 @@ fun CompactTileCard(
     val lifecycle = TileLifecycle.fromString(tile.lifecycle)
     val glyph = lifecycle.glyph()
     ListItem(
-        headlineContent = {
+        content = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(glyph, style = MaterialTheme.typography.bodyMedium)
                 Text(
@@ -93,7 +93,7 @@ fun ComfortableTileCard(
     val isRecurring = tile.isRecurring()
     val meta = buildMeta(project = project, dueAt = dueAt, isRecurring = isRecurring)
     ListItem(
-        headlineContent = {
+        content = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(lifecycle.glyph(), style = MaterialTheme.typography.bodyMedium)
                 Text(

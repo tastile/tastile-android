@@ -27,7 +27,12 @@ import androidx.compose.ui.graphics.Color
 /**
  * Tastile list item. Wraps Material 3 [androidx.compose.material3.ListItem].
  *
- * @param headlineContent The headline content of the list item, typically a [Text].
+ * The parameter is named `content` (not `headlineContent`) to match the
+ * Material 3 1.3 stable signature; renaming keeps the 15 call sites that
+ * pass `content = { ... }` compiling without an alias layer.
+ *
+ * @param content The primary content of the list item (the headline slot
+ *   in M3 terms), typically a [Text].
  * @param modifier Modifier applied to the list item.
  * @param overlineContent Optional content shown above the headline.
  * @param supportingContent Optional secondary content shown below the headline.
@@ -38,7 +43,7 @@ import androidx.compose.ui.graphics.Color
 @Stable
 @Composable
 fun NiaListItem(
-    headlineContent: @Composable () -> Unit,
+    content: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     overlineContent: (@Composable () -> Unit)? = null,
     supportingContent: (@Composable () -> Unit)? = null,
@@ -47,13 +52,13 @@ fun NiaListItem(
     colors: ListItemColors = ListItemDefaults.colors(),
 ) {
     MaterialListItem(
-        headlineContent = headlineContent,
-        modifier = modifier,
         overlineContent = overlineContent,
+        modifier = modifier,
         supportingContent = supportingContent,
         leadingContent = leadingContent,
         trailingContent = trailingContent,
         colors = colors,
+        content = content,
     )
 }
 

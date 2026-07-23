@@ -158,7 +158,7 @@ private fun PreferencesSectionContent(overlayViewModel: OverlayViewModel) {
 @Composable
 private fun SectionHeader(title: String) {
     ListItem(
-        headlineContent = {
+        content = {
             Text(
                 title,
                 style = MaterialTheme.typography.titleSmall,
@@ -177,7 +177,7 @@ private fun PreferencesListItem(
     onClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = { Text(headline, style = MaterialTheme.typography.bodyLarge) },
+        content = { Text(headline, style = MaterialTheme.typography.bodyLarge) },
         leadingContent = { Icon(leading, contentDescription = null) },
         trailingContent = { Icon(trailing, contentDescription = null) },
         modifier = Modifier.clickable(onClick = onClick),

@@ -42,7 +42,7 @@ fun ProjectsList(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         NiaListItem(
-            headlineContent = {
+            content = {
                 Text(
                     stringResource(R.string.panels_projects_all_projects),
                     style = MaterialTheme.typography.bodyLarge,

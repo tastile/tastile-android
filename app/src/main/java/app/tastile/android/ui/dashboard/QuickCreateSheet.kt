@@ -44,7 +44,7 @@ import androidx.compose.material3.Switch
 // m2-allow: m3-component
 import androidx.compose.material3.Tab
 // m2-allow: m3-component
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.PrimaryTabRow
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
@@ -329,7 +329,7 @@ fun QuickCreateSheet(
                 title = t("繰り返し設定", "Recurrence"),
                 helpText = t("繰り返しの頻度と時間を設定", "Configure frequency and recurrence window")
             ) {
-                TabRow(
+                PrimaryTabRow(
                     selectedTabIndex = when (recurrenceFrequency) {
                         "daily" -> 0
                         "weekly" -> 1

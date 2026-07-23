@@ -24,7 +24,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.delay
 import java.time.Instant
 import androidx.compose.ui.Modifier
@@ -140,18 +139,8 @@ private fun DayViewScaffold(
         }
     }
     val latestZoom by rememberUpdatedState(zoom)
-    var pendingZoomScroll by remember { mutableStateOf<Int?>(null) }
     var pinchZoom by remember { mutableStateOf<Float?>(null) }
     var pinchTranslationY by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(zoom, pendingZoomScroll) {
-        pendingZoomScroll?.let { target ->
-            withFrameNanos { }
-            scrollState.scrollTo(target)
-            pendingZoomScroll = null
-            pinchZoom = null
-            pinchTranslationY = 0f
-        }
-    }
 
     // Day view always spans the full 24 hours so that (a) the user can
     // scroll through the entire day, (b) the min zoom
@@ -245,8 +234,10 @@ private fun DayViewScaffold(
                         } while (event.changes.any { it.pressed })
 
                         finalScroll?.let { targetScroll ->
-                            pendingZoomScroll = targetScroll
+                            scrollState.scrollTo(targetScroll)
                             onZoomChange(finalZoom)
+                            pinchZoom = null
+                            pinchTranslationY = 0f
                         } ?: run {
                             pinchZoom = null
                             pinchTranslationY = 0f

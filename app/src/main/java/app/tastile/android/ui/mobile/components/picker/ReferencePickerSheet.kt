@@ -18,7 +18,7 @@ import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: state-holder
-import androidx.compose.material3.rememberModalBottomSheetState
+import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,7 +36,7 @@ fun ReferencePickerSheet(
     onSelect: (ReferenceOption) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberNiaModalBottomSheetState(skipPartiallyExpanded = true)
 
     NiaModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -53,7 +53,7 @@ fun ReferencePickerSheet(
             } else {
                 references.forEach { ref ->
                     NiaListItem(
-                        headlineContent = { Text(ref.label) },
+                        content = { Text(ref.label) },
                         supportingContent = { Text(ref.id, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingContent = { Icon(Icons.Outlined.Tag, contentDescription = null) },
                         modifier = Modifier.clickable { onSelect(ref) },

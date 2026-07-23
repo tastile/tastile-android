@@ -21,7 +21,7 @@ import androidx.compose.material3.ListItemDefaults
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
-import androidx.compose.material3.rememberModalBottomSheetState
+import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -44,7 +44,7 @@ fun NotificationsSheet(
     val items by repository.pending.collectAsStateWithLifecycle()
 
     if (current is Overlay.Notifications) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberNiaModalBottomSheetState()
         PanelSheet(
             sheetState = sheetState,
             onDismiss = { overlay.dismiss() },
@@ -62,7 +62,7 @@ fun NotificationsSheet(
                 } else {
                     items.forEach {
                         ListItem(
-                            headlineContent = { Text(it.label, style = MaterialTheme.typography.bodyLarge) },
+                            content = { Text(it.label, style = MaterialTheme.typography.bodyLarge) },
                             leadingContent = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
                             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
                         )

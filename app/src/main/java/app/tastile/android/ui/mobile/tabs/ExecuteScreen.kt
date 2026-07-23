@@ -237,7 +237,7 @@ private fun ActiveTileHero(
             )
             tile.nextAction?.takeIf { it.isNotBlank() }?.let { next ->
                 NiaListItem(
-                    headlineContent = {
+                    content = {
                         Text(stringResource(R.string.execute_next_label, next))
                     },
                     leadingContent = {
@@ -304,7 +304,7 @@ private fun TileActionRow(
     var menuOpen by remember { mutableStateOf(false) }
 
     NiaListItem(
-        headlineContent = { Text(tile.title) },
+        content = { Text(tile.title) },
         leadingContent = {
             Text(glyph, style = MaterialTheme.typography.bodyMedium)
         },

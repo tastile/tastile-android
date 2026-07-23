@@ -14,7 +14,7 @@ import androidx.compose.material3.ModalBottomSheet
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
-import androidx.compose.material3.rememberModalBottomSheetState
+import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -38,7 +38,7 @@ fun DurationPickerSheet(
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberNiaModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val initialHours = initialMinutes / 60
     val initialMins = initialMinutes % 60
