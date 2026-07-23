@@ -87,9 +87,9 @@ fun NiaTabRow(
         modifier = modifier,
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        indicator = @Composable { tabPositions: List<androidx.compose.material3.TabPosition> ->
+        indicator = @Composable {
             TabRowDefaults.PrimaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                modifier = Modifier.tabIndicatorOffset(selectedTabIndex),
                 width = 2.dp,
                 height = 2.dp,
                 color = MaterialTheme.colorScheme.onSurface,

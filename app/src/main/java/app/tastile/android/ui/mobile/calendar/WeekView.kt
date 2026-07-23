@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -96,6 +97,7 @@ fun WeekView(
     val latestZoom by rememberUpdatedState(zoom)
     var pinchZoom by remember { mutableStateOf<Float?>(null) }
     var pinchTranslationY by remember { mutableFloatStateOf(0f) }
+    val gestureScope = rememberCoroutineScope()
     val blocksByDay = remember(items, weekStart, zone) {
         (0 until GridConstants.WEEK_DAYS).associate { offset ->
             val day = weekStart.plusDays(offset.toLong())
@@ -175,7 +177,7 @@ fun WeekView(
                         } while (event.changes.any { it.pressed })
 
                         finalScroll?.let { targetScroll ->
-                            scrollState.scrollTo(targetScroll)
+                            gestureScope.launch { scrollState.scrollTo(targetScroll) }
                             onZoomChange(finalZoom)
                             pinchZoom = null
                             pinchTranslationY = 0f
