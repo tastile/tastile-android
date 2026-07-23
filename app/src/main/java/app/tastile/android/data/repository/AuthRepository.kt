@@ -51,9 +51,24 @@ class AuthRepository @Inject constructor(
     override fun currentUserId(): String? =
         (_authState.value as? TastileAuthState.Authenticated)?.userId
 
-    override fun currentIdToken(): String? =
-        (_authState.value as? TastileAuthState.Authenticated)?.idToken?.takeIf { !isJwtExpired(it) }
-            ?: refreshCognitoSessionOrNull()?.idToken
+    override fun currentIdToken(): String? {
+        val authed = _authState.value as? TastileAuthState.Authenticated
+        val cached = authed?.idToken
+        val expired = cached != null && isJwtExpired(cached)
+        val fromCache = cached?.takeIf { !expired }
+        if (fromCache != null) return fromCache
+        android.util.Log.w(
+            "AuthRepository",
+            "currentIdToken miss: authState=${if (authed == null) "Unauthenticated" else "Authenticated"} cached_blank=${cached.isNullOrBlank()} expired=$expired; trying refresh",
+        )
+        val refreshed = refreshCognitoSessionOrNull()
+        if (refreshed == null) {
+            android.util.Log.w("AuthRepository", "refresh failed; currentIdToken returning null")
+        } else {
+            android.util.Log.w("AuthRepository", "refresh ok for user=${refreshed.userId.take(8)}")
+        }
+        return refreshed?.idToken
+    }
 
     override fun currentAccessToken(): String? =
         (_authState.value as? TastileAuthState.Authenticated)?.accessToken?.takeIf { !isJwtExpired(it) }

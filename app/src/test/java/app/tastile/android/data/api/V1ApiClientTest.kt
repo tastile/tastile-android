@@ -221,20 +221,55 @@ class V1ApiClientTest {
     }
 
     @Test
-    fun timeline_item_decodes_the_core_array_shape_and_preserves_tile_id() {
+    fun timeline_item_decodes_the_core_span_inside_source_shapes() {
         val payload = """
             [{
               "placement_id":"placement-1", "tile_id":"tile-1", "revision":1,
-              "content":{"title":"Planning"}, "visual":{"color":"#3b82f6"},
-              "role":0, "span":{"start_at":"2026-07-01T09:00:00Z","end_at":"2026-07-01T10:00:00Z"},
-              "source":{"value":0}, "resolution":{"state":0}
+              "content":{"title":"Planning"},
+              "visual":{"color":"#3b82f6"},
+              "role":0,
+              "span":{"start":"2026-07-01T09:00:00Z","end":"2026-07-01T10:00:00Z"},
+              "inside":null,
+              "source":{"kind":1,"detail":"recurring:f3aa"},
+              "resolution":{"state":0,"resolved_at":"2026-07-01T09:00:00Z","resolution_hash":"00000000-0000-0000-0000-000000000000","violations":[]},
+              "source_tile_id":null,"occurrence_id":null,
+              "split_index":null,"split_count":null,"split_group_id":null
             }]
         """.trimIndent()
 
         val items = Json { ignoreUnknownKeys = true }.decodeFromString<List<TimelineItem>>(payload)
 
-        assertEquals("tile-1", items.single().tileId)
-        assertEquals("placement-1", items.single().placementId)
+        val only = items.single()
+        assertEquals("tile-1", only.tileId)
+        assertEquals("placement-1", only.placementId)
+        assertEquals("2026-07-01T09:00:00Z", only.span.start)
+        assertEquals("2026-07-01T10:00:00Z", only.span.end)
+        assertNull(only.inside)
+        assertEquals(1.toShort(), only.source.kind)
+        assertEquals("recurring:f3aa", only.source.detail)
+    }
+
+    @Test
+    fun timeline_item_decodes_inside_with_parent_and_scope_when_present() {
+        val payload = """
+            [{
+              "placement_id":"placement-child", "tile_id":"tile-1", "revision":1,
+              "content":{"title":"Nested"},
+              "visual":{"color":"#000000"},
+              "role":0,
+              "span":{"start":"2026-07-01T09:00:00Z","end":"2026-07-01T10:00:00Z"},
+              "inside":{"parent":"placement-parent","scope":2},
+              "source":{"kind":4,"detail":"source:f3aa"},
+              "resolution":{"state":0,"resolved_at":"2026-07-01T09:00:00Z","resolution_hash":"00000000-0000-0000-0000-000000000000","violations":[]}
+            }]
+        """.trimIndent()
+
+        val items = Json { ignoreUnknownKeys = true }.decodeFromString<List<TimelineItem>>(payload)
+
+        val only = items.single()
+        val inside = only.inside
+        assertEquals("placement-parent", inside?.parent)
+        assertEquals(2.toShort(), inside?.scope)
     }
 
     @Test

@@ -48,18 +48,20 @@ data class TileContentView(
 
 @Serializable
 data class Span(
-    @SerialName("start_at") val startAt: String,
-    @SerialName("end_at") val endAt: String
+    val start: String,
+    val end: String
 )
 
 @Serializable
 data class PlacementInsideView(
-    @SerialName("placement_id") val placementId: String
+    val parent: String,
+    val scope: Short
 )
 
 @Serializable
 data class PlacementSourceView(
-    val value: Byte
+    val kind: Short,
+    val detail: String
 )
 
 @Serializable
