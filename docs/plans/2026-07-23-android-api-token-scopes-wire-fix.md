@@ -303,6 +303,293 @@ Repeat Tasks 3–5 with a fresh APK. The diagnostic pass must show no `$.scopes`
 
 ---
 
+## Addendum 2: third confirmed blocker — chained `TimelineItem` decoder failures
+
+After the bare-array fix is in place, on-device logcat showed a *new* decoder failure:
+
+```text
+v1 getTimeline failed: MissingFieldException:
+  Fields [start_at, end_at] are required for type Span,
+  but they were missing at path: $[0].span
+JSON input: [{"placement_id":"...","tile_id":"...","revision":1,
+              "content":{"title":"休憩","description":null},
+              "visual":{"color":"#3b82f6","icon":"check-circle"},
+              "role":0,
+              "span":{"start":"2026-07-23T00:00:00Z","end":"2026-07-23T00:30:00Z"},
+              "inside":null,
+              "source":{"kind":1,"detail":"recurring:..."},
+              "resolution":{"state":0,...}, ...}]
+```
+
+Tracing the Core wire shape through `tastile-core/crates-v1/domain/src/read.rs` and `tastile-core/crates-v1/domain/src/common.rs`:
+
+| DTO | Core `#[derive(Serialize)]` field shape | Android current shape | Mismatch |
+| --- | --- | --- | --- |
+| `Span` (`common.rs:274`) | `{ start: Instant, end: Instant }` (no rename) | `start_at`/`end_at` SerialName | **field names** |
+| `InsideView` (`read.rs:71`) | `{ parent: PlacementId, scope: ScopeKind:i16 }` | `placement_id` only | **field names + missing scope** |
+| `PlacementSourceView` (`read.rs:76`) | `{ kind: PlacementSource:i16, detail: String }` | `value` only | **field names + missing detail** |
+| `ResolutionInfo` (`read.rs:82`) | `{ state, resolved_at, resolution_hash, violations[] }` | `{ state, resolved_at?, resolution_hash?, violations[] }` | OK with `ignoreUnknownKeys = true` (Core sends more fields, Android ignores) |
+
+The existing `timeline_item_decodes_the_core_array_shape_and_preserves_tile_id` test in `V1ApiClientTest.kt:224` uses the *wrong* fixture (`start_at`/`end_at`/`value`) and passes only because the DTOs match the wrong fixture. It is replaced here with a fixture that matches Core's actual wire.
+
+`PlacementInsideView` and `PlacementSourceView` are referenced from `TileRepository.toCoreTimelineItem` only via `source.value.toInt()` (`TileRepository.kt:388`). The `inside` field is decoded but unused at the repository boundary because Core sends `inside: null` for top-level `休憩` placements. The fix updates the DTOs to match Core and updates the three consumers in `TileRepository.kt`.
+
+Do not change Core. Do not change `V1ListTilesResponse`, `TileRepository.getTimeline`, `TileRepository.toCoreTimelineItem` shape, or the UI's `CoreTimelineItem` (a separate DTO living in `core/CoreDtos.kt` whose `startAt`/`endAt` field names are unrelated to the wire-level `Span`).
+
+### Task 9: Replace the wire-shape test with Core's actual JSON
+
+**Files:**
+- Modify: `app/src/test/java/app/tastile/android/data/api/V1ApiClientTest.kt`
+
+**Step 1:** Replace the `timeline_item_decodes_the_core_array_shape_and_preserves_tile_id` test (line 224) body with a fixture that mirrors Core's actual wire shape:
+
+```kotlin
+@Test
+fun timeline_item_decodes_the_core_span_inside_source_shapes() {
+    val payload = """
+        [{
+          "placement_id":"placement-1", "tile_id":"tile-1", "revision":1,
+          "content":{"title":"Planning"},
+          "visual":{"color":"#3b82f6"},
+          "role":0,
+          "span":{"start":"2026-07-01T09:00:00Z","end":"2026-07-01T10:00:00Z"},
+          "inside":null,
+          "source":{"kind":1,"detail":"recurring:f3aa"},
+          "resolution":{"state":0,"resolved_at":"2026-07-01T09:00:00Z","resolution_hash":"00000000-0000-0000-0000-000000000000","violations":[]},
+          "source_tile_id":null,"occurrence_id":null,
+          "split_index":null,"split_count":null,"split_group_id":null
+        }]
+    """.trimIndent()
+
+    val items = Json { ignoreUnknownKeys = true }.decodeFromString<List<TimelineItem>>(payload)
+
+    val only = items.single()
+    assertEquals("tile-1", only.tileId)
+    assertEquals("placement-1", only.placementId)
+    assertEquals("2026-07-01T09:00:00Z", only.span.start)
+    assertEquals("2026-07-01T10:00:00Z", only.span.end)
+    assertEquals(1.toShort(), only.source.kind)
+}
+```
+
+**Step 2:** Run only the new test with JDK 17.
+
+```bash
+./gradlew :app:testDebugUnitTest --tests "app.tastile.android.data.api.V1ApiClientTest.timeline_item_decodes_the_core_span_inside_source_shapes"
+```
+
+Expected before the DTO fix: FAIL with `MissingFieldException: Fields [start_at, end_at] are required for type Span, but they were missing at path: $[0].span`.
+
+**Step 3:** Commit the failing test:
+
+```bash
+git add app/src/test/java/app/tastile/android/data/api/V1ApiClientTest.kt
+git commit -m "test(v1): pin Core wire shape for Span/Inside/SourceView on TimelineItem"
+```
+
+### Task 10: Fix the three DTOs to match Core's wire
+
+**Files:**
+- Modify: `app/src/main/java/app/tastile/android/data/api/V1Models.kt`
+
+**Step 1:** Replace the `Span` data class (lines 49-53) with field names that match Core's struct `Span { start, end }`:
+
+```kotlin
+@Serializable
+data class Span(
+    val start: String,
+    val end: String
+)
+```
+
+**Step 2:** Replace the `PlacementInsideView` data class (lines 55-58) with Core's `InsideView { parent: PlacementId, scope: ScopeKind:i16 }` shape:
+
+```kotlin
+@Serializable
+data class PlacementInsideView(
+    val parent: String,
+    val scope: Short
+)
+```
+
+**Step 3:** Replace the `PlacementSourceView` data class (lines 60-63) with Core's `PlacementSourceView { kind: PlacementSource:i16, detail: String }` shape:
+
+```kotlin
+@Serializable
+data class PlacementSourceView(
+    val kind: Short,
+    val detail: String
+)
+```
+
+**Step 4:** Run Task 9's test and the full unit-test suite:
+
+```bash
+./gradlew :app:testDebugUnitTest --tests "app.tastile.android.data.api.V1ApiClientTest.timeline_item_decodes_the_core_span_inside_source_shapes"
+./gradlew :app:testDebugUnitTest
+```
+
+Expected: both green. The TimelineItem `inside` field is `PlacementInsideView? = null`; the JSON `null` decodes to a Kotlin `null`. The TimelineItem `source` field is non-nullable, so non-null `kind`/`detail` is required.
+
+**Step 5:** Commit:
+
+```bash
+git add app/src/main/java/app/tastile/android/data/api/V1Models.kt
+git commit -m "fix(v1): align Span/InsideView/SourceView to Core wire shape"
+```
+
+### Task 11: Update the TileRepository consumers
+
+**Files:**
+- Modify: `app/src/main/java/app/tastile/android/data/repository/TileRepository.kt`
+
+Three lines read fields that no longer exist:
+
+- Line 382: `span.startAt` → `span.start`
+- Line 383: `span.endAt ?: span.startAt` → `span.end ?: span.start`
+- Line 388: `source.value.toInt()` → `source.kind.toInt()`
+
+**Step 1:** Apply the three edits. The block should become:
+
+```kotlin
+val startInstant = parseIsoInstant(span.start) ?: return null
+val endInstant = parseIsoInstant(span.end ?: span.start)
+if (startInstant.isBefore(rangeStart) || !startInstant.isBefore(rangeEnd)) return null
+return CoreTimelineItem(
+    id = placementId,
+    tileId = tileId,
+    sourceKind = source.kind.toInt(),
+    title = content.title.ifBlank { "Untitled" },
+    type = role.toRoleName(),
+    ...
+```
+
+**Step 2:** Run the full unit-test suite:
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
+Expected: all green. No new DTO tests are required here because `TimelineItem` → `CoreTimelineItem` is exercised end-to-end by the on-device run.
+
+**Step 3:** Commit:
+
+```bash
+git add app/src/main/java/app/tastile/android/data/repository/TileRepository.kt
+git commit -m "fix(v1): TileRepository reads Core Span/source field names"
+```
+
+### Task 12: Rebuild and reinstall
+
+Run:
+
+```bash
+./gradlew :app:assembleDebug
+MSYS_NO_PATHCONV=1 adb push app/build/outputs/apk/debug/app-debug.apk /data/local/tmp/app-debug.apk
+adb shell pm install --user 0 -r /data/local/tmp/app-debug.apk
+adb shell rm /data/local/tmp/app-debug.apk
+```
+
+(Treat this as a continuation of Task 4 — same APK + install flow.)
+
+### Task 13: Verify timeline renders on device
+
+**Files:** none (live verification; continuation of Task 5).
+
+**Step 1:** Clear logcat, start the app, log in.
+
+```bash
+adb logcat -c
+adb shell am start -n app.tastile.android/.MainActivity
+```
+
+**Step 2:** Confirm the previously failing decoders succeed:
+
+```bash
+adb logcat -d V:* | grep -E "V1ApiClient|TileRepository|toCoreTimelineItem" | head -80
+```
+
+Expected: no `MissingFieldException` for `Span`, no `MissingFieldException` for `PlacementInsideView`, no `MissingFieldException` for `PlacementSourceView`. A trace is acceptable showing the timeline was decoded with `count=N` for `N > 0`.
+
+**Step 3:** Visual confirmation.
+
+Open the dashboard timeline. Confirm:
+- Time-grid blocks render (not empty)
+- Tile cards render (not empty)
+- No `[0].span` MissingFieldException in logcat
+
+If the timeline is still empty, capture another logcat window and re-check the failure chain — there may be additional downstream decoder mismatches (e.g. `ResolutionViolation` if any non-empty `violations[]` appears, or `TimelineOwnerEmbed` if `owner` is non-null). For the default `休憩` seed, neither should be in the response.
+
+**Step 4:** Capture local-only evidence (do not commit screenshots, raw logcat, or tokens):
+
+```bash
+adb shell screencap -p /sdcard/verify.png
+adb pull /sdcard/verify.png "$TEMP/verify-2026-07-23-timeline-render.png"
+adb logcat -d | grep -E "V1ApiClient|TileRepository" > "$TEMP/verify-2026-07-23-timeline-render.log"
+```
+
+**Step 5:** Strip diagnostic logs and rebuild once.
+
+Remove the temporary `Log.i` / `Log.w` lines added in `AuthRepository.kt` and `TileRepository.kt` during the diagnostic pass. Run:
+
+```bash
+./gradlew :app:assembleDebug
+MSYS_NO_PATHCONV=1 adb push app/build/outputs/apk/debug/app-debug.apk /data/local/tmp/app-debug.apk
+adb shell pm install --user 0 -r /data/local/tmp/app-debug.apk
+adb shell rm /data/local/tmp/app-debug.apk
+```
+
+Re-confirm the timeline renders against the clean APK. Commit the cleanup:
+
+```bash
+git add app/src/main/java/app/tastile/android/data/repository/TileRepository.kt \
+  app/src/main/java/app/tastile/android/data/repository/AuthRepository.kt
+git commit -m "chore(v1): strip diagnostic logs after timeline render verified"
+```
+
+### Task 6: Add a failing HTTP contract regression test
+
+**Files:**
+- Modify: `app/src/test/java/app/tastile/android/data/api/V1ApiClientTest.kt`
+
+**Step 1:** Add a test backed by JDK `HttpServer` that returns a representative production `TileListView` bare array from `/v1/tiles`, calls `V1ApiClient.getTiles()`, and asserts that the single tile is available through `response.tiles` while both next-actionable fields are null.
+
+**Step 2:** Run only the new test with JDK 17.
+
+```bash
+./gradlew :app:testDebugUnitTest --tests "app.tastile.android.data.api.V1ApiClientTest.getTiles decodes Core bare array"
+```
+
+Expected before the implementation: FAIL with `Expected start of the object '{', but had '[' instead at path: $`.
+
+### Task 7: Decode the canonical array and retain the internal wrapper
+
+**Files:**
+- Modify: `app/src/main/java/app/tastile/android/data/api/V1ApiClient.kt`
+
+Change `getTiles` so the selected path is decoded as `List<TileListView>`, then return `V1ListTilesResponse(tiles = tiles)`. Do not change Core, `V1ListTilesResponse`, repository interfaces, or unrelated next-actionable UI state.
+
+Run:
+
+```bash
+./gradlew :app:testDebugUnitTest --tests "app.tastile.android.data.api.V1ApiClientTest"
+./gradlew :app:testDebugUnitTest
+```
+
+Expected: both commands pass. Commit the test and implementation together:
+
+```bash
+git add app/src/main/java/app/tastile/android/data/api/V1ApiClient.kt \
+  app/src/test/java/app/tastile/android/data/api/V1ApiClientTest.kt
+git commit -m "fix(v1): decode tile list bare array response"
+```
+
+### Task 8: Rebuild and repeat device verification
+
+Repeat Tasks 3–5 with a fresh APK. The diagnostic pass must show no `$.scopes` failure and no `Expected start of the object` failure. Confirm non-empty tile cards and timeline blocks visually. After confirmation, remove only the temporary diagnostic logging changes, rebuild/reinstall once more, and repeat the visual check against the clean APK.
+
+---
+
 ## Rollback
 
 If the device verification fails or a regression appears:
