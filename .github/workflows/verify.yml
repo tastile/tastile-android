@@ -34,5 +34,17 @@ jobs:
       - name: Ensure Gradle wrapper is executable
         run: chmod +x ./gradlew
 
+      - name: Write gradle.properties from Secrets
+        run: |
+          cat >> gradle.properties <<EOF
+          GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          COGNITO_CLIENT_ID=${{ secrets.COGNITO_CLIENT_ID }}
+          COGNITO_REGION=${{ secrets.COGNITO_REGION }}
+          COGNITO_HOSTED_UI_DOMAIN=${{ secrets.COGNITO_HOSTED_UI_DOMAIN }}
+          COGNITO_REDIRECT_URI=${{ secrets.COGNITO_REDIRECT_URI }}
+          COGNITO_WEB_AUTH_BASE_URL=${{ secrets.COGNITO_WEB_AUTH_BASE_URL }}
+          TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
+          EOF
+
       - name: Verify repository quality gates
         run: ./gradlew verify
