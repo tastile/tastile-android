@@ -22,11 +22,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.time.Instant
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -143,7 +141,6 @@ private fun DayViewScaffold(
     val latestZoom by rememberUpdatedState(zoom)
     var pinchZoom by remember { mutableStateOf<Float?>(null) }
     var pinchTranslationY by remember { mutableFloatStateOf(0f) }
-    val gestureScope = rememberCoroutineScope()
 
     // Day view always spans the full 24 hours so that (a) the user can
     // scroll through the entire day, (b) the min zoom
@@ -237,7 +234,7 @@ private fun DayViewScaffold(
                         } while (event.changes.any { it.pressed })
 
                         finalScroll?.let { targetScroll ->
-                            gestureScope.launch { scrollState.scrollTo(targetScroll) }
+                            scrollState.value = targetScroll
                             onZoomChange(finalZoom)
                             pinchZoom = null
                             pinchTranslationY = 0f
