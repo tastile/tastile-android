@@ -2,6 +2,7 @@ package app.tastile.android.ui.mobile.calendar
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -39,4 +40,19 @@ internal fun rememberGutterMeasurements(
     return remember(measurer, style, labels) {
         labels.map { measurer.measure(it, style) }
     }
+}
+
+internal fun buildGridPoints(
+    width: Float,
+    pxPerMinPx: Float,
+    endHour: Int,
+): List<Offset> {
+    require(width >= 0f && pxPerMinPx >= 0f && endHour >= 0)
+    val out = ArrayList<Offset>(endHour * 2 + 2)
+    for (h in 0..endHour) {
+        val y = h * 60 * pxPerMinPx
+        out.add(Offset(0f, y))
+        out.add(Offset(width, y))
+    }
+    return out
 }

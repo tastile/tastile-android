@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
@@ -32,7 +32,6 @@ fun WeekViewFrame(
     modifier: Modifier = Modifier,
     pxPerMin: Float,
 ) {
-    val endHour = GridConstants.DAY_END_HOUR
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
 
     Column(modifier = modifier.testTag("week-view-frame").fillMaxSize()) {
@@ -48,16 +47,16 @@ fun WeekViewFrame(
                 .border(width = 0.5.dp, color = outlineColor)
                 .testTag("week-view-frame-grid-lines"),
         ) {
-            val pxPerMinPx = pxPerMin * density
-            for (h in 0..endHour) {
-                val y = h * 60 * pxPerMinPx
-                drawLine(
-                    color = outlineColor,
-                    start = Offset(0f, y),
-                    end = Offset(size.width, y),
-                    strokeWidth = 1f,
-                )
-            }
+            drawPoints(
+                pointMode = PointMode.Lines,
+                points = buildGridPoints(
+                    size.width,
+                    pxPerMin * density,
+                    GridConstants.DAY_END_HOUR,
+                ),
+                color = outlineColor,
+                strokeWidth = 1f,
+            )
         }
     }
 }

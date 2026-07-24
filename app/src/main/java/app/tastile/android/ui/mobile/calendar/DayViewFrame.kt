@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -58,17 +59,16 @@ fun DayViewFrame(
                 .fillMaxSize()
                 .testTag("day-view-frame-grid-lines"),
         ) {
-            val hours = 24
-            val pxPerMinPx = pxPerMin * density
-            for (h in 0..hours) {
-                val y = h * pxPerMinPx * 60
-                drawLine(
-                    color = outlineColor,
-                    start = Offset(0f, y),
-                    end = Offset(size.width, y),
-                    strokeWidth = 1f,
-                )
-            }
+            drawPoints(
+                pointMode = PointMode.Lines,
+                points = buildGridPoints(
+                    size.width,
+                    pxPerMin * density,
+                    GridConstants.DAY_END_HOUR,
+                ),
+                color = outlineColor,
+                strokeWidth = 1f,
+            )
         }
     }
 }
