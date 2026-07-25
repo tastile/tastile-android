@@ -1,17 +1,24 @@
+# tastile-android development container
+# ────────────────────────────────────────────────────────────────────
+# Versions are auto-extracted by wslc-build.ps1 from app/build.gradle.kts.
+# Do NOT hardcode versions here — always use --build-arg from the script.
+#
+# Build: .wslc/wslc-build.ps1
+# Dev:   .wslc/wslc-dev.ps1
+# ────────────────────────────────────────────────────────────────────
+
 FROM ubuntu:24.04
 
 ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=13114758
-ARG ANDROID_COMPILE_SDK=36
+ARG ANDROID_COMPILE_SDK
 ARG ANDROID_BUILD_TOOLS=36.0.0
-ARG ANDROID_NDK_VERSION=27.1.12297006
+ARG ANDROID_NDK_VERSION
+ARG JAVA_VERSION=17
 
 ENV DEBIAN_FRONTEND=noninteractive
-
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-
+ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64
 ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
-
 ENV PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${JAVA_HOME}/bin:${PATH}"
 
 RUN apt-get update \
@@ -19,9 +26,10 @@ RUN apt-get update \
         ca-certificates \
         curl \
         git \
-        openjdk-17-jdk-headless \
+        openjdk-${JAVA_VERSION}-jdk-headless \
         unzip \
         zip \
+        adb \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p "${ANDROID_HOME}/cmdline-tools" \
@@ -52,6 +60,10 @@ RUN sdkmanager \
         "build-tools;${ANDROID_BUILD_TOOLS}" \
         "ndk;${ANDROID_NDK_VERSION}"
 
+# Entrypoint for development mode
+COPY .wslc/entrypoint-dev.sh /entrypoint-dev.sh
+RUN chmod +x /entrypoint-dev.sh
+
 WORKDIR /workspace
 
-CMD ["bash"]
+ENTRYPOINT ["/entrypoint-dev.sh"]

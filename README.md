@@ -64,3 +64,42 @@ Release signing credentials must never be committed. The build fails fast if the
 - `app/src/main/jniLibs/` is generated output and should not be committed.
 - Cognito client values live in BuildConfig fields. Upload keys and machine-local settings belong in user-level Gradle properties instead.
 - If `tastile-core` is missing, native build tasks fail with an explicit message instead of a cargo error cascade.
+
+## WSLC Development Container
+
+`.wslc/` に開発用コンテナ定義を保持。バージョンは `app/build.gradle.kts` から自動抽出。
+
+```powershell
+# ビルド（バージョン自動同期）
+.wslc/wslc-build.ps1
+
+# 再ビルド（キャッシュ無効）
+.wslc/wslc-build.ps1 -NoCache
+
+# 開発環境起動（ADB + Gradle）
+.wslc/wslc-dev.ps1
+
+# ワイヤレス ADB 接続付き起動
+.wslc/wslc-dev.ps1 -DeviceIp 192.168.1.100
+```
+
+- コンテナイメージ: `tastile-android-dev:latest`
+- ADB: デバイスへのアプリインストール・デバッグ対応
+- Gradle: ビルド実行可能
+- ポート: ADB 5037
+
+### ADB コマンド例
+
+```powershell
+# コンテナ内でデバイス一覧表示
+wslc exec tastile-android-dev adb devices
+
+# APK インストール
+wslc exec tastile-android-dev adb install app/build/outputs/apk/debug/app-debug.apk
+
+# ワイヤレス ADB 接続
+wslc exec tastile-android-dev adb connect <device-ip>:5555
+
+# デバッグログ確認
+wslc exec tastile-android-dev adb logcat
+```
