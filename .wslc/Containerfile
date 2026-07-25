@@ -1,0 +1,57 @@
+FROM ubuntu:24.04
+
+ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=13114758
+ARG ANDROID_COMPILE_SDK=36
+ARG ANDROID_BUILD_TOOLS=36.0.0
+ARG ANDROID_NDK_VERSION=27.1.12297006
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+
+ENV PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${JAVA_HOME}/bin:${PATH}"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        openjdk-17-jdk-headless \
+        unzip \
+        zip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p "${ANDROID_HOME}/cmdline-tools" \
+    && curl -fsSL \
+        "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_COMMAND_LINE_TOOLS_VERSION}_latest.zip" \
+        -o /tmp/android-tools.zip \
+    && unzip -q \
+        /tmp/android-tools.zip \
+        -d /tmp/android-tools \
+    && mkdir -p \
+        "${ANDROID_HOME}/cmdline-tools/latest" \
+    && mv \
+        /tmp/android-tools/cmdline-tools/* \
+        "${ANDROID_HOME}/cmdline-tools/latest/" \
+    && rm -rf \
+        /tmp/android-tools \
+        /tmp/android-tools.zip
+
+RUN yes | sdkmanager \
+        --sdk_root="${ANDROID_HOME}" \
+        --licenses \
+        >/dev/null
+
+RUN sdkmanager \
+        --sdk_root="${ANDROID_HOME}" \
+        "platform-tools" \
+        "platforms;android-${ANDROID_COMPILE_SDK}" \
+        "build-tools;${ANDROID_BUILD_TOOLS}" \
+        "ndk;${ANDROID_NDK_VERSION}"
+
+WORKDIR /workspace
+
+CMD ["bash"]
