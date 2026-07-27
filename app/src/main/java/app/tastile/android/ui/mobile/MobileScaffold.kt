@@ -133,8 +133,11 @@ fun MobileScaffold(
     }
     val weekEnd = remember(weekStart) { weekStart.plusDays(6) }
     val monthStart = remember(selectedDay) { selectedDay.withDayOfMonth(1) }
-    val dayFormatter = remember(locale) {
-        DateTimeFormatter.ofPattern("M月d日 (EEE)", locale)
+    // Day-header date pattern is loaded from stringResource via R.string.mobile_day_header_pattern;
+    // JA uses a kanji month/day pattern, others use an ASCII "MMM d (EEE)" pattern.
+    val dayHeaderPattern = stringResource(R.string.mobile_day_header_pattern)
+    val dayFormatter = remember(locale, dayHeaderPattern) {
+        DateTimeFormatter.ofPattern(dayHeaderPattern, locale)
     }
     val monthFormatter = remember(locale) {
         DateTimeFormatter.ofPattern("MMMM yyyy", locale)

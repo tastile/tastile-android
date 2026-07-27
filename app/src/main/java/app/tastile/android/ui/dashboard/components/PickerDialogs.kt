@@ -20,9 +20,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.core.designsystem.theme.NiaTheme
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.ThemeMode
@@ -63,7 +65,7 @@ fun <T> PickerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("OK") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.date_picker_confirm)) }
         },
     )
 }
@@ -75,10 +77,10 @@ fun LocalePickerDialog(
     onDismiss: () -> Unit,
 ) {
     PickerDialog(
-        title = "Locale",
+        title = stringResource(R.string.settings_language),
         options = listOf(
-            AppLocale.JA to "日本語",
-            AppLocale.EN to "English",
+            AppLocale.JA to stringResource(R.string.locale_label_ja),
+            AppLocale.EN to stringResource(R.string.locale_label_en),
         ),
         selected = current,
         onPick = onPick,
@@ -93,10 +95,10 @@ fun ThemePickerDialog(
     onDismiss: () -> Unit,
 ) {
     PickerDialog(
-        title = "Theme",
+        title = stringResource(R.string.settings_theme),
         options = listOf(
-            ThemeMode.DARK to "Dark (default)",
-            ThemeMode.LIGHT to "Light",
+            ThemeMode.DARK to stringResource(R.string.picker_dialog_theme_dark),
+            ThemeMode.LIGHT to stringResource(R.string.picker_dialog_theme_light),
         ),
         selected = current,
         onPick = onPick,
@@ -111,8 +113,12 @@ fun TimeoutPickerDialog(
     onDismiss: () -> Unit,
 ) {
     PickerDialog(
-        title = "Lock timeout",
-        options = listOf(5 to "5 min", 15 to "15 min", 60 to "60 min"),
+        title = stringResource(R.string.picker_dialog_timeout_title),
+        options = listOf(
+            5 to stringResource(R.string.picker_dialog_timeout_5),
+            15 to stringResource(R.string.picker_dialog_timeout_15),
+            60 to stringResource(R.string.picker_dialog_timeout_60),
+        ),
         selected = currentMinutes,
         onPick = onPick,
         onDismiss = onDismiss,

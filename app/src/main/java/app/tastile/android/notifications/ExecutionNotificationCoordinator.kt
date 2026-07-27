@@ -14,7 +14,6 @@ import app.tastile.android.R
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.core.CorePromptQueueItem
 import app.tastile.android.core.CoreRuntimeService
-import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.UserSettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,7 +25,6 @@ class ExecutionNotificationCoordinator @Inject constructor(
     @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository,
     private val coreRuntimeService: CoreRuntimeService,
-    private val userSettingsRepository: UserSettingsRepository,
     private val alarmScheduler: ExecutionAlarmScheduler
 ) {
     fun start() {
@@ -52,8 +50,7 @@ class ExecutionNotificationCoordinator @Inject constructor(
         val prompt = snapshot.promptQueue.firstOrNull() ?: return
         if (!canPostNotifications()) return
 
-        val locale = userSettingsRepository.getLocale()
-        val content = promptContent(prompt, locale)
+        val content = promptContent(prompt)
         try {
             NotificationManagerCompat.from(context).notify(
                 ALERT_NOTIFICATION_ID,
@@ -73,24 +70,16 @@ class ExecutionNotificationCoordinator @Inject constructor(
         }
     }
 
-    private fun promptContent(prompt: CorePromptQueueItem, locale: AppLocale): Pair<String, String> {
-        val ja = locale == AppLocale.JA
+    private fun promptContent(prompt: CorePromptQueueItem): Pair<String, String> {
+        // Locale-specific wording now flows through stringResource; the same resource key
+        // resolves to the JA value in values-ja and to the EN value in the default locale.
         return when (prompt.kind) {
-            "end_break" -> if (ja) {
-                "休憩終了" to "休憩が終わりました。戻るか延長するか決めてください。"
-            } else {
-                "Break finished" to "The break is over. Decide whether to return or extend it."
-            }
-            "start_tile" -> if (ja) {
-                "開始候補があります" to "次に始めるタイルを確認してください。"
-            } else {
-                "Tile ready to start" to "Review the next tile that should start now."
-            }
-            else -> if (ja) {
-                "次の判断が必要です" to "進行中のタイルについて、完了・延長・中断を判断してください。"
-            } else {
-                "Decision required" to "Decide whether to complete, extend, or defer the current tile."
-            }
+            "end_break" -> context.getString(R.string.notif_alarm_title_break_finished) to
+                context.getString(R.string.notif_alarm_body_break_finished)
+            "start_tile" -> context.getString(R.string.notif_alarm_title_tile_ready) to
+                context.getString(R.string.notif_alarm_body_tile_ready)
+            else -> context.getString(R.string.notif_alarm_title_decision_required) to
+                context.getString(R.string.notif_alarm_body_decision_default)
         }
     }
 

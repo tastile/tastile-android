@@ -201,6 +201,8 @@ class QuickCreateStateStore(initial: QuickCreateDraftState = QuickCreateDraftSta
 }
 
 private const val DEFAULT_TASK_ID = "task_default"
+/** Internal default task title; localized at the UI layer via R.string.quick_create_default_task_title. */
+private const val DEFAULT_TASK_TITLE = "Task complete"
 
 private fun defaultAllCondition() = QuickCreateConditionNode(
     kind = 0,
@@ -226,6 +228,6 @@ private fun defaultTimeRequirement() = QuickCreateTimeRequirement(
 
 private fun defaultTaskDefinition() = QuickCreateTaskDefinition(
     id = DEFAULT_TASK_ID,
-    content = QuickCreateTaskContent(title = "作業完了"),
+    content = QuickCreateTaskContent(title = DEFAULT_TASK_TITLE),
     complete = defaultTermCondition(),
 )

@@ -367,9 +367,14 @@ private fun NotificationsSection(
     }
 }
 
+/** Localized display label for an [AppLocale]. Caller must be a `@Composable`
+ *  (or pass a [Context] via [androidx.compose.ui.res.stringResource] / `context.getString`)
+ *  to resolve the resource string. This helper composes a `stringResource` call,
+ *  so it must run inside a composable scope. */
+@androidx.compose.runtime.Composable
 private fun localeLabel(l: AppLocale): String = when (l) {
-    AppLocale.JA -> "日本語"
-    AppLocale.EN -> "English"
+    AppLocale.JA -> stringResource(R.string.locale_label_ja)
+    AppLocale.EN -> stringResource(R.string.locale_label_en)
 }
 
 private fun themeLabel(t: ThemeMode): String = when (t) {

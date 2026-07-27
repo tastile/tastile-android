@@ -15,13 +15,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedCard
-import app.tastile.android.data.repository.AppLocale
 
 @Composable
 fun AccountDashboardScreen(viewModel: DashboardViewModel) {
@@ -30,9 +31,7 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
     val email by viewModel.email.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val statsDiagnostics by viewModel.statsDiagnostics.collectAsStateWithLifecycle()
-    val locale by viewModel.locale.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
-    fun t(ja: String, en: String): String = if (locale == AppLocale.JA) ja else en
     val activeTab = remember { mutableStateOf("profile") }
     val total = tiles.size
     val completed = tiles.count { it.isDone() }
@@ -41,13 +40,13 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
     val completionRate = if (total == 0) 0 else (completed * 100) / total
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text(t("アカウント設定", "Account Settings"), style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.dashboard_account_heading), style = MaterialTheme.typography.titleLarge)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             listOf(
-                "profile" to t("プロフィール", "Profile"),
-                "subscription" to t("サブスク", "Subscription"),
-                "statistics" to t("統計", "Statistics"),
-                "usage" to t("利用状況", "Usage")
+                "profile" to stringResource(R.string.dashboard_account_tab_profile),
+                "subscription" to stringResource(R.string.dashboard_account_tab_subscription),
+                "statistics" to stringResource(R.string.dashboard_account_tab_statistics),
+                "usage" to stringResource(R.string.dashboard_account_tab_usage)
             ).forEach { (key, label) ->
                 if (activeTab.value == key) {
                     NiaFilledTonalButton(
@@ -68,16 +67,16 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
         when (activeTab.value) {
             "profile" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(t("プロフィール情報", "Profile Information"))
-                    Text(profile?.displayName ?: t("表示名なし", "No display name"))
+                    Text(stringResource(R.string.dashboard_account_profile_info))
+                    Text(profile?.displayName ?: stringResource(R.string.dashboard_account_no_display_name))
                     Text(email)
                     NiaButton(
-                        text = { Text(t("Webでアカウント設定を開く", "Open Web Account Settings")) },
+                        text = { Text(stringResource(R.string.dashboard_account_open_web)) },
                         onClick = { uriHandler.openUri("https://app.tastile.app/dashboard/account") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     NiaOutlinedButton(
-                        text = { Text(t("ログアウト", "Sign Out")) },
+                        text = { Text(stringResource(R.string.dashboard_account_sign_out)) },
                         onClick = { viewModel.signOut() },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -86,35 +85,35 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
 
             "subscription" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(t("サブスクリプション", "Subscription"))
-                    Text(t("現在のプラン", "Current Plan") + ": ${profile?.plan ?: "free"}")
+                    Text(stringResource(R.string.dashboard_account_subscription_label))
+                    Text(stringResource(R.string.dashboard_account_current_plan_label) + ": ${profile?.plan ?: "free"}")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NiaButton(text = { Text(t("Proへアップグレード", "Upgrade to Pro")) }, onClick = { uriHandler.openUri("https://tastile.app/api/stripe/checkout") })
-                        NiaOutlinedButton(text = { Text(t("請求管理", "Manage Billing")) }, onClick = { uriHandler.openUri("https://tastile.app/api/stripe/portal") })
+                        NiaButton(text = { Text(stringResource(R.string.dashboard_account_upgrade_pro)) }, onClick = { uriHandler.openUri("https://tastile.app/api/stripe/checkout") })
+                        NiaOutlinedButton(text = { Text(stringResource(R.string.dashboard_account_manage_billing)) }, onClick = { uriHandler.openUri("https://tastile.app/api/stripe/portal") })
                     }
                 }
             }
 
             "statistics" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(t("タイル統計", "Tile Statistics"))
-                    Text(t("総数", "Total") + ": $total")
-                    Text(t("完了", "Completed") + ": $completed")
-                    Text(t("進行中", "In Progress") + ": $started")
-                    Text(t("準備完了", "Ready") + ": $ready")
-                    Text(t("完了率", "Completion Rate") + ": $completionRate%")
-                    Text(t("診断", "Diagnostics") + ": $statsDiagnostics")
+                    Text(stringResource(R.string.dashboard_account_tile_statistics))
+                    Text(stringResource(R.string.dashboard_account_total) + ": $total")
+                    Text(stringResource(R.string.dashboard_account_completed) + ": $completed")
+                    Text(stringResource(R.string.dashboard_account_in_progress) + ": $started")
+                    Text(stringResource(R.string.dashboard_account_ready) + ": $ready")
+                    Text(stringResource(R.string.dashboard_account_completion_rate) + ": $completionRate%")
+                    Text(stringResource(R.string.dashboard_account_diagnostics) + ": $statsDiagnostics")
                 }
             }
 
             "usage" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(t("利用ダッシュボード", "Usage Dashboard"))
-                    Text(t("準備中: 利用分析チャートを追加予定です。", "Coming Soon: analytics charts for productivity and focus trends."))
-                    Text("• " + t("Tiles Over Time", "Tiles Over Time"))
-                    Text("• " + t("Completion Rate", "Completion Rate"))
-                    Text("• " + t("Focus Time", "Focus Time"))
-                    Text("• " + t("Activity Heatmap", "Activity Heatmap"))
+                    Text(stringResource(R.string.dashboard_account_usage_dashboard))
+                    Text(stringResource(R.string.dashboard_account_usage_coming_soon))
+                    Text("• " + stringResource(R.string.dashboard_account_usage_tiles_over_time))
+                    Text("• " + stringResource(R.string.dashboard_account_usage_completion_rate))
+                    Text("• " + stringResource(R.string.dashboard_account_usage_focus_time))
+                    Text("• " + stringResource(R.string.dashboard_account_usage_activity_heatmap))
                 }
             }
         }

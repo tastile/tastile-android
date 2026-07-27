@@ -33,8 +33,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
@@ -57,7 +59,7 @@ fun ExecuteDashboardScreen(viewModel: DashboardViewModel) {
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text(t("実行", "Execute"), style = MaterialTheme.typography.titleLarge) }
+        item { Text(stringResource(R.string.dashboard_execute_title), style = MaterialTheme.typography.titleLarge) }
         items(cards, key = { it.id }) { card ->
             DashboardCardRenderer(
                 card = card,
@@ -80,7 +82,7 @@ fun TilesDashboardScreen(viewModel: DashboardViewModel) {
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text(t("タイル", "Tiles"), style = MaterialTheme.typography.titleLarge) }
+        item { Text(stringResource(R.string.dashboard_tiles_work_title), style = MaterialTheme.typography.titleLarge) }
         items(cards, key = { it.id }) { card ->
             DashboardCardRenderer(
                 card = card,

@@ -65,8 +65,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.ui.dashboard.components.AutoCompleteTextField
@@ -102,7 +105,7 @@ fun QuickCreateSheet(
 ) {
     val locale by viewModel.locale.collectAsStateWithLifecycle()
     val tiles by viewModel.tiles.collectAsStateWithLifecycle()
-    fun t(ja: String, en: String): String = if (locale == AppLocale.JA) ja else en
+    val context = LocalContext.current
 
     var title by rememberSaveable { mutableStateOf("") }
     var titleEdited by rememberSaveable { mutableStateOf(false) }
@@ -158,7 +161,7 @@ fun QuickCreateSheet(
         } else {
             workTargetMin ?: boundedDurationMin
         }
-    val workTargetText = effectiveDurationMin?.let { formatDuration(it, locale) }
+    val workTargetText = effectiveDurationMin?.let { formatDuration(it, locale, context) }
 
     val startDateTime = if (useStartAt) parseDateTime(startDate, startTime) else null
     val endDateTime = if (useEndAt) parseDateTime(endDate, endTime) else null
@@ -184,21 +187,26 @@ fun QuickCreateSheet(
         startDateTime,
         endDateTime,
         workTargetText,
-        locale
+        locale,
+        context
     ) {
         when {
-            tileKind == "label" -> t("期間ラベル", "Period label")
-            objectiveMode == "recurring" && workTargetText != null -> t("定期タスク $workTargetText", "Recurring task $workTargetText")
-            objectiveMode == "recurring" -> t("定期タスク", "Recurring task")
+            tileKind == "label" -> context.getString(R.string.quick_create_period_label)
+            objectiveMode == "recurring" && workTargetText != null ->
+                context.getString(R.string.quick_create_suggested_recurring_with_duration, workTargetText)
+            objectiveMode == "recurring" ->
+                context.getString(R.string.quick_create_suggested_recurring)
             objectiveMode == "maximize_within_interval" && startDateTime != null && endDateTime != null ->
-                if (locale == AppLocale.JA) {
-                    "${formatDateShort(startDateTime, locale)} - ${formatDateShort(endDateTime, locale)} で最大化"
-                } else {
-                    "Maximize in ${formatDateShort(startDateTime, locale)} - ${formatDateShort(endDateTime, locale)}"
-                }
-            objectiveMode == "maximize_within_interval" -> t("できる限り進める", "Maximize progress")
-            workTargetText != null -> t("作業 $workTargetText", "Task $workTargetText")
-            else -> t("作業タスク", "Task")
+                context.getString(
+                    R.string.quick_create_suggested_maximize_range,
+                    formatDateShort(startDateTime, locale),
+                    formatDateShort(endDateTime, locale),
+                )
+            objectiveMode == "maximize_within_interval" ->
+                context.getString(R.string.quick_create_suggested_maximize)
+            workTargetText != null ->
+                context.getString(R.string.quick_create_suggested_task_with_duration, workTargetText)
+            else -> context.getString(R.string.quick_create_suggested_task)
         }
     }
 
@@ -208,20 +216,23 @@ fun QuickCreateSheet(
         workTargetText,
         startDateTime,
         endDateTime,
-        locale
+        locale,
+        context
     ) {
         when {
-            tileKind == "label" -> t("指定した期間のラベル付けを完了", "Complete labeling for the selected period")
-            objectiveMode == "recurring" -> t("1サイクル実行したら完了（定期）", "Complete one cycle (recurring)")
+            tileKind == "label" -> context.getString(R.string.quick_create_done_label_period)
+            objectiveMode == "recurring" -> context.getString(R.string.quick_create_done_recurring)
             objectiveMode == "maximize_within_interval" && startDateTime != null && endDateTime != null ->
-                if (locale == AppLocale.JA) {
-                    "${formatDateShort(startDateTime, locale)} から ${formatDateShort(endDateTime, locale)} の間で最大化"
-                } else {
-                    "Maximize progress from ${formatDateShort(startDateTime, locale)} to ${formatDateShort(endDateTime, locale)}"
-                }
-            objectiveMode == "maximize_within_interval" -> t("できる限り進める", "Maximize progress")
-            workTargetText != null -> t("${workTargetText}の実行を完了", "Complete $workTargetText of work")
-            else -> t("1回の実行を完了", "Complete one run")
+                context.getString(
+                    R.string.quick_create_done_maximize_range,
+                    formatDateShort(startDateTime, locale),
+                    formatDateShort(endDateTime, locale),
+                )
+            objectiveMode == "maximize_within_interval" ->
+                context.getString(R.string.quick_create_suggested_maximize)
+            workTargetText != null ->
+                context.getString(R.string.quick_create_done_with_duration, workTargetText)
+            else -> context.getString(R.string.quick_create_done_one_run)
         }
     }
 
@@ -265,17 +276,17 @@ fun QuickCreateSheet(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                t("クイック作成", "Quick Create"),
+                stringResource(R.string.quick_create_title),
                 style = MaterialTheme.typography.titleMedium
             )
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = t("閉じる", "Close"))
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.quick_create_close))
             }
         }
 
         SectionBlock(
-            title = t("タイトル", "Title"),
-            helpText = t("タスク名を入力してください", "Enter task title")
+            title = stringResource(R.string.quick_create_section_title),
+            helpText = stringResource(R.string.quick_create_section_title_help)
         ) {
             OutlinedTextField(
                 value = title,
@@ -295,12 +306,12 @@ fun QuickCreateSheet(
                     selected = tileKind == "work",
                     onClick = { tileKind = "work" },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                ) { Text(t("作業", "Work")) }
+                ) { Text(stringResource(R.string.quick_create_kind_work)) }
                 SegmentedButton(
                     selected = tileKind == "label",
                     onClick = { tileKind = "label" },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                ) { Text(t("ラベル", "Label")) }
+                ) { Text(stringResource(R.string.quick_create_kind_label)) }
             }
         }
 
@@ -310,24 +321,24 @@ fun QuickCreateSheet(
                     selected = objectiveMode == "finish_once",
                     onClick = { objectiveMode = "finish_once" },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3)
-                ) { Text(t("単発", "Finish once")) }
+                ) { Text(stringResource(R.string.quick_create_mode_finish_once)) }
                 SegmentedButton(
                     selected = objectiveMode == "recurring",
                     onClick = { objectiveMode = "recurring" },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3)
-                ) { Text(t("繰返し", "Recurring")) }
+                ) { Text(stringResource(R.string.quick_create_mode_recurring)) }
                 SegmentedButton(
                     selected = objectiveMode == "maximize_within_interval",
                     onClick = { objectiveMode = "maximize_within_interval" },
                     shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3)
-                ) { Text(t("最大化", "Maximize")) }
+                ) { Text(stringResource(R.string.quick_create_mode_maximize)) }
             }
         }
 
         if (isRecurring) {
             SectionBlock(
-                title = t("繰り返し設定", "Recurrence"),
-                helpText = t("繰り返しの頻度と時間を設定", "Configure frequency and recurrence window")
+                title = stringResource(R.string.quick_create_recurrence_section_title),
+                helpText = stringResource(R.string.quick_create_recurrence_section_help)
             ) {
                 PrimaryTabRow(
                     selectedTabIndex = when (recurrenceFrequency) {
@@ -340,17 +351,17 @@ fun QuickCreateSheet(
                     Tab(
                         selected = recurrenceFrequency == "daily",
                         onClick = { recurrenceFrequency = "daily" },
-                        text = { Text(t("毎日", "Daily")) }
+                        text = { Text(stringResource(R.string.quick_create_recurrence_daily)) }
                     )
                     Tab(
                         selected = recurrenceFrequency == "weekly",
                         onClick = { recurrenceFrequency = "weekly" },
-                        text = { Text(t("毎週", "Weekly")) }
+                        text = { Text(stringResource(R.string.quick_create_recurrence_weekly)) }
                     )
                     Tab(
                         selected = recurrenceFrequency == "monthly",
                         onClick = { recurrenceFrequency = "monthly" },
-                        text = { Text(t("毎月", "Monthly")) }
+                        text = { Text(stringResource(R.string.quick_create_recurrence_monthly)) }
                     )
                 }
 
@@ -358,7 +369,7 @@ fun QuickCreateSheet(
                     value = recurrenceIntervalInput,
                     onValueChange = { recurrenceIntervalInput = sanitizeNumericInput(it) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(t("間隔", "Interval")) },
+                    label = { Text(stringResource(R.string.quick_create_recurrence_interval_label)) },
                     singleLine = true
                 )
 
@@ -367,7 +378,7 @@ fun QuickCreateSheet(
                         value = recurrenceWeekdaysCsv,
                         onValueChange = { recurrenceWeekdaysCsv = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text(t("曜日 (0-6, カンマ区切り)", "Weekdays (0-6, comma separated)")) },
+                        label = { Text(stringResource(R.string.quick_create_recurrence_weekdays_label)) },
                         singleLine = true
                     )
                 }
@@ -381,14 +392,14 @@ fun QuickCreateSheet(
                             value = recurrenceMonthlyWeekInput,
                             onValueChange = { recurrenceMonthlyWeekInput = sanitizeNumericInput(it) },
                             modifier = Modifier.weight(1f),
-                            label = { Text(t("第何週", "Week")) },
+                            label = { Text(stringResource(R.string.quick_create_recurrence_monthly_week_label)) },
                             singleLine = true
                         )
                         OutlinedTextField(
                             value = recurrenceMonthlyWeekdayInput,
                             onValueChange = { recurrenceMonthlyWeekdayInput = sanitizeNumericInput(it) },
                             modifier = Modifier.weight(1f),
-                            label = { Text(t("曜日 0-6", "Weekday 0-6")) },
+                            label = { Text(stringResource(R.string.quick_create_recurrence_monthly_weekday_label)) },
                             singleLine = true
                         )
                     }
@@ -398,7 +409,7 @@ fun QuickCreateSheet(
                     value = recurrenceStartTime,
                     onValueChange = { recurrenceStartTime = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(t("繰り返し開始時刻 (HH:mm)", "Recurrence start time (HH:mm)")) },
+                    label = { Text(stringResource(R.string.quick_create_recurrence_start_time_label)) },
                     singleLine = true
                 )
 
@@ -406,7 +417,7 @@ fun QuickCreateSheet(
                     value = recurrenceEndTime,
                     onValueChange = { recurrenceEndTime = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(t("繰り返し終了時刻 (HH:mm)", "Recurrence end time (HH:mm)")) },
+                    label = { Text(stringResource(R.string.quick_create_recurrence_end_time_label)) },
                     singleLine = true
                 )
 
@@ -415,7 +426,7 @@ fun QuickCreateSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(t("有効開始日", "Valid from"))
+                    Text(stringResource(R.string.quick_create_recurrence_valid_from_label))
                     Switch(
                         checked = recurrenceValidFromEnabled,
                         onCheckedChange = { recurrenceValidFromEnabled = it }
@@ -424,7 +435,7 @@ fun QuickCreateSheet(
 
                 if (recurrenceValidFromEnabled) {
                     DateTimeField(
-                        label = t("有効開始日", "Valid from date"),
+                        label = stringResource(R.string.quick_create_recurrence_valid_from_date_label),
                         date = recurrenceValidFromDate,
                         time = "00:00",
                         onDateChange = { recurrenceValidFromDate = it },
@@ -439,7 +450,7 @@ fun QuickCreateSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(t("有効終了日", "Valid to"))
+                    Text(stringResource(R.string.quick_create_recurrence_valid_to_label))
                     Switch(
                         checked = recurrenceValidToEnabled,
                         onCheckedChange = { recurrenceValidToEnabled = it }
@@ -448,7 +459,7 @@ fun QuickCreateSheet(
 
                 if (recurrenceValidToEnabled) {
                     DateTimeField(
-                        label = t("有効終了日", "Valid to date"),
+                        label = stringResource(R.string.quick_create_recurrence_valid_to_date_label),
                         date = recurrenceValidToDate,
                         time = "23:59",
                         onDateChange = { recurrenceValidToDate = it },
@@ -461,20 +472,20 @@ fun QuickCreateSheet(
         }
 
         SectionBlock(
-            title = t("スケジュール", "Schedule"),
-            helpText = t("開始・終了日時を設定", "Set start/end date and time")
+            title = stringResource(R.string.quick_create_schedule_section_title),
+            helpText = stringResource(R.string.quick_create_schedule_section_help)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(t("開始日時", "Start at"))
+                Text(stringResource(R.string.quick_create_schedule_start_label))
                 Switch(checked = useStartAt, onCheckedChange = { useStartAt = it })
             }
             if (useStartAt) {
                 DateTimeField(
-                    label = t("開始日時", "Start at"),
+                    label = stringResource(R.string.quick_create_schedule_start_label),
                     date = startDate,
                     time = startTime,
                     onDateChange = { startDate = it },
@@ -488,12 +499,12 @@ fun QuickCreateSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(t("終了日時", "End at"))
+                Text(stringResource(R.string.quick_create_schedule_end_label))
                 Switch(checked = useEndAt, onCheckedChange = { useEndAt = it })
             }
             if (useEndAt) {
                 DateTimeField(
-                    label = t("終了日時", "End at"),
+                    label = stringResource(R.string.quick_create_schedule_end_label),
                     date = endDate,
                     time = endTime,
                     onDateChange = { endDate = it },
@@ -505,13 +516,13 @@ fun QuickCreateSheet(
 
         if (tileKind == "work") {
             SectionBlock(
-                title = t("作業時間", "Work duration"),
-                helpText = t("目標作業時間を設定", "Set target work duration")
+                title = stringResource(R.string.quick_create_work_duration_section_title),
+                helpText = stringResource(R.string.quick_create_work_duration_section_help)
             ) {
                 DurationInput(
                     hours = workHours,
                     minutes = workMinutes,
-                    title = t("作業時間", "Work duration"),
+                    title = stringResource(R.string.quick_create_work_duration_section_title),
                     onHoursChange = { workHours = it },
                     onMinutesChange = { workMinutes = it },
                     onManualEdit = { durationManuallyEdited = true }
@@ -521,33 +532,33 @@ fun QuickCreateSheet(
 
         if (tileKind == "work") {
             SectionBlock(
-                title = t("休憩の扱い", "Break handling"),
-                helpText = t("休憩で作業を分割するか", "Split work on break")
+                title = stringResource(R.string.quick_create_break_section_title),
+                helpText = stringResource(R.string.quick_create_break_section_help)
             ) {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     SegmentedButton(
                         selected = breakSplitsWork,
                         onClick = { breakSplitsWork = true },
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                    ) { Text(t("分割する", "Allow split")) }
+                    ) { Text(stringResource(R.string.quick_create_break_allow_split)) }
                     SegmentedButton(
                         selected = !breakSplitsWork,
                         onClick = { breakSplitsWork = false },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                    ) { Text(t("継続", "Keep continuous")) }
+                    ) { Text(stringResource(R.string.quick_create_break_keep_continuous)) }
                 }
             }
         }
 
         SectionBlock(
-            title = t("メタ情報", "Meta"),
-            helpText = t("プロジェクトとタグ", "Project and tags")
+            title = stringResource(R.string.quick_create_meta_section_title),
+            helpText = stringResource(R.string.quick_create_meta_section_help)
         ) {
             AutoCompleteTextField(
                 value = project,
                 onValueChange = { project = it },
                 suggestions = projectSuggestions,
-                placeholder = t("プロジェクト", "Project"),
+                placeholder = stringResource(R.string.quick_create_project_placeholder),
                 onSuggestionSelected = { project = it }
             )
 
@@ -555,7 +566,7 @@ fun QuickCreateSheet(
                 value = tagDraft,
                 onValueChange = { tagDraft = it },
                 suggestions = tagSuggestions,
-                placeholder = t("タグ", "Tag"),
+                placeholder = stringResource(R.string.quick_create_tag_placeholder),
                 onSuggestionSelected = { suggestion ->
                     if (selectedTags.none { it.equals(suggestion, ignoreCase = true) }) {
                         selectedTags.add(suggestion)
@@ -578,21 +589,21 @@ fun QuickCreateSheet(
         }
 
         SectionBlock(
-            title = t("メモ", "Memo"),
-            helpText = t("次のアクションを記載", "Describe the next action")
+            title = stringResource(R.string.quick_create_memo_section_title),
+            helpText = stringResource(R.string.quick_create_memo_section_help)
         ) {
             OutlinedTextField(
                 value = memo,
                 onValueChange = { memo = it },
-                placeholder = { Text(t("メモを入力", "Enter memo")) },
+                placeholder = { Text(stringResource(R.string.quick_create_memo_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
             )
         }
 
         SectionBlock(
-            title = t("完了条件", "Done definition"),
-            helpText = t("自動生成された完了条件", "Auto-generated done definition")
+            title = stringResource(R.string.quick_create_done_section_title),
+            helpText = stringResource(R.string.quick_create_done_section_help)
         ) {
             OutlinedTextField(
                 value = doneDefinition,
@@ -614,25 +625,25 @@ fun QuickCreateSheet(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             TextButton(onClick = onClose) {
-                Text(t("キャンセル", "Cancel"))
+                Text(stringResource(R.string.quick_create_cancel))
             }
             Button(
                 onClick = {
                     error = null
                     if (!validation.temporalOrderValid) {
-                        error = t("日時の前後関係が不正です", "Temporal order is invalid")
+                        error = stringResource(R.string.quick_create_error_temporal_order)
                         return@Button
                     }
                     if (!validation.durationReady) {
-                        error = t("作業時間を設定してください", "Work duration is required")
+                        error = stringResource(R.string.quick_create_error_work_duration)
                         return@Button
                     }
                     if (!validation.recurrenceReady) {
-                        error = t("繰り返し間隔を設定してください", "Recurrence interval is required")
+                        error = stringResource(R.string.quick_create_error_recurrence_interval)
                         return@Button
                     }
                     if (title.trim().isBlank()) {
-                        error = t("タイトルを入力してください", "Title is required")
+                        error = stringResource(R.string.quick_create_error_title_required)
                         return@Button
                     }
 
@@ -641,8 +652,10 @@ fun QuickCreateSheet(
                         CreateTileDraft(
                             title = title.trim(),
                             nextAction = memo.trim().ifBlank {
-                                if (tileKind == "label") t("この期間にラベルを適用", "Apply this label within the selected period")
-                                else t("開始して最初の1手を実行", "Start and execute the first step")
+                                if (tileKind == "label")
+                                    stringResource(R.string.quick_create_next_action_label)
+                                else
+                                    stringResource(R.string.quick_create_next_action_work)
                             },
                             doneDefinition = doneDefinition,
                             tileKind = tileKind,
@@ -675,7 +688,7 @@ fun QuickCreateSheet(
                 },
                 enabled = validation.canSubmit && title.trim().isNotEmpty() && !submitting
             ) {
-                Text(t("作成", "Create"))
+                Text(stringResource(R.string.quick_create_create))
             }
         }
     }
@@ -711,7 +724,7 @@ private fun DateTimeField(
                 singleLine = true
             )
             IconButton(onClick = { showDatePicker = true }) {
-                Icon(Icons.Default.DateRange, contentDescription = if (locale == AppLocale.JA) "日付選択" else "Select date")
+                Icon(Icons.Default.DateRange, contentDescription = stringResource(R.string.quick_create_select_date))
             }
         }
         if (timeEditable) {
@@ -727,7 +740,7 @@ private fun DateTimeField(
                     singleLine = true
                 )
                 IconButton(onClick = { showTimePicker = true }) {
-                    Icon(Icons.Default.Schedule, contentDescription = if (locale == AppLocale.JA) "時刻選択" else "Select time")
+                    Icon(Icons.Default.Schedule, contentDescription = stringResource(R.string.quick_create_select_time))
                 }
             }
         }
@@ -747,12 +760,12 @@ private fun DateTimeField(
                         showDatePicker = false
                     }
                 ) {
-                    Text(if (locale == AppLocale.JA) "OK" else "OK")
+                    Text(stringResource(R.string.date_picker_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text(if (locale == AppLocale.JA) "キャンセル" else "Cancel")
+                    Text(stringResource(R.string.date_picker_cancel))
                 }
             }
         ) {
@@ -775,12 +788,12 @@ private fun DateTimeField(
                         showTimePicker = false
                     }
                 ) {
-                    Text(if (locale == AppLocale.JA) "OK" else "OK")
+                    Text(stringResource(R.string.date_picker_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text(if (locale == AppLocale.JA) "キャンセル" else "Cancel")
+                    Text(stringResource(R.string.date_picker_cancel))
                 }
             },
             text = {

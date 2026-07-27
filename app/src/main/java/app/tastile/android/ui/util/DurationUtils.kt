@@ -1,5 +1,7 @@
 package app.tastile.android.ui.util
 
+import android.content.Context
+import app.tastile.android.R
 import app.tastile.android.data.repository.AppLocale
 import java.time.Duration
 
@@ -38,20 +40,30 @@ fun parseTimeToMinutes(time: String): Int? {
     return h * 60 + m
 }
 
-fun formatDuration(totalMinutes: Int, locale: AppLocale): String {
+/**
+ * Format a duration as a localized human-readable string.
+ *
+ * Pass a [Context] so [AppLocale.JA] resolves through `R.string.duration_format_*`
+ * (JA and EN share the pattern via `values/strings.xml` and `values-ja/strings.xml`).
+ * When [context] is null (rare — used by callers with no Android dependency), the
+ * helper falls back to the canonical `"<hours>h <minutes>m"` representation.
+ */
+fun formatDuration(totalMinutes: Int, locale: AppLocale, context: Context? = null): String {
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
-    return if (locale == AppLocale.JA) {
-        when {
-            hours > 0 && minutes > 0 -> "${hours}時間${minutes}分"
-            hours > 0 -> "${hours}時間"
-            else -> "${minutes}分"
+    if (locale == AppLocale.JA && context != null) {
+        return when {
+            hours > 0 && minutes > 0 ->
+                context.getString(R.string.duration_format_hours_minutes, hours, minutes)
+            hours > 0 ->
+                context.getString(R.string.duration_format_hours, hours)
+            else ->
+                context.getString(R.string.duration_format_minutes, minutes)
         }
-    } else {
-        when {
-            hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
-            hours > 0 -> "${hours}h"
-            else -> "${minutes}m"
-        }
+    }
+    return when {
+        hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
+        hours > 0 -> "${hours}h"
+        else -> "${minutes}m"
     }
 }
