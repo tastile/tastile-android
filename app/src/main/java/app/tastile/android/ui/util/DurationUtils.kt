@@ -1,5 +1,6 @@
 package app.tastile.android.ui.util
 
+import android.annotation.SuppressLint
 import android.content.Context
 import app.tastile.android.R
 import app.tastile.android.data.repository.AppLocale
@@ -48,6 +49,7 @@ fun parseTimeToMinutes(time: String): Int? {
  * When [context] is null (rare — used by callers with no Android dependency), the
  * helper falls back to the canonical `"<hours>h <minutes>m"` representation.
  */
+@SuppressLint("StringFormatInvalid")
 fun formatDuration(totalMinutes: Int, locale: AppLocale, context: Context? = null): String {
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
