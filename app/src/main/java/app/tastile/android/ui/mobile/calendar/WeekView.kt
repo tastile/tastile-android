@@ -175,7 +175,7 @@ fun WeekView(
                         } while (event.changes.any { it.pressed })
 
                         finalScroll?.let { targetScroll ->
-                            scrollState.scrollTo(targetScroll)
+                            scrollState.scroll { scrollTo(targetScroll.toFloat()) }
                             onZoomChange(finalZoom)
                             pinchZoom = null
                             pinchTranslationY = 0f

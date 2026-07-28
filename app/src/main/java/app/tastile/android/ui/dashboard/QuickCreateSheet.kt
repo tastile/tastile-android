@@ -143,6 +143,13 @@ fun QuickCreateSheet(
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var submitting by rememberSaveable { mutableStateOf(false) }
 
+    val errTemporalOrder = stringResource(R.string.quick_create_error_temporal_order)
+    val errWorkDuration = stringResource(R.string.quick_create_error_work_duration)
+    val errRecurrence = stringResource(R.string.quick_create_error_recurrence_interval)
+    val errTitleRequired = stringResource(R.string.quick_create_error_title_required)
+    val nextActionLabel = stringResource(R.string.quick_create_next_action_label)
+    val nextActionWork = stringResource(R.string.quick_create_next_action_work)
+
     val workTargetMin = parseDurationToMinutes(workHours, workMinutes)
     val boundedDurationMin = parseBoundedDurationMinutes(startDate, startTime, endDate, endTime)
     val recurrenceStartOffsetMin = parseTimeToMinutes(recurrenceStartTime)
@@ -631,19 +638,19 @@ fun QuickCreateSheet(
                 onClick = {
                     error = null
                     if (!validation.temporalOrderValid) {
-                        error = stringResource(R.string.quick_create_error_temporal_order)
+                        error = errTemporalOrder
                         return@Button
                     }
                     if (!validation.durationReady) {
-                        error = stringResource(R.string.quick_create_error_work_duration)
+                        error = errWorkDuration
                         return@Button
                     }
                     if (!validation.recurrenceReady) {
-                        error = stringResource(R.string.quick_create_error_recurrence_interval)
+                        error = errRecurrence
                         return@Button
                     }
                     if (title.trim().isBlank()) {
-                        error = stringResource(R.string.quick_create_error_title_required)
+                        error = errTitleRequired
                         return@Button
                     }
 
@@ -653,9 +660,9 @@ fun QuickCreateSheet(
                             title = title.trim(),
                             nextAction = memo.trim().ifBlank {
                                 if (tileKind == "label")
-                                    stringResource(R.string.quick_create_next_action_label)
+                                    nextActionLabel
                                 else
-                                    stringResource(R.string.quick_create_next_action_work)
+                                    nextActionWork
                             },
                             doneDefinition = doneDefinition,
                             tileKind = tileKind,
