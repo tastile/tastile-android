@@ -25,8 +25,10 @@ import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -96,6 +98,14 @@ fun WeekView(
     val latestZoom by rememberUpdatedState(zoom)
     var pinchZoom by remember { mutableStateOf<Float?>(null) }
     var pinchTranslationY by remember { mutableFloatStateOf(0f) }
+    var pinchTargetScroll by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(pinchTargetScroll) {
+        if (pinchTargetScroll != 0) {
+            scrollState.animateScrollTo(pinchTargetScroll)
+            pinchTargetScroll = 0
+        }
+    }
     val blocksByDay = remember(items, weekStart, zone) {
         (0 until GridConstants.WEEK_DAYS).associate { offset ->
             val day = weekStart.plusDays(offset.toLong())
@@ -175,7 +185,7 @@ fun WeekView(
                         } while (event.changes.any { it.pressed })
 
                         finalScroll?.let { targetScroll ->
-                            scrollState.scroll { scrollTo(targetScroll.toFloat()) }
+                            pinchTargetScroll = targetScroll
                             onZoomChange(finalZoom)
                             pinchZoom = null
                             pinchTranslationY = 0f
