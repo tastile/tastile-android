@@ -1,6 +1,7 @@
 package app.tastile.android.notifications
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -51,6 +52,7 @@ class ExecutionAlarmReceiver : BroadcastReceiver() {
         }
     }
 
+    @SuppressLint("StringFormatInvalid")
     private fun alarmContent(context: Context, type: AlarmTriggerType, tileTitle: String): Pair<String, String> {
         // Locale-specific wording now flows through stringResource; the same resource key
         // resolves to the JA value in values-ja and to the EN value in the default locale,
