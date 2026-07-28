@@ -157,7 +157,6 @@
     <string name="tiles_stat_open"/>
     <string name="tiles_stat_sections"/>
     <plurals name="dashboard_tiles_omitted_more">
-        <item quantity="one"></item>
         <item quantity="other"></item>
     </plurals>
     <string name="picker_dialog_theme_dark"/>
