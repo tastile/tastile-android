@@ -188,59 +188,39 @@ fun QuickCreateSheet(
         recurrenceInterval = recurrenceInterval
     )
 
-    val suggestedTitle = remember(
-        tileKind,
-        objectiveMode,
-        startDateTime,
-        endDateTime,
-        workTargetText,
-        locale,
-        context
-    ) {
-        when {
-            tileKind == "label" -> context.getString(R.string.quick_create_period_label)
-            objectiveMode == "recurring" && workTargetText != null ->
-                context.getString(R.string.quick_create_suggested_recurring_with_duration, workTargetText)
-            objectiveMode == "recurring" ->
-                context.getString(R.string.quick_create_suggested_recurring)
-            objectiveMode == "maximize_within_interval" && startDateTime != null && endDateTime != null ->
-                context.getString(
-                    R.string.quick_create_suggested_maximize_range,
-                    formatDateShort(startDateTime, locale),
-                    formatDateShort(endDateTime, locale),
-                )
-            objectiveMode == "maximize_within_interval" ->
-                context.getString(R.string.quick_create_suggested_maximize)
-            workTargetText != null ->
-                context.getString(R.string.quick_create_suggested_task_with_duration, workTargetText)
-            else -> context.getString(R.string.quick_create_suggested_task)
-        }
+    val suggestedTitle = when {
+        tileKind == "label" -> stringResource(R.string.quick_create_period_label)
+        objectiveMode == "recurring" && workTargetText != null ->
+            stringResource(R.string.quick_create_suggested_recurring_with_duration, workTargetText)
+        objectiveMode == "recurring" ->
+            stringResource(R.string.quick_create_suggested_recurring)
+        objectiveMode == "maximize_within_interval" && startDateTime != null && endDateTime != null ->
+            stringResource(
+                R.string.quick_create_suggested_maximize_range,
+                formatDateShort(startDateTime, locale),
+                formatDateShort(endDateTime, locale),
+            )
+        objectiveMode == "maximize_within_interval" ->
+            stringResource(R.string.quick_create_suggested_maximize)
+        workTargetText != null ->
+            stringResource(R.string.quick_create_suggested_task_with_duration, workTargetText)
+        else -> stringResource(R.string.quick_create_suggested_task)
     }
 
-    val doneDefinition = remember(
-        tileKind,
-        objectiveMode,
-        workTargetText,
-        startDateTime,
-        endDateTime,
-        locale,
-        context
-    ) {
-        when {
-            tileKind == "label" -> context.getString(R.string.quick_create_done_label_period)
-            objectiveMode == "recurring" -> context.getString(R.string.quick_create_done_recurring)
-            objectiveMode == "maximize_within_interval" && startDateTime != null && endDateTime != null ->
-                context.getString(
-                    R.string.quick_create_done_maximize_range,
-                    formatDateShort(startDateTime, locale),
-                    formatDateShort(endDateTime, locale),
-                )
-            objectiveMode == "maximize_within_interval" ->
-                context.getString(R.string.quick_create_suggested_maximize)
-            workTargetText != null ->
-                context.getString(R.string.quick_create_done_with_duration, workTargetText)
-            else -> context.getString(R.string.quick_create_done_one_run)
-        }
+    val doneDefinition = when {
+        tileKind == "label" -> stringResource(R.string.quick_create_done_label_period)
+        objectiveMode == "recurring" -> stringResource(R.string.quick_create_done_recurring)
+        objectiveMode == "maximize_within_interval" && startDateTime != null && endDateTime != null ->
+            stringResource(
+                R.string.quick_create_done_maximize_range,
+                formatDateShort(startDateTime, locale),
+                formatDateShort(endDateTime, locale),
+            )
+        objectiveMode == "maximize_within_interval" ->
+            stringResource(R.string.quick_create_suggested_maximize)
+        workTargetText != null ->
+            stringResource(R.string.quick_create_done_with_duration, workTargetText)
+        else -> stringResource(R.string.quick_create_done_one_run)
     }
 
     val (existingProjects, existingTags) = remember(tiles) { deriveProjectAndTags(tiles) }
