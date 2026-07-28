@@ -234,7 +234,7 @@ private fun DayViewScaffold(
                         } while (event.changes.any { it.pressed })
 
                         finalScroll?.let { targetScroll ->
-                            scrollState.value = targetScroll
+                            scrollState.scrollTo(targetScroll)
                             onZoomChange(finalZoom)
                             pinchZoom = null
                             pinchTranslationY = 0f
