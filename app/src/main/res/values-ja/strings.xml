@@ -266,7 +266,6 @@
     <string name="duration_format_hours_minutes">%1$d時間%2$d分</string>
     <string name="duration_format_hours">%1$d時間</string>
     <string name="duration_format_minutes">%1$d分</string>
-    <string name="quick_create_default_task_title">作業完了</string>
 
     <string name="mobile_day_header_pattern" translatable="false">M月d日 (EEE)</string>
 </resources>

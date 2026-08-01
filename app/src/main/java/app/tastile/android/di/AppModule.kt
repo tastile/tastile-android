@@ -7,8 +7,14 @@ import app.tastile.android.core.SharedPreferencesCoreCommandStore
 import app.tastile.android.data.repository.AuthRepository
 import app.tastile.android.data.repository.AuthRepositoryContract
 import app.tastile.android.data.repository.CurrentUserProvider
+import app.tastile.android.data.repository.ExecutionIdStore
 import app.tastile.android.data.repository.MemoTileRepository
 import app.tastile.android.data.repository.PromptTileRepository
+import app.tastile.android.data.repository.PushEndpointStore
+import app.tastile.android.data.repository.PushTokenProvider
+import app.tastile.android.data.repository.FirebasePushTokenProvider
+import app.tastile.android.data.repository.SharedPreferencesExecutionIdStore
+import app.tastile.android.data.repository.SharedPreferencesPushEndpointStore
 import app.tastile.android.data.repository.TileFilter
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.domain.repository.AuthRepository as DomainAuthRepository
@@ -25,6 +31,18 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    @Provides
+    @Singleton
+    fun provideExecutionIdStore(store: SharedPreferencesExecutionIdStore): ExecutionIdStore = store
+
+    @Provides
+    @Singleton
+    fun providePushEndpointStore(store: SharedPreferencesPushEndpointStore): PushEndpointStore = store
+
+    @Provides
+    @Singleton
+    fun providePushTokenProvider(provider: FirebasePushTokenProvider): PushTokenProvider = provider
+
     @Provides
     @Singleton
     fun provideCoreCommandStore(store: SharedPreferencesCoreCommandStore): CoreCommandStore = store

@@ -157,7 +157,6 @@
     <string name="tiles_stat_open"/>
     <string name="tiles_stat_sections"/>
     <plurals name="dashboard_tiles_omitted_more">
-        <item quantity="one">+%1$d 个更多 …</item>
         <item quantity="other">+%1$d 个更多 …</item>
     </plurals>
     <string name="picker_dialog_theme_dark"/>
@@ -273,7 +272,6 @@
     <string name="duration_format_hours_minutes"/>
     <string name="duration_format_hours"/>
     <string name="duration_format_minutes"/>
-    <string name="quick_create_default_task_title"/>
 
     <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
 </resources>

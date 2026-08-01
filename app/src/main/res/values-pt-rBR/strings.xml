@@ -159,6 +159,7 @@
     <plurals name="dashboard_tiles_omitted_more">
         <item quantity="one">+%1$d mais …</item>
         <item quantity="other">+%1$d mais …</item>
+        <item quantity="many">+%1$d mais …</item>
     </plurals>
     <string name="picker_dialog_theme_dark"/>
     <string name="picker_dialog_theme_light"/>
@@ -273,7 +274,6 @@
     <string name="duration_format_hours_minutes"/>
     <string name="duration_format_hours"/>
     <string name="duration_format_minutes"/>
-    <string name="quick_create_default_task_title"/>
 
     <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
 </resources>

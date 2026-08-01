@@ -216,6 +216,28 @@ data class StartTileBaseline(
 data class StartExecutionPayload(@SerialName("placement_id") val placementId: String)
 
 @Serializable
+data class FinishExecutionPayload(
+    val kind: Int,
+    val note: String? = null,
+)
+
+/** Plain JSON body for Core `POST /v1/endpoints` (not a command envelope). */
+@Serializable
+data class EndpointRegistrationPayload(
+    /** Core `EndpointChannel::Push`. Required field — Core rejects registrations that omit it. */
+    val channel: Int,
+    val token: String,
+    /** Required field — Core rejects registrations that omit it. */
+    val capability: EndpointCapabilityPayload,
+)
+
+@Serializable
+data class EndpointCapabilityPayload(
+    @SerialName("supports_interaction") @EncodeDefault val supportsInteraction: Boolean = true,
+    @SerialName("supports_action_reply") @EncodeDefault val supportsActionReply: Boolean = true,
+)
+
+@Serializable
 data class ClosePlacementPayload(@SerialName("placement_id") val placementId: String)
 
 @Serializable

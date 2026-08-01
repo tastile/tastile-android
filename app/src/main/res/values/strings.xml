@@ -268,7 +268,6 @@
     <string name="duration_format_hours_minutes">%1$dh %2$dm</string>
     <string name="duration_format_hours">%1$dh</string>
     <string name="duration_format_minutes">%1$dm</string>
-    <string name="quick_create_default_task_title">Task complete</string>
 
     <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
 </resources>

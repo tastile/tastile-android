@@ -9,7 +9,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -98,6 +100,25 @@ class V1ApiClientTest {
             "/v1/recurring/tile-1/frame-rules/rule-1/materialize",
             V1Endpoints.materializeRecurring("tile-1", "rule-1"),
         )
+    }
+
+    @Test
+    fun endpoint_registration_payload_uses_core_plain_json_contract() {
+        val endpoint = Json.encodeToJsonElement(
+            EndpointRegistrationPayload.serializer(),
+            EndpointRegistrationPayload(
+                channel = 0,
+                token = "opaque-token",
+                capability = EndpointCapabilityPayload(),
+            ),
+        ).jsonObject
+
+        assertEquals("/v1/endpoints", V1Endpoints.ENDPOINTS)
+        assertEquals("/v1/endpoints/endpoint-1", V1Endpoints.endpoint("endpoint-1"))
+        assertEquals(0, endpoint["channel"]?.jsonPrimitive?.int)
+        assertEquals("opaque-token", endpoint["token"]?.jsonPrimitive?.contentOrNull)
+        assertTrue(endpoint["capability"]!!.jsonObject["supports_interaction"]!!.jsonPrimitive.boolean)
+        assertTrue(endpoint["capability"]!!.jsonObject["supports_action_reply"]!!.jsonPrimitive.boolean)
     }
 
     @Test

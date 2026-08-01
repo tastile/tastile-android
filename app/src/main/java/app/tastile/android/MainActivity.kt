@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.repository.PushEndpointRepository
 import app.tastile.android.data.repository.TastileAuthState
 import app.tastile.android.data.repository.UserSettingsRepository
 import app.tastile.android.ui.app.AppShellViewModel
@@ -50,6 +51,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var executionNotificationCoordinator: ExecutionNotificationCoordinator
+
+    @Inject
+    lateinit var pushEndpointRepository: PushEndpointRepository
 
     @Inject
     lateinit var userSettingsRepository: UserSettingsRepository
@@ -142,6 +146,13 @@ class MainActivity : ComponentActivity() {
                 val refreshToken = status.refreshToken ?: return@collectLatest
                 requestNotificationPermissionIfNeeded()
                 executionNotificationCoordinator.start()
+
+                // Registration is intentionally best-effort: a missing or invalid
+                // Firebase runtime configuration must not block the user's core
+                // schedule. The durable local endpoint state makes the next
+                // authenticated launch retry token registration.
+                runCatching { pushEndpointRepository.registerCurrentToken() }
+                    .onFailure(Throwable::printStackTrace)
 
                 runCatching {
                     syncCoordinator.onSessionAvailable(

@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -28,10 +29,21 @@ internal object V1Endpoints {
     const val CREATE_TILE = "/v1/tiles"
     const val CREATE_PLACEMENT = "/v1/placements"
     const val SOURCE_TILES = "/v1/source-tiles"
+    const val ACTIVE_EXECUTION = "/v1/active-tile"
+    const val PENDING_SESSIONS = "/v1/sessions"
+    const val ENDPOINTS = "/v1/endpoints"
 
     fun sourceTile(sourceTileId: String) = "$SOURCE_TILES/$sourceTileId"
     fun reflowSourceTile(sourceTileId: String) = "${sourceTile(sourceTileId)}/reflow"
     fun sourceTilePlacements(sourceTileId: String) = "${sourceTile(sourceTileId)}/placements"
+    fun execution(executionId: String) = "/v1/executions/$executionId"
+    fun startExecution(placementId: String) = "/v1/placements/$placementId/executions"
+    fun pauseExecution(executionId: String) = "${execution(executionId)}/pause"
+    fun resumeExecution(executionId: String) = "${execution(executionId)}/resume"
+    fun finishExecution(executionId: String) = "${execution(executionId)}/finish"
+    fun session(sessionId: String) = "/v1/sessions/$sessionId"
+    fun sessionFeedback(sessionId: String) = "${session(sessionId)}/feedback"
+    fun endpoint(endpointId: String) = "$ENDPOINTS/$endpointId"
 
     fun setPlan(tileId: String) = "/v1/tiles/$tileId/plan"
     fun materializeRecurring(tileId: String, frameRuleId: String) =
@@ -150,10 +162,46 @@ class V1ApiClient @Inject constructor(
 
     /** Returns null when the account has no running execution. */
     suspend fun getActiveTile(): ActiveTileView? =
-        get("/v1/active-tile")
+        get(V1Endpoints.ACTIVE_EXECUTION)
 
     suspend fun readExecution(executionId: String): ExecutionView =
-        get("/v1/executions/$executionId")
+        get(V1Endpoints.execution(executionId))
+
+    suspend fun startExecution(placementId: String): CommandResponse =
+        postCommand(V1Endpoints.startExecution(placementId), StartExecutionPayload(placementId), StartExecutionPayload.serializer(), CommandResponse.serializer())
+
+    suspend fun pauseExecution(executionId: String): CommandResponse =
+        postNullCommand(V1Endpoints.pauseExecution(executionId), CommandResponse.serializer())
+
+    suspend fun resumeExecution(executionId: String): CommandResponse =
+        postNullCommand(V1Endpoints.resumeExecution(executionId), CommandResponse.serializer())
+
+    suspend fun finishExecution(executionId: String, kind: Int, note: String?): CommandResponse =
+        postCommand(V1Endpoints.finishExecution(executionId), FinishExecutionPayload(kind, note), FinishExecutionPayload.serializer(), CommandResponse.serializer())
+
+    suspend fun listPendingSessions(): List<PendingSessionView> = get(V1Endpoints.PENDING_SESSIONS)
+
+    suspend fun listEndpoints(): List<EndpointView> = get(V1Endpoints.ENDPOINTS)
+
+    suspend fun registerEndpoint(payload: EndpointRegistrationPayload): EndpointView =
+        postRawJson(
+            V1Endpoints.ENDPOINTS,
+            json.encodeToJsonElement(EndpointRegistrationPayload.serializer(), payload).jsonObject,
+            EndpointView.serializer(),
+        )
+
+    suspend fun deleteEndpoint(endpointId: String) = deleteRaw(V1Endpoints.endpoint(endpointId))
+
+    suspend fun readSession(sessionId: String): SessionDetailView = get(V1Endpoints.session(sessionId))
+
+    suspend fun submitSessionFeedback(sessionId: String, payload: ApplyFeedbackPayload): CommandResponse =
+        postCommand(
+            V1Endpoints.sessionFeedback(sessionId),
+            payload,
+            ApplyFeedbackPayload.serializer(),
+            CommandResponse.serializer(),
+            expectedRevision = payload.baseRevision,
+        )
 
     /** `/v1/timeline` returns a bare TimelineItem array, not an `{ items }` envelope. */
     suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): List<TimelineItem> {

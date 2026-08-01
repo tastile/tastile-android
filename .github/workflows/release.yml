@@ -31,15 +31,16 @@ jobs:
           java-version: 17
           distribution: temurin
 
-      - name: Set up Android SDK (NDK 30.0.14904198)
+      - name: Set up Android SDK (compile SDK 37, NDK 27.1.12297006)
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: latest
           packages: >-
             platform-tools
+            platforms;android-37
             platforms;android-35
             build-tools;35.0.0
-            ndk;30.0.14904198
+            ndk;27.1.12297006
 
       - name: Resolve version
         id: version
@@ -51,20 +52,34 @@ jobs:
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
+      - name: Validate signing and Play credentials
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          PLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_APPLICATION_ID: ${{ secrets.FIREBASE_APPLICATION_ID }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_GCM_SENDER_ID: ${{ secrets.FIREBASE_GCM_SENDER_ID }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          test -n "$PLAY_SERVICE_ACCOUNT"
+          test -n "$FIREBASE_APPLICATION_ID"
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n "$FIREBASE_API_KEY"
+          test -n "$FIREBASE_GCM_SENDER_ID"
+
       - name: Decode keystore
-        id: keystore
-        continue-on-error: true
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -z "$KEYSTORE_B64" ]; then
-            echo "::warning::ANDROID_KEYSTORE_BASE64 secret is not set; building without signing"
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           echo "$KEYSTORE_B64" | base64 -d > /tmp/keystore.jks
-          ls -l /tmp/keystore.jks
-          echo "signed=true" >> "$GITHUB_OUTPUT"
+          test -s /tmp/keystore.jks
 
       - name: Write gradle.properties from Secrets
         run: |
@@ -80,9 +95,16 @@ jobs:
           COGNITO_REDIRECT_URI=${{ secrets.COGNITO_REDIRECT_URI }}
           COGNITO_WEB_AUTH_BASE_URL=${{ secrets.COGNITO_WEB_AUTH_BASE_URL }}
           TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
+          FIREBASE_APPLICATION_ID=${{ secrets.FIREBASE_APPLICATION_ID }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_GCM_SENDER_ID=${{ secrets.FIREBASE_GCM_SENDER_ID }}
           EOF
 
-      - name: Build AAB
+      - name: Verify repository quality gates
+        run: ./gradlew verify
+
+      - name: Build signed AAB
         run: ./gradlew bundleRelease
 
       - name: Upload AAB artifact

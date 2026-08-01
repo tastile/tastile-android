@@ -3,8 +3,7 @@
          Keys mirror the default values/strings.xml so the resource framework
          still resolves the locale as supported. Empty values fall back to
          the default locale at runtime. -->
-    
-    <string name="app_name" translatable="false">Tastile</string>
+
     <string name="account_subscription_current_plan"/>
     <string name="account_subscription_free_badge"/>
     <string name="account_subscription_free_description"/>
@@ -159,6 +158,7 @@
     <plurals name="dashboard_tiles_omitted_more">
         <item quantity="one">+%1$d de plus …</item>
         <item quantity="other">+%1$d de plus …</item>
+        <item quantity="many">+%1$d de plus …</item>
     </plurals>
     <string name="picker_dialog_theme_dark"/>
     <string name="picker_dialog_theme_light"/>
@@ -273,7 +273,4 @@
     <string name="duration_format_hours_minutes"/>
     <string name="duration_format_hours"/>
     <string name="duration_format_minutes"/>
-    <string name="quick_create_default_task_title"/>
-
-    <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
 </resources>

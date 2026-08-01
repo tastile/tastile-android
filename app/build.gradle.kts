@@ -18,6 +18,10 @@ val cognitoHostedUiDomain = providers.gradleProperty("COGNITO_HOSTED_UI_DOMAIN")
 val cognitoRedirectUri = providers.gradleProperty("COGNITO_REDIRECT_URI")
 val cognitoWebAuthBaseUrl = providers.gradleProperty("COGNITO_WEB_AUTH_BASE_URL")
 val tastileCoreUrl = providers.gradleProperty("TASTILE_CORE_URL")
+val firebaseApplicationId = providers.gradleProperty("FIREBASE_APPLICATION_ID")
+val firebaseProjectId = providers.gradleProperty("FIREBASE_PROJECT_ID")
+val firebaseApiKey = providers.gradleProperty("FIREBASE_API_KEY")
+val firebaseGcmSenderId = providers.gradleProperty("FIREBASE_GCM_SENDER_ID")
 val hasReleaseSigning =
     releaseStoreFile.isPresent &&
         releaseStorePassword.isPresent &&
@@ -44,8 +48,10 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         applicationId = "app.tastile.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 31
-        versionName = "0.3.0"
+        // Play has already accepted versionCode 31. Keep the checked-in
+        // release baseline monotonic; CI must never re-upload that artifact.
+        versionCode = 32
+        versionName = "0.3.1"
 
         // R17 (android-archdoc audit 2026-07-16): instrumented UI navigation tests.
         // The runner swaps the production Application for Hilt's HiltTestApplication
@@ -65,6 +71,10 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         buildConfigField("String", "COGNITO_REDIRECT_URI", "\"${cognitoRedirectUri.orNull ?: ""}\"")
         buildConfigField("String", "COGNITO_WEB_AUTH_BASE_URL", "\"${cognitoWebAuthBaseUrl.orNull ?: ""}\"")
         buildConfigField("String", "TASTILE_CORE_URL", "\"${tastileCoreUrl.orNull ?: ""}\"")
+        buildConfigField("String", "FIREBASE_APPLICATION_ID", "\"${firebaseApplicationId.orNull ?: ""}\"")
+        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${firebaseProjectId.orNull ?: ""}\"")
+        buildConfigField("String", "FIREBASE_API_KEY", "\"${firebaseApiKey.orNull ?: ""}\"")
+        buildConfigField("String", "FIREBASE_GCM_SENDER_ID", "\"${firebaseGcmSenderId.orNull ?: ""}\"")
     }
 
     buildTypes {
@@ -230,6 +240,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.8")
 
     implementation("io.ktor:ktor-client-okhttp:3.5.1")
+    implementation("com.google.firebase:firebase-messaging:24.1.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")

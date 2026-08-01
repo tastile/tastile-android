@@ -2,6 +2,7 @@ package app.tastile.android.data.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class AggregateRef(
@@ -332,4 +333,83 @@ data class ExecutionView(
     @SerialName("tile_id") val tileId: String,
     val state: Int,
     @SerialName("placement_id") val placementId: String? = null,
+    @SerialName("owner_id") val ownerId: String? = null,
+    val revision: Long? = null,
+    @SerialName("open_segment_kind") val openSegmentKind: Int? = null,
+    @SerialName("open_segment_start") val openSegmentStart: String? = null,
+    @SerialName("finished_at") val finishedAt: String? = null,
+    @SerialName("finish_kind") val finishKind: Int? = null,
+    @SerialName("finish_note") val finishNote: String? = null,
+    @SerialName("segment_count") val segmentCount: Long = 0,
+    @SerialName("fact_count") val factCount: Long = 0,
+    @SerialName("task_run_count") val taskRunCount: Long = 0,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+)
+
+@Serializable
+data class PendingSessionView(
+    val id: String,
+    @SerialName("owner_id") val ownerId: String,
+    val state: Int,
+    val revision: Long,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+/** Owner-scoped Core delivery endpoint. Raw endpoint tokens never appear here. */
+@Serializable
+data class EndpointView(
+    val id: String,
+    @SerialName("owner_id") val ownerId: String,
+    /** Core `EndpointChannel`: PUSH=0, WEB_PUSH=1, EMAIL=2. */
+    val channel: Int,
+    val capability: EndpointCapabilityView,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class EndpointCapabilityView(
+    @SerialName("supports_interaction") val supportsInteraction: Boolean,
+    @SerialName("supports_action_reply") val supportsActionReply: Boolean,
+)
+
+@Serializable
+data class SessionRunView(
+    val id: String,
+    @SerialName("decision_id") val decisionId: String,
+    @SerialName("subject_kind") val subjectKind: Int,
+    @SerialName("subject_id") val subjectId: String,
+    @SerialName("tree_root_id") val treeRootId: String? = null,
+    @SerialName("created_at") val createdAt: String,
+)
+
+@Serializable
+data class SessionDetailView(
+    val id: String,
+    @SerialName("owner_id") val ownerId: String,
+    val state: Int,
+    val revision: Long,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("root_node_id") val rootNodeId: String? = null,
+    val runs: List<SessionRunView> = emptyList(),
+)
+
+@Serializable
+data class FeedbackChangeDto(
+    val target: JsonElement,
+    val key: JsonElement,
+    val kind: Int,
+    val value: JsonElement? = null,
+)
+
+@Serializable
+data class ApplyFeedbackPayload(
+    @SerialName("session_id") val sessionId: String,
+    @SerialName("base_revision") val baseRevision: Long,
+    val kind: Int = 0,
+    @SerialName("target_txn_id") val targetTxnId: String? = null,
+    val changes: List<FeedbackChangeDto>,
 )
