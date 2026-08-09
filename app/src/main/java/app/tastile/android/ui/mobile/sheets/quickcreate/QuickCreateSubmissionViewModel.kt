@@ -10,7 +10,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class QuickCreateSubmissionUiState(val isSubmitting: Boolean = false, val error: String? = null, val createdTileId: String? = null)
+data class QuickCreateSubmissionUiState(
+    val isSubmitting: Boolean = false,
+    val error: String? = null,
+    val createdTileId: String? = null,
+    val updatedTileId: String? = null,
+)
 
 @HiltViewModel
 class QuickCreateSubmissionViewModel @Inject constructor(client: V1ApiClient) : ViewModel() {
@@ -34,5 +39,29 @@ class QuickCreateSubmissionViewModel @Inject constructor(client: V1ApiClient) : 
         }
     }
 
+    /**
+     * Submit an in-place edit of the tile referenced by [draft]'s
+     * `editingTileId`. [expectedRevision] is the v1 source-tile revision read
+     * alongside the detail (so the server can reject stale updates). The
+     * success state carries the updated tile id in [QuickCreateSubmissionUiState.updatedTileId]
+     * so the caller can refresh and dismiss the sheet.
+     */
+    fun submitEdit(draft: QuickCreateDraftState, expectedRevision: Long) {
+        if (mutableState.value.isSubmitting) return
+        if (draft.editingTileId.isNullOrBlank()) {
+            mutableState.value = QuickCreateSubmissionUiState(error = "No tile selected")
+            return
+        }
+        viewModelScope.launch {
+            mutableState.value = QuickCreateSubmissionUiState(isSubmitting = true)
+            mutableState.value = when (val result = dispatcher.submitUpdate(draft, expectedRevision)) {
+                is QuickCreateSubmitResult.Success -> QuickCreateSubmissionUiState(updatedTileId = result.tileId)
+                is QuickCreateSubmitResult.Failure -> QuickCreateSubmissionUiState(error = result.message)
+            }
+        }
+    }
+
     fun consumeCreatedTile() { mutableState.value = QuickCreateSubmissionUiState() }
+
+    fun consumeUpdatedTile() { mutableState.value = QuickCreateSubmissionUiState() }
 }

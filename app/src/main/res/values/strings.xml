@@ -283,5 +283,78 @@
     <string name="duration_format_hours">%1$dh</string>
     <string name="duration_format_minutes">%1$dm</string>
 
+    <string name="quick_create_identity_title">Identity</string>
+    <string name="quick_create_description">Description</string>
+    <string name="quick_create_color">Color</string>
+    <string name="quick_create_icon">Icon</string>
+    <string name="quick_create_icon_custom">Custom icon name</string>
+    <string name="quick_create_recurring_title">Repeat</string>
+    <string name="quick_create_weekdays">Weekdays</string>
+    <string name="quick_create_interval_value">Interval</string>
+    <string name="quick_create_end_date">End date</string>
+    <string name="quick_create_no_end_date">No end date</string>
+    <string name="quick_create_condition_deferred">Condition-driven generation is not yet supported by the v1 authoring endpoint.</string>
+    <string name="quick_create_placement_rules">Placement rules</string>
+    <string name="quick_create_placement_rules_hint">Permit, deny, limit, score, or require recording when a condition matches.</string>
+    <string name="quick_create_rule_number">Rule %1$d</string>
+    <string name="quick_create_rank">Rank</string>
+    <string name="quick_create_add_when_condition">Add when condition</string>
+    <string name="quick_create_remove_when_condition">Remove condition</string>
+    <string name="quick_create_min_minutes">Minimum minutes</string>
+    <string name="quick_create_max_minutes">Maximum minutes</string>
+    <string name="quick_create_score">Score</string>
+    <string name="quick_create_record_optional">Optional</string>
+    <string name="quick_create_record_required">Required</string>
+    <string name="quick_create_remove_rule">Remove rule</string>
+    <string name="quick_create_add_placement_rule">Add placement rule</string>
+
     <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
+
+    <!-- Tasks tab (bucket headers + quick actions) -->
+    <string name="tasks_bucket_today">Today</string>
+    <string name="tasks_bucket_this_week">This Week</string>
+    <string name="tasks_bucket_later">Later</string>
+    <string name="tasks_bucket_no_date">No Date</string>
+    <string name="tasks_status_ready">READY</string>
+    <string name="tasks_status_started">STARTED</string>
+    <string name="tasks_status_completed">COMPLETED</string>
+    <string name="tasks_time_range_dash">%1$s – %2$s</string>
+    <string name="tasks_time_range_at">%1$s · %2$s</string>
+    <string name="tasks_empty_title">Nothing scheduled</string>
+    <string name="tasks_empty_hint">Quick-create a tile or pick a time window to begin.</string>
+    <string name="tasks_active_hero_complete">Complete</string>
+    <string name="tasks_active_hero_pause">Pause</string>
+    <string name="tasks_active_hero_resume">Resume</string>
+    <string name="tasks_active_hero_start_execution">Start execution</string>
+    <string name="tasks_active_hero_finish_execution">Finish execution</string>
+    <string name="tasks_more_actions">More actions</string>
+    <string name="tasks_action_start">Start</string>
+    <string name="tasks_action_complete">Complete</string>
+    <string name="tasks_action_pause">Pause</string>
+    <string name="tasks_action_resume">Resume</string>
+    <string name="tasks_action_defer">Defer</string>
+    <string name="tasks_action_request_prompt">Request prompt</string>
+    <string name="tasks_action_delete">Delete</string>
+    <string name="tasks_start_execution_title">Start execution?</string>
+    <string name="tasks_start_execution_body">Start work on this existing occurrence.</string>
+    <string name="tasks_finish_execution_title">Finish execution?</string>
+    <string name="tasks_finish_execution_body">Finish this execution without completing the tile.</string>
+    <string name="tasks_start_button">Start</string>
+    <string name="tasks_finish_button">Finish</string>
+
+    <!-- Projects tab (card grid) -->
+    <string name="projects_summary_count">%1$d projects</string>
+    <string name="projects_summary_count_one">1 project</string>
+    <string name="projects_summary_count_zero">No projects yet</string>
+    <string name="projects_tile_count">%1$d tiles</string>
+    <string name="projects_tile_count_one">1 tile</string>
+    <string name="projects_tile_count_zero">No tiles</string>
+    <string name="projects_last_activity_never">No activity yet</string>
+    <string name="projects_last_activity_updated">Updated %1$s</string>
+    <string name="projects_open_button">Open</string>
+    <string name="projects_new_button">New</string>
+    <string name="projects_section_all">All projects</string>
+    <string name="projects_section_scoped">Tiles in this project</string>
+    <string name="projects_select_hint">Select a project to scope the tiles below.</string>
+    <string name="projects_color_default" translatable="false">#6B7280</string>
 </resources>

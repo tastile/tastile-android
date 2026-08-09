@@ -155,6 +155,39 @@ private fun QuickCreateBaseComposition(
         )
         HorizontalDivider()
         NiaListItem(
+            content = { Text("Identity") },
+            supportingContent = {
+                Text(
+                    listOf(draft.identity.visual.icon, draft.identity.visual.color)
+                        .plus(draft.identity.description?.takeIf { it.isNotBlank() })
+                        .filterNotNull()
+                        .joinToString(" · ")
+                )
+            },
+            leadingContent = { Icon(Icons.Outlined.Flag, contentDescription = null) },
+            trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { store.openSubpanel(QuickCreatePanel.Identity) }
+                .testTag("quick-create-identity-link"),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        )
+        EssentialRow(
+            label = "Recurring",
+            summary = draft.recurring.repeatMode.name,
+            tag = "quick-create-essential-recurring",
+            leadingIcon = Icons.Outlined.Schedule,
+            onClick = { store.openSubpanel(QuickCreatePanel.Recurring) },
+        )
+        EssentialRow(
+            label = "Placement rules",
+            summary = "${draft.plan.planning.placementRules.size} rule(s)",
+            tag = "quick-create-placement-rules-link",
+            leadingIcon = Icons.Outlined.Tune,
+            onClick = { store.openSubpanel(QuickCreatePanel.PlacementRules) },
+        )
+        HorizontalDivider()
+        NiaListItem(
             content = { Text("Completion logic") },
             supportingContent = { Text(conditionSummary(draft.plan.completion.root.kind)) },
             leadingContent = { Icon(Icons.Outlined.Checklist, contentDescription = null) },
@@ -245,7 +278,7 @@ private fun QuickCreateBaseComposition(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp)
                     .testTag("quick-create-submitting"),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 NiaLoadingWheel(

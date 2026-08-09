@@ -4,6 +4,10 @@ import app.tastile.android.data.api.CommandResponse
 import app.tastile.android.data.api.CompletionSchema
 import app.tastile.android.data.api.ConditionAny
 import app.tastile.android.data.api.ConditionRef
+import app.tastile.android.data.api.PlacementRuleEffectSchema
+import app.tastile.android.data.api.PlacementRuleSchema
+import app.tastile.android.data.api.RangeI64Schema
+import app.tastile.android.data.api.ScopeSchema
 import app.tastile.android.data.api.CreatePlacementPayload
 import app.tastile.android.data.api.CreateTilePayload
 import app.tastile.android.data.api.FrameRuleGeneratorPayload
@@ -27,6 +31,7 @@ import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.V1NumericConstants
 import app.tastile.android.ui.mobile.sheets.QuickCreateConditionNode
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
+import app.tastile.android.ui.mobile.sheets.QuickCreatePlacementRule
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlanRole
 import app.tastile.android.ui.mobile.sheets.QuickCreateRecurring
 import app.tastile.android.ui.mobile.sheets.QuickCreateTileKind
@@ -51,6 +56,11 @@ interface QuickCreateCommandGateway {
     suspend fun materializeRecurring(payload: MaterializeRecurringPayload): CommandResponse
     suspend fun setPlan(tileId: String, payload: SetPlanPayload): CommandResponse
     suspend fun createSourceTile(payload: SourceTileWritePayload): CommandResponse
+    suspend fun updateSourceTile(
+        sourceTileId: String,
+        payload: SourceTileWritePayload,
+        expectedRevision: Long,
+    ): CommandResponse
 }
 
 class V1QuickCreateCommandGateway(private val client: V1ApiClient) : QuickCreateCommandGateway {
@@ -59,6 +69,11 @@ class V1QuickCreateCommandGateway(private val client: V1ApiClient) : QuickCreate
     override suspend fun materializeRecurring(payload: MaterializeRecurringPayload) = client.materializeRecurring(payload)
     override suspend fun setPlan(tileId: String, payload: SetPlanPayload) = client.setPlan(tileId, payload)
     override suspend fun createSourceTile(payload: SourceTileWritePayload) = client.createSourceTile(payload)
+    override suspend fun updateSourceTile(
+        sourceTileId: String,
+        payload: SourceTileWritePayload,
+        expectedRevision: Long,
+    ) = client.updateSourceTile(sourceTileId, payload, expectedRevision)
 }
 
 sealed interface QuickCreateSubmitResult {
@@ -195,7 +210,20 @@ class QuickCreateSubmissionDispatcher(private val gateway: QuickCreateCommandGat
                 tasks = emptyList(),
             ),
             planning = SchedulingPlanningDefinitionSchema(
-                placement_rules = emptyList(),
+                placement_rules = draft.plan.planning.placementRules.map { rule ->
+                    PlacementRuleSchema(
+                        id = rule.id,
+                        rank = rule.rank,
+                        effect = PlacementRuleEffectSchema(
+                            kind = rule.effect.kind,
+                            record = rule.effect.record,
+                            scope = if (rule.effect.kind in 0..3) ScopeSchema(rule.effect.scopeKind, rule.effect.scopeParent) else null,
+                            score = rule.effect.score,
+                            span = rule.effect.span?.let { RangeI64Schema(it.minMs, it.maxMs) },
+                        ),
+                        `when` = rule.`when`,
+                    )
+                },
                 nesting_rules = emptyList(),
             ),
             metrics = emptyList(),
@@ -239,21 +267,27 @@ class QuickCreateSubmissionDispatcher(private val gateway: QuickCreateCommandGat
     ): SourceGenerationPayload {
         // Map the Web's repeat-mode + weekday-mask onto the typed v1 generation.
         // 0 = OneTime, 1 = Recurring, 2 = DemandDriven (per openapi.rs:728).
-        val kind: Short = when (recurring.repeatMode.name) {
-            "Once" -> 0
-            "Daily", "Weekly", "Interval", "Condition" -> 1
-            else -> 0
+        val kind: Short = when (recurring.repeatMode) {
+            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Once -> 0
+            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Condition -> 2
+            else -> 1
         }
-        val weekdayMask: Byte? = if (recurring.repeatMode.name == "Weekly") recurring.weekdayMask.toByte() else null
-        val intervalMs: Long? = when (recurring.repeatMode.name) {
-            "Interval" -> recurring.frameRules.firstOrNull()?.generator?.value?.let { gen ->
-                val step = (gen as? JsonObject)?.get("step") as? JsonPrimitive
-                step?.content?.toLongOrNull()
+        val weekdayMask: Byte? = if (recurring.repeatMode == app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Weekly) recurring.weekdayMask.toByte() else null
+        val intervalMs: Long? = when (recurring.repeatMode) {
+            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Daily,
+            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Weekly -> 86_400_000L
+            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Interval -> {
+                val unitMs = when (recurring.intervalUnit) {
+                    app.tastile.android.ui.mobile.sheets.QuickCreateIntervalUnit.Minute -> 60_000L
+                    app.tastile.android.ui.mobile.sheets.QuickCreateIntervalUnit.Hour -> 3_600_000L
+                    app.tastile.android.ui.mobile.sheets.QuickCreateIntervalUnit.Day -> 86_400_000L
+                }
+                recurring.intervalValue.coerceAtLeast(1) * unitMs
             }
             else -> null
         }
-        val startsAt: String? = if (kind == 1.toShort() && recurring.endDate.isNotBlank()) {
-            runCatching { Instant.parse("${recurring.endDate}T00:00:00Z").toString() }.getOrNull()
+        val startsAt: String? = if (kind == 1.toShort()) {
+            normalizeSpanInstant(time.span.start)
         } else null
         val endsAt: String? = if (recurring.endDate.isNotBlank()) {
             runCatching { Instant.parse("${recurring.endDate}T23:59:59Z").toString() }.getOrNull()
@@ -325,16 +359,87 @@ class QuickCreateSubmissionDispatcher(private val gateway: QuickCreateCommandGat
             } }))
         },
         planning = buildJsonObject {
-            put("placement_rules", snakeCase(draft.plan.planning.placementRules)); put("nesting_rules", snakeCase(draft.plan.planning.nestingRules)); put("flows", snakeCase(draft.plan.planning.flows))
+            put("placement_rules", JsonArray(draft.plan.planning.placementRules.map(::placementRuleJson))); put("nesting_rules", snakeCase(draft.plan.planning.nestingRules)); put("flows", snakeCase(draft.plan.planning.flows))
         },
         metrics = snakeCase(draft.plan.metrics) as JsonArray,
         decisions = snakeCase(draft.plan.decisions) as JsonArray,
     )
+
+    /**
+     * Update an existing tile in-place. The draft must already be hydrated
+     * via [QuickCreateStateStore.hydrateForEdit] so [QuickCreateDraftState.editingTileId]
+     * carries the target id and [QuickCreateDraftState.editingPlacementId] (when
+     * present) selects a placement to reschedule as part of the same save.
+     *
+     * The update mirrors tastile-web's `submitUpdateTile` (see
+     * `tastile-web/src/shared/api/v1/submit.ts`):
+     *   1. PATCH the source-tile envelope (PUT `/v1/source-tiles/{id}`) using
+     *      the same `SourceTileWritePayload` shape as the create path.
+     *   2. If a placement id is present and the user edited the span, PATCH
+     *      `/v1/placements/{id}/changes` with a `Span` ChangeSet. We do not
+     *      carry the full v1 ChangeSet wire shape in the store; the placement
+     *      branch is delegated to [dispatchPlacementSpanChanges] when the
+     *      caller has a dispatcher at hand. For now we leave the reschedule
+     *      step to the caller (the TileEditSheet wires
+     *      [DashboardViewModel.reschedulePlacement] for that), and this
+     *      method only owns the source-tile update.
+     */
+    suspend fun submitUpdate(
+        draft: QuickCreateDraftState,
+        expectedRevision: Long,
+    ): QuickCreateSubmitResult {
+        val tileId = draft.editingTileId
+            ?: return QuickCreateSubmitResult.Failure("Missing editing tile id")
+        val title = draft.identity.title.trim()
+        if (title.isEmpty()) return QuickCreateSubmitResult.Failure("Title is required")
+        return try {
+            // In edit mode the span comes from the hydrated source-tile detail
+            // and may legitimately be empty for tiles without a placement
+            // (e.g. label-only tiles). We still need a non-blank horizon for
+            // `PlacementSpanPayload`; the server treats it as the audit
+            // window for the change so we fall back to the current instant.
+            val start = draft.time.span.start.takeIf { it.isNotBlank() }
+                ?: Instant.now().toString()
+            val end = draft.time.span.end.takeIf { it.isNotBlank() } ?: start
+            val payload = buildSourceTileWritePayload(
+                draft = draft,
+                start = start,
+                end = end,
+            )
+            val updated = gateway.updateSourceTile(
+                sourceTileId = tileId,
+                payload = payload,
+                expectedRevision = expectedRevision,
+            )
+            val aggregateId = updated.aggregate?.id ?: tileId
+            QuickCreateSubmitResult.Success(aggregateId)
+        } catch (error: Exception) {
+            QuickCreateSubmitResult.Failure(error.message ?: "Failed to update tile")
+        }
+    }
 }
 
 private fun role(role: QuickCreatePlanRole): Byte = if (role == QuickCreatePlanRole.Label) 1 else V1NumericConstants.PlanRole.EXECUTABLE
 private fun conditionJson(node: QuickCreateConditionNode): JsonObject = buildJsonObject {
     put("kind", node.kind); put("children", JsonArray(node.children.map(::conditionJson))); put("term", node.term?.let(::snakeCase) ?: JsonNull)
+}
+private fun placementRuleJson(rule: QuickCreatePlacementRule): JsonObject = buildJsonObject {
+    put("id", rule.id)
+    put("when", rule.`when` ?: JsonNull)
+    put("rank", rule.rank)
+    put("effect", buildJsonObject {
+        put("kind", rule.effect.kind)
+        put("scope", if (rule.effect.kind in 0..3) buildJsonObject {
+            put("kind", rule.effect.scopeKind)
+            put("parent", rule.effect.scopeParent?.let(::JsonPrimitive) ?: JsonNull)
+        } else JsonNull)
+        put("span", rule.effect.span?.let { buildJsonObject {
+            put("min", it.minMs?.let(::JsonPrimitive) ?: JsonNull)
+            put("max", it.maxMs?.let(::JsonPrimitive) ?: JsonNull)
+        } } ?: JsonNull)
+        put("score", rule.effect.score?.let(::JsonPrimitive) ?: JsonNull)
+        put("record", rule.effect.record?.let(::JsonPrimitive) ?: JsonNull)
+    })
 }
 private fun recurringStepMs(draft: QuickCreateDraftState): Long = draft.recurring.frameRules.firstOrNull()?.generator?.value
     ?.let { (it as? JsonObject)?.get("step") as? JsonPrimitive }?.content?.toLongOrNull() ?: 86_400_000L

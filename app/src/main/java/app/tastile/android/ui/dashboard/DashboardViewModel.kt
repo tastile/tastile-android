@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -64,6 +65,10 @@ enum class ListGroupingMode { STATE, PROJECT, TAG }
 enum class ListViewMode { COMPACT, COMFORTABLE, DETAILED }
 enum class TimelineSubScale { DAY, WEEK, MONTH, CUSTOM }
 
+/** Identity-field selector for [DashboardViewModel.updateTileField]. Mirrors
+ *  the v1 `UpdateTilePayload` keys covered in `data/api/V1CommandPayloads.kt`. */
+enum class TileUpdateField { TITLE, DESCRIPTION, COLOR, ICON, EXTERNAL_ID }
+
 /**
  * One labelled grouping emitted by [DashboardViewModel.groupedTiles].
  * `groupId` is stable across recompositions so it can drive both
@@ -72,6 +77,31 @@ enum class TimelineSubScale { DAY, WEEK, MONTH, CUSTOM }
 data class TileSection(
     val groupId: String,
     val labelKey: String,
+    val tiles: List<Tile>,
+)
+
+/**
+ * Time bucket used by the Tasks tab to group tiles by when they are
+ * scheduled. The order of [entries] is the display order on screen.
+ */
+enum class TaskBucket(val groupId: String) {
+    TODAY("today"),
+    THIS_WEEK("this_week"),
+    LATER("later"),
+    NO_DATE("no_date");
+
+    companion object {
+        val entries: List<TaskBucket> get() = listOf(TODAY, THIS_WEEK, LATER, NO_DATE)
+    }
+}
+
+/**
+ * A tile placed into one of the [TaskBucket] slots. `date` is the ISO
+ * local date (`YYYY-MM-DD`) of the tile's projected start when known,
+ * used by the row supporting-content slot to render a date label.
+ */
+data class TaskBucketGroup(
+    val bucket: TaskBucket,
     val tiles: List<Tile>,
 )
 
@@ -423,6 +453,63 @@ class DashboardViewModel @Inject constructor(
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Tiles partitioned by the [TaskBucket] used by the mobile Tasks tab.
+     * Pure derivation from `_tiles` — no new repository calls — so the
+     * Tasks screen rebuilds on every list refresh without extra round-trips.
+     *
+     * Bucket assignment uses `projectedNextStartAt`, falling back to
+     * `releaseAt` and `fixedStart` so the screen can surface a date when
+     * any of those are populated; otherwise the tile lands in [TaskBucket.NO_DATE].
+     * `this_week` is the Monday–Sunday window containing `today`.
+     */
+    val tasksByBucket: StateFlow<List<TaskBucketGroup>> = combine(_tiles, _selectedDay) { tiles, today ->
+        val todayDate = today
+        val weekStart = todayDate.minusDays((todayDate.dayOfWeek.value - 1).toLong())
+        val weekEnd = weekStart.plusDays(6)
+        val resolved: List<Pair<TaskBucket, Tile>> = tiles
+            .filterNot { TileLifecycle.fromString(it.lifecycle) == TileLifecycle.DONE }
+            .map { tile ->
+                val projected = parseLocalDateOrNull(tile.projectedNextStartAt)
+                    ?: parseLocalDateOrNull(tile.releaseAt)
+                    ?: parseLocalDateOrNull(tile.fixedStart)
+                val bucket = when {
+                    projected == null -> TaskBucket.NO_DATE
+                    projected == todayDate -> TaskBucket.TODAY
+                    !projected.isBefore(weekStart) && !projected.isAfter(weekEnd) -> TaskBucket.THIS_WEEK
+                    projected.isBefore(todayDate) -> TaskBucket.NO_DATE
+                    else -> TaskBucket.LATER
+                }
+                bucket to tile
+            }
+        TaskBucket.entries
+            .map { bucket -> TaskBucketGroup(bucket, resolved.filter { it.first == bucket }.map { it.second }) }
+            .filter { it.tiles.isNotEmpty() }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Map of workspace id → number of in-scope tiles owned by it.
+     * Used by the Projects tab to render the per-project tile count
+     * badge without re-querying the v1 list.
+     */
+    val tileCountByOwnerId: StateFlow<Map<String, Int>> = _tiles
+        .map { list ->
+            val counts = mutableMapOf<String, Int>()
+            list.forEach { tile ->
+                tile.projectLabels().forEach { label ->
+                    val ownerId = label.takeIf { it.isNotBlank() } ?: return@forEach
+                    counts[ownerId] = (counts[ownerId] ?: 0) + 1
+                }
+            }
+            counts
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    private fun parseLocalDateOrNull(value: String?): LocalDate? {
+        if (value.isNullOrBlank()) return null
+        return runCatching { LocalDate.parse(value.take(10)) }.getOrNull()
+    }
 
     fun setActiveTilesTab(tab: TilesTab) {
         _activeTilesTab.value = tab
@@ -881,20 +968,77 @@ class DashboardViewModel @Inject constructor(
 
     /** Updates only fields the Android tile list can read and prefill. */
     fun updateTileTitle(tileId: String, title: String) {
-        val trimmed = title.trim()
-        if (trimmed.isBlank()) {
+        updateTileField(tileId, TileUpdateField.TITLE, title)
+    }
+
+    /**
+     * Generic single-field updater for the editable v1 source-tile identity
+     * keys (`title`, `description`, `color`, `icon`, `external_id`). The
+     * v1 `POST /v1/tiles/{id}/update` endpoint accepts an `UpdateTilePayload`
+     * whose `null` fields mean "leave unchanged" — we honor that by only
+     * putting the field the caller actually wants to change.
+     *
+     * After the update succeeds, the selected-tile detail is reloaded so the
+     * edit sheet reflects the new state on the next composition.
+     */
+    fun updateTileField(
+        tileId: String,
+        field: TileUpdateField,
+        value: String?,
+    ) {
+        if (field == TileUpdateField.TITLE && value.isNullOrBlank()) {
             _error.value = "Title is required"
             return
         }
         viewModelScope.launch {
             try {
-                tileRepository.updateTile(tileId, buildJsonObject { put("title", JsonPrimitive(trimmed)) })
+                val payload = buildJsonObject {
+                    when (field) {
+                        TileUpdateField.TITLE -> put("title", JsonPrimitive(value?.trim().orEmpty()))
+                        TileUpdateField.DESCRIPTION -> put("description", JsonPrimitive(value))
+                        TileUpdateField.COLOR -> put("color", JsonPrimitive(value))
+                        TileUpdateField.ICON -> put("icon", JsonPrimitive(value))
+                        TileUpdateField.EXTERNAL_ID -> put("external_id", JsonPrimitive(value))
+                    }
+                }
+                tileRepository.updateTile(tileId, payload)
                 _lastActionMessage.value = "Changes saved"
                 refreshAll()
+                if (_selectedTileId.value == tileId) loadTileDetail(tileId)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to update tile"
             }
         }
+    }
+
+    /**
+     * Reschedules a single placement to a new [startAtIso] / [endAtIso] window
+     * by appending a `Span` ChangeSet. Mirrors the placement branch of
+     * `tastile-web/src/shared/api/v1/submit.ts::submitUpdateTile`. The
+     * placement id is supplied by the caller (typically the source-tile
+     * detail's first placement when editing a one-off calendar occurrence).
+     */
+    fun reschedulePlacement(placementId: String, startAtIso: String, endAtIso: String) {
+        if (placementId.isBlank() || startAtIso.isBlank() || endAtIso.isBlank()) {
+            _error.value = "Cannot reschedule placement with a missing field"
+            return
+        }
+        viewModelScope.launch {
+            try {
+                tileRepository.reschedulePlacement(placementId, startAtIso, endAtIso)
+                _lastActionMessage.value = "Placement rescheduled"
+                refreshAll()
+                _selectedTileId.value?.let(::loadTileDetail)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to reschedule placement"
+            }
+        }
+    }
+
+    /** Refreshes [selectedTileDetail] without touching the selected id. */
+    fun refreshSelectedTileDetail() {
+        val id = _selectedTileId.value ?: return
+        loadTileDetail(id)
     }
 
     fun updateDisplayName(name: String) {

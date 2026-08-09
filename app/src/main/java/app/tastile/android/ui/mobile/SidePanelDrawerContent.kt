@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
 // m2-allow: state-holder
@@ -33,7 +32,6 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,17 +52,20 @@ private data class DrawerRoute(
     val icon: ImageVector,
 )
 
+// The "References" entry that previously mounted `IntegrationsScreen`
+// has been removed — the screen only contained a static v1 notice and
+// there were no real reference entries to drive the per-label switch
+// list. See `docs/ux-fix-reference-and-buttons.md` for the gate history.
 private val drawerRoutes = listOf(
     DrawerRoute("timeline", "Timeline", Icons.Outlined.Schedule),
     DrawerRoute("execute", "Tasks", Icons.Outlined.Checklist),
     DrawerRoute("tiles", "Projects", Icons.Outlined.FolderOpen),
-    DrawerRoute("integrations", "References", Icons.Outlined.Link),
 )
 
 /**
  * Material 3 modal navigation drawer that replaces the bottom-anchored
  * `SidePanelSheet` 2-page pager. A brand header (icon + app title) sits above
- * the four primary-nav destinations; the dedicated Settings row sits below a
+ * the three primary-nav destinations; the dedicated Settings row sits below a
  * thin divider. The active route is highlighted via [NavigationDrawerItem]'s
  * built-in selection styling, and tapping any item navigates + closes the
  * drawer.
@@ -75,24 +76,16 @@ fun SidePanelDrawerContent(
     navController: NavHostController,
     drawerState: DrawerState,
     modifier: Modifier = Modifier,
-    hasReferencesContent: Boolean = false,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val scope = rememberCoroutineScope()
     val settingLabel = stringResource(R.string.nav_setting)
-    // References content is empty for v1 (the IntegrationsScreen renders a static
-    // notice and the per-label switch list is empty until tiles carry labels),
-    // so hide the drawer entry when there are no reference labels to toggle.
-    val visibleRoutes = remember(hasReferencesContent) {
-        if (hasReferencesContent) drawerRoutes
-        else drawerRoutes.filterNot { it.route == "integrations" }
-    }
 
     ModalDrawerSheet(modifier = modifier) {
         Column(modifier = Modifier.fillMaxSize()) {
             BrandHeader()
-            visibleRoutes.forEach { item ->
+            drawerRoutes.forEach { item ->
                 NavigationDrawerItem(
                     label = { Text(item.label) },
                     selected = currentRoute == item.route,

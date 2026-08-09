@@ -64,10 +64,8 @@ import app.tastile.android.core.designsystem.component.NiaDatePickerDialog
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
 import app.tastile.android.ui.mobile.tabs.ExecuteScreen
-import app.tastile.android.ui.mobile.tabs.IntegrationsScreen
 import app.tastile.android.ui.mobile.tabs.ProjectsScreen
 import app.tastile.android.ui.mobile.tabs.SettingsScreen
-import app.tastile.android.ui.mobile.tabs.TilesScreen
 import app.tastile.android.ui.mobile.tabs.TimelineScreen
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -126,11 +124,8 @@ fun MobileScaffold(
     val avatarUrl by dashboardViewModel.avatarUrl.collectAsStateWithLifecycle()
     val profile by dashboardViewModel.profile.collectAsStateWithLifecycle()
     val scale by dashboardViewModel.scale.collectAsStateWithLifecycle()
-    val tiles by dashboardViewModel.tiles.collectAsStateWithLifecycle()
-    // References content is empty for v1 (IntegrationsScreen renders a static notice
-    // and the per-label switch list is empty until tiles carry labels). Gate the
-    // drawer entry + nav route on this so the empty "References" tab stays hidden.
-    val hasReferencesContent = tiles.any { it.labels.isNotEmpty() }
+    // The Reference / Integrations entry was removed (empty screen).
+    // See `docs/ux-fix-reference-and-buttons.md` for the gate history.
 
     // Range-aware header titles: Day=single date with weekday, Week=Mon–Sun range
     // with weekday on both ends, Month=long month name.
@@ -153,7 +148,6 @@ fun MobileScaffold(
     val title: CharSequence = when (currentRoute) {
         "execute" -> "Tasks"
         "tiles" -> "Projects"
-        "integrations" -> "References"
         "settings" -> "Preferences"
         else -> when (scale) {
             TimelineScale.Day -> selectedDay.format(dayFormatter)
@@ -234,13 +228,6 @@ fun MobileScaffold(
                             ProjectsScreen(viewModel = dashboardViewModel, overlay = overlayViewModel)
                         }
                     }
-                    if (hasReferencesContent) {
-                        composable("integrations") {
-                            Box(modifier = Modifier.padding(top = topPad)) {
-                                IntegrationsScreen(viewModel = dashboardViewModel)
-                            }
-                        }
-                    }
                     composable("settings") {
                         SettingsScreen(
                             viewModel = dashboardViewModel,
@@ -319,7 +306,6 @@ fun MobileScaffold(
                 SidePanelDrawerContent(
                     navController = navController,
                     drawerState = drawerState,
-                    hasReferencesContent = hasReferencesContent,
                 )
             },
             content = scaffoldContent,

@@ -103,12 +103,17 @@ import app.tastile.android.ui.mobile.sheets.QuickCreateTaskContent
 import app.tastile.android.ui.mobile.sheets.QuickCreateTaskDefinition
 import app.tastile.android.ui.mobile.sheets.QuickCreateTimeRequirement
 import app.tastile.android.ui.mobile.sheets.QuickCreateTimeOfDayMode
+import app.tastile.android.ui.mobile.sheets.QuickCreateTileKind
 import app.tastile.android.ui.mobile.sheets.QuickCreateWhenMode
 import app.tastile.android.ui.mobile.sheets.QuickCreateWindow
 import app.tastile.android.ui.mobile.sheets.QuickCreateConditionNode
 import app.tastile.android.ui.mobile.sheets.QuickCreateWindowRule
 import app.tastile.android.ui.mobile.sheets.QuickCreateDateRange
+import app.tastile.android.ui.mobile.sheets.QuickCreateIntervalUnit
+import app.tastile.android.ui.mobile.sheets.QuickCreatePlacementRule
+import app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode
 import app.tastile.android.ui.mobile.sheets.QuickCreateProject
+import app.tastile.android.ui.dashboard.components.DatePickerField
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -146,15 +151,234 @@ internal fun QuickCreateSubpanel(
     ) {
         when (panel) {
             QuickCreatePanel.Intent -> IntentPanel(store)
+            QuickCreatePanel.Identity -> IdentityPanel(draft, store)
             QuickCreatePanel.Time -> TimePanel(draft, store)
             QuickCreatePanel.Duration -> DurationPanel(draft, store)
+            QuickCreatePanel.Recurring -> RecurringPanel(draft, store)
             QuickCreatePanel.References -> ReferencesPanel(draft, store)
             QuickCreatePanel.Completion -> CompletionPanel(draft, store)
+            QuickCreatePanel.PlacementRules -> PlacementRulesPanel(draft, store)
             QuickCreatePanel.Meta -> MetaPanel(draft, store, projects, knownTags, onBack)
             QuickCreatePanel.Schedule -> SchedulePanel(draft, store)
             QuickCreatePanel.Base -> Unit
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun IdentityPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
+    val identity = draft.identity
+    LocalSectionHeader(title = stringResource(R.string.quick_create_identity_title))
+    OutlinedTextField(
+        value = identity.description.orEmpty(),
+        onValueChange = { store.updateIdentity(identity.copy(description = it.ifBlank { null })) },
+        label = { Text(stringResource(R.string.quick_create_description)) },
+        minLines = 3,
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-description"),
+    )
+    LocalSectionHeader(title = stringResource(R.string.quick_create_color))
+    val colors = listOf("#3b82f6", "#8b5cf6", "#ec4899", "#ef4444", "#f59e0b", "#10b981", "#06b6d4", "#6b7280")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        colors.forEach { color ->
+            FilterChip(
+                selected = identity.visual.color.equals(color, ignoreCase = true),
+                onClick = { store.updateIdentity(identity.copy(visual = identity.visual.copy(color = color))) },
+                label = { Text(color) },
+                modifier = Modifier.testTag("quick-create-color-${color.removePrefix("#")}"),
+            )
+        }
+    }
+    LocalSectionHeader(title = stringResource(R.string.quick_create_icon))
+    val icons = listOf("check-circle", "calendar", "clock", "repeat", "flag", "star")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        icons.forEach { icon ->
+            FilterChip(
+                selected = identity.visual.icon == icon,
+                onClick = { store.updateIdentity(identity.copy(visual = identity.visual.copy(icon = icon))) },
+                label = { Text(icon) },
+                modifier = Modifier.testTag("quick-create-icon-$icon"),
+            )
+        }
+    }
+    OutlinedTextField(
+        value = identity.visual.icon,
+        onValueChange = { store.updateIdentity(identity.copy(visual = identity.visual.copy(icon = it))) },
+        label = { Text(stringResource(R.string.quick_create_icon_custom)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-icon-custom"),
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RecurringPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
+    val recurring = draft.recurring
+    LocalSectionHeader(title = stringResource(R.string.quick_create_recurring_title))
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        QuickCreateRepeatMode.entries.forEach { mode ->
+            FilterChip(
+                selected = recurring.repeatMode == mode,
+                onClick = {
+                    store.updateRecurring(recurring.copy(repeatMode = mode))
+                    store.updateIdentity(draft.identity.copy(kind = if (mode == QuickCreateRepeatMode.Once) draft.identity.kind else QuickCreateTileKind.Recurring))
+                },
+                label = { Text(mode.name) },
+                modifier = Modifier.testTag("quick-create-repeat-${mode.name.lowercase()}"),
+            )
+        }
+    }
+    if (recurring.repeatMode == QuickCreateRepeatMode.Weekly) {
+        LocalSectionHeader(title = stringResource(R.string.quick_create_weekdays))
+        val days = listOf("S", "M", "T", "W", "T", "F", "S")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            days.forEachIndexed { bit, label ->
+                val selected = recurring.weekdayMask and (1 shl bit) != 0
+                FilterChip(
+                    selected = selected,
+                    onClick = { store.updateRecurring(recurring.copy(weekdayMask = recurring.weekdayMask xor (1 shl bit))) },
+                    label = { Text(label) },
+                    modifier = Modifier.testTag("quick-create-weekday-$bit"),
+                )
+            }
+        }
+    }
+    if (recurring.repeatMode == QuickCreateRepeatMode.Interval) {
+        LocalNumberField(
+            value = recurring.intervalValue.toString(),
+            onValueChange = { value -> value.toIntOrNull()?.let { store.updateRecurring(recurring.copy(intervalValue = it.coerceAtLeast(1))) } },
+            label = stringResource(R.string.quick_create_interval_value),
+            suffix = recurring.intervalUnit.name.lowercase(),
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-interval-value"),
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            QuickCreateIntervalUnit.entries.forEach { unit ->
+                FilterChip(
+                    selected = recurring.intervalUnit == unit,
+                    onClick = { store.updateRecurring(recurring.copy(intervalUnit = unit)) },
+                    label = { Text(unit.name) },
+                    modifier = Modifier.testTag("quick-create-interval-${unit.name.lowercase()}"),
+                )
+            }
+        }
+    }
+    if (recurring.repeatMode == QuickCreateRepeatMode.Condition) {
+        Text(stringResource(R.string.quick_create_condition_deferred))
+    }
+    DatePickerField(
+        value = recurring.endDate,
+        label = stringResource(R.string.quick_create_end_date),
+        onValueChange = { store.updateRecurring(recurring.copy(endDate = it)) },
+        modifier = Modifier.testTag("quick-create-recurring-end-date"),
+    )
+    if (recurring.endDate.isNotBlank()) {
+        NiaTextButton(
+            onClick = { store.updateRecurring(recurring.copy(endDate = "")) },
+            text = { Text(stringResource(R.string.quick_create_no_end_date)) },
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PlacementRulesPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
+    val rules = draft.plan.planning.placementRules
+    LocalSectionHeader(title = stringResource(R.string.quick_create_placement_rules))
+    Text(stringResource(R.string.quick_create_placement_rules_hint))
+    rules.forEachIndexed { index, rule ->
+        Surface(modifier = Modifier.fillMaxWidth().testTag("quick-create-placement-rule-$index")) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.quick_create_rule_number, index + 1))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("Permit", "Deny", "Limit", "Score", "Record").forEachIndexed { kind, label ->
+                        FilterChip(
+                            selected = rule.effect.kind == kind,
+                            onClick = { updatePlacementRule(draft, store, index, rule.copy(effect = rule.effect.copy(kind = kind))) },
+                            label = { Text(label) },
+                            modifier = Modifier.testTag("quick-create-placement-rule-$index-effect-$kind"),
+                        )
+                    }
+                }
+                LocalNumberField(
+                    value = rule.rank.toString(),
+                    onValueChange = { it.toIntOrNull()?.let { rank -> updatePlacementRule(draft, store, index, rule.copy(rank = rank)) } },
+                    label = stringResource(R.string.quick_create_rank),
+                    suffix = "",
+                    modifier = Modifier.fillMaxWidth().testTag("quick-create-placement-rule-$index-rank"),
+                )
+                if (rule.`when` == null) {
+                    NiaFilledTonalButton(
+                        onClick = { updatePlacementRule(draft, store, index, rule.copy(`when` = defaultPlacementCondition())) },
+                        text = { Text(stringResource(R.string.quick_create_add_when_condition)) },
+                    )
+                } else {
+                    NiaTextButton(
+                        onClick = { updatePlacementRule(draft, store, index, rule.copy(`when` = null)) },
+                        text = { Text(stringResource(R.string.quick_create_remove_when_condition)) },
+                    )
+                }
+                when (rule.effect.kind) {
+                    2 -> {
+                        LocalNumberField(
+                            value = (rule.effect.span?.minMs ?: 0L).div(60_000L).toString(),
+                            onValueChange = { input -> input.toLongOrNull()?.let { min -> updatePlacementRule(draft, store, index, rule.copy(effect = rule.effect.copy(span = (rule.effect.span ?: QuickCreateDurationRange()).copy(minMs = min * 60_000L)))) } },
+                            label = stringResource(R.string.quick_create_min_minutes), suffix = "min",
+                        )
+                        LocalNumberField(
+                            value = (rule.effect.span?.maxMs ?: 0L).div(60_000L).toString(),
+                            onValueChange = { input -> input.toLongOrNull()?.let { max -> updatePlacementRule(draft, store, index, rule.copy(effect = rule.effect.copy(span = (rule.effect.span ?: QuickCreateDurationRange()).copy(maxMs = max * 60_000L)))) } },
+                            label = stringResource(R.string.quick_create_max_minutes), suffix = "min",
+                        )
+                    }
+                    3 -> LocalNumberField(
+                        value = (rule.effect.score ?: 0).toString(),
+                        onValueChange = { input -> input.toIntOrNull()?.let { score -> updatePlacementRule(draft, store, index, rule.copy(effect = rule.effect.copy(score = score))) } },
+                        label = stringResource(R.string.quick_create_score), suffix = "",
+                    )
+                    4 -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(0 to stringResource(R.string.quick_create_record_optional), 1 to stringResource(R.string.quick_create_record_required)).forEach { (record, label) ->
+                            FilterChip(
+                                selected = (rule.effect.record ?: 0) == record,
+                                onClick = { updatePlacementRule(draft, store, index, rule.copy(effect = rule.effect.copy(record = record))) },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+                }
+                NiaTextButton(
+                    onClick = { store.updatePlan(draft.plan.copy(planning = draft.plan.planning.copy(placementRules = rules.filterIndexed { item, _ -> item != index }))) },
+                    text = { Text(stringResource(R.string.quick_create_remove_rule)) },
+                )
+            }
+        }
+    }
+    NiaFilledTonalButton(
+        onClick = { store.updatePlan(draft.plan.copy(planning = draft.plan.planning.copy(placementRules = rules + QuickCreatePlacementRule(UUID.randomUUID().toString())))) },
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-add-placement-rule"),
+        text = { Text(stringResource(R.string.quick_create_add_placement_rule)) },
+    )
+}
+
+private fun updatePlacementRule(
+    draft: QuickCreateDraftState,
+    store: QuickCreateStateStore,
+    index: Int,
+    rule: QuickCreatePlacementRule,
+) {
+    store.updatePlan(draft.plan.copy(planning = draft.plan.planning.copy(placementRules = draft.plan.planning.placementRules.replace(index, rule))))
+}
+
+private fun defaultPlacementCondition(): JsonElement = buildJsonObject {
+    put("Term", buildJsonObject {
+        put("Calendar", buildJsonObject {
+            put("weekday_mask", JsonPrimitive(127))
+            put("time_start", JsonNull)
+            put("time_end", JsonNull)
+            put("holiday_kind", JsonPrimitive(0))
+            put("date_range", JsonNull)
+            put("offset_min", JsonPrimitive(0))
+        })
+    })
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -570,7 +794,10 @@ private fun defaultPlanReference() = QuickCreatePlanReference(
 private fun IntentPanel(store: QuickCreateStateStore) {
     LocalSectionHeader(title = "Add condition or group")
     val intentTargets = listOf(
+        Triple("Identity", QuickCreatePanel.Identity, Icons.Outlined.TextFields),
         Triple("Time", QuickCreatePanel.Time, Icons.Outlined.Schedule),
+        Triple("Recurring", QuickCreatePanel.Recurring, Icons.Outlined.Repeat),
+        Triple("Placement rules", QuickCreatePanel.PlacementRules, Icons.Outlined.Tune),
         Triple("References", QuickCreatePanel.References, Icons.Outlined.Link),
         Triple("Schedule", QuickCreatePanel.Schedule, Icons.Outlined.Tune),
         Triple("Meta", QuickCreatePanel.Meta, Icons.Outlined.Tag),
@@ -871,8 +1098,51 @@ private fun updateTimeRequirement(
         suffix = "min",
         modifier = Modifier.fillMaxWidth().testTag("condition-$path-calendar-offset"),
     )
-    OutlinedTextField(value.string("timeStart"), { input -> onChange(term.withValue("timeStart", input.ifBlank { null })) }, label = { Text("Time start") }, modifier = Modifier.fillMaxWidth().testTag("condition-calendar-start"))
-    OutlinedTextField(value.string("timeEnd"), { input -> onChange(term.withValue("timeEnd", input.ifBlank { null })) }, label = { Text("Time end") }, modifier = Modifier.fillMaxWidth().testTag("condition-calendar-end"))
+    // Calendar term's time-of-day window. Previously a free-text HH:mm field;
+    // switched to the same M3 picker sheet used by the parent Time subpanel so
+    // the wire format stays canonical `HH:mm` (or null) while users get a
+    // scroll-wheel picker instead of a text box.
+    val timeFmt = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    var showCalendarStart by remember { mutableStateOf(false) }
+    var showCalendarEnd by remember { mutableStateOf(false) }
+    LocalPickerField(
+        label = "Time start",
+        value = value.string("timeStart").ifBlank { "—" },
+        onClick = { showCalendarStart = true },
+        leadingIcon = Icons.Outlined.Schedule,
+        modifier = Modifier.fillMaxWidth().testTag("condition-calendar-start"),
+    )
+    if (showCalendarStart) {
+        TimePickerSheet(
+            initial = runCatching { LocalTime.parse(value.string("timeStart"), timeFmt) }
+                .getOrElse { LocalTime.of(9, 0) },
+            onConfirm = { time ->
+                onChange(term.withValue("timeStart", time.format(timeFmt)))
+                showCalendarStart = false
+            },
+            onDismiss = { showCalendarStart = false },
+            titleRes = R.string.picker_time_start,
+        )
+    }
+    LocalPickerField(
+        label = "Time end",
+        value = value.string("timeEnd").ifBlank { "—" },
+        onClick = { showCalendarEnd = true },
+        leadingIcon = Icons.Outlined.Schedule,
+        modifier = Modifier.fillMaxWidth().testTag("condition-calendar-end"),
+    )
+    if (showCalendarEnd) {
+        TimePickerSheet(
+            initial = runCatching { LocalTime.parse(value.string("timeEnd"), timeFmt) }
+                .getOrElse { LocalTime.of(18, 0) },
+            onConfirm = { time ->
+                onChange(term.withValue("timeEnd", time.format(timeFmt)))
+                showCalendarEnd = false
+            },
+            onDismiss = { showCalendarEnd = false },
+            titleRes = R.string.picker_time_end,
+        )
+    }
 }
 
 @Composable private fun MomentTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {

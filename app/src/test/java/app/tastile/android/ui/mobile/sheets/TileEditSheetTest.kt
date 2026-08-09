@@ -12,6 +12,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.data.api.SourceGenerationPayload
+import app.tastile.android.data.api.SourcePlacementRead
+import app.tastile.android.data.api.SourceSchedulePayload
+import app.tastile.android.data.api.SourceSplitPolicyPayload
+import app.tastile.android.data.api.SourceTileDetailRead
+import app.tastile.android.data.api.SourceTileRead
+import app.tastile.android.data.api.SourceWindowPayload
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.repository.AppLocale
@@ -69,6 +76,7 @@ class TileEditSheetTest {
         coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()
         coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")
+        coEvery { tileRepo.getTileDetail(any()) } returns null
         return DashboardViewModel(
             authRepository = authRepo,
             profileRepository = profileRepo,
@@ -85,6 +93,7 @@ class TileEditSheetTest {
         val tile = Tile(id = "abc", title = "Write spec", lifecycle = "Ready")
         vm.replaceTilesForTest(listOf(tile))
         vm.selectTile("abc")
+        coEvery { tileRepositories.last().getTileDetail("abc") } returns sampleDetail("abc", "Write spec")
 
         rule.setContent {
             TileEditSheet(overlay = overlay, viewModel = vm)
@@ -136,6 +145,7 @@ class TileEditSheetTest {
         val vm = newDashboardViewModel()
         vm.replaceTilesForTest(listOf(Tile(id = "abc", title = "Write spec", lifecycle = "Ready")))
         vm.selectTile("abc")
+        coEvery { tileRepositories.last().getTileDetail("abc") } returns sampleDetail("abc", "Write spec")
 
         rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
         rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "abc")) }
@@ -201,6 +211,7 @@ class TileEditSheetTest {
         coEvery { tileRepo.executionStateLookupForTile(any()) } returns
             app.tastile.android.data.command.ExecutionStateLookup.NoActiveExecution
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")
+        coEvery { tileRepo.getTileDetail("tile-1") } returns sampleDetail("tile-1", "Focus")
         val vm = DashboardViewModel(
             authRepository = authRepo,
             profileRepository = profileRepo,
@@ -233,5 +244,39 @@ class TileEditSheetTest {
         // sibling "renders tile title" test uses (assertCountEquals(2)).
         rule.onAllNodesWithText("Pause").assertCountEquals(1)
         rule.onAllNodesWithText("Resume").assertCountEquals(0)
+    }
+
+    /**
+     * Build a minimal [SourceTileDetailRead] so the editable title field renders
+     * during edit-sheet tests. The schedule payload only needs non-null fields
+     * because the edit sheet reads `source.title` / `source.description` /
+     * `source.color` / `source.icon` — the schedule is hydrated through
+     * `hydrateForEdit` but only the span slot is consulted by the visible UI
+     * under test.
+     */
+    private fun sampleDetail(sourceTileId: String, title: String): SourceTileDetailRead {
+        val schedule = SourceSchedulePayload(
+            requiredDurationMs = 0L,
+            generation = SourceGenerationPayload(kind = 0),
+            window = SourceWindowPayload(startOffsetMs = 0L, endOffsetMs = 0L),
+            splitPolicy = SourceSplitPolicyPayload(kind = 0),
+            priority = 0,
+        )
+        val source = SourceTileRead(
+            sourceTileId = sourceTileId,
+            planId = "plan-$sourceTileId",
+            ownerId = "owner-1",
+            revision = 1L,
+            title = title,
+            description = null,
+            color = null,
+            icon = null,
+            externalId = null,
+            planRole = 0,
+            schedule = schedule,
+            createdAt = "2026-07-16T00:00:00Z",
+            updatedAt = "2026-07-16T00:00:00Z",
+        )
+        return SourceTileDetailRead(source = source, occurrences = emptyList(), placements = emptyList())
     }
 }

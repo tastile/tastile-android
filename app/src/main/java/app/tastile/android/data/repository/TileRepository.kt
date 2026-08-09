@@ -447,6 +447,27 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
+    /**
+     * Reschedule a single placement by id. Used by the tile-edit flow when
+     * the user edits a one-off calendar occurrence and we already have the
+     * placement id from the source-tile detail read. Mirrors the placement
+     * branch of `tastile-web/src/shared/api/v1/submit.ts::submitUpdateTile`.
+     */
+    suspend fun reschedulePlacement(placementId: String, startAtIso: String, endAtIso: String) {
+        if (placementId.isBlank()) {
+            throw IllegalStateException("Cannot reschedule placement without a placement id")
+        }
+        val ownerId = currentUserProvider.currentUserId()
+            ?: throw IllegalStateException("Cannot reschedule placement without the current user")
+        val ack = v1CommandDispatcher.dispatchPlacementReschedule(
+            placementId = placementId,
+            startAt = startAtIso,
+            endAt = endAtIso,
+            ownerId = ownerId,
+        ) ?: throw IllegalStateException("Cloud command rejected: reschedule placement")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
     override suspend fun getRecentTiles(userId: String, limit: Int): List<Tile> {
         if (latestCloudTiles.isEmpty()) {
             latestCloudTiles = readCloudTilesUnfiltered()

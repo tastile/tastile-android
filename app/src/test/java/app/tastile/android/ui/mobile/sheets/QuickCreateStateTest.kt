@@ -158,7 +158,16 @@ class QuickCreateStateTest {
                     timeRequirements = listOf(QuickCreateTimeRequirement("tr-1", JsonPrimitive("placement"), JsonPrimitive(30), JsonPrimitive(60))),
                     tasks = listOf(QuickCreateTaskDefinition("task-1", QuickCreateTaskContent("Review", "Approve PR"), JsonPrimitive(true), QuickCreateConditionNode(3, term = JsonPrimitive("task-complete")), buildJsonArray { add(JsonPrimitive("first")) })),
                 ),
-                planning = QuickCreatePlanning(buildJsonArray { add(JsonPrimitive("placement-rule")) }, buildJsonArray { add(JsonPrimitive("nesting-rule")) }, buildJsonArray { add(JsonPrimitive("flow")) }),
+                planning = QuickCreatePlanning(
+                    placementRules = listOf(
+                        QuickCreatePlacementRule(
+                            id = "placement-rule",
+                            `when` = JsonPrimitive("placement-rule"),
+                        ),
+                    ),
+                    nestingRules = buildJsonArray { add(JsonPrimitive("nesting-rule")) },
+                    flows = buildJsonArray { add(JsonPrimitive("flow")) },
+                ),
                 metrics = buildJsonArray { add(JsonPrimitive("metric")) },
                 decisions = buildJsonArray { add(JsonPrimitive("decision")) },
             ),

@@ -20,6 +20,8 @@ import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ExecutionControlState
+import app.tastile.android.ui.dashboard.TaskBucket
+import app.tastile.android.ui.dashboard.TaskBucketGroup
 import app.tastile.android.ui.mobile.OverlayViewModel
 import io.mockk.every
 import io.mockk.verify
@@ -41,7 +43,14 @@ class ExecuteScreenTest {
         loading: Boolean = false,
     ): DashboardViewModel {
         val vm = mockk<DashboardViewModel>(relaxed = true)
+        val nonDone = tiles.filter { TileLifecycle.fromString(it.lifecycle) != TileLifecycle.DONE }
+        val buckets = if (nonDone.isEmpty()) {
+            emptyList()
+        } else {
+            listOf(TaskBucketGroup(bucket = TaskBucket.NO_DATE, tiles = nonDone))
+        }
         every { vm.tiles } returns MutableStateFlow(tiles)
+        every { vm.tasksByBucket } returns MutableStateFlow(buckets)
         every { vm.loading } returns MutableStateFlow(loading)
         every { vm.error } returns MutableStateFlow(null)
         every { vm.requestDeleteTileId } returns MutableStateFlow(null)
@@ -106,7 +115,7 @@ class ExecuteScreenTest {
 
         rule.onNodeWithText("Pause").performClick()
         rule.onNodeWithText("Complete").performClick()
-        rule.onAllNodesWithText("Start").assertCountEquals(0)
+        rule.onAllNodesWithText("Start", substring = false).assertCountEquals(0)
 
         verify(exactly = 1) { vm.pauseTile("t1") }
         verify(exactly = 1) { vm.completeTile("t1") }

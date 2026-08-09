@@ -411,49 +411,81 @@ class V1CommandDispatcher @Inject constructor(
         return runCatching {
             val placement = findPlacementForTile(tileId)
                 ?: throw IllegalStateException("tile.reschedule: no placement for tile $tileId")
-            val now = Instant.now().toString()
-            val commandId = UUID.randomUUID().toString()
-            val changeSet = buildJsonObject {
-                put("id", JsonPrimitive(UUID.randomUUID().toString()))
-                put("owner_id", JsonPrimitive(ownerId))
-                put("target", buildJsonObject { put("Placement", JsonPrimitive(placement.placementId)) })
-                put("layer", JsonPrimitive(V1NumericConstants.ChangeLayer.PLACEMENT))
-                put("rank", JsonPrimitive(0))
-                put("changes", kotlinx.serialization.json.JsonArray(listOf(
-                    buildInstantChange(placement.placementId, 0, startAt),
-                    buildInstantChange(placement.placementId, 1, endAt)
-                )))
-                put("activation", buildJsonObject {
-                    put("when", JsonNull)
-                    put("until", JsonNull)
-                })
-                put("revoked", JsonNull)
-                put("source", JsonPrimitive(V1NumericConstants.ChangeSource.USER))
-                put("source_ref", JsonNull)
-                put("created_at", JsonPrimitive(now))
-                put("created_by", buildJsonObject {
-                    put("at", JsonPrimitive(now))
-                    put("actor", JsonPrimitive(ownerId))
-                    put("actor_kind", JsonPrimitive(V1NumericConstants.ActorKind.USER))
-                    put("command_id", JsonPrimitive(commandId))
-                })
-            }
-            val payload = AppendChangesPayload(
-                placementId = placement.placementId,
-                changeset = changeSet
-            )
-            val response = v1ApiClient.postCommand(
-                path = "/v1/placements/${placement.placementId}/changes",
-                payload = payload,
-                payloadSerializer = AppendChangesPayload.serializer(),
-                responseSerializer = CommandResponse.serializer()
-            )
-            response.toCoreAck()
+            reschedulePlacementCore(placement.placementId, startAt, endAt, ownerId)
         }.recover { error ->
             if (error is IllegalStateException) throw error
             logFailure("tile.reschedule", error)
             null
         }.getOrNull()
+    }
+
+    /**
+     * Placement-anchored variant of [dispatchTileReschedule]. Used by the
+     * edit panel to reschedule a specific placement (typically a one-off
+     * calendar occurrence) without having to round-trip through the tile-id
+     * lookup. Mirrors the placement branch of
+     * `tastile-web/src/shared/api/v1/submit.ts::submitUpdateTile`.
+     */
+    suspend fun dispatchPlacementReschedule(
+        placementId: String,
+        startAt: String,
+        endAt: String,
+        ownerId: String,
+    ): CoreCommandAck? {
+        if (placementId.isBlank()) return null
+        return runCatching {
+            reschedulePlacementCore(placementId, startAt, endAt, ownerId)
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("placement.reschedule", error)
+            null
+        }.getOrNull()
+    }
+
+    private suspend fun reschedulePlacementCore(
+        placementId: String,
+        startAt: String,
+        endAt: String,
+        ownerId: String,
+    ): CoreCommandAck {
+        val now = Instant.now().toString()
+        val commandId = UUID.randomUUID().toString()
+        val changeSet = buildJsonObject {
+            put("id", JsonPrimitive(UUID.randomUUID().toString()))
+            put("owner_id", JsonPrimitive(ownerId))
+            put("target", buildJsonObject { put("Placement", JsonPrimitive(placementId)) })
+            put("layer", JsonPrimitive(V1NumericConstants.ChangeLayer.PLACEMENT))
+            put("rank", JsonPrimitive(0))
+            put("changes", kotlinx.serialization.json.JsonArray(listOf(
+                buildInstantChange(placementId, 0, startAt),
+                buildInstantChange(placementId, 1, endAt)
+            )))
+            put("activation", buildJsonObject {
+                put("when", JsonNull)
+                put("until", JsonNull)
+            })
+            put("revoked", JsonNull)
+            put("source", JsonPrimitive(V1NumericConstants.ChangeSource.USER))
+            put("source_ref", JsonNull)
+            put("created_at", JsonPrimitive(now))
+            put("created_by", buildJsonObject {
+                put("at", JsonPrimitive(now))
+                put("actor", JsonPrimitive(ownerId))
+                put("actor_kind", JsonPrimitive(V1NumericConstants.ActorKind.USER))
+                put("command_id", JsonPrimitive(commandId))
+            })
+        }
+        val payload = AppendChangesPayload(
+            placementId = placementId,
+            changeset = changeSet
+        )
+        val response = v1ApiClient.postCommand(
+            path = "/v1/placements/$placementId/changes",
+            payload = payload,
+            payloadSerializer = AppendChangesPayload.serializer(),
+            responseSerializer = CommandResponse.serializer()
+        )
+        return response.toCoreAck()
     }
 
     /**
