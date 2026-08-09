@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -51,7 +52,11 @@ class SettingsScreenTest {
         rule.setContent {
             SettingsScreen(viewModel = stubVm(locale = AppLocale.JA), onBack = {})
         }
-        rule.onAllNodesWithText("日本語", substring = true).onFirst().assertIsDisplayed()
+        // The dropdown TextField mirrors `localeLabel(current)` — for JA the
+        // canonical name is "日本語" (locale-invariant across all values-*/
+        // folders). Scroll first because the dropdown sits below the
+        // settings list and may render off-screen on small devices.
+        rule.onAllNodesWithText("日本語", substring = true).onFirst().performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -59,7 +64,11 @@ class SettingsScreenTest {
         rule.setContent {
             SettingsScreen(viewModel = stubVm(), onBack = {})
         }
-        rule.onAllNodesWithText("Language", substring = true).onFirst().performClick()
+        // The picker is an ExposedDropdownMenuBox. Click the TextField anchor
+        // (tagged "language-dropdown-trigger"); clicks on a Text child of the
+        // OutlinedTextField don't reliably bubble up to the menuAnchor's
+        // clickable region in Compose UI tests.
+        rule.onNodeWithTag("language-dropdown-trigger").performScrollTo().performClick()
 
         rule.onAllNodesWithText("日本語", substring = true).onFirst().assertIsDisplayed()
     }

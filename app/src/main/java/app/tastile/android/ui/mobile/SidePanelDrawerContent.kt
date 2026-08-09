@@ -33,6 +33,7 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,16 +75,24 @@ fun SidePanelDrawerContent(
     navController: NavHostController,
     drawerState: DrawerState,
     modifier: Modifier = Modifier,
+    hasReferencesContent: Boolean = false,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val scope = rememberCoroutineScope()
     val settingLabel = stringResource(R.string.nav_setting)
+    // References content is empty for v1 (the IntegrationsScreen renders a static
+    // notice and the per-label switch list is empty until tiles carry labels),
+    // so hide the drawer entry when there are no reference labels to toggle.
+    val visibleRoutes = remember(hasReferencesContent) {
+        if (hasReferencesContent) drawerRoutes
+        else drawerRoutes.filterNot { it.route == "integrations" }
+    }
 
     ModalDrawerSheet(modifier = modifier) {
         Column(modifier = Modifier.fillMaxSize()) {
             BrandHeader()
-            drawerRoutes.forEach { item ->
+            visibleRoutes.forEach { item ->
                 NavigationDrawerItem(
                     label = { Text(item.label) },
                     selected = currentRoute == item.route,

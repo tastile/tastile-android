@@ -4,6 +4,7 @@ import app.tastile.android.core.CoreCommandAck
 import app.tastile.android.core.CoreSnapshot
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.CoreTileSnapshot
+import app.tastile.android.data.api.SourceTileDetailRead
 import app.tastile.android.data.api.TimelineItem
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1Error
@@ -99,6 +100,28 @@ class TileRepository @Inject constructor(
 
     suspend fun getEditableTileById(tileId: String): Tile? {
         return getTileById(tileId)
+    }
+
+    /**
+     * Fetches the full v1 source-tile detail (`GET /v1/source-tiles/{id}`) and
+     * returns the typed [SourceTileDetailRead] payload. Returns `null` when the
+     * v1 read fails for any reason (auth, network, server 4xx/5xx) so callers
+     * can render a graceful fallback (e.g. cached `Tile` + retry) instead of
+     * a hard error.
+     */
+    suspend fun getTileDetail(tileId: String): SourceTileDetailRead? {
+        if (tileId.isBlank()) return null
+        val token = currentUserProvider.currentIdToken()
+        if (token.isNullOrBlank()) return null
+        return try {
+            v1ApiClient.readSourceTile(tileId)
+        } catch (e: V1Error) {
+            android.util.Log.w("TileRepository", "v1 readSourceTile failed: ${e.message}", e)
+            null
+        } catch (e: Exception) {
+            android.util.Log.w("TileRepository", "v1 readSourceTile failed: ${e.message}", e)
+            null
+        }
     }
 
     private suspend fun readCloudTilesUnfiltered(): List<Tile> {

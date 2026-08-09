@@ -75,6 +75,7 @@ import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.ui.dashboard.components.AutoCompleteTextField
 import app.tastile.android.ui.dashboard.components.DurationInput
 import app.tastile.android.ui.dashboard.components.SectionBlock
+import app.tastile.android.ui.dashboard.components.TimePickerField
 import app.tastile.android.ui.util.combineDateTimeToUtcIso
 import app.tastile.android.ui.util.formatDateShort
 import app.tastile.android.ui.util.formatDuration
@@ -361,12 +362,9 @@ fun QuickCreateSheet(
                 )
 
                 if (recurrenceFrequency == "weekly") {
-                    OutlinedTextField(
-                        value = recurrenceWeekdaysCsv,
-                        onValueChange = { recurrenceWeekdaysCsv = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.quick_create_recurrence_weekdays_label)) },
-                        singleLine = true
+                    WeekdayChipRow(
+                        csv = recurrenceWeekdaysCsv,
+                        onCsvChange = { recurrenceWeekdaysCsv = it }
                     )
                 }
 
@@ -392,20 +390,16 @@ fun QuickCreateSheet(
                     }
                 }
 
-                OutlinedTextField(
+                TimePickerField(
                     value = recurrenceStartTime,
-                    onValueChange = { recurrenceStartTime = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.quick_create_recurrence_start_time_label)) },
-                    singleLine = true
+                    label = stringResource(R.string.quick_create_recurrence_start_time_label),
+                    onValueChange = { recurrenceStartTime = it }
                 )
 
-                OutlinedTextField(
+                TimePickerField(
                     value = recurrenceEndTime,
-                    onValueChange = { recurrenceEndTime = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.quick_create_recurrence_end_time_label)) },
-                    singleLine = true
+                    label = stringResource(R.string.quick_create_recurrence_end_time_label),
+                    onValueChange = { recurrenceEndTime = it }
                 )
 
                 Row(
@@ -609,7 +603,7 @@ fun QuickCreateSheet(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
             TextButton(onClick = onClose) {
                 Text(stringResource(R.string.quick_create_cancel))
@@ -787,6 +781,48 @@ private fun DateTimeField(
                 TimePicker(state = timePickerState)
             }
         )
+    }
+}
+
+/**
+ * Chip row for picking recurrence weekdays. Canonical wire format is a CSV
+ * string of integers in `0..6` where `0=Mon ... 6=Sun` (matching the mobile
+ * `LocalWeekdayPicker` mask semantics and the submit-time parse in
+ * `DashboardViewModel.buildCreatePayload`). The CSV representation is the
+ * source of truth — the chip row derives a view for rendering.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WeekdayChipRow(
+    csv: String,
+    onCsvChange: (String) -> Unit,
+) {
+    val labels = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+    val selected = remember(csv) {
+        csv.split(",")
+            .mapNotNull { it.trim().toIntOrNull() }
+            .filter { it in 0..6 }
+            .toSet()
+    }
+    Text(
+        text = stringResource(R.string.quick_create_recurrence_weekdays_label),
+        style = MaterialTheme.typography.bodySmall
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        labels.forEachIndexed { index, label ->
+            val day = index
+            FilterChip(
+                selected = day in selected,
+                onClick = {
+                    val next = if (day in selected) selected - day else selected + day
+                    onCsvChange((0..6).filter { it in next }.joinToString(","))
+                },
+                label = { Text(label) }
+            )
+        }
     }
 }
 

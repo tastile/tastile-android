@@ -12,7 +12,7 @@ import java.time.Instant
 import java.util.UUID
 
 /** The Web quick-create base composition and its routed detail panels. */
-enum class QuickCreatePanel { Base, Intent, Time, Duration, References, Completion, Meta }
+enum class QuickCreatePanel { Base, Intent, Time, Duration, References, Completion, Meta, Schedule }
 
 enum class QuickCreateTileKind { Recurring, Placement }
 enum class QuickCreatePlanRole { Executable, Label }
@@ -149,6 +149,33 @@ data class QuickCreateMeta(
     val memo: String = "",
 )
 
+/**
+ * Schedule-authoring slice for the v1 source-tile wire.
+ *
+ * Mirrors `SourceScheduleDefinitionSchema` (see `app/openapi/v1.json` lines
+ * 4066-4343). The four fields exposed in the Mobile QuickCreate panel today:
+ *  - [priority] (i32, 0..10) → `schedule.priority`
+ *  - [splitPolicyKind] (i16, 0=unsplit / 1=split) → `schedule.split_policy.kind`
+ *  - [splitPolicyMinSegmentMs] / [splitPolicyMaxSegmentMs] / [splitPolicyMaxSegments]
+ *    → `schedule.split_policy.{min,max}_segment_ms`, `max_segments`
+ *  - [offsetMin] (i32 UTC minutes) → `schedule.generation.offset_min`
+ *  - [excludedDates] (list of ISO-8601 calendar dates) →
+ *    `schedule.generation.excluded_dates`
+ *
+ * Defaults per the wiring PR scope: priority=5, split_policy.kind=0 (unsplit,
+ * "not allowed to split"), min_segment_ms=0, max_segment_ms=Long.MAX_VALUE,
+ * max_segments=1, offset_min=0 (UTC), excluded_dates=empty.
+ */
+data class QuickCreateSchedule(
+    val priority: Int = 5,
+    val splitPolicyKind: Short = 0,
+    val splitPolicyMinSegmentMs: Long = 0L,
+    val splitPolicyMaxSegmentMs: Long = Long.MAX_VALUE,
+    val splitPolicyMaxSegments: Int = 1,
+    val offsetMin: Int = 0,
+    val excludedDates: List<String> = emptyList(),
+)
+
 /** A workspace summary used by the Meta project's catalog. */
 data class QuickCreateProject(val id: String, val displayName: String)
 
@@ -164,6 +191,7 @@ data class QuickCreateDraftState(
     val windows: List<QuickCreateWindow> = emptyList(),
     val recurring: QuickCreateRecurring = QuickCreateRecurring(),
     val meta: QuickCreateMeta = QuickCreateMeta(),
+    val schedule: QuickCreateSchedule = QuickCreateSchedule(),
 )
 
 class QuickCreateStateStore(initial: QuickCreateDraftState = QuickCreateDraftState()) {
@@ -191,6 +219,7 @@ class QuickCreateStateStore(initial: QuickCreateDraftState = QuickCreateDraftSta
     fun updateWindows(windows: List<QuickCreateWindow>) = mutate { it.copy(windows = windows) }
     fun updateRecurring(recurring: QuickCreateRecurring) = mutate { it.copy(recurring = recurring) }
     fun updateMeta(meta: QuickCreateMeta) = mutate { it.copy(meta = meta) }
+    fun updateSchedule(schedule: QuickCreateSchedule) = mutate { it.copy(schedule = schedule) }
 
     /** Toggle whether this tile is rendered as a label. */
     fun updateRole(role: QuickCreatePlanRole) = mutate { it.copy(plan = it.plan.copy(role = role)) }

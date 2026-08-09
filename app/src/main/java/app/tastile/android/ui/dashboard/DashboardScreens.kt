@@ -158,7 +158,11 @@ private fun TileExpandableCard(
                     Text("Done: $it", style = MaterialTheme.typography.bodySmall)
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     if (lifecycle == TileLifecycle.READY) {
                         NiaButton(text = { Text("Start") }, onClick = onStart)
                     }

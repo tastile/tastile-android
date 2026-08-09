@@ -15,8 +15,10 @@ import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
+import androidx.compose.material3.CircularProgressIndicator
 import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +50,8 @@ fun TileEditSheet(
 ) {
     val current by overlay.current.collectAsStateWithLifecycle()
     val tile by viewModel.selectedTile.collectAsStateWithLifecycle()
+    val detail by viewModel.selectedTileDetail.collectAsStateWithLifecycle()
+    val detailLoading by viewModel.selectedTileDetailLoading.collectAsStateWithLifecycle()
     val deleteCandidate by viewModel.requestDeleteTileId.collectAsStateWithLifecycle()
     val closePlacementCandidate by viewModel.requestClosePlacementId.collectAsStateWithLifecycle()
     val deferCandidate by viewModel.requestDeferTileId.collectAsStateWithLifecycle()
@@ -57,6 +61,14 @@ fun TileEditSheet(
     val executionControlsInFlight by viewModel.executionControlInFlightTileIds.collectAsStateWithLifecycle()
 
     if (current is Overlay.TileEdit) {
+        val tileEdit = current as Overlay.TileEdit
+        // Trigger the v1 source-tile detail fetch whenever the sheet opens for
+        // a new tile id. The repository's read path is suspended + fault-tolerant
+        // (returns null on auth/network/server errors), so the UI only ever
+        // renders a placeholder or the real payload — never a hard error.
+        LaunchedEffect(tileEdit.tileId) {
+            tileEdit.tileId?.let { viewModel.loadTileDetail(it) }
+        }
         var editedTitle by remember(tile?.id) { mutableStateOf(tile?.title.orEmpty()) }
         var confirmSave by remember(tile?.id) { mutableStateOf(false) }
         var confirmExecutionAction by remember(tile?.id) { mutableStateOf<Boolean?>(null) }
@@ -72,8 +84,11 @@ fun TileEditSheet(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                val headerTitle = tile?.title
+                    ?: detail?.source?.title
+                    ?: if (detailLoading) "Loading tile…" else "Tile"
                 Text(
-                    text = tile?.title ?: "Tile",
+                    text = headerTitle,
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
@@ -84,11 +99,39 @@ fun TileEditSheet(
                 error?.let { message ->
                     Text(message, color = MaterialTheme.colorScheme.error)
                 }
+                detail?.source?.description?.takeIf { it.isNotBlank() }?.let { description ->
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                detail?.placements?.firstOrNull()?.let { placement ->
+                    Text(
+                        text = "${placement.start} → ${placement.end}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 (current as Overlay.TileEdit).placementId?.let { placementId ->
                     Text(
                         text = stringResource(R.string.tile_occurrence_label, placementId),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (detailLoading && detail == null) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.testTag("tile-edit-detail-loading"),
+                    )
+                }
+                if (detail == null && !detailLoading && error == null) {
+                    // Detail fetch failed without surfacing an error to the
+                    // shared `_error` channel; offer a retry so the user can
+                    // re-trigger the read without dismissing the sheet.
+                    NiaTextButton(
+                        onClick = { tileEdit.tileId?.let(viewModel::loadTileDetail) },
+                        text = { Text("Retry loading details") },
                     )
                 }
                 tile?.let { selected ->

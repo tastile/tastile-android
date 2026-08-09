@@ -17,6 +17,7 @@ import app.tastile.android.data.repository.TileFilter
 import app.tastile.android.data.repository.TileRepository
 import app.tastile.android.data.repository.ThemeMode
 import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.api.SourceTileDetailRead
 import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.data.util.formatIsoDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -157,12 +158,43 @@ class DashboardViewModel @Inject constructor(
         id?.let { tid -> list.firstOrNull { it.id == tid } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    private val _selectedTileDetail = MutableStateFlow<SourceTileDetailRead?>(null)
+    val selectedTileDetail: StateFlow<SourceTileDetailRead?> = _selectedTileDetail.asStateFlow()
+
+    private val _selectedTileDetailLoading = MutableStateFlow(false)
+    val selectedTileDetailLoading: StateFlow<Boolean> = _selectedTileDetailLoading.asStateFlow()
+
     fun selectTile(id: String) {
         _selectedTileId.value = id
     }
 
     fun clearSelectedTile() {
         _selectedTileId.value = null
+        _selectedTileDetail.value = null
+        _selectedTileDetailLoading.value = false
+    }
+
+    /**
+     * Fetches the v1 source-tile detail for [id] and stores it in
+     * [selectedTileDetail] so [TileEditSheet] can render the real title,
+     * description, schedule, etc. Clears any previous detail if [id] is blank
+     * or the fetch fails. No-op when [id] matches the currently selected id
+     * and a detail is already loaded.
+     */
+    fun loadTileDetail(id: String) {
+        if (id.isBlank()) {
+            _selectedTileDetail.value = null
+            _selectedTileDetailLoading.value = false
+            return
+        }
+        viewModelScope.launch {
+            _selectedTileDetailLoading.value = true
+            val detail = tileRepository.getTileDetail(id)
+            if (_selectedTileId.value == id) {
+                _selectedTileDetail.value = detail
+                _selectedTileDetailLoading.value = false
+            }
+        }
     }
 
     internal fun replaceTilesForTest(list: List<Tile>) {

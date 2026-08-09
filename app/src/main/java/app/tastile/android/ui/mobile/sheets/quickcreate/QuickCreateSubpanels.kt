@@ -46,6 +46,7 @@ import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.Task
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.WbSunny
 // m2-allow: m3-component
 import androidx.compose.material3.AssistChip
@@ -150,6 +151,7 @@ internal fun QuickCreateSubpanel(
             QuickCreatePanel.References -> ReferencesPanel(draft, store)
             QuickCreatePanel.Completion -> CompletionPanel(draft, store)
             QuickCreatePanel.Meta -> MetaPanel(draft, store, projects, knownTags, onBack)
+            QuickCreatePanel.Schedule -> SchedulePanel(draft, store)
             QuickCreatePanel.Base -> Unit
         }
     }
@@ -332,7 +334,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
     }
     FilledTonalButton(
         onClick = { store.updateWindows(draft.windows + QuickCreateWindow(UUID.randomUUID().toString(), "self", 0, app.tastile.android.ui.mobile.sheets.QuickCreateSpan())) },
-        modifier = Modifier.testTag("quick-create-add-window"),
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-add-window"),
     ) {
         Icon(Icons.Outlined.Add, contentDescription = null)
         Spacer(Modifier.width(8.dp))
@@ -429,7 +431,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         }
         FilledTonalButton(
             onClick = { store.updateWindows(draft.windows.filterIndexed { item, _ -> item != index }) },
-            modifier = Modifier.testTag("quick-create-window-$index-remove"),
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-window-$index-remove"),
         ) {
             Icon(Icons.Outlined.Delete, contentDescription = null)
             Spacer(Modifier.width(8.dp))
@@ -481,7 +483,7 @@ private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
 private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
     FilledTonalButton(
         onClick = { store.updatePlan(draft.plan.copy(references = draft.plan.references + defaultPlanReference())) },
-        modifier = Modifier.testTag("quick-create-add-reference"),
+        modifier = Modifier.fillMaxWidth().testTag("quick-create-add-reference"),
     ) {
         Icon(Icons.Outlined.Add, contentDescription = null)
         Spacer(Modifier.width(8.dp))
@@ -570,6 +572,7 @@ private fun IntentPanel(store: QuickCreateStateStore) {
     val intentTargets = listOf(
         Triple("Time", QuickCreatePanel.Time, Icons.Outlined.Schedule),
         Triple("References", QuickCreatePanel.References, Icons.Outlined.Link),
+        Triple("Schedule", QuickCreatePanel.Schedule, Icons.Outlined.Tune),
         Triple("Meta", QuickCreatePanel.Meta, Icons.Outlined.Tag),
         Triple("Completion", QuickCreatePanel.Completion, Icons.Outlined.Check),
     )
@@ -1081,7 +1084,7 @@ private fun MetaPanel(
         text = { Text("Add tag") },
     )
     OutlinedTextField(draft.meta.memo, { value -> store.updateMeta(draft.meta.copy(memo = value)) }, label = { Text("Memo") }, modifier = Modifier.fillMaxWidth().testTag("meta-memo"))
-    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
         NiaTextButton(
             onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null, tags = emptyList(), memo = "")) },
             modifier = Modifier.testTag("meta-clear"),
@@ -1099,6 +1102,143 @@ private fun MetaPanel(
             modifier = Modifier.testTag("meta-apply"),
             leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
             text = { Text("Apply") },
+        )
+    }
+}
+
+/**
+ * Schedule-authoring subpanel for the four new `SourceScheduleDefinition`
+ * fields wired in the v1 source-tile envelope:
+ *
+ * 1. [QuickCreateSchedule.priority] (i32, 0..10) — numeric stepper.
+ * 2. [QuickCreateSchedule.splitPolicyKind] (0=unsplit / 1=split) +
+ *    min/max_segment_ms + max_segments — FilterChip kind + numeric inputs.
+ * 3. [QuickCreateSchedule.offsetMin] (i32 UTC minutes) — numeric stepper.
+ * 4. [QuickCreateSchedule.excludedDates] (list of ISO-8601 dates) — date picker
+ *    add + remove chip row.
+ *
+ * See `docs/ux-fix-v1-source-tile-wiring.md` for the wire mapping.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SchedulePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
+    val schedule = draft.schedule
+    val dateFmt = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+
+    // 1. Priority (0..10).
+    LocalSectionHeader(title = "Priority")
+    LocalNumberField(
+        value = schedule.priority.toString(),
+        onValueChange = { value ->
+            val coerced = value.toIntOrNull()?.coerceIn(0, 10) ?: schedule.priority
+            store.updateSchedule(schedule.copy(priority = coerced))
+        },
+        label = "Priority",
+        suffix = "0–10",
+        modifier = Modifier.fillMaxWidth().testTag("schedule-priority"),
+    )
+
+    // 2. Split policy.
+    LocalSectionHeader(title = "Split policy")
+    val splitPolicyKinds = listOf(0 to "Unsplit", 1 to "Split")
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().testTag("schedule-split-kind-chips"),
+        contentPadding = PaddingValues(horizontal = 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(splitPolicyKinds, key = { it.first }) { (kind, label) ->
+            FilterChip(
+                selected = schedule.splitPolicyKind.toInt() == kind,
+                onClick = { store.updateSchedule(schedule.copy(splitPolicyKind = kind.toShort())) },
+                label = { Text(label) },
+                modifier = Modifier.testTag("schedule-split-kind-$kind"),
+            )
+        }
+    }
+    if (schedule.splitPolicyKind.toInt() == 1) {
+        LocalNumberField(
+            value = schedule.splitPolicyMinSegmentMs.toString(),
+            onValueChange = { value ->
+                val next = value.toLongOrNull()?.coerceAtLeast(0L) ?: schedule.splitPolicyMinSegmentMs
+                store.updateSchedule(schedule.copy(splitPolicyMinSegmentMs = next))
+            },
+            label = "Min segment",
+            suffix = "ms",
+            modifier = Modifier.fillMaxWidth().testTag("schedule-split-min-segment"),
+        )
+        LocalNumberField(
+            value = if (schedule.splitPolicyMaxSegmentMs == Long.MAX_VALUE) "" else schedule.splitPolicyMaxSegmentMs.toString(),
+            onValueChange = { value ->
+                val next = value.toLongOrNull()?.coerceAtLeast(0L) ?: Long.MAX_VALUE
+                store.updateSchedule(schedule.copy(splitPolicyMaxSegmentMs = next))
+            },
+            label = "Max segment",
+            suffix = "ms",
+            modifier = Modifier.fillMaxWidth().testTag("schedule-split-max-segment"),
+        )
+        LocalNumberField(
+            value = schedule.splitPolicyMaxSegments.toString(),
+            onValueChange = { value ->
+                val next = value.toIntOrNull()?.coerceAtLeast(1) ?: schedule.splitPolicyMaxSegments
+                store.updateSchedule(schedule.copy(splitPolicyMaxSegments = next))
+            },
+            label = "Max segments",
+            suffix = "1..N",
+            modifier = Modifier.fillMaxWidth().testTag("schedule-split-max-segments"),
+        )
+    }
+
+    // 3. Offset minutes (UTC offset east of UTC; default 0 = UTC).
+    LocalSectionHeader(title = "Calendar offset")
+    LocalNumberField(
+        value = schedule.offsetMin.toString(),
+        onValueChange = { value ->
+            // Accept integer; clamp to ±12h for safety; default to 0 if blank/invalid.
+            val next = value.toIntOrNull()?.coerceIn(-720, 720) ?: 0
+            store.updateSchedule(schedule.copy(offsetMin = next))
+        },
+        label = "Offset (UTC minutes)",
+        suffix = "min",
+        modifier = Modifier.fillMaxWidth().testTag("schedule-offset-min"),
+    )
+
+    // 4. Excluded dates (ISO yyyy-MM-dd).
+    LocalSectionHeader(title = "Excluded dates")
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().testTag("schedule-excluded-dates-chips"),
+        contentPadding = PaddingValues(horizontal = 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(schedule.excludedDates, key = { it }) { isoDate ->
+            FilterChip(
+                selected = true,
+                onClick = {
+                    store.updateSchedule(schedule.copy(excludedDates = schedule.excludedDates - isoDate))
+                },
+                label = { Text("$isoDate ×") },
+                modifier = Modifier.testTag("schedule-excluded-date-$isoDate"),
+            )
+        }
+    }
+    var showExcludedDatePicker by remember { mutableStateOf(false) }
+    NiaFilledTonalButton(
+        onClick = { showExcludedDatePicker = true },
+        modifier = Modifier.fillMaxWidth().testTag("schedule-add-excluded-date"),
+        leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+        text = { Text("Add excluded date") },
+    )
+    if (showExcludedDatePicker) {
+        DatePickerSheet(
+            initial = LocalDate.now(),
+            onConfirm = { date ->
+                val iso = date.format(dateFmt)
+                if (iso !in schedule.excludedDates) {
+                    store.updateSchedule(schedule.copy(excludedDates = schedule.excludedDates + iso))
+                }
+                showExcludedDatePicker = false
+            },
+            onDismiss = { showExcludedDatePicker = false },
+            titleRes = R.string.picker_date_start,
         )
     }
 }

@@ -125,8 +125,15 @@ enum class ThemeMode(val value: String) {
 }
 
 enum class AppLocale(val value: String) {
+    // Order mirrors tastile-web/src/shared/stores/locale-store.ts
+    EN("en"),
     JA("ja"),
-    EN("en");
+    DE("de"),
+    ES("es"),
+    PT_BR("pt-rBR"),
+    FR("fr"),
+    KO("ko"),
+    ZH_CN("zh-rCN");
 
     companion object {
         fun from(value: String): AppLocale = entries.firstOrNull { it.value == value } ?: JA

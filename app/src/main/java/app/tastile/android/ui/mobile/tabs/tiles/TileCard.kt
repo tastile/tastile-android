@@ -48,7 +48,7 @@ fun CompactTileCard(
     modifier: Modifier = Modifier,
 ) {
     val lifecycle = TileLifecycle.fromString(tile.lifecycle)
-    val glyph = lifecycle.glyph()
+    val glyph = lifecycle.glyphChar()
     ListItem(
         content = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -95,7 +95,7 @@ fun ComfortableTileCard(
     ListItem(
         content = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(lifecycle.glyph(), style = MaterialTheme.typography.bodyMedium)
+                Text(lifecycle.glyphChar(), style = MaterialTheme.typography.bodyMedium)
                 Text(
                     text = tile.title,
                     style = MaterialTheme.typography.bodyLarge,
@@ -148,7 +148,7 @@ fun DetailedTileCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(lifecycle.glyph(), style = MaterialTheme.typography.bodyMedium)
+            Text(lifecycle.glyphChar(), style = MaterialTheme.typography.bodyMedium)
             Text(
                 tile.title,
                 style = MaterialTheme.typography.bodyMedium,
@@ -204,7 +204,13 @@ fun TileCard(
     }
 }
 
-private fun TileLifecycle.glyph(): String = when (this) {
+/**
+ * Public lifecycle glyph. Used by the `TileCard` density dispatch in this
+ * file and reused by the standalone project-scoped tile rows in
+ * `ui/mobile/tabs/ProjectsScreen.kt:ProjectTileRow` so the same character
+ * shape appears in every tile row across the app.
+ */
+fun TileLifecycle.glyphChar(): String = when (this) {
     TileLifecycle.DONE -> "✓"
     TileLifecycle.STARTED -> "▶"
     TileLifecycle.READY -> "○"

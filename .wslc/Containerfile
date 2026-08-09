@@ -60,6 +60,24 @@ RUN sdkmanager \
         "build-tools;${ANDROID_BUILD_TOOLS}" \
         "ndk;${ANDROID_NDK_VERSION}"
 
+# ── Install adb wrapper that routes through the docker-desktop WSL2 adb proxy ──
+# wslc containers cannot see USB devices directly — the kernel module matching
+# the WSL2 kernel (6.18.35.2-microsoft) is not shipped, and wslc has no
+# `--device` / `--privileged` flags. Instead we run the canonical adb server on
+# the docker-desktop WSL2 distro (which sees /dev/bus/usb after
+# `usbipd attach --wsl`), then point every adb client in this container at it
+# via ADB_SERVER_SOCKET. The real adb binary is renamed to adb.real so the
+# wrapper takes its place on PATH (platform-tools precedes /usr/local/bin).
+#
+# Default ADB_PROXY_HOST is empty; set it at `wslc run` time via -e, or write
+# /etc/adb-proxy-host from .wslc/wslc-adb-proxy.ps1 after discovery. The
+# wrapper falls back to probing the Windows-side nameserver (192.168.x.1) and
+# the wslc bridge gateway (172.17.0.1) before giving up.
+COPY .wslc/adb-wrapper.sh /usr/local/lib/adb-wrapper.sh
+RUN chmod +x /usr/local/lib/adb-wrapper.sh \
+    && mv "${ANDROID_HOME}/platform-tools/adb" "${ANDROID_HOME}/platform-tools/adb.real" \
+    && ln -s /usr/local/lib/adb-wrapper.sh "${ANDROID_HOME}/platform-tools/adb"
+
 # Entrypoint for development mode
 COPY .wslc/entrypoint-dev.sh /entrypoint-dev.sh
 RUN chmod +x /entrypoint-dev.sh

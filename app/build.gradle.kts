@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    id("org.openapi.generator")
 }
 
 val releaseStoreFile = providers.gradleProperty("RELEASE_STORE_FILE")
@@ -226,6 +227,137 @@ tasks.named("check").configure {
     dependsOn("verifyDesignSystemImports", "verifyNoEmbeddedServerSecrets")
 }
 
+// ---------------------------------------------------------------------------
+// OpenAPI auto-generation pipeline (tastile-core utoipa doc -> Retrofit client)
+// ---------------------------------------------------------------------------
+//
+// Source of truth: app/openapi/v1.json (committed, refreshed by
+// `cd ../tastile-core/crates-v1 && cargo run -p api --bin dump_openapi`).
+// The generated Retrofit + Moshi client lives under app/build/generated/openapi/v1/
+// (gitignored via the project-root `build/` rule) and is wired into the
+// `main` Kotlin source set. Existing hand-rolled V1ApiClient stays as a facade
+// so the 15+ `mockk<V1ApiClient>()` tests remain untouched.
+
+tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateV1Api") {
+    group = "openapi"
+    description = "Generate the v1 Kotlin client from app/openapi/v1.json"
+    inputSpec.set(file("openapi/v1.json").toURI().toString())
+    outputDir.set(layout.buildDirectory.dir("generated/openapi/v1").get().asFile.absolutePath.replace('\\', '/'))
+    generatorName.set("kotlin")
+    library.set("jvm-retrofit2")
+    apiNameSuffix.set("Api")
+    modelNameSuffix.set("")
+    generateApiTests.set(false)
+    generateModelTests.set(false)
+    generateApiDocumentation.set(false)
+    generateModelDocumentation.set(false)
+    configOptions.set(
+        mapOf(
+            "dateLibrary" to "java8",
+            "useCoroutines" to "true",
+            "enumPropertyNaming" to "UPPERCASE",
+            // Disable Moshi's @JsonClass(generateAdapter = true) emission so
+            // the generated DTOs decode via the reflection-based
+            // KotlinJsonAdapterFactory at runtime. Avoids the requirement
+            // to wire moshi-kotlin-codegen (KSP) onto the generated source
+            // directory and keeps the v1 client portable.
+            "moshiCodeGen" to "false",
+        )
+    )
+    packageName.set("app.tastile.android.data.api.generated.v1")
+    skipValidateSpec.set(false)
+}
+
+android.sourceSets["main"].kotlin.srcDir(
+    layout.buildDirectory.get().asFile.resolve("generated/openapi/v1/src/main/kotlin")
+)
+
+tasks.named("preBuild").configure { dependsOn("generateV1Api") }
+
+// The Kotlin generator emits `@JsonClass(generateAdapter = true)` on every
+// data class even when `moshiCodeGen=false` is set. To keep the generated
+// DTOs decodable via `KotlinJsonAdapterFactory` (no moshi-codegen KSP on
+// the generated source directory), strip the annotation and its import
+// after each generation.
+tasks.named("generateV1Api").configure {
+    doLast {
+        val generatedModelsDir =
+            layout.buildDirectory.get().asFile.resolve("generated/openapi/v1/src/main/kotlin")
+        generatedModelsDir.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .forEach { file ->
+                val original = file.readText()
+                val stripped = original
+                    .replace(Regex("@JsonClass\\(generateAdapter = true\\)\\s*\n"), "")
+                    .replace(Regex("@JsonClass\\(generateAdapter = false\\)\\s*\n"), "")
+                if (stripped != original) {
+                    file.writeText(stripped)
+                }
+            }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Drift guard: verify that every operation in app/openapi/v1.json has a
+// corresponding method in the generated v1 client. Catches the case where
+// the openapi.json gains a new path but the generated sources are stale
+// (e.g., developer forgot to re-run `./gradlew :app:generateV1Api`).
+// ---------------------------------------------------------------------------
+
+tasks.register("verifyV1ApiCoverage") {
+    group = "verification"
+    description = "Assert every operationId in app/openapi/v1.json has a generated method"
+    dependsOn("generateV1Api")
+    doLast {
+        val specFile = file("openapi/v1.json")
+        check(specFile.exists()) { "Missing openapi spec at $specFile" }
+
+        val specText = specFile.readText()
+        // operationId: "..." inside paths.*.* blocks. A simple regex is enough
+        // because the openapi.json is machine-generated and well-formed.
+        val operationIdRegex = Regex("\"operationId\"\\s*:\\s*\"([^\"]+)\"")
+        val operationIds = operationIdRegex.findAll(specText).map { it.groupValues[1] }.toList()
+        check(operationIds.isNotEmpty()) { "No operationIds found in $specFile — is the spec valid?" }
+
+        val generatedApisDir = layout.buildDirectory
+            .get()
+            .asFile
+            .resolve("generated/openapi/v1/src/main/kotlin/app/tastile/android/data/api/generated/v1/apis")
+        check(generatedApisDir.exists()) {
+            "Generated apis dir not found at $generatedApisDir — run :app:generateV1Api first"
+        }
+        val generatedMethodRegex = Regex("""suspend\s+fun\s+(\w+)\s*\(""")
+        val generatedMethodNames = generatedApisDir
+            .walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .flatMap { generatedMethodRegex.findAll(it.readText()).map { m -> m.groupValues[1] } }
+            .toSet()
+
+        val missing = operationIds
+            .map { snakeToCamel(it) }
+            .filter { it !in generatedMethodNames }
+        check(missing.isEmpty()) {
+            "openapi.json lists operationIds that have no generated method:\n" +
+                missing.joinToString("\n") { "  - $it" } +
+                "\n\nRe-run `./gradlew :app:generateV1Api` to refresh the client, " +
+                "or add a delegation method to V1GeneratedApiClient."
+        }
+
+        logger.lifecycle(
+            "verifyV1ApiCoverage: ${operationIds.size} operations, " +
+                "${generatedMethodNames.size} generated methods — OK"
+        )
+    }
+}
+
+fun snakeToCamel(snake: String): String =
+    snake.split("_").mapIndexed { idx, part ->
+        if (idx == 0) part
+        else part.replaceFirstChar { ch -> ch.uppercaseChar() }
+    }.joinToString("")
+
+tasks.named("check").configure { dependsOn("verifyV1ApiCoverage") }
+
 dependencies {
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
@@ -241,6 +373,22 @@ dependencies {
 
     implementation("io.ktor:ktor-client-okhttp:3.5.1")
     implementation("com.google.firebase:firebase-messaging:24.1.2")
+
+    // OpenAPI auto-generation pipeline (see `generateV1Api` task above).
+    // The generator emits a Retrofit interface + Moshi-backed DTOs, plus an
+    // `infrastructure/ApiClient.kt` that imports
+    // `retrofit2.converter.scalars.ScalarsConverterFactory` to serialize
+    // `String`/`Int`/`Boolean` path / query params that aren't declared via
+    // `@Query` annotations. Pin the same 2.11.0 line as the core Retrofit.
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
+    implementation("com.squareup.retrofit2:converter-scalars:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.squareup.moshi:moshi:1.15.1")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
+    implementation("com.squareup.moshi:moshi-adapters:1.15.1")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
     // Serialization
@@ -252,6 +400,18 @@ dependencies {
     // `ExecutionStateProjector`. Track the opt-in migration in
     // docs/plans/2026-07-23-datetime-08-optin.md before bumping.
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+
+    // Pin okhttp to 4.12.0. mockwebserver 4.12.0 references `okhttp3.internal.Util`
+    // (a class relocated in 5.x); if anything else (ktor-okhttp's flexible
+    // range, ksp-android) upgrades okhttp to 5.x, MockWebServer's constructor
+    // throws NoClassDefFoundError at runtime. The ktor-okhttp engine and the
+    // generated v1 client both target okhttp 4.x APIs anyway.
+    configurations.all {
+        resolutionStrategy {
+            force("com.squareup.okhttp3:okhttp:4.12.0")
+            force("com.squareup.okhttp3:mockwebserver:4.12.0")
+        }
+    }
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.60.1")
@@ -279,6 +439,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.robolectric:robolectric:4.16.1")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

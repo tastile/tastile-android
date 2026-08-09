@@ -2,6 +2,7 @@ package app.tastile.android.ui.mobile.tabs
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,8 +23,16 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 // m2-allow: primitive
 import androidx.compose.material3.CenterAlignedTopAppBar
+// m2-allow: m3-component
+import androidx.compose.material3.DropdownMenuItem
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: m3-component
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+// m2-allow: m3-component
+import androidx.compose.material3.ExposedDropdownMenuBox
+// m2-allow: m3-component
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 // m2-allow: primitive
 import androidx.compose.material3.Icon
 // m2-allow: primitive
@@ -32,6 +41,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: m3-component
+import androidx.compose.material3.OutlinedTextField
 // m2-allow: m3-component
 import androidx.compose.material3.Scaffold
 // m2-allow: state-holder
@@ -64,6 +75,7 @@ import app.tastile.android.core.designsystem.component.NiaSingleChoiceSegmentedB
 import app.tastile.android.core.designsystem.component.NiaSwitch
 import app.tastile.android.data.repository.AppLocale
 import app.tastile.android.data.repository.ThemeMode
+import app.tastile.android.notifications.ExecutionAlarmTestReceiver
 import app.tastile.android.notifications.ExecutionNotificationChannels
 import app.tastile.android.ui.dashboard.DashboardViewModel
 
@@ -168,8 +180,17 @@ fun SettingsScreen(
                     val grantedNow = canPostNotifications(context)
                     notificationGranted = grantedNow
                     if (grantedNow) {
-                        postTestNotification(context)
-                        notificationStatusRes = R.string.settings_notifications_test
+                        try {
+                            val intent = Intent(context, ExecutionAlarmTestReceiver::class.java).apply {
+                                action = ExecutionAlarmTestReceiver.ACTION_TEST_ALARM
+                            }
+                            context.sendBroadcast(intent)
+                            notificationStatusRes = R.string.settings_notifications_test
+                        } catch (e: SecurityException) {
+                            // Receiver not exported or blocked — fall back to a plain notification.
+                            postTestNotification(context)
+                            notificationStatusRes = R.string.settings_notifications_test
+                        }
                     } else {
                         notificationStatusRes = R.string.settings_notifications_status_denied
                     }
@@ -220,12 +241,14 @@ private fun ThemeSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LanguageSection(
     current: AppLocale,
     onPick: (AppLocale) -> Unit,
 ) {
     val languageA11y = stringResource(R.string.settings_language)
+    var expanded by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -241,17 +264,40 @@ private fun LanguageSection(
             modifier = Modifier.fillMaxWidth(),
             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
         )
-        NiaSingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            NiaSegmentedButton(
-                selected = current == AppLocale.JA,
-                onClick = { onPick(AppLocale.JA) },
-                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-            ) { Text(stringResource(R.string.settings_language_ja)) }
-            NiaSegmentedButton(
-                selected = current == AppLocale.EN,
-                onClick = { onPick(AppLocale.EN) },
-                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-            ) { Text(stringResource(R.string.settings_language_en)) }
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            OutlinedTextField(
+                value = localeLabel(current),
+                onValueChange = {},
+                readOnly = true,
+                singleLine = true,
+                label = { Text(stringResource(R.string.settings_language)) },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                modifier = Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
+                    .testTag("language-dropdown-trigger")
+                    .fillMaxWidth(),
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                AppLocale.entries.forEach { entry ->
+                    DropdownMenuItem(
+                        text = { Text(localeLabel(entry)) },
+                        onClick = {
+                            onPick(entry)
+                            expanded = false
+                        },
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                    )
+                }
+            }
         }
     }
 }
@@ -292,7 +338,7 @@ private fun SecurityLockSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 NiaButton(onClick = onDecrement) {
@@ -351,7 +397,8 @@ private fun NotificationsSection(
             }
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             NiaButton(onClick = onAllow) {
@@ -367,14 +414,26 @@ private fun NotificationsSection(
     }
 }
 
-/** Localized display label for an [AppLocale]. Caller must be a `@Composable`
- *  (or pass a [Context] via [androidx.compose.ui.res.stringResource] / `context.getString`)
- *  to resolve the resource string. This helper composes a `stringResource` call,
- *  so it must run inside a composable scope. */
+/** Canonical display name for an [AppLocale] (always in the locale's own script,
+ *  e.g. "日本語" for [AppLocale.JA], "English" for [AppLocale.EN]). The picker must
+ *  show locale names invariantly regardless of the user's current system locale,
+ *  so we use `settings_language_*` strings — every per-locale `strings.xml`
+ *  intentionally keeps them in the canonical script.
+ *
+ *  Caller must be a `@Composable` (or pass a [Context] via
+ *  [androidx.compose.ui.res.stringResource] / `context.getString`) to resolve
+ *  the resource string. This helper composes a `stringResource` call, so it
+ *  must run inside a composable scope. */
 @androidx.compose.runtime.Composable
 private fun localeLabel(l: AppLocale): String = when (l) {
-    AppLocale.JA -> stringResource(R.string.locale_label_ja)
-    AppLocale.EN -> stringResource(R.string.locale_label_en)
+    AppLocale.JA -> stringResource(R.string.settings_language_ja)
+    AppLocale.EN -> stringResource(R.string.settings_language_en)
+    AppLocale.DE -> stringResource(R.string.settings_language_de)
+    AppLocale.ES -> stringResource(R.string.settings_language_es)
+    AppLocale.FR -> stringResource(R.string.settings_language_fr)
+    AppLocale.KO -> stringResource(R.string.settings_language_ko)
+    AppLocale.PT_BR -> stringResource(R.string.settings_language_pt_rBR)
+    AppLocale.ZH_CN -> stringResource(R.string.settings_language_zh_rCN)
 }
 
 private fun themeLabel(t: ThemeMode): String = when (t) {

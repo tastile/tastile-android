@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Close
@@ -98,7 +100,7 @@ fun ExecuteScreen(
         TileLifecycle.fromString(tile.lifecycle) != TileLifecycle.DONE
     }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(MobSpacingSm)) {
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(MobSpacingSm)) {
         error?.let { message ->
             Text(text = message, color = MaterialTheme.colorScheme.error)
         }

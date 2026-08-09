@@ -351,6 +351,11 @@ data class SourceGenerationPayload(
     @SerialName("date_range_end") val dateRangeEnd: String? = null,
     @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("excluded_dates") val excludedDates: List<String> = emptyList(),
+    // Mirrors `v1.json` `SourceGenerationSchema.offset_min` (i16 UTC offset
+    // minutes). Nullable + no EncodeDefault so existing wire-shape tests
+    // (e.g. `source_tile_create_and_update_share_the_canonical_payload_shape`)
+    // continue to omit the field when it is null.
+    @SerialName("offset_min") val offsetMin: Int? = null,
 )
 
 @Serializable
