@@ -6,7 +6,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 This is the `tastile-android` child repository of the Tastile workspace. The workspace contract is `../AGENTS.md` — read it first, then this repo's `README.md` (orientation) and `docs/architecture.md` (layer breakdown) before any non-trivial work.
 
-Project-local Skills live in `.agents/skills/`. Codex-specific config (settings, hooks, skill adapters) lives in `.Codex/`. Do not duplicate workspace-wide rules here.
+Project-local Skills live in `.agents/skills/`. Claude Code skill adapter mirrors the canonical skills at `.claude/skills/`. Agent-specific settings and hooks inherit from the workspace root; this repo does not redefine them. Do not duplicate workspace-wide rules here.
 
 ## Build and Verify
 
