@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preferences_nav_general">通用偏好</string>
+    <string name="preferences_nav_profile">个人资料</string>
+    <string name="preferences_nav_subscription">订阅</string>
+    <string name="preferences_nav_tokens">访问令牌</string>
+    <string name="preferences_account_title">账户设置</string>
+    <string name="preferences_account_profile_heading">个人资料信息</string>
+    <string name="preferences_account_profile_guide">管理您的邮箱和登录方式。</string>
+    <string name="preferences_account_account_heading">账户</string>
+    <string name="preferences_account_refresh">刷新</string>
+    <string name="preferences_account_loading">加载中…</string>
+    <string name="preferences_account_email">邮箱</string>
+    <string name="preferences_account_email_verified">邮箱验证</string>
+    <string name="preferences_account_verified">已验证</string>
+    <string name="preferences_account_unverified">未验证</string>
+    <string name="preferences_account_account_id">账户 ID</string>
+    <string name="preferences_account_change_email_heading">更改注册邮箱</string>
+    <string name="preferences_account_new_email">新邮箱</string>
+    <string name="preferences_account_send_code">发送更改验证码</string>
+    <string name="preferences_account_code">验证码</string>
+    <string name="preferences_account_verify_code">验证代码</string>
+    <string name="preferences_account_login_methods">登录方式</string>
+    <string name="preferences_account_passkey">添加或更改通行密钥 / 外部登录</string>
+    <string name="preferences_account_email_otp_relogin">使用邮箱 OTP 重新登录</string>
+    <string name="preferences_account_subscription_heading">订阅</string>
+    <string name="preferences_account_subscription_guide">管理您的套餐和账单。</string>
+</resources>

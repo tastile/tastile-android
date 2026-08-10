@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Tastile</string>
+    <string name="common_cancel">취소</string>
+    <string name="common_confirm">확인</string>
+    <string name="common_back">뒤로</string>
+    <string name="duration_format_hours_minutes">%1$d시간 %2$d분</string>
+    <string name="duration_format_hours">%1$d시간</string>
+    <string name="duration_format_minutes">%1$d분</string>
+</resources>

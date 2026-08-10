@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_calendar_day">일</string>
+    <string name="panels_calendar_week">주</string>
+    <string name="panels_calendar_month">월</string>
+    <string name="panels_calendar_custom">사용자 지정</string>
+</resources>

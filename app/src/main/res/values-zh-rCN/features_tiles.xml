@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tiles_duration">时长</string>
+    <string name="tiles_start_at">开始</string>
+    <string name="panels_references_title">引用</string>
+    <string name="panels_references_empty">暂无标签。带标签的卡片将显示在此处。</string>
+    <string name="empty_tiles_title">暂无卡片</string>
+    <string name="empty_tiles_hint">从项目选项卡创建卡片以填充时间线。</string>
+    <string name="tile_occurrence_label">发生：%1$s</string>
+    <string name="tiles_stat_open">打开 · %1$d</string>
+    <string name="tiles_stat_estimated">预计 · %1$d 分</string>
+    <string name="tiles_stat_sections">分段 · %1$d</string>
+</resources>

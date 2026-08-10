@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_calendar_day">日</string>
+    <string name="panels_calendar_week">周</string>
+    <string name="panels_calendar_month">月</string>
+    <string name="panels_calendar_custom">自定义</string>
+</resources>

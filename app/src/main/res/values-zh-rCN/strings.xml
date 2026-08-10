@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Per-section master. Only app_language.xml is populated; every other
-         section intentionally falls back to values/. -->
+    <include name="app_common" />
     <include name="app_language" />
+    <include name="app_shell" />
+    <include name="features_dashboard" />
+    <include name="features_timeline" />
+    <include name="features_tiles" />
+    <include name="features_tasks" />
+    <include name="features_calendar" />
+    <include name="features_schedule" />
+    <include name="features_projects" />
+    <include name="features_quickcreate" />
+    <include name="system_auth" />
+    <include name="system_settings" />
+    <include name="system_preferences" />
+    <include name="system_account" />
+    <include name="system_notifications" />
+    <include name="system_execution" />
+    <include name="system_prompt" />
 </resources>

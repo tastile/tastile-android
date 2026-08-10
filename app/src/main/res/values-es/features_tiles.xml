@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tiles_duration">Duración</string>
+    <string name="tiles_start_at">Inicio</string>
+    <string name="panels_references_title">Referencias</string>
+    <string name="panels_references_empty">Aún no hay etiquetas. Las tarjetas con etiquetas aparecerán aquí.</string>
+    <string name="empty_tiles_title">Aún no hay tarjetas</string>
+    <string name="empty_tiles_hint">Crea una tarjeta desde la pestaña Proyectos para sembrar la línea de tiempo.</string>
+    <string name="tile_occurrence_label">Ocurrencia: %1$s</string>
+    <string name="tiles_stat_open">Abiertas · %1$d</string>
+    <string name="tiles_stat_estimated">Estimado · %1$d min</string>
+    <string name="tiles_stat_sections">Secciones · %1$d</string>
+</resources>

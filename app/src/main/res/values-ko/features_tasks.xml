@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_bucket_today">오늘</string>
+    <string name="tasks_bucket_this_week">이번 주</string>
+    <string name="tasks_bucket_later">나중에</string>
+    <string name="tasks_bucket_no_date">날짜 없음</string>
+    <string name="tasks_status_ready">준비됨</string>
+    <string name="tasks_status_started">시작됨</string>
+    <string name="tasks_status_completed">완료됨</string>
+    <string name="tasks_time_range_dash">%1$s – %2$s</string>
+    <string name="tasks_time_range_at">%1$s · %2$s</string>
+    <string name="tasks_empty_title">예정된 항목 없음</string>
+    <string name="tasks_empty_hint">타일을 빠르게 생성하거나 시간 창을 선택해 시작하세요.</string>
+    <string name="tasks_active_hero_complete">완료</string>
+    <string name="tasks_active_hero_pause">일시정지</string>
+    <string name="tasks_active_hero_resume">재개</string>
+    <string name="tasks_active_hero_start_execution">실행 시작</string>
+    <string name="tasks_active_hero_finish_execution">실행 종료</string>
+    <string name="tasks_more_actions">더 많은 작업</string>
+    <string name="tasks_action_start">시작</string>
+    <string name="tasks_action_complete">완료</string>
+    <string name="tasks_action_pause">일시정지</string>
+    <string name="tasks_action_resume">재개</string>
+    <string name="tasks_action_defer">연기</string>
+    <string name="tasks_action_request_prompt">프롬프트 요청</string>
+    <string name="tasks_action_delete">삭제</string>
+    <string name="tasks_start_execution_title">실행을 시작하시겠어요?</string>
+    <string name="tasks_start_execution_body">기존 발생 항목에 대한 작업을 시작합니다.</string>
+    <string name="tasks_finish_execution_title">실행을 종료하시겠어요?</string>
+    <string name="tasks_finish_execution_body">타일을 완료하지 않고 이 실행을 종료합니다.</string>
+    <string name="tasks_start_button">시작</string>
+    <string name="tasks_finish_button">종료</string>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preferences_nav_general">일반 환경설정</string>
+    <string name="preferences_nav_profile">프로필</string>
+    <string name="preferences_nav_subscription">구독</string>
+    <string name="preferences_nav_tokens">액세스 토큰</string>
+    <string name="preferences_account_title">계정 설정</string>
+    <string name="preferences_account_profile_heading">프로필 정보</string>
+    <string name="preferences_account_profile_guide">이메일과 로그인 방식을 관리하세요.</string>
+    <string name="preferences_account_account_heading">계정</string>
+    <string name="preferences_account_refresh">새로 고침</string>
+    <string name="preferences_account_loading">로드 중…</string>
+    <string name="preferences_account_email">이메일</string>
+    <string name="preferences_account_email_verified">이메일 인증</string>
+    <string name="preferences_account_verified">인증됨</string>
+    <string name="preferences_account_unverified">인증되지 않음</string>
+    <string name="preferences_account_account_id">계정 ID</string>
+    <string name="preferences_account_change_email_heading">등록 이메일 변경</string>
+    <string name="preferences_account_new_email">새 이메일</string>
+    <string name="preferences_account_send_code">변경 코드 보내기</string>
+    <string name="preferences_account_code">인증 코드</string>
+    <string name="preferences_account_verify_code">코드 확인</string>
+    <string name="preferences_account_login_methods">로그인 방식</string>
+    <string name="preferences_account_passkey">패스키 / 외부 로그인 추가 또는 변경</string>
+    <string name="preferences_account_email_otp_relogin">이메일 OTP로 다시 로그인</string>
+    <string name="preferences_account_subscription_heading">구독</string>
+    <string name="preferences_account_subscription_guide">플랜과 결제를 관리하세요.</string>
+</resources>

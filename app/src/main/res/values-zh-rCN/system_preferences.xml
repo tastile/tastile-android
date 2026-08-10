@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">设置</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_security_lock_on">安全锁开启</string>
+    <string name="settings_security_lock_off">安全锁关闭</string>
+    <string name="settings_security_lock_timeout_label">超时：%1$d 分钟</string>
+    <string name="settings_security_lock_timeout_decrease">-5</string>
+    <string name="settings_security_lock_timeout_increase">+5</string>
+    <string name="settings_notifications_allow">允许</string>
+    <string name="settings_notifications_test">测试</string>
+    <string name="settings_notifications_status_allowed">通知已启用</string>
+    <string name="settings_notifications_status_denied">通知被拒绝</string>
+    <string name="settings_notifications_status_unsupported">不支持通知</string>
+    <string name="picker_dialog_theme_dark">深色（默认）</string>
+    <string name="picker_dialog_theme_light">浅色</string>
+    <string name="picker_dialog_timeout_title">锁屏超时</string>
+    <string name="picker_dialog_timeout_5">5 分钟</string>
+    <string name="picker_dialog_timeout_15">15 分钟</string>
+    <string name="picker_dialog_timeout_60">60 分钟</string>
+</resources>

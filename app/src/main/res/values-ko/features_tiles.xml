@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tiles_duration">지속 시간</string>
+    <string name="tiles_start_at">시작</string>
+    <string name="panels_references_title">참조</string>
+    <string name="panels_references_empty">라벨이 아직 없습니다. 라벨이 있는 타일이 여기에 표시됩니다.</string>
+    <string name="empty_tiles_title">타일 없음</string>
+    <string name="empty_tiles_hint">프로젝트 탭에서 타일을 생성해 타임라인을 채워보세요.</string>
+    <string name="tile_occurrence_label">발생: %1$s</string>
+    <string name="tiles_stat_open">열림 · %1$d</string>
+    <string name="tiles_stat_estimated">예상 · %1$d분</string>
+    <string name="tiles_stat_sections">섹션 · %1$d</string>
+</resources>

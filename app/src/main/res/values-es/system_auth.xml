@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_tokens_heading">Tokens de API</string>
+    <string name="account_tokens_description">Emite tokens de API de duración ilimitada y gestiona nombres e historial de uso como claves de API.</string>
+    <string name="account_tokens_new_token_heading">Nuevo token</string>
+    <string name="account_tokens_name_label">Nombre del token</string>
+    <string name="account_tokens_issue">Emitir token</string>
+    <string name="account_tokens_issued_heading">Tokens emitidos</string>
+    <string name="account_tokens_empty">Aún no hay tokens de API.</string>
+    <string name="account_tokens_copy">Copiar</string>
+    <string name="account_tokens_revoked">Revocado</string>
+    <string name="account_tokens_revoke">Revocar</string>
+    <string name="account_subscription_current_plan">Plan actual</string>
+    <string name="account_subscription_free_badge">Gratis</string>
+    <string name="account_subscription_free_description">Actualiza para desbloquear funciones avanzadas</string>
+    <string name="account_subscription_upgrade">Actualizar a Pro</string>
+    <string name="account_subscription_manage">Gestionar facturación</string>
+</resources>

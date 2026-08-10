@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Tastile</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_confirm">确认</string>
+    <string name="common_back">返回</string>
+    <string name="duration_format_hours_minutes">%1$d小时%2$d分</string>
+    <string name="duration_format_hours">%1$d小时</string>
+    <string name="duration_format_minutes">%1$d分</string>
+</resources>

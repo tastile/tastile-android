@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preferences_nav_general">Preferencias generales</string>
+    <string name="preferences_nav_profile">Perfil</string>
+    <string name="preferences_nav_subscription">Suscripción</string>
+    <string name="preferences_nav_tokens">Tokens de acceso</string>
+    <string name="preferences_account_title">Ajustes de cuenta</string>
+    <string name="preferences_account_profile_heading">Información del perfil</string>
+    <string name="preferences_account_profile_guide">Gestiona tu correo electrónico y métodos de inicio de sesión.</string>
+    <string name="preferences_account_account_heading">Cuenta</string>
+    <string name="preferences_account_refresh">Actualizar</string>
+    <string name="preferences_account_loading">Cargando…</string>
+    <string name="preferences_account_email">Correo electrónico</string>
+    <string name="preferences_account_email_verified">Verificación de correo</string>
+    <string name="preferences_account_verified">Verificado</string>
+    <string name="preferences_account_unverified">Sin verificar</string>
+    <string name="preferences_account_account_id">ID de cuenta</string>
+    <string name="preferences_account_change_email_heading">Cambiar correo registrado</string>
+    <string name="preferences_account_new_email">Nuevo correo</string>
+    <string name="preferences_account_send_code">Enviar código de cambio</string>
+    <string name="preferences_account_code">Código de verificación</string>
+    <string name="preferences_account_verify_code">Verificar código</string>
+    <string name="preferences_account_login_methods">Métodos de inicio de sesión</string>
+    <string name="preferences_account_passkey">Añadir o cambiar passkey / inicio externo</string>
+    <string name="preferences_account_email_otp_relogin">Volver a iniciar sesión con OTP por correo</string>
+    <string name="preferences_account_subscription_heading">Suscripción</string>
+    <string name="preferences_account_subscription_guide">Gestiona tu plan y facturación.</string>
+</resources>

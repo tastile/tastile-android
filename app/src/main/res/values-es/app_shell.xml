@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mobile_top_menu">Abrir menú</string>
+    <string name="mobile_top_notifications">Notificaciones</string>
+    <string name="mobile_top_avatar">Menú de cuenta</string>
+    <string name="mobile_top_title_action">Cambiar fecha</string>
+    <string name="date_picker_confirm">Aceptar</string>
+    <string name="date_picker_cancel">Cancelar</string>
+    <string name="nav_account_profile">Perfil</string>
+    <string name="nav_account_subscription">Suscripción</string>
+    <string name="nav_account_tokens">Tokens de acceso</string>
+    <string name="nav_account_sign_out">Cerrar sesión</string>
+    <string name="shell_account_signed_in">Sesión iniciada</string>
+    <string name="shell_account_sign_out_confirm">Deberás iniciar sesión de nuevo para usar la aplicación.</string>
+    <string name="nav_preferences">Preferencias</string>
+    <string name="nav_setting">Ajuste</string>
+    <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
+</resources>

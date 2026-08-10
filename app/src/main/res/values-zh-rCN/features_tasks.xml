@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_bucket_today">今天</string>
+    <string name="tasks_bucket_this_week">本周</string>
+    <string name="tasks_bucket_later">稍后</string>
+    <string name="tasks_bucket_no_date">无日期</string>
+    <string name="tasks_status_ready">就绪</string>
+    <string name="tasks_status_started">已开始</string>
+    <string name="tasks_status_completed">已完成</string>
+    <string name="tasks_time_range_dash">%1$s – %2$s</string>
+    <string name="tasks_time_range_at">%1$s · %2$s</string>
+    <string name="tasks_empty_title">暂无安排</string>
+    <string name="tasks_empty_hint">快速创建一张卡片或选择一个时间窗口开始。</string>
+    <string name="tasks_active_hero_complete">完成</string>
+    <string name="tasks_active_hero_pause">暂停</string>
+    <string name="tasks_active_hero_resume">继续</string>
+    <string name="tasks_active_hero_start_execution">开始执行</string>
+    <string name="tasks_active_hero_finish_execution">结束执行</string>
+    <string name="tasks_more_actions">更多操作</string>
+    <string name="tasks_action_start">开始</string>
+    <string name="tasks_action_complete">完成</string>
+    <string name="tasks_action_pause">暂停</string>
+    <string name="tasks_action_resume">继续</string>
+    <string name="tasks_action_defer">推迟</string>
+    <string name="tasks_action_request_prompt">请求提示</string>
+    <string name="tasks_action_delete">删除</string>
+    <string name="tasks_start_execution_title">开始执行？</string>
+    <string name="tasks_start_execution_body">开始处理此现有事件。</string>
+    <string name="tasks_finish_execution_title">结束执行？</string>
+    <string name="tasks_finish_execution_body">结束本次执行而不完成卡片。</string>
+    <string name="tasks_start_button">开始</string>
+    <string name="tasks_finish_button">结束</string>
+</resources>

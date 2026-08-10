@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_projects_title">프로젝트</string>
+    <string name="panels_projects_all_projects">모든 프로젝트</string>
+    <string name="panels_projects_loading_projects">프로젝트 불러오는 중…</string>
+    <string name="panels_projects_new_button">+ 새로 만들기</string>
+    <string name="panels_projects_name_placeholder">프로젝트 이름</string>
+    <string name="panels_projects_slug_placeholder">slug (선택)</string>
+    <string name="panels_projects_slug_hint">소문자, 숫자, 하이픈만 사용 가능</string>
+    <string name="panels_projects_create">생성</string>
+    <string name="panels_projects_creating">생성 중…</string>
+    <string name="panels_projects_cancel">취소</string>
+    <string name="panels_projects_delete">삭제</string>
+    <string name="panels_projects_delete_confirm_title">\"%1$s\" 프로젝트를 삭제하시겠어요?</string>
+    <string name="panels_projects_delete_confirm_body">이 프로젝트와 연결된 모든 항목이 영구적으로 삭제됩니다.</string>
+    <string name="panels_projects_tiles_section_title">이 프로젝트의 타일</string>
+    <string name="panels_projects_filtered_tile_count">타일 %1$d개</string>
+    <string name="empty_projects_title">프로젝트 없음</string>
+    <string name="empty_projects_hint">프로젝트를 추가하여 타일 정리를 시작하세요.</string>
+    <string name="projects_summary_count">프로젝트 %1$d개</string>
+    <string name="projects_summary_count_one">프로젝트 1개</string>
+    <string name="projects_summary_count_zero">프로젝트 없음</string>
+    <string name="projects_tile_count">타일 %1$d개</string>
+    <string name="projects_tile_count_one">타일 1개</string>
+    <string name="projects_tile_count_zero">타일 없음</string>
+    <string name="projects_last_activity_never">활동 없음</string>
+    <string name="projects_last_activity_updated">업데이트: %1$s</string>
+    <string name="projects_open_button">열기</string>
+    <string name="projects_new_button">새로 만들기</string>
+    <string name="projects_section_all">모든 프로젝트</string>
+    <string name="projects_section_scoped">이 프로젝트의 타일</string>
+    <string name="projects_select_hint">아래 타일의 범위를 지정할 프로젝트를 선택하세요.</string>
+    <string name="projects_color_default" translatable="false">#6B7280</string>
+</resources>

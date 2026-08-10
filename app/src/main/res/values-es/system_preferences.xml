@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Ajuste</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_theme_system">Dispositivo</string>
+    <string name="settings_security_lock_on">Bloqueo de seguridad activado</string>
+    <string name="settings_security_lock_off">Bloqueo de seguridad desactivado</string>
+    <string name="settings_security_lock_timeout_label">Tiempo de espera: %1$d min</string>
+    <string name="settings_security_lock_timeout_decrease">-5</string>
+    <string name="settings_security_lock_timeout_increase">+5</string>
+    <string name="settings_notifications_allow">Permitir</string>
+    <string name="settings_notifications_test">Probar</string>
+    <string name="settings_notifications_status_allowed">Notificaciones habilitadas</string>
+    <string name="settings_notifications_status_denied">Notificaciones denegadas</string>
+    <string name="settings_notifications_status_unsupported">Notificaciones no compatibles</string>
+    <string name="picker_dialog_theme_dark">Oscuro (predeterminado)</string>
+    <string name="picker_dialog_theme_light">Claro</string>
+    <string name="picker_dialog_timeout_title">Tiempo de espera del bloqueo</string>
+    <string name="picker_dialog_timeout_5">5 min</string>
+    <string name="picker_dialog_timeout_15">15 min</string>
+    <string name="picker_dialog_timeout_60">60 min</string>
+</resources>

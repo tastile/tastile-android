@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_bucket_today">Hoy</string>
+    <string name="tasks_bucket_this_week">Esta semana</string>
+    <string name="tasks_bucket_later">Más tarde</string>
+    <string name="tasks_bucket_no_date">Sin fecha</string>
+    <string name="tasks_status_ready">LISTA</string>
+    <string name="tasks_status_started">INICIADA</string>
+    <string name="tasks_status_completed">COMPLETADA</string>
+    <string name="tasks_time_range_dash">%1$s – %2$s</string>
+    <string name="tasks_time_range_at">%1$s · %2$s</string>
+    <string name="tasks_empty_title">Nada programado</string>
+    <string name="tasks_empty_hint">Crea rápidamente una tarjeta o selecciona una franja de tiempo para comenzar.</string>
+    <string name="tasks_active_hero_complete">Completar</string>
+    <string name="tasks_active_hero_pause">Pausar</string>
+    <string name="tasks_active_hero_resume">Reanudar</string>
+    <string name="tasks_active_hero_start_execution">Iniciar ejecución</string>
+    <string name="tasks_active_hero_finish_execution">Finalizar ejecución</string>
+    <string name="tasks_more_actions">Más acciones</string>
+    <string name="tasks_action_start">Iniciar</string>
+    <string name="tasks_action_complete">Completar</string>
+    <string name="tasks_action_pause">Pausar</string>
+    <string name="tasks_action_resume">Reanudar</string>
+    <string name="tasks_action_defer">Posponer</string>
+    <string name="tasks_action_request_prompt">Solicitar indicación</string>
+    <string name="tasks_action_delete">Eliminar</string>
+    <string name="tasks_start_execution_title">¿Iniciar ejecución?</string>
+    <string name="tasks_start_execution_body">Comienza a trabajar en esta ocurrencia existente.</string>
+    <string name="tasks_finish_execution_title">¿Finalizar ejecución?</string>
+    <string name="tasks_finish_execution_body">Finaliza esta ejecución sin completar la tarjeta.</string>
+    <string name="tasks_start_button">Iniciar</string>
+    <string name="tasks_finish_button">Finalizar</string>
+</resources>
