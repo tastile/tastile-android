@@ -149,7 +149,7 @@ fun ProjectsSectionContent(
         val target = editCandidate!!
         AlertDialog(
             onDismissRequest = projectsViewModel::cancelEdit,
-            title = { Text("Edit project") },
+            title = { Text(stringResource(R.string.panels_projects_edit_title)) },
             text = {
                 ProjectEditForm(
                     workspace = target,

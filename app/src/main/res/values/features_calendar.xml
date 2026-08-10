@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_calendar_day">Day</string>
+    <string name="panels_calendar_week">Week</string>
+    <string name="panels_calendar_month">Month</string>
+    <string name="panels_calendar_custom">Custom</string>
+</resources>

@@ -44,10 +44,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 
@@ -92,13 +94,16 @@ fun NowScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Now",
+                        text = stringResource(R.string.now_title),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     IconButton(onClick = { viewModel.loadTiles() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.now_refresh),
+                        )
                     }
                 }
             }
@@ -158,15 +163,19 @@ fun NowScreen(
         deleteCandidate?.let { id ->
             AlertDialog(
                 onDismissRequest = { deleteCandidate = null },
-                title = { Text("Delete tile?") },
-                text = { Text("This action cannot be undone.") },
+                title = { Text(stringResource(R.string.now_delete_tile_title)) },
+                text = { Text(stringResource(R.string.now_delete_tile_body)) },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.deleteTile(id)
                         deleteCandidate = null
-                    }) { Text("Delete") }
+                    }) { Text(stringResource(R.string.now_delete_confirm)) }
                 },
-                dismissButton = { TextButton(onClick = { deleteCandidate = null }) { Text("Cancel") } },
+                dismissButton = {
+                    TextButton(onClick = { deleteCandidate = null }) {
+                        Text(stringResource(R.string.now_cancel))
+                    }
+                },
             )
         }
     }
@@ -195,7 +204,7 @@ fun ActiveTileCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Active",
+                    text = stringResource(R.string.now_active_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -229,7 +238,7 @@ fun ActiveTileCard(
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Complete")
+                Text(stringResource(R.string.now_complete))
             }
         }
     }
@@ -274,7 +283,7 @@ fun TileCard(
                         IconButton(onClick = { onStart(tile.id) }) {
                             Icon(
                                 Icons.Default.PlayArrow,
-                                contentDescription = "Start",
+                                contentDescription = stringResource(R.string.now_start_cd),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -283,7 +292,7 @@ fun TileCard(
                         IconButton(onClick = { onComplete(tile.id) }) {
                             Icon(
                                 Icons.Default.Check,
-                                contentDescription = "Complete",
+                                contentDescription = stringResource(R.string.now_complete),
                                 tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
@@ -295,11 +304,11 @@ fun TileCard(
                         // No action for archived tiles
                     }
                 }
-                
+
                 IconButton(onClick = { onDelete(tile.id) }) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = stringResource(R.string.now_delete_cd),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -310,13 +319,19 @@ fun TileCard(
 
 @Composable
 fun LifecycleBadge(lifecycle: TileLifecycle) {
-    val (color, text) = when (lifecycle) {
-        TileLifecycle.READY -> MaterialTheme.colorScheme.outline to "Ready"
-        TileLifecycle.STARTED -> MaterialTheme.colorScheme.primary to "Started"
-        TileLifecycle.DONE -> MaterialTheme.colorScheme.tertiary to "Done"
-        TileLifecycle.ARCHIVED -> MaterialTheme.colorScheme.outlineVariant to "Archived"
+    val color = when (lifecycle) {
+        TileLifecycle.READY -> MaterialTheme.colorScheme.outline
+        TileLifecycle.STARTED -> MaterialTheme.colorScheme.primary
+        TileLifecycle.DONE -> MaterialTheme.colorScheme.tertiary
+        TileLifecycle.ARCHIVED -> MaterialTheme.colorScheme.outlineVariant
     }
-    
+    val text = when (lifecycle) {
+        TileLifecycle.READY -> stringResource(R.string.now_lifecycle_ready)
+        TileLifecycle.STARTED -> stringResource(R.string.now_lifecycle_started)
+        TileLifecycle.DONE -> stringResource(R.string.now_lifecycle_done)
+        TileLifecycle.ARCHIVED -> stringResource(R.string.now_lifecycle_archived)
+    }
+
     Surface(
         color = color.copy(alpha = 0.2f),
         shape = RoundedCornerShape(4.dp)
@@ -349,13 +364,13 @@ fun CreateTileSection(
             OutlinedTextField(
                 value = newTileTitle,
                 onValueChange = { newTileTitle = it },
-                label = { Text("New tile title") },
+                label = { Text(stringResource(R.string.now_new_tile_title_hint)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true
             )
-            
+
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             Button(
                 onClick = {
                     if (newTileTitle.isNotBlank()) {
@@ -365,9 +380,12 @@ fun CreateTileSection(
                 },
                 enabled = newTileTitle.isNotBlank()
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(R.string.now_add_cd),
+                )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Add")
+                Text(stringResource(R.string.now_add_button))
             }
         }
     }

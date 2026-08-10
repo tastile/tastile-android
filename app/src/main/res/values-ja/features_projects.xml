@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_projects_title">プロジェクト</string>
+    <string name="panels_projects_all_projects">すべてのプロジェクト</string>
+    <string name="panels_projects_loading_projects">プロジェクトを読み込み中…</string>
+    <string name="panels_projects_new_button">＋ 新規</string>
+    <string name="panels_projects_name_placeholder">プロジェクト名</string>
+    <string name="panels_projects_slug_placeholder">スラッグ（任意）</string>
+    <string name="panels_projects_slug_hint">小文字・数字・ハイフンのみ</string>
+    <string name="panels_projects_create">作成</string>
+    <string name="panels_projects_creating">作成中…</string>
+    <string name="panels_projects_cancel">キャンセル</string>
+    <string name="panels_projects_delete">削除</string>
+    <string name="panels_projects_delete_confirm_title">「%1$s」を削除しますか？</string>
+    <string name="panels_projects_delete_confirm_body">このプロジェクトと関連付けが完全に削除されます。</string>
+    <string name="empty_projects_title">プロジェクトがありません</string>
+    <string name="empty_projects_hint">プロジェクトを追加してタイルを整理しましょう。</string>
+    <string name="panels_projects_tiles_section_title">このプロジェクトのタイル</string>
+    <string name="panels_projects_filtered_tile_count">%1$d 件のタイル</string>
+    <string name="projects_summary_count">%1$d 件のプロジェクト</string>
+    <string name="projects_summary_count_one">1 件のプロジェクト</string>
+    <string name="projects_summary_count_zero">プロジェクトはまだありません</string>
+    <string name="projects_tile_count">%1$d 件のタイル</string>
+    <string name="projects_tile_count_one">1 件のタイル</string>
+    <string name="projects_tile_count_zero">タイルはありません</string>
+    <string name="projects_last_activity_never">まだアクティビティはありません</string>
+    <string name="projects_last_activity_updated">%1$s に更新</string>
+    <string name="projects_open_button">開く</string>
+    <string name="projects_new_button">新規</string>
+    <string name="projects_section_all">すべてのプロジェクト</string>
+    <string name="projects_section_scoped">このプロジェクトのタイル</string>
+    <string name="projects_select_hint">プロジェクトを選ぶと、下のタイルを絞り込みます。</string>
+</resources>

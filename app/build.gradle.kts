@@ -359,6 +359,12 @@ fun snakeToCamel(snake: String): String =
 tasks.named("check").configure { dependsOn("verifyV1ApiCoverage") }
 
 dependencies {
+    // appcompat 1.6.1+ required for AppCompatDelegate.setApplicationLocales
+    // compat shim (the runtime-locale-switch path called by
+    // DashboardViewModel.setLocale). 1.6.1 covers the
+    // `LocaleListCompat.forLanguageTags` API on minSdk=26+ devices.
+    implementation("androidx.appcompat:appcompat:1.6.1")
+
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")

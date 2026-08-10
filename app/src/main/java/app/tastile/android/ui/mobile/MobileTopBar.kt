@@ -318,7 +318,7 @@ private fun AvatarCircle(
     if (hasImage) {
         AsyncImage(
             model = imageUrl,
-            contentDescription = "Avatar",
+            contentDescription = stringResource(R.string.avatar_image_cd),
             modifier = modifier
                 .size(size)
                 .clip(CircleShape)

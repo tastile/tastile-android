@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_timeline_empty">この範囲にブロックはありません。タイルを作成してタイムラインを埋めましょう。</string>
+    <string name="panels_timeline_loading">タイムラインを読み込み中…</string>
+    <string name="panels_timeline_meta_blocks">ブロック</string>
+    <string name="panels_timeline_meta_work">作業</string>
+    <string name="panels_timeline_meta_breaks">休憩</string>
+</resources>

@@ -254,8 +254,7 @@ private fun CreatedTokenDisclosure(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
-                        // TODO i18n: dismiss disclosure a11y label
-                        contentDescription = "Dismiss",
+                        contentDescription = stringResource(R.string.common_dismiss_cd),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

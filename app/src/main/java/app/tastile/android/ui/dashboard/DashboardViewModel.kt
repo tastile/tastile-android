@@ -1,6 +1,8 @@
 package app.tastile.android.ui.dashboard
 
 import android.os.SystemClock
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
@@ -1149,6 +1151,12 @@ class DashboardViewModel @Inject constructor(
     fun setLocale(locale: AppLocale) {
         _locale.value = locale
         userSettingsRepository.setLocale(locale)
+        // 5-language gate: persist + propagate the new locale to the runtime
+        // so the next composition re-resolves every stringResource() against
+        // values-{bcp47}/strings.xml. The compat shim is in appcompat 1.6.1+.
+        AppCompatDelegate.setApplicationLocales(
+            LocaleListCompat.forLanguageTags(locale.bcp47)
+        )
     }
 
     fun setSecurityLockEnabled(enabled: Boolean) {

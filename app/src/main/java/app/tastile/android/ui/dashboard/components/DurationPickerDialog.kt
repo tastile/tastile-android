@@ -13,6 +13,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import app.tastile.android.R
 
 @Composable
 fun DurationPickerDialog(
@@ -38,12 +40,12 @@ fun DurationPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(hours, minutes) }) {
-                Text("OK")
+                Text(stringResource(R.string.dialog_ok))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.dialog_cancel))
             }
         },
     )

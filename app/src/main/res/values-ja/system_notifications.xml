@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_alarm_title_decision_required">次の判断が必要です</string>
+    <string name="notif_alarm_body_decision_tile">「%1$s」に関する prompt を確認してください。</string>
+    <string name="notif_alarm_title_scheduled_start">予定時刻です</string>
+    <string name="notif_alarm_body_scheduled_start">「%1$s」を開始する時刻です。</string>
+    <string name="notif_alarm_title_break_finished">休憩終了</string>
+    <string name="notif_alarm_body_break_finished">休憩が終わりました。戻るか延長するか決めてください。</string>
+    <string name="notif_alarm_title_tile_ready">開始候補があります</string>
+    <string name="notif_alarm_body_tile_ready">次に始めるタイルを確認してください。</string>
+    <string name="notif_alarm_body_decision_default">進行中のタイルについて、完了・延長・中断を判断してください。</string>
+</resources>

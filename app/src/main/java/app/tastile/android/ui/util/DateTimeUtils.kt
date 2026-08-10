@@ -31,9 +31,24 @@ fun combineDateTimeToUtcIso(datePart: String, timePart: String): String? {
 }
 
 fun formatDateShort(dateTime: LocalDateTime, locale: AppLocale): String {
-    val pattern = if (locale == AppLocale.JA) "M/d HH:mm" else "M/d h:mm a"
-    val formatter = DateTimeFormatter.ofPattern(pattern, if (locale == AppLocale.JA) Locale.JAPAN else Locale.US)
-    return dateTime.format(formatter)
+    // 5-language gate: pick a pattern + java.util.Locale per AppLocale so
+    // each supported language renders the date with its own conventions
+    // (e.g. zh-CN day-first, ja year-month-day hour, ko AM/PM marker).
+    val pattern = when (locale) {
+        AppLocale.EN -> "M/d h:mm a"
+        AppLocale.JA -> "M/d HH:mm"
+        AppLocale.ZH_CN -> "M/d HH:mm"
+        AppLocale.KO -> "M/d a h:mm"
+        AppLocale.ES -> "d/M H:mm"
+    }
+    val javaLocale = when (locale) {
+        AppLocale.EN -> Locale.US
+        AppLocale.JA -> Locale.JAPAN
+        AppLocale.ZH_CN -> Locale.SIMPLIFIED_CHINESE
+        AppLocale.KO -> Locale.KOREAN
+        AppLocale.ES -> Locale.forLanguageTag("es-ES")
+    }
+    return dateTime.format(DateTimeFormatter.ofPattern(pattern, javaLocale))
 }
 
 fun localDateFromEpochMillis(epochMillis: Long): String {

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_cancel">キャンセル</string>
+    <string name="common_confirm">確認</string>
+    <string name="common_back">戻る</string>
+    <string name="duration_format_hours_minutes">%1$d時間%2$d分</string>
+    <string name="duration_format_hours">%1$d時間</string>
+    <string name="duration_format_minutes">%1$d分</string>
+</resources>

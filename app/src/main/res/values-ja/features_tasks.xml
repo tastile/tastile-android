@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_bucket_today">今日</string>
+    <string name="tasks_bucket_this_week">今週</string>
+    <string name="tasks_bucket_later">あとで</string>
+    <string name="tasks_bucket_no_date">日付なし</string>
+    <string name="tasks_status_ready">準備中</string>
+    <string name="tasks_status_started">開始済み</string>
+    <string name="tasks_status_completed">完了</string>
+    <string name="tasks_time_range_dash">%1$s – %2$s</string>
+    <string name="tasks_time_range_at">%1$s · %2$s</string>
+    <string name="tasks_empty_title">予定はありません</string>
+    <string name="tasks_empty_hint">タイルをクイック作成するか、開始する時間帯を選んでください。</string>
+    <string name="tasks_active_hero_complete">完了</string>
+    <string name="tasks_active_hero_pause">一時停止</string>
+    <string name="tasks_active_hero_resume">再開</string>
+    <string name="tasks_active_hero_start_execution">実行を開始</string>
+    <string name="tasks_active_hero_finish_execution">実行を終了</string>
+    <string name="tasks_more_actions">その他の操作</string>
+    <string name="tasks_action_start">開始</string>
+    <string name="tasks_action_complete">完了</string>
+    <string name="tasks_action_pause">一時停止</string>
+    <string name="tasks_action_resume">再開</string>
+    <string name="tasks_action_defer">延期</string>
+    <string name="tasks_action_request_prompt">プロンプトを要求</string>
+    <string name="tasks_action_delete">削除</string>
+    <string name="tasks_start_execution_title">実行を開始しますか？</string>
+    <string name="tasks_start_execution_body">この既存の予定に着手します。</string>
+    <string name="tasks_finish_execution_title">実行を終了しますか？</string>
+    <string name="tasks_finish_execution_body">タイルを完了させずに、この実行を終了します。</string>
+    <string name="tasks_start_button">開始</string>
+    <string name="tasks_finish_button">終了</string>
+</resources>

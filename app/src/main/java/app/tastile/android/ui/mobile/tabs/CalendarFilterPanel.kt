@@ -38,7 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
@@ -70,10 +72,10 @@ internal fun CalendarFilterPanel(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AppSectionHeader(title = "Calendar", modifier = Modifier.weight(1f))
+            AppSectionHeader(title = stringResource(R.string.calendar_filter_calendar_label), modifier = Modifier.weight(1f))
             AppPickerButton(
-                label = "Date", // TODO i18n
-                value = selectedDayLabel.ifBlank { "—" },
+                label = stringResource(R.string.calendar_filter_date_label),
+                value = selectedDayLabel.ifBlank { stringResource(R.string.calendar_filter_date_empty) },
                 onClick = { showDatePicker = true },
                 leadingIcon = Icons.Outlined.CalendarMonth,
                 modifier = Modifier.testTag("calendar-mini-date"),
@@ -86,7 +88,7 @@ internal fun CalendarFilterPanel(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 StatChip(
-                    label = "Projects",
+                    label = stringResource(R.string.calendar_filter_projects_label),
                     value = "${selected.size}/${allIds.size}",
                     background = MaterialTheme.colorScheme.secondaryContainer,
                     foreground = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -94,10 +96,10 @@ internal fun CalendarFilterPanel(
                 NiaFilledTonalButton(
                     onClick = { onOwnerIdsChange(emptySet()) },
                     leadingIcon = { Icon(Icons.Outlined.FilterList, contentDescription = null) },
-                    text = { Text("Projects") },
+                    text = { Text(stringResource(R.string.calendar_filter_projects_label)) },
                 )
             }
-            AppSectionHeader(title = "Projects")
+            AppSectionHeader(title = stringResource(R.string.calendar_filter_projects_label))
             orderWorkspaceTree(workspaces).forEach { entry ->
                 val state = projectCheckState(entry.workspace.id, selected, descendants)
                 Row(
@@ -142,13 +144,13 @@ internal fun CalendarFilterPanel(
                         showDatePicker = false
                     },
                     leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
-                    text = { Text("OK") },
+                    text = { Text(stringResource(R.string.dialog_ok)) },
                 )
             },
             dismissButton = {
                 NiaTextButton(
                     onClick = { showDatePicker = false },
-                    text = { Text("Cancel") },
+                    text = { Text(stringResource(R.string.dialog_cancel)) },
                 )
             },
         ) { DatePicker(state = state) }

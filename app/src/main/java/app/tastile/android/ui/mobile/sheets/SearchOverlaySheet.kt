@@ -21,8 +21,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.ui.mobile.EndpointsCatalog
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
@@ -45,13 +47,13 @@ fun SearchOverlaySheet(overlay: OverlayViewModel) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = "Search",
+                    text = stringResource(R.string.search_label),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Search") },
+                    label = { Text(stringResource(R.string.search_label)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 val matches = EndpointsCatalog.entries.filter {

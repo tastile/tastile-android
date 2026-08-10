@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Setting</string>
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_theme_light">ライト</string>
+    <string name="settings_theme_dark">ダーク</string>
+    <string name="settings_theme_system">デバイス</string>
+    <string name="settings_security_lock_on">セキュリティロックオン</string>
+    <string name="settings_security_lock_off">セキュリティロックオフ</string>
+    <string name="settings_security_lock_timeout_label">タイムアウト: %1$d 分</string>
+    <string name="settings_security_lock_timeout_decrease">-5</string>
+    <string name="settings_security_lock_timeout_increase">+5</string>
+    <string name="settings_notifications_allow">許可</string>
+    <string name="settings_notifications_test">テスト</string>
+    <string name="settings_notifications_status_allowed">通知が有効です</string>
+    <string name="settings_notifications_status_denied">通知が拒否されました</string>
+    <string name="settings_notifications_status_unsupported">通知はサポートされていません</string>
+    <string name="picker_dialog_theme_dark">ダーク（デフォルト）</string>
+    <string name="picker_dialog_theme_light">ライト</string>
+    <string name="picker_dialog_timeout_title">ロックタイムアウト</string>
+    <string name="picker_dialog_timeout_5">5 分</string>
+    <string name="picker_dialog_timeout_15">15 分</string>
+    <string name="picker_dialog_timeout_60">60 分</string>
+</resources>

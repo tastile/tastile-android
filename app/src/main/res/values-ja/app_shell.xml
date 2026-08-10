@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mobile_top_menu">メニューを開く</string>
+    <string name="mobile_top_notifications">通知</string>
+    <string name="mobile_top_avatar">アカウントメニュー</string>
+    <string name="mobile_top_title_action">日付を変更</string>
+    <string name="date_picker_confirm">OK</string>
+    <string name="date_picker_cancel">キャンセル</string>
+    <string name="nav_account_profile">プロフィール</string>
+    <string name="nav_account_subscription">サブスクリプション</string>
+    <string name="nav_account_tokens">アクセストークン</string>
+    <string name="nav_account_sign_out">サインアウト</string>
+    <string name="shell_account_signed_in">サインイン中</string>
+    <string name="shell_account_sign_out_confirm">もう一度サインインしないとアプリを使用できません。</string>
+    <string name="nav_preferences">環境設定</string>
+    <string name="nav_setting">Setting</string>
+    <string name="mobile_day_header_pattern" translatable="false">M月d日 (EEE)</string>
+</resources>

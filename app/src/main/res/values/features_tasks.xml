@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_bucket_today">Today</string>
+    <string name="tasks_bucket_this_week">This Week</string>
+    <string name="tasks_bucket_later">Later</string>
+    <string name="tasks_bucket_no_date">No Date</string>
+    <string name="tasks_status_ready">READY</string>
+    <string name="tasks_status_started">STARTED</string>
+    <string name="tasks_status_completed">COMPLETED</string>
+    <string name="tasks_time_range_dash">%1$s – %2$s</string>
+    <string name="tasks_time_range_at">%1$s · %2$s</string>
+    <string name="tasks_empty_title">Nothing scheduled</string>
+    <string name="tasks_empty_hint">Quick-create a tile or pick a time window to begin.</string>
+    <string name="tasks_active_hero_complete">Complete</string>
+    <string name="tasks_active_hero_pause">Pause</string>
+    <string name="tasks_active_hero_resume">Resume</string>
+    <string name="tasks_active_hero_start_execution">Start execution</string>
+    <string name="tasks_active_hero_finish_execution">Finish execution</string>
+    <string name="tasks_more_actions">More actions</string>
+    <string name="tasks_action_start">Start</string>
+    <string name="tasks_action_complete">Complete</string>
+    <string name="tasks_action_pause">Pause</string>
+    <string name="tasks_action_resume">Resume</string>
+    <string name="tasks_action_defer">Defer</string>
+    <string name="tasks_action_request_prompt">Request prompt</string>
+    <string name="tasks_action_delete">Delete</string>
+    <string name="tasks_start_execution_title">Start execution?</string>
+    <string name="tasks_start_execution_body">Start work on this existing occurrence.</string>
+    <string name="tasks_finish_execution_title">Finish execution?</string>
+    <string name="tasks_finish_execution_body">Finish this execution without completing the tile.</string>
+    <string name="tasks_start_button">Start</string>
+    <string name="tasks_finish_button">Finish</string>
+</resources>

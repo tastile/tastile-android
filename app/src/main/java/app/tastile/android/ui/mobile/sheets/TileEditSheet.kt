@@ -162,7 +162,7 @@ fun TileEditSheet(
                 if (detail == null && !detailLoading && error == null) {
                     NiaTextButton(
                         onClick = { tileId?.let(viewModel::loadTileDetail) },
-                        text = { Text("Retry loading details") },
+                        text = { Text(stringResource(R.string.tile_edit_retry_loading)) },
                     )
                 }
                 if (detail != null && tileId != null) {
@@ -191,12 +191,12 @@ fun TileEditSheet(
                     ) {
                         NiaOutlinedButton(
                             onClick = { store.openSubpanel(QuickCreatePanel.Time) },
-                            text = { Text("Time") },
+                            text = { Text(stringResource(R.string.tile_edit_open_time)) },
                             modifier = Modifier.testTag("tile-edit-open-time"),
                         )
                         NiaOutlinedButton(
                             onClick = { store.openSubpanel(QuickCreatePanel.Schedule) },
-                            text = { Text("Schedule") },
+                            text = { Text(stringResource(R.string.tile_edit_open_schedule)) },
                             modifier = Modifier.testTag("tile-edit-open-schedule"),
                         )
                     }
@@ -211,7 +211,7 @@ fun TileEditSheet(
                     if (active != null && active != QuickCreatePanel.Base) {
                         NiaTextButton(
                             onClick = { store.backToBase() },
-                            text = { Text("Back to edit details") },
+                            text = { Text(stringResource(R.string.tile_edit_back)) },
                             modifier = Modifier.testTag("tile-edit-back"),
                         )
                     }
@@ -219,58 +219,58 @@ fun TileEditSheet(
                         onClick = { confirmSave = true },
                         enabled = draft.identity.title.isNotBlank(),
                         modifier = Modifier.testTag("tile-edit-save-details"),
-                        text = { Text("Save changes") },
+                        text = { Text(stringResource(R.string.tile_edit_save_details)) },
                     )
                 }
                 tile?.let { selected ->
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    Text("Actions", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.tile_edit_actions_header), style = MaterialTheme.typography.titleSmall)
                     val lifecycle = TileLifecycle.fromString(selected.lifecycle)
                     if (lifecycle == TileLifecycle.READY) {
                         NiaOutlinedButton(
                             onClick = { viewModel.startTile(selected.id) },
-                            text = { Text("Start") },
+                            text = { Text(stringResource(R.string.tile_edit_start)) },
                             modifier = Modifier.testTag("tile-edit-start"),
                         )
                         NiaOutlinedButton(
                             onClick = { viewModel.setDeferTileCandidate(selected.id) },
-                            text = { Text("Defer") },
+                            text = { Text(stringResource(R.string.tile_edit_defer)) },
                             modifier = Modifier.testTag("tile-edit-defer"),
                         )
                         NiaOutlinedButton(
                             onClick = { viewModel.setPromptTileCandidate(selected.id) },
-                            text = { Text("Request prompt") },
+                            text = { Text(stringResource(R.string.tile_edit_request_prompt)) },
                             modifier = Modifier.testTag("tile-edit-prompt"),
                         )
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
                         NiaOutlinedButton(
                             onClick = { viewModel.completeTile(selected.id) },
-                            text = { Text("Complete") },
+                            text = { Text(stringResource(R.string.tile_edit_complete)) },
                             modifier = Modifier.testTag("tile-edit-complete"),
                         )
                         when (executionStates[selected.id]) {
                             ExecutionControlState.Active -> NiaOutlinedButton(
                                 onClick = { viewModel.pauseTile(selected.id) },
                                 enabled = selected.id !in executionControlsInFlight,
-                                text = { Text("Pause") },
+                                text = { Text(stringResource(R.string.tile_edit_pause)) },
                             )
                             ExecutionControlState.Paused -> NiaOutlinedButton(
                                 onClick = { viewModel.resumeTile(selected.id) },
                                 enabled = selected.id !in executionControlsInFlight,
-                                text = { Text("Resume") },
+                                text = { Text(stringResource(R.string.tile_edit_resume)) },
                             )
                             null -> NiaOutlinedButton(
                                 onClick = { confirmExecutionAction = true },
                                 enabled = selected.id !in executionControlsInFlight,
-                                text = { Text("Start execution") },
+                                text = { Text(stringResource(R.string.tile_edit_start_execution)) },
                             )
                         }
                         if (executionStates[selected.id] != null) {
                             NiaOutlinedButton(
                                 onClick = { confirmExecutionAction = false },
                                 enabled = selected.id !in executionControlsInFlight,
-                                text = { Text("Finish execution") },
+                                text = { Text(stringResource(R.string.tile_edit_finish_execution)) },
                             )
                         }
                     }
@@ -323,18 +323,18 @@ fun TileEditSheet(
         closePlacementCandidate?.takeIf { tileEdit.placementId == it }?.let {
             AlertDialog(
                 onDismissRequest = { viewModel.setClosePlacementCandidate(null) },
-                title = { Text("Delete occurrence?") },
-                text = { Text("Only this calendar occurrence will be removed.") },
+                title = { Text(stringResource(R.string.tile_edit_delete_occurrence_title)) },
+                text = { Text(stringResource(R.string.tile_edit_delete_occurrence_body)) },
                 confirmButton = {
                     NiaButton(
                         onClick = viewModel::confirmClosePlacement,
-                        text = { Text("Delete") },
+                        text = { Text(stringResource(R.string.tile_edit_delete)) },
                     )
                 },
                 dismissButton = {
                     NiaTextButton(
                         onClick = { viewModel.setClosePlacementCandidate(null) },
-                        text = { Text("Cancel") },
+                        text = { Text(stringResource(R.string.dialog_cancel)) },
                     )
                 },
             )
@@ -356,21 +356,36 @@ fun TileEditSheet(
         confirmExecutionAction?.takeIf { selected != null }?.let { start ->
             AlertDialog(
                 onDismissRequest = { confirmExecutionAction = null },
-                title = { Text(if (start) "Start execution?" else "Finish execution?") },
-                text = { Text(if (start) "Start work on this occurrence." else "Finish this execution without completing the tile.") },
+                title = {
+                    Text(
+                        if (start) stringResource(R.string.tile_edit_start_execution_title)
+                        else stringResource(R.string.tile_edit_finish_execution_title)
+                    )
+                },
+                text = {
+                    Text(
+                        if (start) stringResource(R.string.tile_edit_start_execution_body)
+                        else stringResource(R.string.tile_edit_finish_execution_body)
+                    )
+                },
                 confirmButton = {
                     NiaButton(
                         onClick = {
                             if (start) viewModel.startExecution(selected!!.id) else viewModel.finishExecution(selected!!.id)
                             confirmExecutionAction = null
                         },
-                        text = { Text(if (start) "Start" else "Finish") },
+                        text = {
+                            Text(
+                                if (start) stringResource(R.string.tasks_start_button)
+                                else stringResource(R.string.tile_edit_finish_button)
+                            )
+                        },
                     )
                 },
                 dismissButton = {
                     NiaTextButton(
                         onClick = { confirmExecutionAction = null },
-                        text = { Text("Cancel") },
+                        text = { Text(stringResource(R.string.dialog_cancel)) },
                     )
                 },
             )
@@ -379,8 +394,8 @@ fun TileEditSheet(
             val newTitle = draft.identity.title.trim()
             AlertDialog(
                 onDismissRequest = { confirmSave = false },
-                title = { Text("Save tile changes?") },
-                text = { Text("Update ${selected.title} to $newTitle.") },
+                title = { Text(stringResource(R.string.tile_edit_save_changes_title)) },
+                text = { Text(stringResource(R.string.tile_edit_save_changes_body, selected.title, newTitle)) },
                 confirmButton = {
                     NiaButton(
                         onClick = {
@@ -392,13 +407,13 @@ fun TileEditSheet(
                             )
                             confirmSave = false
                         },
-                        text = { Text("Save") },
+                        text = { Text(stringResource(R.string.tile_edit_save)) },
                     )
                 },
                 dismissButton = {
                     NiaTextButton(
                         onClick = { confirmSave = false },
-                        text = { Text("Cancel") },
+                        text = { Text(stringResource(R.string.dialog_cancel)) },
                     )
                 },
             )
@@ -438,7 +453,7 @@ private fun EditableIdentityBlock(
                 title = it
                 onTitleChange(it)
             },
-            label = { Text("Title") },
+            label = { Text(stringResource(R.string.tile_edit_title_label)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("tile-edit-title-input"),
@@ -450,24 +465,24 @@ private fun EditableIdentityBlock(
                 description = it
                 onDescriptionChange(it.takeIf { d -> d.isNotBlank() })
             },
-            label = { Text("Description") },
+            label = { Text(stringResource(R.string.tile_edit_description_label)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("tile-edit-description-input"),
-            supportingText = { Text("Optional. Plain text memo.") },
+            supportingText = { Text(stringResource(R.string.tile_edit_description_hint)) },
         )
-        Text("Color", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.tile_edit_color_label), style = MaterialTheme.typography.labelLarge)
         val colorPalette = listOf(
-            "#3b82f6" to "Blue",
-            "#22c55e" to "Green",
-            "#a855f7" to "Purple",
-            "#f97316" to "Orange",
-            "#ec4899" to "Pink",
-            "#06b6d4" to "Cyan",
-            "#eab308" to "Yellow",
-            "#ef4444" to "Red",
-            "#14b8a6" to "Teal",
-            "#6b7280" to "Gray",
+            "#3b82f6" to stringResource(R.string.tile_edit_color_blue),
+            "#22c55e" to stringResource(R.string.tile_edit_color_green),
+            "#a855f7" to stringResource(R.string.tile_edit_color_purple),
+            "#f97316" to stringResource(R.string.tile_edit_color_orange),
+            "#ec4899" to stringResource(R.string.tile_edit_color_pink),
+            "#06b6d4" to stringResource(R.string.tile_edit_color_cyan),
+            "#eab308" to stringResource(R.string.tile_edit_color_yellow),
+            "#ef4444" to stringResource(R.string.tile_edit_color_red),
+            "#14b8a6" to stringResource(R.string.tile_edit_color_teal),
+            "#6b7280" to stringResource(R.string.tile_edit_color_gray),
         )
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -491,11 +506,11 @@ private fun EditableIdentityBlock(
                 icon = it
                 onIconChange(it)
             },
-            label = { Text("Icon (slug)") },
+            label = { Text(stringResource(R.string.tile_edit_icon_label)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("tile-edit-icon-input"),
-            supportingText = { Text("e.g. check-circle, flag, link, …") },
+            supportingText = { Text(stringResource(R.string.tile_edit_icon_hint)) },
             singleLine = true,
         )
     }

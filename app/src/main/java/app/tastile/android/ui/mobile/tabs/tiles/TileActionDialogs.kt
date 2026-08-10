@@ -33,8 +33,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import java.time.Instant
@@ -59,23 +61,24 @@ fun DeferTileDialog(
     var time by remember { mutableStateOf(LocalTime.now().withSecond(0).withNano(0).toString().take(5)) }
     var minutes by remember { mutableStateOf("30") }
     var inputError by remember { mutableStateOf<String?>(null) }
+    val invalidInput = stringResource(R.string.defer_invalid_input)
 
     fun resolve(): String? = runCatching {
         if (relative) {
-            val duration = minutes.toLong().takeIf { it > 0 } ?: error("Duration must be greater than zero")
+            val duration = minutes.toLong().takeIf { it > 0 } ?: error(invalidInput)
             Instant.now().plusSeconds(duration * 60).toString()
         } else {
             LocalDateTime.of(LocalDate.parse(date), LocalTime.parse(time))
                 .atZone(ZoneId.systemDefault()).toInstant().toString()
         }
     }.getOrElse { error ->
-        inputError = error.message ?: "Enter a valid date and time"
+        inputError = error.message ?: invalidInput
         null
     }
 
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("Defer tile") },
+        title = { Text(stringResource(R.string.defer_dialog_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 tileTitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
@@ -86,7 +89,7 @@ fun DeferTileDialog(
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                         modifier = Modifier.testTag("defer-mode-datetime"),
                         icon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
-                        label = { Text("Date & time") },
+                        label = { Text(stringResource(R.string.defer_mode_datetime)) },
                     )
                     SegmentedButton(
                         selected = relative,
@@ -94,14 +97,14 @@ fun DeferTileDialog(
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                         modifier = Modifier.testTag("defer-mode-duration"),
                         icon = { Icon(Icons.Outlined.Timer, contentDescription = null) },
-                        label = { Text("Duration") },
+                        label = { Text(stringResource(R.string.defer_mode_duration)) },
                     )
                 }
                 if (relative) {
                     OutlinedTextField(
                         value = minutes,
                         onValueChange = { minutes = it; inputError = null },
-                        label = { Text("Minutes") },
+                        label = { Text(stringResource(R.string.defer_field_minutes)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.testTag("defer-duration-minutes"),
                     )
@@ -109,13 +112,13 @@ fun DeferTileDialog(
                     OutlinedTextField(
                         value = date,
                         onValueChange = { date = it; inputError = null },
-                        label = { Text("Date (YYYY-MM-DD)") },
+                        label = { Text(stringResource(R.string.defer_field_date)) },
                         modifier = Modifier.testTag("defer-date"),
                     )
                     OutlinedTextField(
                         value = time,
                         onValueChange = { time = it; inputError = null },
-                        label = { Text("Time (HH:MM)") },
+                        label = { Text(stringResource(R.string.defer_field_time)) },
                         modifier = Modifier.testTag("defer-time"),
                     )
                 }
@@ -126,14 +129,14 @@ fun DeferTileDialog(
             NiaButton(
                 onClick = { resolve()?.let(onConfirm) },
                 modifier = Modifier.testTag("defer-confirm"),
-                text = { Text("Confirm") },
+                text = { Text(stringResource(R.string.defer_confirm)) },
                 leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
             )
         },
         dismissButton = {
             NiaTextButton(
                 onClick = onCancel,
-                text = { Text("Cancel") },
+                text = { Text(stringResource(R.string.dialog_cancel)) },
                 leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
             )
         },
@@ -146,20 +149,27 @@ fun DeferTileDialog(
 fun PromptRequestDialog(tileTitle: String?, onConfirm: () -> Unit, onCancel: () -> Unit) {
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("Request prompt?") },
-        text = { Text("Create a decision prompt for ${tileTitle ?: "this tile"}.") },
+        title = { Text(stringResource(R.string.prompt_request_title)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.prompt_request_body,
+                    tileTitle ?: stringResource(R.string.prompt_request_body_default),
+                ),
+            )
+        },
         confirmButton = {
             NiaButton(
                 onClick = onConfirm,
                 modifier = Modifier.testTag("prompt-request-confirm"),
-                text = { Text("Request") },
+                text = { Text(stringResource(R.string.prompt_request_confirm)) },
                 leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = null) },
             )
         },
         dismissButton = {
             NiaTextButton(
                 onClick = onCancel,
-                text = { Text("Cancel") },
+                text = { Text(stringResource(R.string.dialog_cancel)) },
                 leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
             )
         },

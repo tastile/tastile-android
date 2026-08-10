@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_tokens_heading">API Tokens</string>
+    <string name="account_tokens_description">Issue unlimited-lived API tokens and manage names and usage history like API keys.</string>
+    <string name="account_tokens_new_token_heading">New token</string>
+    <string name="account_tokens_name_label">Token name</string>
+    <string name="account_tokens_issue">Issue token</string>
+    <string name="account_tokens_issued_heading">Issued tokens</string>
+    <string name="account_tokens_empty">No API tokens yet.</string>
+    <string name="account_tokens_copy">Copy</string>
+    <string name="account_tokens_revoked">Revoked</string>
+    <string name="account_tokens_revoke">Revoke</string>
+    <string name="account_subscription_current_plan">Current Plan</string>
+    <string name="account_subscription_free_badge">Free</string>
+    <string name="account_subscription_free_description">Upgrade to unlock advanced features</string>
+    <string name="account_subscription_upgrade">Upgrade to Pro</string>
+    <string name="account_subscription_manage">Manage Billing</string>
+</resources>

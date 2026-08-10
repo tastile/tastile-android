@@ -428,18 +428,16 @@ private fun NotificationsSection(
 private fun localeLabel(l: AppLocale): String = when (l) {
     AppLocale.JA -> stringResource(R.string.settings_language_ja)
     AppLocale.EN -> stringResource(R.string.settings_language_en)
-    AppLocale.DE -> stringResource(R.string.settings_language_de)
     AppLocale.ES -> stringResource(R.string.settings_language_es)
-    AppLocale.FR -> stringResource(R.string.settings_language_fr)
     AppLocale.KO -> stringResource(R.string.settings_language_ko)
-    AppLocale.PT_BR -> stringResource(R.string.settings_language_pt_rBR)
     AppLocale.ZH_CN -> stringResource(R.string.settings_language_zh_rCN)
 }
 
+@androidx.compose.runtime.Composable
 private fun themeLabel(t: ThemeMode): String = when (t) {
-    ThemeMode.LIGHT -> "Light"
-    ThemeMode.DARK -> "Dark"
-    ThemeMode.SYSTEM -> "Device"
+    ThemeMode.LIGHT -> stringResource(R.string.settings_theme_light)
+    ThemeMode.DARK -> stringResource(R.string.settings_theme_dark)
+    ThemeMode.SYSTEM -> stringResource(R.string.settings_theme_system)
 }
 
 private fun canPostNotifications(context: android.content.Context): Boolean {
@@ -452,14 +450,18 @@ private fun postTestNotification(context: android.content.Context) {
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     if (!granted) return
     ExecutionNotificationChannels.ensure(context)
+    // 5-language gate: resolve via context so the user's selected AppLocale
+    // (zh-CN/ko/es/ja/en) determines the body, not a hard-coded English string.
+    val body = context.getString(R.string.settings_test_notification_body)
+    val bigText = context.getString(R.string.settings_test_notification_big_text)
     try {
         NotificationManagerCompat.from(context).notify(
             TEST_NOTIFICATION_ID,
             NotificationCompat.Builder(context, ExecutionNotificationChannels.ALERTS)
                 .setSmallIcon(R.drawable.ic_notification_tastile)
-                .setContentTitle("Tastile")
-                .setContentText("This is a test notification from Tastile.")
-                .setStyle(NotificationCompat.BigTextStyle().bigText("This is a test notification from Tastile."))
+                .setContentTitle(context.getString(R.string.app_name))
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
                 .setAutoCancel(true)

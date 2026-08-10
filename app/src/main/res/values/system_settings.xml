@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Setting</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_system">Device</string>
+    <string name="settings_security_lock_on">Security lock on</string>
+    <string name="settings_security_lock_off">Security lock off</string>
+    <string name="settings_security_lock_timeout_label">Timeout: %1$d min</string>
+    <string name="settings_security_lock_timeout_decrease">-5</string>
+    <string name="settings_security_lock_timeout_increase">+5</string>
+    <string name="settings_notifications_allow">Allow</string>
+    <string name="settings_notifications_test">Test</string>
+    <string name="settings_notifications_status_allowed">Notifications enabled</string>
+    <string name="settings_notifications_status_denied">Notifications denied</string>
+    <string name="settings_notifications_status_unsupported">Notifications unsupported</string>
+    <string name="picker_dialog_theme_dark">Dark (default)</string>
+    <string name="picker_dialog_theme_light">Light</string>
+    <string name="picker_dialog_timeout_title">Lock timeout</string>
+    <string name="picker_dialog_timeout_5">5 min</string>
+    <string name="picker_dialog_timeout_15">15 min</string>
+    <string name="picker_dialog_timeout_60">60 min</string>
+</resources>

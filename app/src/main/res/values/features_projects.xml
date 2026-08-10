@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_projects_title">Projects</string>
+    <string name="panels_projects_all_projects">All Projects</string>
+    <string name="panels_projects_loading_projects">Loading projects…</string>
+    <string name="panels_projects_new_button">+ New</string>
+    <string name="panels_projects_name_placeholder">Project name</string>
+    <string name="panels_projects_slug_placeholder">slug (optional)</string>
+    <string name="panels_projects_slug_hint">Lowercase letters, numbers, dashes only</string>
+    <string name="panels_projects_create">Create</string>
+    <string name="panels_projects_creating">Creating…</string>
+    <string name="panels_projects_cancel">Cancel</string>
+    <string name="panels_projects_delete">Delete</string>
+    <string name="panels_projects_delete_confirm_title">Delete project \"%1$s\"?</string>
+    <string name="panels_projects_delete_confirm_body">This permanently deletes the project and its associations.</string>
+    <string name="panels_projects_tiles_section_title">Tiles in this project</string>
+    <string name="panels_projects_filtered_tile_count">%1$d tiles</string>
+    <string name="empty_projects_title">No projects yet</string>
+    <string name="empty_projects_hint">Add a project to start organising tiles.</string>
+    <string name="projects_summary_count">%1$d projects</string>
+    <string name="projects_summary_count_one">1 project</string>
+    <string name="projects_summary_count_zero">No projects yet</string>
+    <string name="projects_tile_count">%1$d tiles</string>
+    <string name="projects_tile_count_one">1 tile</string>
+    <string name="projects_tile_count_zero">No tiles</string>
+    <string name="projects_last_activity_never">No activity yet</string>
+    <string name="projects_last_activity_updated">Updated %1$s</string>
+    <string name="projects_open_button">Open</string>
+    <string name="projects_new_button">New</string>
+    <string name="projects_section_all">All projects</string>
+    <string name="projects_section_scoped">Tiles in this project</string>
+    <string name="projects_select_hint">Select a project to scope the tiles below.</string>
+    <string name="projects_color_default" translatable="false">#6B7280</string>
+</resources>

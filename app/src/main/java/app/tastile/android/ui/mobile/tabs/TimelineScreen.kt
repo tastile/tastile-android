@@ -21,9 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
@@ -211,7 +213,7 @@ fun TimelineScreen(
         ) {
             Icon(
                 imageVector = Icons.Filled.Add,
-                contentDescription = "Create",
+                contentDescription = stringResource(R.string.fab_create),
                 modifier = Modifier.size(24.dp),
             )
         }

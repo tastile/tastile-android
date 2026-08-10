@@ -30,7 +30,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.data.api.Workspace
@@ -55,24 +57,25 @@ fun ProjectEditForm(
     val candidates = remember(workspace.id, workspaces) {
         orderWorkspaceTree(workspaces.filterNot { it.id in blockedIds })
     }
+    val topLevelLabel = stringResource(R.string.project_parent_top_level)
     Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-        OutlinedTextField(name, { name = it.take(80) }, label = { Text("Name") }, singleLine = true,
+        OutlinedTextField(name, { name = it.take(80) }, label = { Text(stringResource(R.string.project_field_name)) }, singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag("project-edit-name"))
-        OutlinedTextField(slug, { slug = it.lowercase().filter { c -> c.isLetterOrDigit() || c == '-' }.take(40) }, label = { Text("Slug") }, singleLine = true,
+        OutlinedTextField(slug, { slug = it.lowercase().filter { c -> c.isLetterOrDigit() || c == '-' }.take(40) }, label = { Text(stringResource(R.string.project_field_slug)) }, singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag("project-edit-slug"))
-        OutlinedTextField(color, { color = it }, label = { Text("Color") }, singleLine = true,
+        OutlinedTextField(color, { color = it }, label = { Text(stringResource(R.string.project_field_color)) }, singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag("project-edit-color"))
         Box(modifier = Modifier.fillMaxWidth()) {
             AppPickerButton(
-                label = "Parent",
-                value = workspaces.firstOrNull { it.id == parentId }?.displayName ?: "Top level",
+                label = stringResource(R.string.project_field_parent),
+                value = workspaces.firstOrNull { it.id == parentId }?.displayName ?: topLevelLabel,
                 onClick = { menuOpen = true },
                 leadingIcon = Icons.Outlined.AccountTree,
                 testTag = "project-edit-parent",
             )
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("Top level") },
+                    text = { Text(topLevelLabel) },
                     leadingIcon = { Icon(Icons.Outlined.AccountTree, contentDescription = null) },
                     onClick = { parentId = null; menuOpen = false },
                 )
@@ -89,14 +92,14 @@ fun ProjectEditForm(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             NiaButton(
-                text = { Text(if (busy) "Saving…" else "Save") },
+                text = { Text(if (busy) stringResource(R.string.project_saving) else stringResource(R.string.project_save)) },
                 onClick = { onSave(name, slug.ifBlank { null }, color.ifBlank { null }, parentId) },
                 enabled = !busy && name.isNotBlank(),
                 leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
                 modifier = Modifier.testTag("project-edit-save"),
             )
             NiaTextButton(
-                text = { Text("Cancel") },
+                text = { Text(stringResource(R.string.dialog_cancel)) },
                 onClick = onCancel,
                 enabled = !busy,
             )

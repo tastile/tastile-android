@@ -46,9 +46,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
@@ -134,7 +136,7 @@ fun QuickCreateSheetMobile(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Close,
-                                contentDescription = "Close",
+                                contentDescription = stringResource(R.string.quickcreate_close_cd),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -151,7 +153,7 @@ fun QuickCreateSheetMobile(
                             ),
                             modifier = Modifier.testTag("quick-create-handle-submit"),
                         ) {
-                            Text("Create")
+                            Text(stringResource(R.string.quickcreate_create_button))
                         }
                     },
                 )
@@ -184,7 +186,7 @@ fun QuickCreateSheetMobile(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
-                                    contentDescription = "Back",
+                                    contentDescription = stringResource(R.string.quickcreate_back_cd),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }

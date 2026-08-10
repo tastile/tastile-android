@@ -156,7 +156,7 @@ fun DetailedTileCard(
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = onDelete) {
-                Icon(Icons.Outlined.Close, contentDescription = "Delete")
+                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.tile_edit_delete_cd))
             }
         }
         if (meta.isNotBlank()) {

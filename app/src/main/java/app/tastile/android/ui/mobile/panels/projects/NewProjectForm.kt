@@ -65,6 +65,7 @@ fun NewProjectForm(
     var parentId by remember { mutableStateOf<String?>(null) }
     var parentMenuOpen by remember { mutableStateOf(false) }
     val ordered = remember(workspaces) { orderWorkspaceTree(workspaces) }
+    val topLevelLabel = stringResource(R.string.project_parent_top_level)
 
     Column(
         modifier = modifier
@@ -95,21 +96,21 @@ fun NewProjectForm(
         OutlinedTextField(
             value = color,
             onValueChange = { color = it },
-            label = { Text("Color") },
+            label = { Text(stringResource(R.string.project_field_color)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag("project-create-color"),
         )
         Box(modifier = Modifier.fillMaxWidth()) {
             AppPickerButton(
-                label = "Parent",
-                value = workspaces.firstOrNull { it.id == parentId }?.displayName ?: "Top level",
+                label = stringResource(R.string.project_field_parent),
+                value = workspaces.firstOrNull { it.id == parentId }?.displayName ?: topLevelLabel,
                 onClick = { parentMenuOpen = true },
                 leadingIcon = Icons.Outlined.AccountTree,
                 testTag = "project-create-parent",
             )
             DropdownMenu(expanded = parentMenuOpen, onDismissRequest = { parentMenuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("Top level") },
+                    text = { Text(topLevelLabel) },
                     leadingIcon = { Icon(Icons.Outlined.AccountTree, contentDescription = null) },
                     onClick = { parentId = null; parentMenuOpen = false },
                 )

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preferences_nav_general">全般設定</string>
+    <string name="preferences_nav_profile">プロフィール</string>
+    <string name="preferences_nav_subscription">サブスクリプション</string>
+    <string name="preferences_nav_tokens">アクセストークン</string>
+    <string name="preferences_account_title">アカウント設定</string>
+    <string name="preferences_account_profile_heading">プロフィール情報</string>
+    <string name="preferences_account_profile_guide">メールアドレスとログイン方法を管理します。</string>
+    <string name="preferences_account_account_heading">アカウント</string>
+    <string name="preferences_account_refresh">更新</string>
+    <string name="preferences_account_loading">読み込み中…</string>
+    <string name="preferences_account_email">メールアドレス</string>
+    <string name="preferences_account_email_verified">メール確認</string>
+    <string name="preferences_account_verified">確認済み</string>
+    <string name="preferences_account_unverified">未確認</string>
+    <string name="preferences_account_account_id">Account ID</string>
+    <string name="preferences_account_change_email_heading">登録メールアドレスの変更</string>
+    <string name="preferences_account_new_email">新しいメールアドレス</string>
+    <string name="preferences_account_send_code">変更コードを送信</string>
+    <string name="preferences_account_code">確認コード</string>
+    <string name="preferences_account_verify_code">コードを確認</string>
+    <string name="preferences_account_login_methods">ログイン方法</string>
+    <string name="preferences_account_passkey">passkey / 外部ログインを追加・変更</string>
+    <string name="preferences_account_email_otp_relogin">メールOTPで再ログイン</string>
+    <string name="preferences_account_subscription_heading">サブスクリプション</string>
+    <string name="preferences_account_subscription_guide">プランと請求情報を管理します。</string>
+</resources>

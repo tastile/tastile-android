@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tiles_duration">所要</string>
+    <string name="tiles_start_at">開始</string>
+    <string name="panels_references_title">参照</string>
+    <string name="panels_references_empty">ラベルがまだありません。タイルにラベルを付けるとここに表示されます。</string>
+    <string name="empty_tiles_title">タイルがありません</string>
+    <string name="empty_tiles_hint">プロジェクトタブからタイルを作成してタイムラインを埋めましょう。</string>
+    <string name="tile_occurrence_label">予定: %1$s</string>
+    <string name="tiles_stat_open">オープン · %1$d</string>
+    <string name="tiles_stat_estimated">見積もり · %1$d分</string>
+    <string name="tiles_stat_sections">セクション · %1$d</string>
+</resources>

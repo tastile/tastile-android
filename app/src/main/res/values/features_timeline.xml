@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_timeline_empty">No blocks in this range. Create a tile to seed the timeline.</string>
+    <string name="panels_timeline_loading">Loading timeline…</string>
+    <string name="panels_timeline_meta_blocks">blocks</string>
+    <string name="panels_timeline_meta_work">work</string>
+    <string name="panels_timeline_meta_breaks">breaks</string>
+</resources>

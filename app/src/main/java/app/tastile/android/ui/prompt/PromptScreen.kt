@@ -34,11 +34,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 
 @Composable
@@ -54,9 +56,10 @@ fun PromptScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     
     // Show error snackbar
+    val errorPrefix = stringResource(R.string.prompt_error_prefix)
     LaunchedEffect(error) {
         error?.let {
-            snackbarHostState.showSnackbar("Error: $it")
+            snackbarHostState.showSnackbar("$errorPrefix: $it")
             viewModel.clearError()
         }
     }
@@ -79,13 +82,16 @@ fun PromptScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Prompt",
+                        text = stringResource(R.string.prompt_title),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.prompt_action_refresh),
+                        )
                     }
                 }
             }
@@ -123,15 +129,15 @@ fun PromptScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         Text(
-                            text = "Working for $elapsedMinutes minutes",
+                            text = stringResource(R.string.prompt_working_for_minutes, elapsedMinutes),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
+
                         Text(
-                            text = "Prompt will appear after 25 minutes",
+                            text = stringResource(R.string.prompt_will_appear_after),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -143,16 +149,16 @@ fun PromptScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "No active tiles",
+                            text = stringResource(R.string.prompt_no_active_tiles),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         Text(
-                            text = "Start a tile from the Now screen to see prompts here",
+                            text = stringResource(R.string.prompt_start_tile_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline,
                             textAlign = TextAlign.Center,
@@ -192,15 +198,15 @@ fun ActivePromptCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "You've been working for",
+                text = stringResource(R.string.prompt_elapsed_intro),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
-                text = "$elapsedMinutes minutes",
+                text = stringResource(R.string.prompt_minutes_label, elapsedMinutes),
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -240,9 +246,9 @@ fun ActivePromptCard(
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Continue Working")
+                    Text(stringResource(R.string.prompt_action_continue_working))
                 }
-                
+
                 // Take break button
                 FilledTonalButton(
                     onClick = onTakeBreak,
@@ -250,9 +256,9 @@ fun ActivePromptCard(
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Take a Break")
+                    Text(stringResource(R.string.prompt_action_take_break))
                 }
-                
+
                 // Complete button
                 OutlinedButton(
                     onClick = onComplete,
@@ -261,7 +267,7 @@ fun ActivePromptCard(
                         contentColor = MaterialTheme.colorScheme.tertiary
                     )
                 ) {
-                    Text("Complete Task")
+                    Text(stringResource(R.string.prompt_action_complete_task))
                 }
             }
         }

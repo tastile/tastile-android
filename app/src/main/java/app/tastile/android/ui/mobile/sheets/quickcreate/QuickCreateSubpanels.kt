@@ -409,10 +409,10 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         selected = draft.time.whenMode == QuickCreateWhenMode.None,
         onClick = { setWhen(QuickCreateWhenMode.None) },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-when-none"),
-        label = { Text("No date or time") },
+        label = { Text(stringResource(R.string.quickcreate_panel_when_none)) },
         leadingIcon = { Icon(Icons.Outlined.EventBusy, contentDescription = null) },
     )
-    LocalSectionHeader(title = "When")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_when_header))
     val whenModes = listOf(QuickCreateWhenMode.Day, QuickCreateWhenMode.Range, QuickCreateWhenMode.Reference)
     val whenIcon: (QuickCreateWhenMode) -> androidx.compose.ui.graphics.vector.ImageVector = { mode ->
         when (mode) {
@@ -441,11 +441,11 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         }
     }
     if (draft.time.whenMode == QuickCreateWhenMode.Day || draft.time.whenMode == QuickCreateWhenMode.Range) Column(Modifier.testTag("quick-create-calendar")) {
-        NativeDateField("Date", draft.time.span.start, "quick-create-start") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(start = value))) }
-        if (draft.time.whenMode == QuickCreateWhenMode.Range) NativeDateField("End date", draft.time.span.end, "quick-create-end") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }
+        NativeDateField(stringResource(R.string.picker_date_start), draft.time.span.start, "quick-create-start") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(start = value))) }
+        if (draft.time.whenMode == QuickCreateWhenMode.Range) NativeDateField(stringResource(R.string.picker_date_end), draft.time.span.end, "quick-create-end") { value -> store.updateTime(draft.time.copy(span = draft.time.span.copy(end = value))) }
     }
     if (draft.time.whenMode == QuickCreateWhenMode.Reference) Column(Modifier.testTag("quick-create-reference-catalog")) {
-        LocalSectionHeader(title = "Reference range")
+        LocalSectionHeader(title = stringResource(R.string.quickcreate_summary_reference_range))
         LocalPickerField(
             label = stringResource(R.string.picker_reference_label),
             value = draft.time.referenceId.orEmpty().ifBlank { "—" },
@@ -453,10 +453,15 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
             leadingIcon = Icons.Outlined.Tag,
             modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-id"),
         )
-        OutlinedTextField(draft.time.referenceLabel, { value -> store.updateTime(draft.time.copy(referenceLabel = value)) }, label = { Text("Reference label") }, modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-label"))
+        OutlinedTextField(
+            draft.time.referenceLabel,
+            { value -> store.updateTime(draft.time.copy(referenceLabel = value)) },
+            label = { Text(stringResource(R.string.quickcreate_panel_reference_label)) },
+            modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-label"),
+        )
     }
     if (draft.time.whenMode != QuickCreateWhenMode.None) {
-        LocalSectionHeader(title = "Time of day")
+        LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_time_of_day_header))
         val timeOfDayModes = QuickCreateTimeOfDayMode.entries.toList()
         // M3 Phase 4b: single-choice time-of-day → horizontally scrollable FilterChip row.
         LazyRow(
@@ -524,9 +529,9 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                 )
             }
             val quickRanges = listOf(
-                Triple("morning", "06:00" to "10:00", Icons.Outlined.WbSunny),
-                Triple("midday", "09:00" to "18:00", Icons.Outlined.LightMode),
-                Triple("night", "18:00" to "24:00", Icons.Outlined.DarkMode),
+                Triple(stringResource(R.string.quickcreate_quickrange_morning), "06:00" to "10:00", Icons.Outlined.WbSunny),
+                Triple(stringResource(R.string.quickcreate_quickrange_midday), "09:00" to "18:00", Icons.Outlined.LightMode),
+                Triple(stringResource(R.string.quickcreate_quickrange_night), "18:00" to "24:00", Icons.Outlined.DarkMode),
             )
             // Single-choice quick-range → horizontally scrollable FilterChip row.
             LazyRow(
@@ -562,19 +567,19 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
     ) {
         Icon(Icons.Outlined.Add, contentDescription = null)
         Spacer(Modifier.width(8.dp))
-        Text("Add window")
+        Text(stringResource(R.string.quickcreate_panel_add_window))
     }
     draft.windows.forEachIndexed { index, window ->
         var showWindowStartDate by remember(index) { mutableStateOf(false) }
         var showWindowEndDate by remember(index) { mutableStateOf(false) }
         var showWindowReferencePicker by remember(index) { mutableStateOf(false) }
-        LocalSectionHeader(title = "Window ${index + 1}")
+        LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_window_header, index + 1))
         val windowKinds = listOf(0, 1, 2, 3)
         val windowKindLabel: (Int) -> String = { kind -> when (kind) {
-            0 -> "Calendar"
-            1 -> "Label span"
-            2 -> "Parent span"
-            else -> "Gap"
+            0 -> stringResource(R.string.quickcreate_panel_window_kind_calendar)
+            1 -> stringResource(R.string.quickcreate_panel_window_kind_label_span)
+            2 -> stringResource(R.string.quickcreate_panel_window_kind_parent_span)
+            else -> stringResource(R.string.quickcreate_panel_window_kind_gap)
         } }
         val windowKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
             0 -> Icons.Outlined.Anchor
@@ -659,7 +664,7 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         ) {
             Icon(Icons.Outlined.Delete, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Remove window")
+            Text(stringResource(R.string.quickcreate_panel_remove_window))
         }
     }
     if (showReferencePicker) {
@@ -681,7 +686,7 @@ private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
         selected = duration.minMs == null && duration.maxMs == null,
         onClick = { store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(null, null))) },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-none"),
-        label = { Text("No duration") },
+        label = { Text(stringResource(R.string.quickcreate_panel_duration_none)) },
         leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
     )
     LocalNumberField(
@@ -690,15 +695,15 @@ private fun DurationPanel(draft: QuickCreateDraftState, store: QuickCreateStateS
             val milliseconds = minutes.coerceIn(10L, 720L) * 60_000L
             store.updateTime(draft.time.copy(durationMinMax = QuickCreateDurationRange(milliseconds, milliseconds)))
         } },
-        label = "Duration",
-        suffix = "min",
+        label = stringResource(R.string.quickcreate_panel_duration_label),
+        suffix = stringResource(R.string.quickcreate_panel_duration_suffix),
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-minutes"),
     )
     NiaFilledTonalButton(
         onClick = { /* wired by caller if needed */ },
         modifier = Modifier.fillMaxWidth().testTag("quick-create-duration-completion-link"),
         leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
-        text = { Text("Use for completion") },
+        text = { Text(stringResource(R.string.quickcreate_panel_use_for_completion)) },
     )
 }
 
@@ -711,18 +716,28 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     ) {
         Icon(Icons.Outlined.Add, contentDescription = null)
         Spacer(Modifier.width(8.dp))
-        Text("Add reference")
+        Text(stringResource(R.string.quickcreate_panel_add_reference))
     }
     draft.plan.references.forEachIndexed { index, reference ->
         val target = reference.target.jsonObjectOrEmpty()
         val pick = reference.pick.jsonObjectOrEmpty()
-        OutlinedTextField(reference.id, { value -> updateReference(draft, store, index, reference.copy(id = value)) }, label = { Text("Reference ID") }, modifier = Modifier.testTag("quick-create-reference-record-id-$index"))
-        OutlinedTextField(target.string("referenceId"), { value -> updateReference(draft, store, index, reference.copy(target = target.with("referenceId", value.ifBlank { null }))) }, label = { Text("Target reference") }, modifier = Modifier.testTag("quick-create-reference-id-$index"))
+        OutlinedTextField(
+            reference.id,
+            { value -> updateReference(draft, store, index, reference.copy(id = value)) },
+            label = { Text(stringResource(R.string.quickcreate_panel_reference_record_id)) },
+            modifier = Modifier.testTag("quick-create-reference-record-id-$index"),
+        )
+        OutlinedTextField(
+            target.string("referenceId"),
+            { value -> updateReference(draft, store, index, reference.copy(target = target.with("referenceId", value.ifBlank { null }))) },
+            label = { Text(stringResource(R.string.quickcreate_panel_target_reference)) },
+            modifier = Modifier.testTag("quick-create-reference-id-$index"),
+        )
         val targetKinds = listOf(0, 1, 2)
         val targetKindLabel: (Int) -> String = { kind -> when (kind) {
-            0 -> "Exact"
-            1 -> "Series"
-            else -> "Filter"
+            0 -> stringResource(R.string.quickcreate_panel_kind_exact)
+            1 -> stringResource(R.string.quickcreate_panel_kind_series)
+            else -> stringResource(R.string.quickcreate_panel_kind_filter)
         } }
         val targetKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> if (kind == 0) Icons.Outlined.Tag else Icons.Outlined.Link }
         // M3 Phase 4b: single-choice target-kind → horizontally scrollable FilterChip row.
@@ -741,14 +756,14 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
                 )
             }
         }
-        LocalSectionHeader(title = "Relation")
+        LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_relation_header))
         val relations = listOf(4, 3, 1, 2, 0)
         val relationLabel: (Int) -> String = { relation -> when (relation) {
-            0 -> "Touch"
-            1 -> "Inside"
-            2 -> "Overlap"
-            3 -> "Before"
-            else -> "After"
+            0 -> stringResource(R.string.quickcreate_panel_relation_touch)
+            1 -> stringResource(R.string.quickcreate_panel_relation_inside)
+            2 -> stringResource(R.string.quickcreate_panel_relation_overlap)
+            3 -> stringResource(R.string.quickcreate_panel_relation_before)
+            else -> stringResource(R.string.quickcreate_panel_relation_after)
         } }
         // M3 Phase 4b: single-choice relation → horizontally scrollable FilterChip row.
         LazyRow(
@@ -769,8 +784,8 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         LocalNumberField(
             value = pick.string("momentId", "10"),
             onValueChange = { value -> value.toIntOrNull()?.coerceIn(5, 120)?.let { minutes -> updateReference(draft, store, index, reference.copy(pick = pick.with("momentId", minutes.toString()))) } },
-            label = "Interval",
-            suffix = "min",
+            label = stringResource(R.string.quickcreate_panel_field_interval),
+            suffix = stringResource(R.string.quickcreate_panel_field_interval_suffix),
             modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-record-$index-interval"),
         )
         FilledTonalButton(
@@ -779,7 +794,7 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         ) {
             Icon(Icons.Outlined.Delete, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Remove reference")
+            Text(stringResource(R.string.quickcreate_panel_remove_reference))
         }
     }
 }
@@ -792,13 +807,13 @@ private fun defaultPlanReference() = QuickCreatePlanReference(
 
 @Composable
 private fun IntentPanel(store: QuickCreateStateStore) {
-    LocalSectionHeader(title = "Add condition or group")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_intent_header))
     val intentTargets = listOf(
-        Triple("Identity", QuickCreatePanel.Identity, Icons.Outlined.TextFields),
-        Triple("Time", QuickCreatePanel.Time, Icons.Outlined.Schedule),
-        Triple("Recurring", QuickCreatePanel.Recurring, Icons.Outlined.Repeat),
-        Triple("Placement rules", QuickCreatePanel.PlacementRules, Icons.Outlined.Tune),
-        Triple("References", QuickCreatePanel.References, Icons.Outlined.Link),
+        Triple(stringResource(R.string.quickcreate_section_identity), QuickCreatePanel.Identity, Icons.Outlined.TextFields),
+        Triple(stringResource(R.string.quickcreate_essential_time), QuickCreatePanel.Time, Icons.Outlined.Schedule),
+        Triple(stringResource(R.string.quickcreate_section_recurring), QuickCreatePanel.Recurring, Icons.Outlined.Repeat),
+        Triple(stringResource(R.string.quickcreate_section_placement_rules), QuickCreatePanel.PlacementRules, Icons.Outlined.Tune),
+        Triple(stringResource(R.string.quickcreate_section_references), QuickCreatePanel.References, Icons.Outlined.Link),
         Triple("Schedule", QuickCreatePanel.Schedule, Icons.Outlined.Tune),
         Triple("Meta", QuickCreatePanel.Meta, Icons.Outlined.Tag),
         Triple("Completion", QuickCreatePanel.Completion, Icons.Outlined.Check),
@@ -837,14 +852,14 @@ private fun NativeDateField(label: String, value: String, tag: String, onSelecte
                         open = false
                     },
                     leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
-                    text = { Text("OK") },
+                    text = { Text(stringResource(R.string.dialog_ok)) },
                 )
             },
             dismissButton = {
                 NiaTextButton(
                     onClick = { open = false },
                     leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
-                    text = { Text("Cancel") },
+                    text = { Text(stringResource(R.string.dialog_cancel)) },
                 )
             },
         ) { DatePicker(state = state) }
@@ -854,8 +869,12 @@ private fun NativeDateField(label: String, value: String, tag: String, onSelecte
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStateStore) {
-    LocalSectionHeader(title = "Logic")
-    val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_logic_header))
+    val logicKinds = listOf(
+        0 to stringResource(R.string.quickcreate_completion_logic_all),
+        1 to stringResource(R.string.quickcreate_completion_logic_any),
+        2 to stringResource(R.string.quickcreate_completion_logic_not),
+    )
     val logicIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
         0 -> Icons.AutoMirrored.Outlined.PlaylistAddCheck
         1 -> Icons.AutoMirrored.Outlined.PlaylistAdd
@@ -887,9 +906,9 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
     }
     ConditionControls(draft.plan.completion.root, onChange = { root -> store.updatePlan(draft.plan.copy(completion = draft.plan.completion.copy(root = root))) }, allowTermKind = false)
     val completionAddTerms = listOf(
-        Triple("task", "Task", Icons.Outlined.Task),
-        Triple("relation", "Relation", Icons.Outlined.Link),
-        Triple("metric", "Metric", Icons.Outlined.BarChart),
+        Triple("task", stringResource(R.string.quickcreate_panel_completion_term_meta), Icons.Outlined.Task),
+        Triple("relation", stringResource(R.string.quickcreate_panel_completion_term_relation), Icons.Outlined.Link),
+        Triple("metric", stringResource(R.string.quickcreate_panel_completion_term_metric), Icons.Outlined.BarChart),
     )
     // M3 Phase 4b: action-trigger chips → horizontally scrollable AssistChip row,
     // visually unified with the surrounding FilterChip groups.
@@ -921,7 +940,7 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         },
         modifier = Modifier.testTag("quick-create-completion-add-time"),
         leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-        text = { Text("Add time requirement") },
+        text = { Text(stringResource(R.string.quickcreate_panel_add_time_requirement)) },
     )
     draft.plan.completion.timeRequirements.forEachIndexed { index, requirement ->
         val required = requirement.required.jsonObjectOrEmpty()
@@ -937,8 +956,8 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
                 }
                 updateTimeRequirement(draft, store, index, requirement.copy(required = nextRequired))
             },
-            label = "Minutes",
-            suffix = "min",
+            label = stringResource(R.string.quickcreate_panel_field_minutes),
+            suffix = stringResource(R.string.quickcreate_panel_field_minutes_suffix),
             modifier = Modifier.fillMaxWidth().testTag("time-requirement-$index-required-minutes"),
         )
         NiaFilledTonalButton(
@@ -953,7 +972,7 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             },
             modifier = Modifier.testTag("time-requirement-$index-remove"),
             leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-            text = { Text("Remove time requirement") },
+            text = { Text(stringResource(R.string.quickcreate_panel_remove_time_requirement)) },
         )
     }
     NiaTextButton(
@@ -962,7 +981,7 @@ private fun CompletionPanel(draft: QuickCreateDraftState, store: QuickCreateStat
         },
         modifier = Modifier.testTag("quick-create-completion-clear"),
         leadingIcon = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
-        text = { Text("Clear completion") },
+        text = { Text(stringResource(R.string.quickcreate_panel_clear_completion)) },
     )
 }
 
@@ -996,7 +1015,12 @@ private fun updateTimeRequirement(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable private fun ConditionControls(node: QuickCreateConditionNode, onChange: (QuickCreateConditionNode) -> Unit, path: String = "root", allowTermKind: Boolean = true) {
-    val logicKinds = listOf(0 to "ALL", 1 to "ANY", 2 to "NOT", 3 to "TERM").filter { allowTermKind || it.first != 3 }
+    val logicKinds = listOf(
+        0 to stringResource(R.string.quickcreate_completion_logic_all),
+        1 to stringResource(R.string.quickcreate_completion_logic_any),
+        2 to stringResource(R.string.quickcreate_completion_logic_not),
+        3 to "TERM",
+    ).filter { allowTermKind || it.first != 3 }
     val logicIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
         0 -> Icons.AutoMirrored.Outlined.PlaylistAddCheck
         1 -> Icons.AutoMirrored.Outlined.PlaylistAdd
@@ -1020,7 +1044,17 @@ private fun updateTimeRequirement(
         }
     }
     if (node.kind == 3) {
-        val termTypes = listOf("calendar", "moment", "relation", "gap", "requirement", "task", "fact", "metric", "life")
+        val termTypes = listOf(
+            "calendar" to stringResource(R.string.quickcreate_panel_term_calendar),
+            "moment" to stringResource(R.string.quickcreate_panel_term_moment),
+            "relation" to stringResource(R.string.quickcreate_panel_term_relation),
+            "gap" to stringResource(R.string.quickcreate_panel_term_gap),
+            "requirement" to stringResource(R.string.quickcreate_panel_term_requirement),
+            "task" to stringResource(R.string.quickcreate_panel_term_task),
+            "fact" to stringResource(R.string.quickcreate_panel_term_fact),
+            "metric" to stringResource(R.string.quickcreate_panel_term_metric),
+            "life" to stringResource(R.string.quickcreate_panel_term_life),
+        )
         val termIcon: (String) -> androidx.compose.ui.graphics.vector.ImageVector = { type -> when (type) {
             "calendar" -> Icons.Outlined.CalendarMonth
             "moment" -> Icons.Outlined.Schedule
@@ -1039,11 +1073,11 @@ private fun updateTimeRequirement(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            items(termTypes, key = { it }) { type ->
+            items(termTypes, key = { it.first }) { (type, label) ->
                 FilterChip(
                     selected = node.term?.jsonObjectOrEmpty()?.string("kind") == type,
                     onClick = { onChange(node.copy(term = defaultTermValue(type))) },
-                    label = { Text(type) },
+                    label = { Text(label) },
                     leadingIcon = { Icon(termIcon(type), contentDescription = null) },
                     modifier = Modifier.testTag("condition-$path-term-$type"),
                 )
@@ -1070,14 +1104,14 @@ private fun updateTimeRequirement(
                 onClick = { onChange(node.copy(children = node.children.filterIndexed { item, _ -> item != index })) },
                 modifier = Modifier.testTag("condition-$path-child-$index-remove"),
                 leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-                text = { Text("Remove") },
+                text = { Text(stringResource(R.string.quickcreate_panel_remove)) },
             )
         }
         NiaFilledTonalButton(
             onClick = { onChange(node.copy(children = node.children + QuickCreateConditionNode(3, term = defaultTermValue("calendar")))) },
             modifier = Modifier.testTag("condition-$path-add-child"),
             leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-            text = { Text("Add condition") },
+            text = { Text(stringResource(R.string.quickcreate_panel_add_condition)) },
         )
     }
 }
@@ -1087,15 +1121,15 @@ private fun updateTimeRequirement(
     LocalNumberField(
         value = value.string("weekdayMask", "0"),
         onValueChange = { input -> onChange(term.withValue("weekdayMask", input.toIntOrNull() ?: 0)) },
-        label = "Weekday mask",
-        suffix = "0–127",
+        label = stringResource(R.string.quickcreate_panel_field_weekday_mask),
+        suffix = stringResource(R.string.quickcreate_panel_field_weekday_mask_suffix),
         modifier = Modifier.fillMaxWidth().testTag("condition-$path-calendar-weekday-mask"),
     )
     LocalNumberField(
         value = value.string("offsetMin", "0"),
         onValueChange = { input -> onChange(term.withValue("offsetMin", input.toIntOrNull() ?: 0)) },
-        label = "Offset minutes",
-        suffix = "min",
+        label = stringResource(R.string.quickcreate_panel_field_offset_minutes),
+        suffix = stringResource(R.string.quickcreate_panel_field_offset_minutes_suffix),
         modifier = Modifier.fillMaxWidth().testTag("condition-$path-calendar-offset"),
     )
     // Calendar term's time-of-day window. Previously a free-text HH:mm field;
@@ -1106,7 +1140,7 @@ private fun updateTimeRequirement(
     var showCalendarStart by remember { mutableStateOf(false) }
     var showCalendarEnd by remember { mutableStateOf(false) }
     LocalPickerField(
-        label = "Time start",
+        label = stringResource(R.string.quickcreate_panel_field_time_start),
         value = value.string("timeStart").ifBlank { "—" },
         onClick = { showCalendarStart = true },
         leadingIcon = Icons.Outlined.Schedule,
@@ -1125,7 +1159,7 @@ private fun updateTimeRequirement(
         )
     }
     LocalPickerField(
-        label = "Time end",
+        label = stringResource(R.string.quickcreate_panel_field_time_end),
         value = value.string("timeEnd").ifBlank { "—" },
         onClick = { showCalendarEnd = true },
         leadingIcon = Icons.Outlined.Schedule,
@@ -1147,12 +1181,17 @@ private fun updateTimeRequirement(
 
 @Composable private fun MomentTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
-    OutlinedTextField(value.string("referenceId"), { input -> onChange(term.withValue("referenceId", input.ifBlank { null })) }, label = { Text("Reference ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-moment-reference"))
+    OutlinedTextField(
+        value.string("referenceId"),
+        { input -> onChange(term.withValue("referenceId", input.ifBlank { null })) },
+        label = { Text(stringResource(R.string.quickcreate_panel_field_moment_id)) },
+        modifier = Modifier.fillMaxWidth().testTag("condition-moment-reference"),
+    )
     LocalNumberField(
         value = value.string("offsetMs", "0"),
         onValueChange = { input -> onChange(term.withValue("offsetMs", input.toLongOrNull() ?: 0L)) },
-        label = "Offset ms",
-        suffix = "ms",
+        label = stringResource(R.string.quickcreate_panel_field_offset_ms),
+        suffix = stringResource(R.string.quickcreate_panel_field_offset_ms_suffix),
         modifier = Modifier.fillMaxWidth().testTag("condition-moment-offset"),
     )
 }
@@ -1160,14 +1199,19 @@ private fun updateTimeRequirement(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable private fun RelationTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
-    OutlinedTextField(value.string("referenceId"), { input -> onChange(term.withValue("referenceId", input)) }, label = { Text("Reference ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-relation-reference"))
+    OutlinedTextField(
+        value.string("referenceId"),
+        { input -> onChange(term.withValue("referenceId", input)) },
+        label = { Text(stringResource(R.string.quickcreate_panel_field_reference_id)) },
+        modifier = Modifier.fillMaxWidth().testTag("condition-relation-reference"),
+    )
     val relations = listOf(0, 1, 2, 3, 4)
     val relationLabel: (Int) -> String = { r -> when (r) {
-        0 -> "Touch"
-        1 -> "Inside"
-        2 -> "Overlap"
-        3 -> "Before"
-        else -> "After"
+        0 -> stringResource(R.string.quickcreate_panel_relation_touch)
+        1 -> stringResource(R.string.quickcreate_panel_relation_inside)
+        2 -> stringResource(R.string.quickcreate_panel_relation_overlap)
+        3 -> stringResource(R.string.quickcreate_panel_relation_before)
+        else -> stringResource(R.string.quickcreate_panel_relation_after)
     } }
     // M3 Phase 4b: single-choice relation → horizontally scrollable FilterChip row.
     LazyRow(
@@ -1187,10 +1231,10 @@ private fun updateTimeRequirement(
     }
     val windowKinds = listOf(0, 1, 2, 3)
     val windowKindLabel: (Int) -> String = { k -> when (k) {
-        0 -> "Calendar"
-        1 -> "Label span"
-        2 -> "Parent span"
-        else -> "Gap"
+        0 -> stringResource(R.string.quickcreate_panel_window_kind_calendar)
+        1 -> stringResource(R.string.quickcreate_panel_window_kind_label_span)
+        2 -> stringResource(R.string.quickcreate_panel_window_kind_parent_span)
+        else -> stringResource(R.string.quickcreate_panel_window_kind_gap)
     } }
     // M3 Phase 4b: single-choice window-kind → horizontally scrollable FilterChip row.
     LazyRow(
@@ -1212,31 +1256,36 @@ private fun updateTimeRequirement(
 
 @Composable private fun TaskTermFields(term: JsonObject, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
-    OutlinedTextField(value.string("taskId"), { input -> onChange(term.withValue("taskId", input)) }, label = { Text("Task ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-task-id"))
+    OutlinedTextField(
+        value.string("taskId"),
+        { input -> onChange(term.withValue("taskId", input)) },
+        label = { Text(stringResource(R.string.quickcreate_panel_field_task_id)) },
+        modifier = Modifier.fillMaxWidth().testTag("condition-task-id"),
+    )
     LocalNumberField(
         value = value.string("state", "0"),
         onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
-        label = "State",
-        suffix = "0–N",
+        label = stringResource(R.string.quickcreate_panel_field_state_label),
+        suffix = stringResource(R.string.quickcreate_panel_field_state_suffix),
         modifier = Modifier.fillMaxWidth().testTag("condition-task-state"),
     )
 }
 
 @Composable private fun GapTermFields(path: String) {
     // Current Web TermFields intentionally exposes Gap as an informational placeholder only.
-    Text("Gap configuration is preserved when supplied by the API.", modifier = Modifier.testTag("condition-$path-gap-placeholder"))
+    Text(stringResource(R.string.quickcreate_panel_gap_placeholder), modifier = Modifier.testTag("condition-$path-gap-placeholder"))
 }
 
 @Composable private fun RequirementTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
     OutlinedTextField(value.string("requirementId"), { input ->
         onChange(term.withValue("requirementId", input))
-    }, label = { Text("Requirement ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-requirement-id"))
+    }, label = { Text(stringResource(R.string.quickcreate_panel_field_requirement_id)) }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-requirement-id"))
     LocalNumberField(
         value = value.string("state", "0"),
         onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
-        label = "State",
-        suffix = "0–N",
+        label = stringResource(R.string.quickcreate_panel_field_state_label),
+        suffix = stringResource(R.string.quickcreate_panel_field_state_suffix),
         modifier = Modifier.fillMaxWidth().testTag("condition-$path-requirement-state"),
     )
 }
@@ -1251,28 +1300,28 @@ private fun updateTimeRequirement(
     val value = term.valueObject()
     OutlinedTextField(value.string(idKey), { input ->
         onChange(term.withValue(idKey, input))
-    }, label = { Text("ID") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-id"))
+    }, label = { Text(stringResource(R.string.quickcreate_panel_field_id_label)) }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-id"))
     LocalNumberField(
         value = value.string("op", "0"),
         onValueChange = { input -> onChange(term.withValue("op", input.toIntOrNull() ?: 0)) },
-        label = "Operator",
+        label = stringResource(R.string.quickcreate_panel_field_op_label),
         modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-op"),
     )
     OutlinedTextField(value.string("value"), { input ->
         onChange(term.withValue("value", scalarValue(input)))
-    }, label = { Text("Value") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-value"))
+    }, label = { Text(stringResource(R.string.quickcreate_panel_field_value_label)) }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-$kind-value"))
 }
 
 @Composable private fun LifeTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
     OutlinedTextField(value.string("target"), { input ->
         onChange(term.withValue("target", input))
-    }, label = { Text("Target") }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-life-target"))
+    }, label = { Text(stringResource(R.string.quickcreate_panel_field_target_label)) }, modifier = Modifier.fillMaxWidth().testTag("condition-$path-life-target"))
     LocalNumberField(
         value = value.string("state", "0"),
         onValueChange = { input -> onChange(term.withValue("state", input.toIntOrNull() ?: 0)) },
-        label = "State",
-        suffix = "0–N",
+        label = stringResource(R.string.quickcreate_panel_field_state_label),
+        suffix = stringResource(R.string.quickcreate_panel_field_state_suffix),
         modifier = Modifier.fillMaxWidth().testTag("condition-$path-life-state"),
     )
 }
@@ -1315,12 +1364,12 @@ private fun MetaPanel(
     knownTags: List<String>,
     onBack: () -> Unit,
 ) {
-    LocalSectionHeader(title = "Project")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_meta_project))
     Column(Modifier.testTag("meta-project-catalog")) {
         FilterChip(
             selected = draft.meta.ownerSubjectId == null,
             onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null)) },
-            label = { Text("No project") },
+            label = { Text(stringResource(R.string.quickcreate_panel_meta_no_project)) },
             modifier = Modifier.testTag("meta-project-none"),
         )
         projects.forEach { project ->
@@ -1332,7 +1381,7 @@ private fun MetaPanel(
             )
         }
     }
-    LocalSectionHeader(title = "Tags")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_meta_tags))
     LazyRow(Modifier.testTag("meta-tag-chips")) {
         items(knownTags.filterNot { it in draft.meta.tags }, key = { it }) { tag ->
             FilterChip(false, { store.updateMeta(draft.meta.copy(tags = draft.meta.tags + tag)) }, { Text("#$tag") }, Modifier.testTag("meta-tag-suggestion-$tag"))
@@ -1342,7 +1391,12 @@ private fun MetaPanel(
         }
     }
     var tagDraft by remember { mutableStateOf("") }
-    OutlinedTextField(tagDraft, { tagDraft = it }, label = { Text("Add tag") }, modifier = Modifier.fillMaxWidth().testTag("meta-tag-input"))
+    OutlinedTextField(
+        tagDraft,
+        { tagDraft = it },
+        label = { Text(stringResource(R.string.quickcreate_panel_meta_add_tag)) },
+        modifier = Modifier.fillMaxWidth().testTag("meta-tag-input"),
+    )
     NiaFilledTonalButton(
         onClick = {
             val tag = tagDraft.trim().removePrefix("#")
@@ -1351,27 +1405,32 @@ private fun MetaPanel(
         },
         modifier = Modifier.testTag("meta-tag-add"),
         leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-        text = { Text("Add tag") },
+        text = { Text(stringResource(R.string.quickcreate_panel_meta_add_tag)) },
     )
-    OutlinedTextField(draft.meta.memo, { value -> store.updateMeta(draft.meta.copy(memo = value)) }, label = { Text("Memo") }, modifier = Modifier.fillMaxWidth().testTag("meta-memo"))
+    OutlinedTextField(
+        draft.meta.memo,
+        { value -> store.updateMeta(draft.meta.copy(memo = value)) },
+        label = { Text(stringResource(R.string.quickcreate_panel_meta_memo)) },
+        modifier = Modifier.fillMaxWidth().testTag("meta-memo"),
+    )
     FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
         NiaTextButton(
             onClick = { store.updateMeta(draft.meta.copy(ownerSubjectId = null, tags = emptyList(), memo = "")) },
             modifier = Modifier.testTag("meta-clear"),
             leadingIcon = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
-            text = { Text("Clear") },
+            text = { Text(stringResource(R.string.quickcreate_panel_meta_clear)) },
         )
         NiaTextButton(
             onClick = onBack,
             modifier = Modifier.testTag("meta-cancel"),
             leadingIcon = { Icon(Icons.Outlined.Close, contentDescription = null) },
-            text = { Text("Cancel") },
+            text = { Text(stringResource(R.string.quickcreate_panel_meta_cancel)) },
         )
         NiaButton(
             onClick = onBack,
             modifier = Modifier.testTag("meta-apply"),
             leadingIcon = { Icon(Icons.Outlined.Check, contentDescription = null) },
-            text = { Text("Apply") },
+            text = { Text(stringResource(R.string.quickcreate_panel_meta_apply)) },
         )
     }
 }
@@ -1396,21 +1455,24 @@ private fun SchedulePanel(draft: QuickCreateDraftState, store: QuickCreateStateS
     val dateFmt = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
 
     // 1. Priority (0..10).
-    LocalSectionHeader(title = "Priority")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_schedule_priority_header))
     LocalNumberField(
         value = schedule.priority.toString(),
         onValueChange = { value ->
             val coerced = value.toIntOrNull()?.coerceIn(0, 10) ?: schedule.priority
             store.updateSchedule(schedule.copy(priority = coerced))
         },
-        label = "Priority",
-        suffix = "0–10",
+        label = stringResource(R.string.quickcreate_panel_schedule_priority_label),
+        suffix = stringResource(R.string.quickcreate_panel_schedule_priority_suffix),
         modifier = Modifier.fillMaxWidth().testTag("schedule-priority"),
     )
 
     // 2. Split policy.
-    LocalSectionHeader(title = "Split policy")
-    val splitPolicyKinds = listOf(0 to "Unsplit", 1 to "Split")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_schedule_split_header))
+    val splitPolicyKinds = listOf(
+        0 to stringResource(R.string.quickcreate_panel_schedule_split_unsplit),
+        1 to stringResource(R.string.quickcreate_panel_schedule_split_split),
+    )
     LazyRow(
         modifier = Modifier.fillMaxWidth().testTag("schedule-split-kind-chips"),
         contentPadding = PaddingValues(horizontal = 0.dp),
@@ -1432,8 +1494,8 @@ private fun SchedulePanel(draft: QuickCreateDraftState, store: QuickCreateStateS
                 val next = value.toLongOrNull()?.coerceAtLeast(0L) ?: schedule.splitPolicyMinSegmentMs
                 store.updateSchedule(schedule.copy(splitPolicyMinSegmentMs = next))
             },
-            label = "Min segment",
-            suffix = "ms",
+            label = stringResource(R.string.quickcreate_panel_schedule_min_segment),
+            suffix = stringResource(R.string.quickcreate_panel_schedule_min_segment_suffix),
             modifier = Modifier.fillMaxWidth().testTag("schedule-split-min-segment"),
         )
         LocalNumberField(
@@ -1442,8 +1504,8 @@ private fun SchedulePanel(draft: QuickCreateDraftState, store: QuickCreateStateS
                 val next = value.toLongOrNull()?.coerceAtLeast(0L) ?: Long.MAX_VALUE
                 store.updateSchedule(schedule.copy(splitPolicyMaxSegmentMs = next))
             },
-            label = "Max segment",
-            suffix = "ms",
+            label = stringResource(R.string.quickcreate_panel_schedule_max_segment),
+            suffix = stringResource(R.string.quickcreate_panel_schedule_min_segment_suffix),
             modifier = Modifier.fillMaxWidth().testTag("schedule-split-max-segment"),
         )
         LocalNumberField(
@@ -1452,14 +1514,14 @@ private fun SchedulePanel(draft: QuickCreateDraftState, store: QuickCreateStateS
                 val next = value.toIntOrNull()?.coerceAtLeast(1) ?: schedule.splitPolicyMaxSegments
                 store.updateSchedule(schedule.copy(splitPolicyMaxSegments = next))
             },
-            label = "Max segments",
-            suffix = "1..N",
+            label = stringResource(R.string.quickcreate_panel_schedule_max_segments),
+            suffix = stringResource(R.string.quickcreate_panel_schedule_max_segments_suffix),
             modifier = Modifier.fillMaxWidth().testTag("schedule-split-max-segments"),
         )
     }
 
     // 3. Offset minutes (UTC offset east of UTC; default 0 = UTC).
-    LocalSectionHeader(title = "Calendar offset")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_schedule_offset_header))
     LocalNumberField(
         value = schedule.offsetMin.toString(),
         onValueChange = { value ->
@@ -1467,13 +1529,13 @@ private fun SchedulePanel(draft: QuickCreateDraftState, store: QuickCreateStateS
             val next = value.toIntOrNull()?.coerceIn(-720, 720) ?: 0
             store.updateSchedule(schedule.copy(offsetMin = next))
         },
-        label = "Offset (UTC minutes)",
-        suffix = "min",
+        label = stringResource(R.string.quickcreate_panel_schedule_offset_label),
+        suffix = stringResource(R.string.quickcreate_panel_schedule_offset_suffix),
         modifier = Modifier.fillMaxWidth().testTag("schedule-offset-min"),
     )
 
     // 4. Excluded dates (ISO yyyy-MM-dd).
-    LocalSectionHeader(title = "Excluded dates")
+    LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_schedule_excluded_header))
     LazyRow(
         modifier = Modifier.fillMaxWidth().testTag("schedule-excluded-dates-chips"),
         contentPadding = PaddingValues(horizontal = 0.dp),
@@ -1495,7 +1557,7 @@ private fun SchedulePanel(draft: QuickCreateDraftState, store: QuickCreateStateS
         onClick = { showExcludedDatePicker = true },
         modifier = Modifier.fillMaxWidth().testTag("schedule-add-excluded-date"),
         leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-        text = { Text("Add excluded date") },
+        text = { Text(stringResource(R.string.quickcreate_panel_schedule_add_excluded)) },
     )
     if (showExcludedDatePicker) {
         DatePickerSheet(

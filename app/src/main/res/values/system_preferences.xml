@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preferences_nav_general">General Preferences</string>
+    <string name="preferences_nav_profile">Profile</string>
+    <string name="preferences_nav_subscription">Subscription</string>
+    <string name="preferences_nav_tokens">Access Tokens</string>
+    <string name="preferences_account_title">Account Settings</string>
+    <string name="preferences_account_profile_heading">Profile Information</string>
+    <string name="preferences_account_profile_guide">Manage your email and sign-in methods.</string>
+    <string name="preferences_account_account_heading">Account</string>
+    <string name="preferences_account_refresh">Refresh</string>
+    <string name="preferences_account_loading">Loading…</string>
+    <string name="preferences_account_email">Email</string>
+    <string name="preferences_account_email_verified">Email verification</string>
+    <string name="preferences_account_verified">Verified</string>
+    <string name="preferences_account_unverified">Not verified</string>
+    <string name="preferences_account_account_id">Account ID</string>
+    <string name="preferences_account_change_email_heading">Change registered email</string>
+    <string name="preferences_account_new_email">New email</string>
+    <string name="preferences_account_send_code">Send change code</string>
+    <string name="preferences_account_code">Verification code</string>
+    <string name="preferences_account_verify_code">Verify code</string>
+    <string name="preferences_account_login_methods">Sign-in methods</string>
+    <string name="preferences_account_passkey">Add or change passkey / external sign-in</string>
+    <string name="preferences_account_email_otp_relogin">Re-login with email OTP</string>
+    <string name="preferences_account_subscription_heading">Subscription</string>
+    <string name="preferences_account_subscription_guide">Manage your plan and billing.</string>
+</resources>

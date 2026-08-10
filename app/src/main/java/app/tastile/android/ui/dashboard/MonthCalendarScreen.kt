@@ -22,9 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.data.repository.CalendarProjectionBlockResponse
@@ -71,7 +73,7 @@ fun MonthCalendarScreen(
         ) {
             Text(monthTitle, style = MaterialTheme.typography.titleLarge)
             NiaOutlinedButton(
-                text = { Text("Today") },
+                text = { Text(stringResource(R.string.calendar_today)) },
                 onClick = {}
             )
         }
@@ -175,7 +177,7 @@ private fun MonthDayCell(
             }
             if (cell.overflowCount > 0) {
                 Text(
-                    text = "+${cell.overflowCount} more"
+                    text = stringResource(R.string.calendar_overflow_more, cell.overflowCount)
                 )
             }
         }

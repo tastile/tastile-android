@@ -51,9 +51,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaListItem
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.theme.PanelTokens
@@ -133,21 +135,21 @@ private fun QuickCreateBaseComposition(
             FilterChip(
                 selected = false,
                 onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
-                label = { Text("Organize") },
+                label = { Text(stringResource(R.string.quickcreate_organize_chip)) },
                 leadingIcon = { Icon(Icons.Outlined.Tune, contentDescription = null) },
                 modifier = Modifier.testTag("quick-create-organize"),
             )
         }
         HorizontalDivider()
         EssentialRow(
-            label = "Time",
+            label = stringResource(R.string.quickcreate_essential_time),
             summary = timeSummary(draft),
             tag = "quick-create-essential-time",
             leadingIcon = Icons.Outlined.Schedule,
             onClick = { store.openSubpanel(QuickCreatePanel.Time) },
         )
         EssentialRow(
-            label = "Duration",
+            label = stringResource(R.string.quickcreate_essential_duration),
             summary = durationSummary(draft),
             tag = "quick-create-essential-duration",
             leadingIcon = Icons.Outlined.Timer,
@@ -155,7 +157,7 @@ private fun QuickCreateBaseComposition(
         )
         HorizontalDivider()
         NiaListItem(
-            content = { Text("Identity") },
+            content = { Text(stringResource(R.string.quickcreate_section_identity)) },
             supportingContent = {
                 Text(
                     listOf(draft.identity.visual.icon, draft.identity.visual.color)
@@ -173,22 +175,25 @@ private fun QuickCreateBaseComposition(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
         EssentialRow(
-            label = "Recurring",
+            label = stringResource(R.string.quickcreate_section_recurring),
             summary = draft.recurring.repeatMode.name,
             tag = "quick-create-essential-recurring",
             leadingIcon = Icons.Outlined.Schedule,
             onClick = { store.openSubpanel(QuickCreatePanel.Recurring) },
         )
         EssentialRow(
-            label = "Placement rules",
-            summary = "${draft.plan.planning.placementRules.size} rule(s)",
+            label = stringResource(R.string.quickcreate_section_placement_rules),
+            summary = stringResource(
+                R.string.quickcreate_placement_rule_count,
+                draft.plan.planning.placementRules.size,
+            ),
             tag = "quick-create-placement-rules-link",
             leadingIcon = Icons.Outlined.Tune,
             onClick = { store.openSubpanel(QuickCreatePanel.PlacementRules) },
         )
         HorizontalDivider()
         NiaListItem(
-            content = { Text("Completion logic") },
+            content = { Text(stringResource(R.string.quickcreate_section_completion_logic)) },
             supportingContent = { Text(conditionSummary(draft.plan.completion.root.kind)) },
             leadingContent = { Icon(Icons.Outlined.Checklist, contentDescription = null) },
             trailingContent = { Icon(Icons.Outlined.Add, contentDescription = null) },
@@ -199,8 +204,10 @@ private fun QuickCreateBaseComposition(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
         NiaListItem(
-            content = { Text("Completion requires") },
-            supportingContent = { Text("${draft.plan.completion.tasks.size} item(s)") },
+            content = { Text(stringResource(R.string.quickcreate_section_completion_requires)) },
+            supportingContent = {
+                Text(stringResource(R.string.quickcreate_completion_item_count, draft.plan.completion.tasks.size))
+            },
             leadingContent = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
             trailingContent = { Icon(Icons.Outlined.Add, contentDescription = null) },
             modifier = Modifier
@@ -211,7 +218,7 @@ private fun QuickCreateBaseComposition(
         )
         draft.plan.completion.tasks.forEachIndexed { index, task ->
             NiaListItem(
-                content = { Text(task.content.title.ifBlank { "Untitled" }) },
+                content = { Text(task.content.title.ifBlank { stringResource(R.string.tile_edit_title_fallback) }) },
                 leadingContent = { Icon(Icons.Outlined.CheckBox, contentDescription = null) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -223,9 +230,12 @@ private fun QuickCreateBaseComposition(
         HorizontalDivider()
         val isLabel = draft.plan.role == QuickCreatePlanRole.Label
         NiaListItem(
-            content = { Text("Label") },
+            content = { Text(stringResource(R.string.quickcreate_section_label)) },
             supportingContent = {
-                Text(if (isLabel) "Markers only" else "Executable when scheduled")
+                Text(
+                    if (isLabel) stringResource(R.string.quickcreate_label_markers_only)
+                    else stringResource(R.string.quickcreate_label_executable)
+                )
             },
             leadingContent = { Icon(Icons.Outlined.Flag, contentDescription = null) },
             trailingContent = {
@@ -244,7 +254,7 @@ private fun QuickCreateBaseComposition(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
         NiaListItem(
-            content = { Text("References") },
+            content = { Text(stringResource(R.string.quickcreate_section_references)) },
             leadingContent = { Icon(Icons.Outlined.Link, contentDescription = null) },
             trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
             modifier = Modifier
@@ -255,8 +265,9 @@ private fun QuickCreateBaseComposition(
         )
         val submissionValidation = quickCreateSubmissionValidation(draft)
         if (!submissionValidation.isValid) {
+            val fallbackMessage = stringResource(R.string.quickcreate_fix_required)
             Text(
-                submissionValidation.message ?: "Fix required fields",
+                submissionValidation.message ?: fallbackMessage,
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
@@ -282,10 +293,10 @@ private fun QuickCreateBaseComposition(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 NiaLoadingWheel(
-                    contentDesc = "Creating",
+                    contentDesc = stringResource(R.string.quickcreate_creating_cd),
                     wheelSize = 20.dp,
                 )
-                Text(text = "Creating…")
+                Text(text = stringResource(R.string.quickcreate_creating))
             }
         }
     }
@@ -322,11 +333,12 @@ private fun timeSummary(draft: QuickCreateDraftState): String = when {
 private fun durationSummary(draft: QuickCreateDraftState): String =
     draft.time.durationMinMax.minMs?.div(60_000)?.let { "$it min" } ?: "Not set"
 
+@Composable
 private fun conditionSummary(kind: Int): String = when (kind) {
-    0 -> "ALL"
-    1 -> "ANY"
-    2 -> "NOT"
-    else -> "ALL"
+    0 -> stringResource(R.string.quickcreate_completion_logic_all)
+    1 -> stringResource(R.string.quickcreate_completion_logic_any)
+    2 -> stringResource(R.string.quickcreate_completion_logic_not)
+    else -> stringResource(R.string.quickcreate_completion_logic_all)
 }
 
 private fun String.parseOffsetDateTimeOrNull(): OffsetDateTime? =
@@ -377,7 +389,7 @@ internal fun EditableTitleField(
             decorationBox = { innerTextField ->
                 if (value.isEmpty()) {
                     Text(
-                        text = "Tile title",
+                        text = stringResource(R.string.quickcreate_tile_title_placeholder),
                         style = typography.titleLarge,
                         color = colors.onSurfaceVariant,
                         textAlign = TextAlign.Start,

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_tokens_heading">APIトークン</string>
+    <string name="account_tokens_description">無期限のAPIトークンを複数発行し、APIキーと同じように名前と使用履歴を管理できます。</string>
+    <string name="account_tokens_new_token_heading">新しいトークン</string>
+    <string name="account_tokens_name_label">トークン名</string>
+    <string name="account_tokens_issue">トークンを発行</string>
+    <string name="account_tokens_issued_heading">発行済みトークン</string>
+    <string name="account_tokens_empty">まだAPIトークンはありません。</string>
+    <string name="account_tokens_copy">コピー</string>
+    <string name="account_tokens_revoked">失効済み</string>
+    <string name="account_tokens_revoke">失効</string>
+    <string name="account_subscription_current_plan">現在のプラン</string>
+    <string name="account_subscription_free_badge">Free</string>
+    <string name="account_subscription_free_description">アップグレードして高度な機能を利用</string>
+    <string name="account_subscription_upgrade">Pro にアップグレード</string>
+    <string name="account_subscription_manage">請求を管理</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="panels_schedule_recurring">繰り返しタイル</string>
+    <string name="panels_schedule_upcoming">今後の期限</string>
+    <string name="panels_schedule_projects">プロジェクト</string>
+    <string name="empty_schedule_title">予定がありません</string>
+    <string name="empty_schedule_hint">タイルをクイック作成するか時間帯を選んで始めましょう。</string>
+    <string name="execute_next_label">次: %1$s</string>
+</resources>

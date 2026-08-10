@@ -25,9 +25,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.data.repository.CalendarProjectionResponse
@@ -81,11 +83,11 @@ private fun DayAgendaScreen(
             .padding(12.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text("Day View", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.calendar_day_view), style = MaterialTheme.typography.titleLarge)
         Text(today.toString())
         if (todayBlocks.isEmpty()) {
             Text(
-                text = "No scheduled blocks today",
+                text = stringResource(R.string.calendar_no_blocks_today),
                 modifier = Modifier.padding(top = 12.dp)
             )
         } else {
@@ -126,7 +128,7 @@ private fun WeekAgendaScreen(
             .padding(12.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text("Week View", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.calendar_week_view), style = MaterialTheme.typography.titleLarge)
         weekDays.forEach { day ->
             val count = blocks.count { block ->
                 parseInstant(block.startAt)?.atZone(zone)?.toLocalDate() == day
@@ -137,11 +139,11 @@ private fun WeekAgendaScreen(
                     .padding(top = 10.dp)
             ) {
                 Text(day.dayOfWeek.name.take(3), modifier = Modifier.width(56.dp))
-                Text("$count items")
+                Text(stringResource(R.string.calendar_items_count, count))
             }
         }
         NiaOutlinedButton(
-            text = { Text("Today") },
+            text = { Text(stringResource(R.string.calendar_today)) },
             onClick = {},
             modifier = Modifier.padding(top = 16.dp)
         )
@@ -171,7 +173,7 @@ private fun TimelineEventBlock(
         Row(modifier = Modifier.fillMaxWidth()) {
             Icon(
                 imageVector = statusIcon(block.item.status),
-                contentDescription = "Status",
+                contentDescription = stringResource(R.string.dashboard_status_cd),
                 modifier = Modifier.width(18.dp).height(18.dp)
             )
             Text(block.item.title, modifier = Modifier.weight(1f))

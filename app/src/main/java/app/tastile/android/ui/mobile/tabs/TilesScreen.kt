@@ -126,7 +126,7 @@ fun TilesScreen(
                 .align(Alignment.BottomEnd)
                 .padding(TILES_SPACING_MD)
                 .testTag("tiles-fab-new"),
-            text = { Text("New") },
+            text = { Text(stringResource(R.string.tile_new_fab)) },
             icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
     }

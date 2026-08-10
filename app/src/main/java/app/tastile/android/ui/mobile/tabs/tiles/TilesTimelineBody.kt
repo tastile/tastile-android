@@ -161,7 +161,7 @@ private fun DateRangeRow(
                 onValueChange = {},
                 readOnly = true,
                 enabled = false,
-                label = { Text("Start") },
+                label = { Text(stringResource(R.string.panels_timeline_custom_start)) },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -176,7 +176,7 @@ private fun DateRangeRow(
                 onValueChange = {},
                 readOnly = true,
                 enabled = false,
-                label = { Text("End") },
+                label = { Text(stringResource(R.string.panels_timeline_custom_end)) },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -191,14 +191,14 @@ private fun DateRangeRow(
                         onChange(pickerState.selectedDateMillis?.let(::isoFromMillis), endIso)
                         showStartPicker = false
                     },
-                    text = { Text("OK") },
+                    text = { Text(stringResource(R.string.dialog_ok)) },
                     leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Check, contentDescription = null) },
                 )
             },
             dismissButton = {
                 NiaTextButton(
                     onClick = { showStartPicker = false },
-                    text = { Text("Cancel") },
+                    text = { Text(stringResource(R.string.dialog_cancel)) },
                     leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Close, contentDescription = null) },
                 )
             },
@@ -214,14 +214,14 @@ private fun DateRangeRow(
                         onChange(startIso, pickerState.selectedDateMillis?.let(::isoFromMillis))
                         showEndPicker = false
                     },
-                    text = { Text("OK") },
+                    text = { Text(stringResource(R.string.dialog_ok)) },
                     leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Check, contentDescription = null) },
                 )
             },
             dismissButton = {
                 NiaTextButton(
                     onClick = { showEndPicker = false },
-                    text = { Text("Cancel") },
+                    text = { Text(stringResource(R.string.dialog_cancel)) },
                     leadingIcon = { androidx.compose.material3.Icon(Icons.Outlined.Close, contentDescription = null) },
                 )
             },
@@ -261,12 +261,14 @@ private fun TimelineRow(item: CoreTimelineItem, locale: AppLocale) {
 }
 
 @Composable
-private fun TimelineSubScale.label(): String = when (this) {
-    TimelineSubScale.DAY -> "Day"
-    TimelineSubScale.WEEK -> "Week"
-    TimelineSubScale.MONTH -> "Month"
-    TimelineSubScale.CUSTOM -> "Custom"
-}
+private fun TimelineSubScale.label(): String = stringResource(
+    when (this) {
+        TimelineSubScale.DAY -> R.string.panels_calendar_day
+        TimelineSubScale.WEEK -> R.string.panels_calendar_week
+        TimelineSubScale.MONTH -> R.string.panels_calendar_month
+        TimelineSubScale.CUSTOM -> R.string.panels_calendar_custom
+    },
+)
 
 private fun isoFromMillis(millis: Long): String =
     java.time.Instant.ofEpochMilli(millis).toString()

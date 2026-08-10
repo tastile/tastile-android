@@ -23,8 +23,24 @@ fun formatIsoDateTime(
 ): String {
     if (iso.isNullOrBlank()) return ""
     val instant = runCatching { Instant.parse(iso) }.getOrNull() ?: return iso
-    val pattern = if (locale == AppLocale.JA) "M/d HH:mm" else "M/d h:mm a"
+    // 5-language gate: per-locale pattern + java.util.Locale so day-first
+    // (zh-CN) / 24h (ja) / AM/PM (en, ko) all render correctly. zh-CN/ko/es
+    // fall back to en strings on the resource side; the formatter here is
+    // the runtime hint for the date-time format.
+    val pattern = when (locale) {
+        AppLocale.EN -> "M/d h:mm a"
+        AppLocale.JA -> "M/d HH:mm"
+        AppLocale.ZH_CN -> "M/d HH:mm"
+        AppLocale.KO -> "M/d a h:mm"
+        AppLocale.ES -> "d/M H:mm"
+    }
+    val javaLocale = when (locale) {
+        AppLocale.EN -> Locale.US
+        AppLocale.JA -> Locale.JAPAN
+        AppLocale.ZH_CN -> Locale.SIMPLIFIED_CHINESE
+        AppLocale.KO -> Locale.KOREAN
+        AppLocale.ES -> Locale.forLanguageTag("es-ES")
+    }
     val zoneId = zone ?: ZoneId.systemDefault()
-    val javaLocale = if (locale == AppLocale.JA) Locale.JAPAN else Locale.US
     return instant.atZone(zoneId).format(DateTimeFormatter.ofPattern(pattern, javaLocale))
 }

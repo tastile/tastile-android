@@ -44,17 +44,17 @@ import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedCard
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
-import app.tastile.android.data.repository.AppLocale
 
 @Composable
 fun ExecuteDashboardScreen(viewModel: DashboardViewModel) {
     val loading by viewModel.loading.collectAsStateWithLifecycle()
-    val locale by viewModel.locale.collectAsStateWithLifecycle()
-    fun t(ja: String, en: String): String = if (locale == AppLocale.JA) ja else en
     val cards = viewModel.buildExecuteCards()
+    val loadingCd = stringResource(R.string.dashboard_loading)
 
     if (loading && cards.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { NiaLoadingWheel(contentDesc = "Loading") }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            NiaLoadingWheel(contentDesc = loadingCd)
+        }
         return
     }
 
@@ -72,12 +72,13 @@ fun ExecuteDashboardScreen(viewModel: DashboardViewModel) {
 @Composable
 fun TilesDashboardScreen(viewModel: DashboardViewModel) {
     val loading by viewModel.loading.collectAsStateWithLifecycle()
-    val locale by viewModel.locale.collectAsStateWithLifecycle()
-    fun t(ja: String, en: String): String = if (locale == AppLocale.JA) ja else en
     val cards = viewModel.buildTileCards()
+    val loadingCd = stringResource(R.string.dashboard_loading)
 
     if (loading && cards.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { NiaLoadingWheel(contentDesc = "Loading") }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            NiaLoadingWheel(contentDesc = loadingCd)
+        }
         return
     }
 
@@ -95,7 +96,7 @@ fun TilesDashboardScreen(viewModel: DashboardViewModel) {
 @Composable
 private fun TileCompactCard(tile: Tile?, onStart: (String) -> Unit) {
     if (tile == null) {
-        Text("No tile", style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.dashboard_no_tile), style = MaterialTheme.typography.bodySmall)
         return
     }
     val lifecycle = TileLifecycle.fromString(tile.lifecycle)
@@ -144,7 +145,7 @@ private fun TileExpandableCard(
             }
             Icon(
                 imageVector = if (expanded.value) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = "Expand"
+                contentDescription = stringResource(R.string.dashboard_expand_cd)
             )
         }
 
@@ -152,10 +153,10 @@ private fun TileExpandableCard(
             HorizontalDivider()
             Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 tile.nextAction?.takeIf { it.isNotBlank() }?.let {
-                    Text("Next: $it", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.dashboard_next_prefix, it), style = MaterialTheme.typography.bodySmall)
                 }
                 tile.doneDefinition?.takeIf { it.isNotBlank() }?.let {
-                    Text("Done: $it", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.dashboard_done_prefix, it), style = MaterialTheme.typography.bodySmall)
                 }
 
                 Row(
@@ -164,13 +165,25 @@ private fun TileExpandableCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (lifecycle == TileLifecycle.READY) {
-                        NiaButton(text = { Text("Start") }, onClick = onStart)
+                        NiaButton(
+                            text = { Text(stringResource(R.string.dashboard_card_start)) },
+                            onClick = onStart,
+                        )
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
-                        NiaButton(text = { Text("Complete") }, onClick = onComplete)
+                        NiaButton(
+                            text = { Text(stringResource(R.string.dashboard_card_complete)) },
+                            onClick = onComplete,
+                        )
                     }
-                    NiaFilledTonalButton(text = { Text("Defer") }, onClick = onDefer)
-                    NiaOutlinedButton(text = { Text("Delete") }, onClick = onDelete)
+                    NiaFilledTonalButton(
+                        text = { Text(stringResource(R.string.dashboard_card_defer)) },
+                        onClick = onDefer,
+                    )
+                    NiaOutlinedButton(
+                        text = { Text(stringResource(R.string.dashboard_card_delete)) },
+                        onClick = onDelete,
+                    )
                 }
             }
         }
@@ -218,10 +231,13 @@ private fun DashboardCardRenderer(
             verticalAlignment = Alignment.CenterVertically
         ) {
             NiaOutlinedButton(
-                text = { Text("Prompt") },
+                text = { Text(stringResource(R.string.dashboard_prompt_button)) },
                 onClick = { headerActionTileId?.let { onAction(CardAction.TriggerPrompt(it)) } }
             )
-            Icon(imageVector = statusIcon(card.status), contentDescription = "Status")
+            Icon(
+                imageVector = statusIcon(card.status),
+                contentDescription = stringResource(R.string.dashboard_status_cd),
+            )
             Text(card.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         }
 
@@ -236,10 +252,13 @@ private fun DashboardCardRenderer(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         NiaOutlinedButton(
-                            text = { Text("Prompt") },
+                            text = { Text(stringResource(R.string.dashboard_prompt_button)) },
                             onClick = { onAction(CardAction.TriggerPrompt(item.tileId)) }
                         )
-                        Icon(imageVector = statusIcon(item.status), contentDescription = "Status")
+                        Icon(
+                            imageVector = statusIcon(item.status),
+                            contentDescription = stringResource(R.string.dashboard_status_cd),
+                        )
                         Text(item.timestampIso, style = MaterialTheme.typography.labelSmall)
                         Text("│", style = MaterialTheme.typography.labelSmall)
                         Text(item.title, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
@@ -264,15 +283,30 @@ private fun CardPrimaryActions(
     ) {
         when (status) {
             CardStatus.READY -> {
-                NiaButton(text = { Text("Start") }, onClick = { onAction(CardAction.StartTile(tileId)) })
-                NiaOutlinedButton(text = { Text("Delete") }, onClick = { onAction(CardAction.DeleteTile(tileId)) })
+                NiaButton(
+                    text = { Text(stringResource(R.string.dashboard_card_start)) },
+                    onClick = { onAction(CardAction.StartTile(tileId)) },
+                )
+                NiaOutlinedButton(
+                    text = { Text(stringResource(R.string.dashboard_card_delete)) },
+                    onClick = { onAction(CardAction.DeleteTile(tileId)) },
+                )
             }
             CardStatus.STARTED -> {
-                NiaButton(text = { Text("Complete") }, onClick = { onAction(CardAction.CompleteTile(tileId)) })
-                NiaFilledTonalButton(text = { Text("Defer") }, onClick = { onAction(CardAction.DeferTile(tileId)) })
+                NiaButton(
+                    text = { Text(stringResource(R.string.dashboard_card_complete)) },
+                    onClick = { onAction(CardAction.CompleteTile(tileId)) },
+                )
+                NiaFilledTonalButton(
+                    text = { Text(stringResource(R.string.dashboard_card_defer)) },
+                    onClick = { onAction(CardAction.DeferTile(tileId)) },
+                )
             }
             CardStatus.DONE, CardStatus.ARCHIVED -> {
-                NiaOutlinedButton(text = { Text("Delete") }, onClick = { onAction(CardAction.DeleteTile(tileId)) })
+                NiaOutlinedButton(
+                    text = { Text(stringResource(R.string.dashboard_card_delete)) },
+                    onClick = { onAction(CardAction.DeleteTile(tileId)) },
+                )
             }
         }
     }

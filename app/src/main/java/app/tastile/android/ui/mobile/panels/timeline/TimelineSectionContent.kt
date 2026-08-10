@@ -56,7 +56,7 @@ internal fun TimelineSectionContent(
             .padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        AppSectionHeader(title = "Calendar")
+        AppSectionHeader(title = stringResource(R.string.panels_timeline_title))
 
         TimelineMetaPills(
             model = computeMetaPills(timeline),
@@ -112,15 +112,15 @@ private fun CustomDateRow(
         // this PR stays under the closed-test deadline.
         NiaOutlinedTextField(
             readOnly = true,
-            label = { Text("Start") },
-            value = startIso ?: "—",
+            label = { Text(stringResource(R.string.panels_timeline_custom_start)) },
+            value = startIso ?: stringResource(R.string.panels_timeline_empty_date),
             onValueChange = { onStartChange(it) },
             modifier = Modifier.fillMaxWidth(),
         )
         NiaOutlinedTextField(
             readOnly = true,
-            label = { Text("End") },
-            value = endIso ?: "—",
+            label = { Text(stringResource(R.string.panels_timeline_custom_end)) },
+            value = endIso ?: stringResource(R.string.panels_timeline_empty_date),
             onValueChange = { onEndChange(it) },
             modifier = Modifier.fillMaxWidth(),
         )
