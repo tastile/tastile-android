@@ -10,18 +10,19 @@ import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.model.projectLabels
-import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.ProfileRepository
-import app.tastile.android.data.repository.ReferenceOverlayStore
-import app.tastile.android.data.repository.TastileAuthState
-import app.tastile.android.data.repository.TileFilter
-import app.tastile.android.data.repository.TileRepository
-import app.tastile.android.data.repository.ThemeMode
-import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.auth.AuthRepository
+import app.tastile.android.data.user.ProfileRepository
+import app.tastile.android.data.workspace.ReferenceOverlayStore
+import app.tastile.android.data.auth.TastileAuthState
+import app.tastile.android.data.tile.TileFilter
+import app.tastile.android.data.tile.TileRepository
+import app.tastile.android.data.user.ThemeMode
+import app.tastile.android.data.user.UserSettingsRepository
 import app.tastile.android.data.api.SourceTileDetailRead
 import app.tastile.android.data.command.ExecutionStateLookup
-import app.tastile.android.data.util.formatIsoDateTime
+import app.tastile.android.data.repository.TilesResponse
+import app.tastile.android.data.time.formatIsoDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -471,6 +472,7 @@ class DashboardViewModel @Inject constructor(
         val weekStart = todayDate.minusDays((todayDate.dayOfWeek.value - 1).toLong())
         val weekEnd = weekStart.plusDays(6)
         val resolved: List<Pair<TaskBucket, Tile>> = tiles
+            .distinctBy { it.id }
             .filterNot { TileLifecycle.fromString(it.lifecycle) == TileLifecycle.DONE }
             .map { tile ->
                 val projected = parseLocalDateOrNull(tile.projectedNextStartAt)
@@ -486,9 +488,127 @@ class DashboardViewModel @Inject constructor(
                 bucket to tile
             }
         TaskBucket.entries
-            .map { bucket -> TaskBucketGroup(bucket, resolved.filter { it.first == bucket }.map { it.second }) }
+            .map { bucket ->
+                TaskBucketGroup(
+                    bucket = bucket,
+                    tiles = resolved.filter { it.first == bucket }.map { it.second }.distinctBy { it.id },
+                )
+            }
             .filter { it.tiles.isNotEmpty() }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // --- Tasks-view project-axis sections ------------------------------------
+    // The mobile Tasks view is project-axis now: the tab row lists ALL,
+    // STARRED, UNASSIGNED + one section per detected project, and the body
+    // shows only the selected section's tiles. Sort order is held here so
+    // it survives recomposition; the bar exposes a single sort icon.
+
+    private val _selectedSectionId = MutableStateFlow(FixedTasksScope.DEFAULT.id)
+    val selectedSectionId: StateFlow<String> = _selectedSectionId.asStateFlow()
+
+    fun setSelectedSection(id: String) {
+        _selectedSectionId.value = id
+    }
+
+    private val _sortOrder = MutableStateFlow(SortOrder.DEFAULT)
+    val sortOrder: StateFlow<SortOrder> = _sortOrder.asStateFlow()
+
+    fun setSortOrder(order: SortOrder) {
+        _sortOrder.value = order
+    }
+
+    /**
+     * All sections that the Tasks tab row exposes, in render order.
+     * Each section's tiles are non-DONE; the DONE lifecycle is funneled to
+     * [completedTiles] instead so the active list and the collapsed
+     * "Completed (n)" card never duplicate.
+     */
+    val projectSections: StateFlow<List<ProjectSection>> = _tiles
+        .map { list ->
+            val active = list.distinctBy { it.id }
+                .filter { TileLifecycle.fromString(it.lifecycle) != TileLifecycle.DONE }
+
+            val byProject = active.groupBy { tile ->
+                tile.projectLabels().firstOrNull().orEmpty().ifBlank {
+                    // No project label ⇒ falls into UNASSIGNED bucket.
+                    ""
+                }
+            }
+
+            val sections = mutableListOf<ProjectSection>()
+
+            sections += ProjectSection(
+                id = FixedTasksScope.ALL.id,
+                label = "All",
+                tiles = active,
+            )
+            sections += ProjectSection(
+                id = FixedTasksScope.STARRED.id,
+                label = "Starred",
+                tiles = emptyList(),
+            )
+            sections += ProjectSection(
+                id = FixedTasksScope.UNASSIGNED.id,
+                label = "Unassigned",
+                tiles = byProject[""].orEmpty(),
+            )
+
+            byProject
+                .filterKeys { it.isNotBlank() }
+                .toSortedMap()
+                .forEach { (projectName, tilesForProject) ->
+                    sections += ProjectSection(
+                        id = "project:$projectName",
+                        label = projectName,
+                        tiles = tilesForProject,
+                    )
+                }
+            sections
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * The single section currently exposed in the body of the screen,
+     * already filtered to non-DONE tiles and re-ordered by [sortOrder].
+     */
+    val visibleSection: StateFlow<ProjectSection> = combine(
+        projectSections,
+        _selectedSectionId,
+        _sortOrder,
+    ) { sections, selectedId, sort ->
+        val raw = sections.firstOrNull { it.id == selectedId }
+            ?: sections.firstOrNull { it.id == FixedTasksScope.ALL.id }
+            ?: ProjectSection(
+                id = FixedTasksScope.ALL.id,
+                label = "All",
+                tiles = emptyList(),
+            )
+        raw.copy(tiles = raw.tiles.sortedWith(sortComparator(sort)))
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList()),
+    )
+
+    private fun sortComparator(order: SortOrder): Comparator<Tile> = when (order) {
+        SortOrder.BY_TIME_ASC -> compareBy { scheduleKey(it).orEmpty() }
+        SortOrder.BY_TIME_DESC -> compareByDescending { scheduleKey(it).orEmpty() }
+        SortOrder.BY_TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+    }
+
+    private fun scheduleKey(tile: Tile): String? =
+        tile.projectedNextStartAt ?: tile.releaseAt ?: tile.fixedStart
+
+    /**
+     * Tiles whose lifecycle is `DONE`. Rendered in their own collapsible
+     * "Completed (n)" card so the active list stays uncluttered.
+     */
+    val completedTiles: StateFlow<List<Tile>> = _tiles
+        .map { list ->
+            list.distinctBy { it.id }
+                .filter { TileLifecycle.fromString(it.lifecycle) == TileLifecycle.DONE }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /**
      * Map of workspace id → number of in-scope tiles owned by it.
@@ -897,10 +1017,10 @@ class DashboardViewModel @Inject constructor(
 
     private suspend fun reloadVisibleTilesAndExecutionControls(filter: TileFilter) {
         val response = tileRepository.getTiles(filter)
-        _tiles.value = response.tiles
+        _tiles.value = response.tiles.distinctBy { it.id }
         _nextActionableTileId.value = response.nextActionableTileId
         _nextActionableStartAt.value = response.nextActionableStartAt
-        refreshExecutionControlStates(response.tiles)
+        refreshExecutionControlStates(response.tiles.distinctBy { it.id })
         _statsDiagnostics.value = tileRepository.latestReadDiagnostics()
     }
 

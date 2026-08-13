@@ -2,15 +2,15 @@ package app.tastile.android.ui.mobile.calendar
 
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.ProfileRepository
-import app.tastile.android.data.repository.ReferenceOverlayStore
-import app.tastile.android.data.repository.TastileAuthState
-import app.tastile.android.data.repository.ThemeMode
-import app.tastile.android.data.repository.TileRepository
+import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.auth.AuthRepository
+import app.tastile.android.data.user.ProfileRepository
+import app.tastile.android.data.workspace.ReferenceOverlayStore
+import app.tastile.android.data.auth.TastileAuthState
+import app.tastile.android.data.user.ThemeMode
+import app.tastile.android.data.tile.TileRepository
 import app.tastile.android.data.repository.TilesResponse
-import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.user.UserSettingsRepository
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import io.mockk.coEvery
 import io.mockk.every

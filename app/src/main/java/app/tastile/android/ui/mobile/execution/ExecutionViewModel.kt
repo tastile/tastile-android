@@ -3,7 +3,7 @@ package app.tastile.android.ui.mobile.execution
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.api.ExecutionView
-import app.tastile.android.data.repository.ExecutionRepository
+import app.tastile.android.data.execution.ExecutionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow

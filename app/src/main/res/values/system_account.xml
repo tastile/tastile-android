@@ -15,4 +15,12 @@
     <string name="account_subscription_free_description">Upgrade to unlock advanced features</string>
     <string name="account_subscription_upgrade">Upgrade to Pro</string>
     <string name="account_subscription_manage">Manage Billing</string>
+    <string name="account_error_prefix">Error: </string>
+    <string name="account_screen_title">Account</string>
+    <string name="account_display_name_label">Display name</string>
+    <string name="account_save_button">Save</string>
+    <string name="account_edit_cd">Edit display name</string>
+    <string name="account_plan_pro">Pro Plan</string>
+    <string name="account_plan_free">Free Plan</string>
+    <string name="billing_title">Billing</string>
 </resources>

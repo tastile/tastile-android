@@ -3,8 +3,8 @@ package app.tastile.android.ui.login
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.tastile.android.data.repository.AuthRepositoryContract
-import app.tastile.android.data.repository.TastileAuthState
+import app.tastile.android.data.auth.AuthRepositoryContract
+import app.tastile.android.data.auth.TastileAuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow

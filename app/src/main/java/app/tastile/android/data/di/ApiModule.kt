@@ -3,7 +3,7 @@ package app.tastile.android.data.di
 import app.tastile.android.data.api.CognitoAccountApi
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.command.V1CommandDispatcher
-import app.tastile.android.data.repository.ApiTokenManager
+import app.tastile.android.data.auth.ApiTokenCache
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,20 +22,20 @@ object ApiModule {
      * Returns `null` when no token has been minted yet, so callers that
      * require auth surface as a recoverable retry rather than sending the
      * wrong credential. The mint path is triggered lazily inside
-     * `V1ApiClient` consumers; the manager is invoked here purely for the
+     * `V1ApiClient` consumers; the cache is invoked here purely for the
      * read-side cache lookup. First-use semantics are owned by
-     * [ApiTokenManager] and exercised in
-     * `app/src/test/java/.../ApiTokenManagerTest.kt`.
+     * [ApiTokenCache] and exercised in
+     * `app/src/test/java/.../ApiTokenCacheTest.kt`.
      */
     @Provides
     @Singleton
-    fun provideV1ApiClient(apiTokenManager: ApiTokenManager): V1ApiClient =
-        V1ApiClient { apiTokenManager.getOrMint() }
+    fun provideV1ApiClient(apiTokenCache: ApiTokenCache): V1ApiClient =
+        V1ApiClient { apiTokenCache.getOrMint() }
 
     @Provides
     @Singleton
-    fun provideCognitoAccountApi(apiTokenManager: ApiTokenManager): CognitoAccountApi =
-        CognitoAccountApi { apiTokenManager.getOrMint() }
+    fun provideCognitoAccountApi(apiTokenCache: ApiTokenCache): CognitoAccountApi =
+        CognitoAccountApi { apiTokenCache.getOrMint() }
 
     @Provides
     @Singleton

@@ -173,7 +173,7 @@ fun DetailedTileCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "${stringResource(R.string.tiles_duration)}: ${tile.targetWorkMin ?: 0} min",
+                text = stringResource(R.string.tiles_duration) + ": " + stringResource(R.string.tile_card_meta_minutes, tile.targetWorkMin ?: 0),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

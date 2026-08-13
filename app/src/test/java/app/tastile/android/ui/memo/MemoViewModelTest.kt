@@ -1,8 +1,8 @@
 package app.tastile.android.ui.memo
 
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.CurrentUserProvider
-import app.tastile.android.data.repository.MemoTileRepository
+import app.tastile.android.data.auth.CurrentUserProvider
+import app.tastile.android.data.tile.MemoTileRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher

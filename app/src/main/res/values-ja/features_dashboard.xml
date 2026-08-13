@@ -22,9 +22,6 @@
     <string name="dashboard_tiles_filter_limit_100">100件</string>
     <string name="dashboard_tiles_filter_limit_500">500件</string>
     <string name="dashboard_tiles_filter_limit_unlimited">制限なし</string>
-    <plurals name="dashboard_tiles_omitted_more">
-        <item quantity="other">他%1$d件 ▼</item>
-    </plurals>
     <string name="dashboard_tiles_delete_dialog_title">このタイルを削除しますか？</string>
     <string name="dashboard_tiles_delete_dialog_body">このタイルは完全に削除されます。</string>
     <string name="dashboard_tiles_delete_dialog_confirm">削除</string>

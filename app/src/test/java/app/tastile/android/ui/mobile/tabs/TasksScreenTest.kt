@@ -5,33 +5,35 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
-import app.tastile.android.data.repository.AppLocale
+import app.tastile.android.data.user.AppLocale
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.ui.dashboard.TaskBucket
-import app.tastile.android.ui.dashboard.TaskBucketGroup
+import app.tastile.android.ui.dashboard.FixedTasksScope
+import app.tastile.android.ui.dashboard.ProjectSection
+import app.tastile.android.ui.dashboard.SortOrder
 import app.tastile.android.ui.mobile.OverlayViewModel
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Compose-level coverage for the mobile Tasks tab grouping.
+ * Compose-level coverage for the mobile Tasks tab.
  *
- * `ExecuteScreen.kt` reads the [DashboardViewModel.tasksByBucket] derivation
- * (added alongside the rewrite). These tests stub the derivation explicitly
- * so the screen renders a deterministic list of bucket headers + rows.
- *
- * They live alongside `ExecuteScreenTest.kt` rather than replacing it:
- * that file still exercises the legacy active-tile hero paths and
- * execution-control plumbing, which the new screen shares.
+ * Project-axis rewrite:
+ * - tabs are derived from `projectSections` (ALL / STARRED / UNASSIGNED + per-project).
+ * - section header is a single `Surface` that owns both the label and the
+ *   child tile rows so the accordion "color" stretches across the tiles.
+ * - bucket label does **not** show the raw `SortOrder.id`; sorting lives in
+ *   a dropdown the swap icon opens.
  */
 @RunWith(AndroidJUnit4::class)
 class TasksScreenTest {
@@ -41,11 +43,22 @@ class TasksScreenTest {
 
     private fun stubVm(
         tiles: List<Tile> = emptyList(),
-        buckets: List<TaskBucketGroup> = emptyList(),
+        sections: List<ProjectSection> = emptyList(),
+        visibleSection: ProjectSection = ProjectSection(
+            id = FixedTasksScope.ALL.id,
+            label = "All",
+            tiles = emptyList(),
+        ),
+        completedTiles: List<Tile> = emptyList(),
+        sortOrder: SortOrder = SortOrder.DEFAULT,
     ): DashboardViewModel {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         every { vm.tiles } returns MutableStateFlow(tiles)
-        every { vm.tasksByBucket } returns MutableStateFlow(buckets)
+        every { vm.projectSections } returns MutableStateFlow(sections)
+        every { vm.visibleSection } returns MutableStateFlow(visibleSection)
+        every { vm.selectedSectionId } returns MutableStateFlow(visibleSection.id)
+        every { vm.completedTiles } returns MutableStateFlow(completedTiles)
+        every { vm.sortOrder } returns MutableStateFlow(sortOrder)
         every { vm.loading } returns MutableStateFlow(false)
         every { vm.error } returns MutableStateFlow(null)
         every { vm.requestDeleteTileId } returns MutableStateFlow(null)
@@ -61,64 +74,169 @@ class TasksScreenTest {
     private fun stubOverlay(): OverlayViewModel = mockk<OverlayViewModel>(relaxed = true)
 
     @Test
-    fun `renders bucket header for each non-empty group in derivation order`() {
-        val todayTile = Tile(id = "today-1", title = "Today tile", lifecycle = TileLifecycle.READY.value)
-        val weekTile = Tile(id = "week-1", title = "Week tile", lifecycle = TileLifecycle.READY.value)
-        val laterTile = Tile(id = "later-1", title = "Later tile", lifecycle = TileLifecycle.READY.value)
-        val noDateTile = Tile(id = "nodate-1", title = "No date tile", lifecycle = TileLifecycle.READY.value)
-        val vm = stubVm(
-            tiles = listOf(todayTile, weekTile, laterTile, noDateTile),
-            buckets = TaskBucket.entries.map { bucket ->
-                val tiles = when (bucket) {
-                    TaskBucket.TODAY -> listOf(todayTile)
-                    TaskBucket.THIS_WEEK -> listOf(weekTile)
-                    TaskBucket.LATER -> listOf(laterTile)
-                    TaskBucket.NO_DATE -> listOf(noDateTile)
-                }
-                TaskBucketGroup(bucket = bucket, tiles = tiles)
-            },
-        )
-
+    fun `tabs render one entry per project section`() {
+        val sectionAll = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val sectionStarred = ProjectSection(id = FixedTasksScope.STARRED.id, label = "Starred", tiles = emptyList())
+        val sectionUnassigned = ProjectSection(id = FixedTasksScope.UNASSIGNED.id, label = "Unassigned", tiles = emptyList())
+        val sectionProject = ProjectSection(id = "project:Lab", label = "Lab", tiles = emptyList())
+        val vm = stubVm(sections = listOf(sectionAll, sectionStarred, sectionUnassigned, sectionProject))
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
-        TaskBucket.entries.forEach { bucket ->
-            rule.onNodeWithTag("tasks-bucket-header-${bucket.groupId}").assertIsDisplayed()
-        }
-        rule.onNodeWithTag("tasks-list").performScrollToIndex(1)
-        rule.onNodeWithTag("execute-tile-today-1").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-list").performScrollToIndex(3)
-        rule.onNodeWithTag("execute-tile-week-1").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-list").performScrollToIndex(5)
-        rule.onNodeWithTag("execute-tile-later-1").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-list").performScrollToIndex(7)
-        rule.onNodeWithTag("execute-tile-nodate-1").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tabs-row").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.ALL.id}").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.STARRED.id}").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.UNASSIGNED.id}").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tab-project:Lab").assertIsDisplayed()
     }
 
     @Test
-    fun `skips bucket headers when derivation returns no groups`() {
-        val vm = stubVm(tiles = emptyList(), buckets = emptyList())
-
+    fun `first tab label sits flush with the tab-row start edge`() {
+        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All",
+            tiles = emptyList())
+        val vm = stubVm(visibleSection = section)
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
-        TaskBucket.entries.forEach { bucket ->
-            rule.onNodeWithTag("tasks-bucket-header-${bucket.groupId}").assertDoesNotExist()
-        }
+        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.ALL.id}").assertIsDisplayed()
     }
 
     @Test
-    fun `renders only the buckets the derivation emits`() {
-        val todayTile = Tile(id = "today-1", title = "Today only", lifecycle = TileLifecycle.READY.value)
-        val vm = stubVm(
-            tiles = listOf(todayTile),
-            buckets = listOf(TaskBucketGroup(bucket = TaskBucket.TODAY, tiles = listOf(todayTile))),
-        )
-
+    fun `section bar exposes label, sort icon and chevron`() {
+        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val vm = stubVm(visibleSection = section)
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
-        rule.onNodeWithTag("tasks-bucket-header-today").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-bucket-header-this_week").assertDoesNotExist()
-        rule.onNodeWithTag("tasks-bucket-header-later").assertDoesNotExist()
-        rule.onNodeWithTag("tasks-bucket-header-no_date").assertDoesNotExist()
-        rule.onAllNodesWithTag("execute-tile-today-1").assertCountEquals(1)
+        rule.onNodeWithTag("tasks-section-bar").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-bucket-label-${FixedTasksScope.ALL.id}").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-sort-button").assertIsDisplayed()
+    }
+
+    @Test
+    fun `bucket header does not show the raw sort order id`() {
+        // Regression: bucket label should read "All" — never the "time_asc"
+        // debug chip that earlier revisions leaked onto the bar.
+        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All",
+            tiles = emptyList())
+        val vm = stubVm(visibleSection = section,
+            sortOrder = SortOrder.BY_TIME_DESC)
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onAllNodesWithText("time_asc", substring = true).assertCountEquals(0)
+        rule.onAllNodesWithText("time_desc", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `tapping the section bar collapses the body and hides tiles`() {
+        val section = ProjectSection(
+            id = FixedTasksScope.ALL.id,
+            label = "All",
+            tiles = listOf(
+                Tile(id = "a", title = "Alpha", lifecycle = TileLifecycle.READY.value),
+                Tile(id = "b", title = "Beta", lifecycle = TileLifecycle.READY.value),
+            ),
+        )
+        val vm = stubVm(visibleSection = section)
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onAllNodesWithTag("execute-tile-a").assertCountEquals(1)
+        rule.onNodeWithTag("tasks-section-bar").performClick()
+        rule.onAllNodesWithTag("execute-tile-a").assertCountEquals(0)
+        rule.onNodeWithTag("tasks-section-bar").performClick()
+        rule.onAllNodesWithTag("execute-tile-a").assertCountEquals(1)
+    }
+
+    @Test
+    fun `task cards render with content-driven height`() {
+        // Plain ("休憩") has no schedule → flat row; "休憩" with a
+        // releaseAt adds a sub-line. The regression we care about is
+        // that both render without crashing.
+        val plain = Tile(id = "a", title = "休憩", lifecycle = TileLifecycle.READY.value)
+        val scheduled = Tile(
+            id = "b",
+            title = "休憩",
+            lifecycle = TileLifecycle.READY.value,
+            releaseAt = "2026-07-21T16:00:00Z",
+        )
+        val section = ProjectSection(
+            id = FixedTasksScope.ALL.id,
+            label = "All",
+            tiles = listOf(plain, scheduled),
+        )
+        val vm = stubVm(visibleSection = section)
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onAllNodesWithTag("execute-tile-a").assertCountEquals(1)
+        rule.onAllNodesWithTag("execute-tile-b").assertCountEquals(1)
+    }
+
+    @Test
+    fun `tapping a tab calls setSelectedSection on the view model`() {
+        val sectionAll = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val sectionUnassigned = ProjectSection(id = FixedTasksScope.UNASSIGNED.id, label = "Unassigned", tiles = emptyList())
+        val vm = stubVm(
+            tiles = emptyList(),
+            visibleSection = sectionAll,
+        )
+        every { vm.projectSections } returns MutableStateFlow(listOf(sectionAll, sectionUnassigned))
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.UNASSIGNED.id}").performClick()
+        verify(exactly = 1) { vm.setSelectedSection(FixedTasksScope.UNASSIGNED.id) }
+    }
+
+    @Test
+    fun `each tile renders with execute-tile test tag`() {
+        val section = ProjectSection(
+            id = FixedTasksScope.ALL.id,
+            label = "All",
+            tiles = listOf(
+                Tile(id = "a", title = "Alpha", lifecycle = TileLifecycle.READY.value),
+                Tile(id = "b", title = "Beta", lifecycle = TileLifecycle.READY.value),
+            ),
+        )
+        val vm = stubVm(visibleSection = section)
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onAllNodesWithTag("execute-tile-a").assertCountEquals(1)
+        rule.onAllNodesWithTag("execute-tile-b").assertCountEquals(1)
+    }
+
+    @Test
+    fun `completed card renders even when no tiles are completed`() {
+        val vm = stubVm(completedTiles = emptyList())
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onNodeWithTag("tasks-done-card").assertIsDisplayed()
+        rule.onAllNodesWithTag("tasks-done-row-t1").assertCountEquals(0)
+    }
+
+    @Test
+    fun `tapping the completed card expands and renders done tiles`() {
+        val doneTile = Tile(id = "d1", title = "Done", lifecycle = TileLifecycle.DONE.value)
+        val vm = stubVm(completedTiles = listOf(doneTile))
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onNodeWithTag("tasks-done-card").performClick()
+        rule.mainClock.advanceTimeBy(100)
+        rule.onAllNodesWithTag("tasks-done-row-d1").assertCountEquals(1)
+    }
+
+    @Test
+    fun `sort icon delegates to setSortOrder on the view model`() {
+        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val vm = stubVm(visibleSection = section)
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onNodeWithTag("tasks-sort-button").performClick()
+        rule.onNodeWithTag("tasks-sort-option-${SortOrder.BY_TITLE.id}").performClick()
+        verify(exactly = 1) { vm.setSortOrder(SortOrder.BY_TITLE) }
+    }
+
+    @Test
+    fun `empty section surfaces the empty state card`() {
+        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val vm = stubVm(visibleSection = section)
+        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+
+        rule.onNodeWithTag("tasks-empty").assertIsDisplayed()
     }
 }

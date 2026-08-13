@@ -2,7 +2,7 @@ package app.tastile.android.domain.model
 
 /**
  * Pure-Kotlin filter for the tile list query. Mirrors the data-layer
- * [app.tastile.android.data.repository.TileFilter] shape so the Hilt
+ * [app.tastile.android.data.tile.TileFilter] shape so the Hilt
  * adapter can pass values through without re-implementing them.
  *
  * Kept distinct from the data-layer type so use cases and ViewModels

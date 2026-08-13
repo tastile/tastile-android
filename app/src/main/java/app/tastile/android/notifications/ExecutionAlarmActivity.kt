@@ -40,11 +40,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.user.UserSettingsRepository
 import app.tastile.android.core.designsystem.theme.NiaTheme
-import app.tastile.android.ui.util.SystemBarEffect
-import app.tastile.android.ui.util.resolveDarkTheme
-import app.tastile.android.ui.util.supportsDynamicColor
+import app.tastile.android.core.designsystem.theme.SystemBarEffect
+import app.tastile.android.core.designsystem.theme.resolveDarkTheme
+import app.tastile.android.core.designsystem.theme.supportsDynamicColor
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.hypot

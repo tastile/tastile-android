@@ -24,8 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import java.time.Instant
 import java.time.LocalDate
@@ -123,10 +125,13 @@ internal fun EventChipContent(
         "fixed" -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
         else -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurface
     }
+    val activeLabel = stringResource(R.string.calendar_event_status_active)
+    val doneLabel = stringResource(R.string.calendar_event_status_done)
+    val pendingLabel = stringResource(R.string.calendar_event_status_pending)
     val statusLabel = when (b.status.lowercase(Locale.ROOT)) {
-        "active", "started" -> "active"
-        "done" -> "done"
-        else -> "pending"
+        "active", "started" -> activeLabel
+        "done" -> doneLabel
+        else -> pendingLabel
     }
     val sH = b.startMinutes / 60
     val sM = b.startMinutes % 60
@@ -169,7 +174,12 @@ internal fun EventChipContent(
                 maxLines = 2,
             )
             Text(
-                text = "$timeLabel · ${formatDurationForChip(durationMin.toLong())} · $statusLabel",
+                text = stringResource(
+                    R.string.calendar_event_subtitle,
+                    timeLabel,
+                    formatDurationForChip(durationMin.toLong()),
+                    statusLabel,
+                ),
                 style = MaterialTheme.typography.labelSmall,
                 color = fg,
                 maxLines = 1,

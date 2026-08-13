@@ -2,7 +2,7 @@ package app.tastile.android.domain.model
 
 /**
  * Pure-Kotlin mirror of the auth state surfaced by the data layer
- * ([app.tastile.android.data.repository.TastileAuthState]). Kept as a
+ * ([app.tastile.android.data.auth.TastileAuthState]). Kept as a
  * sealed interface so domain callers can pattern-match without
  * importing data-layer types.
  */

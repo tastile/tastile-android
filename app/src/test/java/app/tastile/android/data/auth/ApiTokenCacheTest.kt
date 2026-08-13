@@ -1,0 +1,156 @@
+package app.tastile.android.data.auth
+
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.data.api.V1ApiClient
+import app.tastile.android.data.api.V1ApiTokenCreateRequest
+import app.tastile.android.data.api.V1ApiTokenCreateResponse
+import app.tastile.android.data.auth.CurrentUserProvider
+import app.tastile.android.data.auth.EncryptedTokenStorage
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import dagger.Lazy
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/**
+ * Integration tests for the [ApiTokenCache] mint/cache flow.
+ *
+ * These run under Robolectric so that `EncryptedSharedPreferences` can resolve
+ * a Keystore-backed master key. The HTTP target ([V1ApiClient]) is mocked so
+ * the test exercises the cache's control flow without a real backend.
+ */
+@RunWith(AndroidJUnit4::class)
+class ApiTokenCacheTest {
+
+    private val context: Context get() = ApplicationProvider.getApplicationContext()
+
+    @Before
+    fun setUp() {
+        // Ensure each run starts from a clean prefs state.
+        EncryptedTokenStorage.apiTokenPrefs(context).edit().clear().apply()
+    }
+
+    @After
+    fun tearDown() {
+        EncryptedTokenStorage.apiTokenPrefs(context).edit().clear().apply()
+    }
+
+    @Test
+    fun getOrMint_returns_null_when_no_bootstrap_token() = runTest {
+        val auth = mockk<CurrentUserProvider>(relaxed = true)
+        every { auth.currentAccessToken() } returns null
+        val api = mockk<V1ApiClient>(relaxed = true)
+        val cache = ApiTokenCache(context, lazyOf(api), auth)
+        assertNull(cache.getOrMint())
+        coVerify(exactly = 0) { api.mintApiTokenViaWeb(any(), any()) }
+    }
+
+    @Test
+    fun getOrMint_invokes_web_mint_with_cognito_access_token() = runTest {
+        val auth = mockk<CurrentUserProvider>(relaxed = true)
+        every { auth.currentAccessToken() } returns "cognito-access-token-xyz"
+        val api = mockk<V1ApiClient>(relaxed = true)
+        coEvery { api.mintApiTokenViaWeb("cognito-access-token-xyz", any()) } returns V1ApiTokenCreateResponse(
+            token = "tastile-secret",
+            tokenId = "tok-1",
+            label = "android-client",
+        )
+        val cache = ApiTokenCache(context, lazyOf(api), auth)
+        val token = cache.getOrMint()
+        assertEquals("tastile-secret", token)
+        coVerify(exactly = 1) { api.mintApiTokenViaWeb("cognito-access-token-xyz", any()) }
+        // The cached value is from the response, not the bootstrap.
+        coVerify(exactly = 1) {
+            api.mintApiTokenViaWeb(
+                match { it == "cognito-access-token-xyz" },
+                match { it.label == "android-client" && it.scopes.isEmpty() },
+            )
+        }
+    }
+
+    @Test
+    fun getOrMint_returns_cached_token_on_subsequent_calls_without_reminting() = runTest {
+        val auth = mockk<CurrentUserProvider>(relaxed = true)
+        every { auth.currentAccessToken() } returns "cognito-access-token-xyz"
+        val api = mockk<V1ApiClient>(relaxed = true)
+        coEvery { api.mintApiTokenViaWeb(any(), any()) } returns V1ApiTokenCreateResponse(
+            token = "tastile-secret",
+            tokenId = "tok-1",
+            label = "android-client",
+        )
+        val cache = ApiTokenCache(context, lazyOf(api), auth)
+        assertEquals("tastile-secret", cache.getOrMint())
+        assertEquals("tastile-secret", cache.getOrMint())
+        assertEquals("tastile-secret", cache.getOrMint())
+        coVerify(exactly = 1) { api.mintApiTokenViaWeb(any(), any()) }
+    }
+
+    @Test
+    fun getOrMint_swallows_mint_failure_and_returns_null() = runTest {
+        val auth = mockk<CurrentUserProvider>(relaxed = true)
+        every { auth.currentAccessToken() } returns "cognito-access-token-xyz"
+        val api = mockk<V1ApiClient>(relaxed = true)
+        coEvery { api.mintApiTokenViaWeb(any(), any()) } throws IllegalStateException("network unreachable")
+        val cache = ApiTokenCache(context, lazyOf(api), auth)
+        assertNull(cache.getOrMint())
+    }
+
+    @Test
+    fun invalidate_drops_in_memory_cache_so_next_call_remints() = runTest {
+        val auth = mockk<CurrentUserProvider>(relaxed = true)
+        every { auth.currentAccessToken() } returns "cognito-access-token-xyz"
+        val api = mockk<V1ApiClient>(relaxed = true)
+        coEvery { api.mintApiTokenViaWeb(any(), any()) } returnsMany listOf(
+            V1ApiTokenCreateResponse(token = "first-secret", tokenId = "tok-1"),
+            V1ApiTokenCreateResponse(token = "second-secret", tokenId = "tok-2"),
+        )
+        val cache = ApiTokenCache(context, lazyOf(api), auth)
+        assertEquals("first-secret", cache.getOrMint())
+        cache.invalidate()
+        assertEquals("second-secret", cache.getOrMint())
+        coVerify(exactly = 2) { api.mintApiTokenViaWeb(any(), any()) }
+    }
+
+    @Test
+    fun signOut_clears_encrypted_prefs_and_in_memory_cache() = runTest {
+        val auth = mockk<CurrentUserProvider>(relaxed = true)
+        every { auth.currentAccessToken() } returns "cognito-access-token-xyz"
+        val api = mockk<V1ApiClient>(relaxed = true)
+        coEvery { api.mintApiTokenViaWeb(any(), any()) } returns V1ApiTokenCreateResponse(
+            token = "tastile-secret", tokenId = "tok-1",
+        )
+        val cache = ApiTokenCache(context, lazyOf(api), auth)
+        assertEquals("tastile-secret", cache.getOrMint())
+        cache.signOut()
+        // After signOut, the encrypted prefs no longer contain a token.
+        assertNull(EncryptedTokenStorage.apiTokenPrefs(context).getString("api_token", null))
+        // Next getOrMint should mint again with no cached fallback.
+        coVerify(exactly = 1) { api.mintApiTokenViaWeb(any(), any()) }
+    }
+
+    @Test
+    fun request_uses_documented_label_for_android_client() = runTest {
+        val auth = mockk<CurrentUserProvider>(relaxed = true)
+        every { auth.currentAccessToken() } returns "cognito-access-token-xyz"
+        val api = mockk<V1ApiClient>(relaxed = true)
+        coEvery { api.mintApiTokenViaWeb(any(), any()) } returns V1ApiTokenCreateResponse(
+            token = "tastile-secret", tokenId = "tok-1",
+        )
+        val cache = ApiTokenCache(context, lazyOf(api), auth)
+        cache.getOrMint()
+        coVerify(exactly = 1) {
+            api.mintApiTokenViaWeb(any(), match<V1ApiTokenCreateRequest> { it.label == "android-client" })
+        }
+    }
+}
+
+private fun lazyOf(api: V1ApiClient): Lazy<V1ApiClient> = Lazy { api }

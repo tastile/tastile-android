@@ -15,4 +15,8 @@
     <string name="nav_preferences">Preferences</string>
     <string name="nav_setting">Setting</string>
     <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
+    <string name="avatar_image_cd">Account avatar</string>
+    <string name="common_dismiss_cd">Dismiss</string>
+    <string name="search_label">Search</string>
+    <string name="fab_create">Create</string>
 </resources>

@@ -48,13 +48,17 @@ ratio = (L_lighter + 0.05) / (L_darker + 0.05)
 
 Reproduction:
 
-```bash
-python docs/superpowers/m5/wcag-audit-script.py        # pretty table
-python docs/superpowers/m5/wcag-audit-script.py csv    # CSV for spreadsheets
-```
+The original ad-hoc Python script used to drive this audit was removed on
+2026-08-12 to comply with the project policy of not committing Python scripts
+to the Android repository. The 56 audit rows below are the canonical baseline
+result and have been independently verified by two byte-identical runs of the
+(now-removed) script before its removal.
 
-Script verified reproducible — two runs produced byte-identical output
-(`diff run1.txt run2.txt` returned empty).
+To re-audit after a palette change in `Color.kt` / `Theme.kt`, re-implement
+the contrast calculation (WCAG 2.1 relative-luminance formula in the Method
+section above) as a Kotlin JUnit test in `app/src/test/java/.../core/designsystem/`
+or as a one-off `gitignored` tool under `.tools/`. The palette is small and
+static, so this is a low-frequency operation.
 
 ## Results — 56 M3 role pairs
 
@@ -214,6 +218,8 @@ The next tier (4.5 – 5.5 ratio band):
   `dynamicDarkColorScheme(ctx)` (Android 12+, wallpaper-derived) cannot be
   statically audited; QA needs to spot-check the dynamic scheme on at least
   three OEM wallpapers per scheme per launch context.
-- **Reproduction.** `python docs/superpowers/m5/wcag-audit-script.py` emits
-  the same 56 rows on every run; verified by `diff` across two invocations.
-  Re-run after any edit to `Color.kt` or `Theme.kt`.
+- **Reproduction.** The 56 rows in this document are the canonical baseline,
+  captured before the audit script was removed. To re-audit after any edit
+  to `Color.kt` or `Theme.kt`, re-implement the contrast calculation in
+  Kotlin and run it against the updated palette; see the Reproduction note
+  at the top of the Method section.

@@ -21,4 +21,6 @@
     <string name="picker_dialog_timeout_5">5 min</string>
     <string name="picker_dialog_timeout_15">15 min</string>
     <string name="picker_dialog_timeout_60">60 min</string>
+    <string name="settings_test_notification_body">Test notification</string>
+    <string name="settings_test_notification_big_text">This is an expanded test notification used to verify delivery and display formatting.</string>
 </resources>

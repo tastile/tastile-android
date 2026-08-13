@@ -3,15 +3,15 @@ package app.tastile.android.ui.dashboard
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.ProfileRepository
-import app.tastile.android.data.repository.ReferenceOverlayStore
-import app.tastile.android.data.repository.TastileAuthState
-import app.tastile.android.data.repository.ThemeMode
-import app.tastile.android.data.repository.TileRepository
+import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.auth.AuthRepository
+import app.tastile.android.data.user.ProfileRepository
+import app.tastile.android.data.workspace.ReferenceOverlayStore
+import app.tastile.android.data.auth.TastileAuthState
+import app.tastile.android.data.user.ThemeMode
+import app.tastile.android.data.tile.TileRepository
 import app.tastile.android.data.repository.TilesResponse
-import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.user.UserSettingsRepository
 import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.ui.dashboard.ListGroupingMode
 import androidx.lifecycle.viewModelScope
@@ -244,7 +244,7 @@ class DashboardViewModelTest {
         viewModels.add(viewModel)
         viewModel.replaceExecutionControlStatesForTest(mapOf("tile-1" to ExecutionControlState.Paused))
 
-        viewModel.setTileFilter(app.tastile.android.data.repository.TileFilter(limit = 21))
+        viewModel.setTileFilter(app.tastile.android.data.tile.TileFilter(limit = 21))
 
         assertEquals(null, viewModel.executionControlStates.value["tile-1"])
     }
@@ -353,7 +353,7 @@ class DashboardViewModelTest {
     @Test
     fun setSearchTerm_rebuildsTileFilter() = runTest {
         val viewModel = newViewModel()
-        val seed = app.tastile.android.data.repository.TileFilter(limit = 50)
+        val seed = app.tastile.android.data.tile.TileFilter(limit = 50)
         viewModel.setTileFilter(seed)
         viewModel.setSearchTerm("alpha")
         assertEquals("alpha", viewModel.tileFilter.value.search)

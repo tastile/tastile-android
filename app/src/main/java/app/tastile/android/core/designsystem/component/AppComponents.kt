@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.theme.NiaTheme
 
@@ -329,7 +330,7 @@ fun AppLoading(
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            NiaLoadingWheel(contentDesc = label ?: "Loading")
+            NiaLoadingWheel(contentDesc = label ?: stringResource(app.tastile.android.R.string.common_loading))
             label?.let {
                 Text(
                     text = it,
@@ -352,7 +353,7 @@ fun AppCenteredLoading(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
-        NiaLoadingWheel(contentDesc = "Loading")
+        NiaLoadingWheel(contentDesc = stringResource(app.tastile.android.R.string.common_loading))
     }
 }
 

@@ -48,7 +48,7 @@ import app.tastile.android.data.api.Workspace
 import app.tastile.android.ui.mobile.components.AppPickerButton
 import app.tastile.android.ui.mobile.components.AppSectionHeader
 import app.tastile.android.ui.mobile.panels.projects.orderWorkspaceTree
-import app.tastile.android.ui.util.localDateFromEpochMillis
+import app.tastile.android.ui.time.localDateFromEpochMillis
 
 /** Compact mobile counterpart of Web's CalendarSidePanel mini calendar and project tree. */
 @OptIn(ExperimentalMaterial3Api::class)

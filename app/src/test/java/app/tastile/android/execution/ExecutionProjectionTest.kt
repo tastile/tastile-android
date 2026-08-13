@@ -1,6 +1,6 @@
 package app.tastile.android.execution
 
-import app.tastile.android.data.repository.EventRow
+import app.tastile.android.data.execution.EventRow
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject

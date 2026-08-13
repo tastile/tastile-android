@@ -4,8 +4,8 @@ import app.tastile.android.core.CoreCommandAck
 import app.tastile.android.core.CoreEventEnvelopeRecord
 import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.core.CoreSnapshot
-import app.tastile.android.data.repository.EventRepository
-import app.tastile.android.data.repository.EventRow
+import app.tastile.android.data.execution.EventRepository
+import app.tastile.android.data.execution.EventRow
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

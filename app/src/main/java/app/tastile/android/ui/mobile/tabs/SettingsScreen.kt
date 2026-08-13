@@ -73,8 +73,8 @@ import app.tastile.android.core.designsystem.component.NiaListItem
 import app.tastile.android.core.designsystem.component.NiaSegmentedButton
 import app.tastile.android.core.designsystem.component.NiaSingleChoiceSegmentedButtonRow
 import app.tastile.android.core.designsystem.component.NiaSwitch
-import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.data.repository.ThemeMode
+import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.user.ThemeMode
 import app.tastile.android.notifications.ExecutionAlarmTestReceiver
 import app.tastile.android.notifications.ExecutionNotificationChannels
 import app.tastile.android.ui.dashboard.DashboardViewModel

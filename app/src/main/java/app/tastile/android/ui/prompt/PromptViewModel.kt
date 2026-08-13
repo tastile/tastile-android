@@ -3,9 +3,9 @@ package app.tastile.android.ui.prompt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.CurrentUserProvider
-import app.tastile.android.data.repository.PromptViewResponse
-import app.tastile.android.data.repository.PromptTileRepository
+import app.tastile.android.data.auth.CurrentUserProvider
+import app.tastile.android.data.tile.PromptViewResponse
+import app.tastile.android.data.tile.PromptTileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

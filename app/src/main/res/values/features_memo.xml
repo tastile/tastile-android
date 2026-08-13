@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="memo_screen_title">Memo</string>
+    <string name="memo_saved_message">Memo saved</string>
+    <string name="memo_error_prefix">Error: </string>
+    <string name="memo_select_tile">Select a tile</string>
+    <string name="memo_tile_label">Tile</string>
+    <string name="memo_note_label">Note</string>
+    <string name="memo_note_placeholder">Write your memo here…</string>
+    <string name="memo_save_button">Save Memo</string>
+</resources>

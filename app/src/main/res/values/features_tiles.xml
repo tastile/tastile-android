@@ -10,4 +10,6 @@
     <string name="tiles_stat_open">Open · %1$d</string>
     <string name="tiles_stat_estimated">Estimated · %1$dm</string>
     <string name="tiles_stat_sections">Sections · %1$d</string>
+    <string name="tile_card_meta_minutes">%1$d min</string>
+    <string name="tile_section_meta">%1$d min · %2$d tiles</string>
 </resources>

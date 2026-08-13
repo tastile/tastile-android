@@ -11,7 +11,7 @@ import okhttp3.Response
  * outgoing request routed through the generated Retrofit client.
  *
  * The token is fetched lazily via the suspend [AuthTokenProvider] (backed
- * by [app.tastile.android.data.repository.ApiTokenManager]). The bridge to
+ * by [app.tastile.android.data.auth.ApiTokenCache]). The bridge to
  * OkHttp's sync `intercept` callback uses `runBlocking` because OkHttp runs
  * the interceptor on its dispatcher thread; the suspending call is short
  * (cache hit → instant return, mint → single HTTPS call) and the resulting

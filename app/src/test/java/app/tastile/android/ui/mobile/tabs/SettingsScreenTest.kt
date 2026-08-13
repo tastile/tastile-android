@@ -9,8 +9,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.data.repository.ThemeMode
+import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.user.ThemeMode
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import io.mockk.every
 import io.mockk.mockk

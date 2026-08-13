@@ -43,8 +43,8 @@ import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
-import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.data.util.formatIsoDateTime
+import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.time.formatIsoDateTime
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineSubScale
 

@@ -1,13 +1,13 @@
 package app.tastile.android.domain.repository
 
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.TileFilter
+import app.tastile.android.data.tile.TileFilter
 
 /**
  * Domain-layer read/write contract for tiles.
  *
  * Concrete implementation lives in
- * [app.tastile.android.data.repository.TileRepository]; the domain layer
+ * [app.tastile.android.data.tile.TileRepository]; the domain layer
  * only sees this narrowed interface so use cases remain free of v1 API
  * details (cache invalidation, dispatcher selection, etc.).
  *
@@ -27,7 +27,7 @@ interface TileRepository {
 }
 
 /**
- * Trimmed mirror of [app.tastile.android.data.repository.TileRepository.TilesResponse].
+ * Trimmed mirror of [app.tastile.android.data.tile.TileRepository.TilesResponse].
  * Domain callers don't need the raw v1 diagnostics strings, only the
  * surface list plus the two `next_actionable_*` hints the dashboard
  * surfaces.

@@ -1,7 +1,7 @@
 package app.tastile.android.domain.usecase
 
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.TileFilter
+import app.tastile.android.data.tile.TileFilter
 import app.tastile.android.domain.repository.TileRepository
 import javax.inject.Inject
 

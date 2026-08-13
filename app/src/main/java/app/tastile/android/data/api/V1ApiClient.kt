@@ -1,8 +1,8 @@
 package app.tastile.android.data.api
 
 import app.tastile.android.BuildConfig
-import app.tastile.android.data.repository.TileFilter
-import app.tastile.android.data.repository.toQueryString
+import app.tastile.android.data.tile.TileFilter
+import app.tastile.android.data.tile.toQueryString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer

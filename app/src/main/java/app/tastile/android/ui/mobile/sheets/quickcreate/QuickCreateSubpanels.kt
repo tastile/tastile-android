@@ -575,18 +575,14 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
         var showWindowReferencePicker by remember(index) { mutableStateOf(false) }
         LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_window_header, index + 1))
         val windowKinds = listOf(0, 1, 2, 3)
-        val windowKindLabel: (Int) -> String = { kind -> when (kind) {
-            0 -> stringResource(R.string.quickcreate_panel_window_kind_calendar)
-            1 -> stringResource(R.string.quickcreate_panel_window_kind_label_span)
-            2 -> stringResource(R.string.quickcreate_panel_window_kind_parent_span)
-            else -> stringResource(R.string.quickcreate_panel_window_kind_gap)
-        } }
-        val windowKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> when (kind) {
-            0 -> Icons.Outlined.Anchor
-            1 -> Icons.Outlined.Link
-            2 -> Icons.Outlined.Schedule
-            else -> Icons.Outlined.Repeat
-        } }
+        val windowKindIcons = remember {
+            mapOf(
+                0 to Icons.Outlined.Anchor,
+                1 to Icons.Outlined.Link,
+                2 to Icons.Outlined.Schedule,
+                3 to Icons.Outlined.Repeat,
+            )
+        }
         // Single-choice window-kind → horizontally scrollable FilterChip row.
         LazyRow(
             modifier = Modifier.fillMaxWidth().testTag("quick-create-window-$index-kind-chips"),
@@ -597,8 +593,16 @@ private fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStore
                 FilterChip(
                     selected = window.kind == kind,
                     onClick = { store.updateWindows(draft.windows.replace(index, window.copy(kind = kind))) },
-                    label = { Text(windowKindLabel(kind)) },
-                    leadingIcon = { Icon(windowKindIcon(kind), contentDescription = null) },
+                    label = {
+                        val labelRes = when (kind) {
+                            0 -> R.string.quickcreate_panel_window_kind_calendar
+                            1 -> R.string.quickcreate_panel_window_kind_label_span
+                            2 -> R.string.quickcreate_panel_window_kind_parent_span
+                            else -> R.string.quickcreate_panel_window_kind_gap
+                        }
+                        Text(stringResource(labelRes))
+                    },
+                    leadingIcon = { Icon(windowKindIcons.getValue(kind), contentDescription = null) },
                     modifier = Modifier.testTag("quick-create-window-$index-kind-$kind"),
                 )
             }
@@ -734,12 +738,13 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
             modifier = Modifier.testTag("quick-create-reference-id-$index"),
         )
         val targetKinds = listOf(0, 1, 2)
-        val targetKindLabel: (Int) -> String = { kind -> when (kind) {
-            0 -> stringResource(R.string.quickcreate_panel_kind_exact)
-            1 -> stringResource(R.string.quickcreate_panel_kind_series)
-            else -> stringResource(R.string.quickcreate_panel_kind_filter)
-        } }
-        val targetKindIcon: (Int) -> androidx.compose.ui.graphics.vector.ImageVector = { kind -> if (kind == 0) Icons.Outlined.Tag else Icons.Outlined.Link }
+        val targetKindIcons = remember {
+            mapOf(
+                0 to Icons.Outlined.Tag,
+                1 to Icons.Outlined.Link,
+                2 to Icons.Outlined.Link,
+            )
+        }
         // M3 Phase 4b: single-choice target-kind → horizontally scrollable FilterChip row.
         LazyRow(
             modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-record-$index-target-kind-chips"),
@@ -750,21 +755,21 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
                 FilterChip(
                     selected = target["kind"]?.jsonPrimitive?.content?.toIntOrNull() == kind,
                     onClick = { updateReference(draft, store, index, reference.copy(target = target.with("kind", kind))) },
-                    label = { Text(targetKindLabel(kind)) },
-                    leadingIcon = { Icon(targetKindIcon(kind), contentDescription = null) },
+                    label = {
+                        val labelRes = when (kind) {
+                            0 -> R.string.quickcreate_panel_kind_exact
+                            1 -> R.string.quickcreate_panel_kind_series
+                            else -> R.string.quickcreate_panel_kind_filter
+                        }
+                        Text(stringResource(labelRes))
+                    },
+                    leadingIcon = { Icon(targetKindIcons.getValue(kind), contentDescription = null) },
                     modifier = Modifier.testTag("quick-create-reference-record-$index-target-kind-$kind"),
                 )
             }
         }
         LocalSectionHeader(title = stringResource(R.string.quickcreate_panel_relation_header))
         val relations = listOf(4, 3, 1, 2, 0)
-        val relationLabel: (Int) -> String = { relation -> when (relation) {
-            0 -> stringResource(R.string.quickcreate_panel_relation_touch)
-            1 -> stringResource(R.string.quickcreate_panel_relation_inside)
-            2 -> stringResource(R.string.quickcreate_panel_relation_overlap)
-            3 -> stringResource(R.string.quickcreate_panel_relation_before)
-            else -> stringResource(R.string.quickcreate_panel_relation_after)
-        } }
         // M3 Phase 4b: single-choice relation → horizontally scrollable FilterChip row.
         LazyRow(
             modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-record-$index-relation-chips"),
@@ -775,7 +780,16 @@ private fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateStat
                 FilterChip(
                     selected = pick["kind"]?.jsonPrimitive?.content?.toIntOrNull() == relation,
                     onClick = { updateReference(draft, store, index, reference.copy(pick = pick.with("kind", relation))) },
-                    label = { Text(relationLabel(relation)) },
+                    label = {
+                        val labelRes = when (relation) {
+                            0 -> R.string.quickcreate_panel_relation_touch
+                            1 -> R.string.quickcreate_panel_relation_inside
+                            2 -> R.string.quickcreate_panel_relation_overlap
+                            3 -> R.string.quickcreate_panel_relation_before
+                            else -> R.string.quickcreate_panel_relation_after
+                        }
+                        Text(stringResource(labelRes))
+                    },
                     leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
                     modifier = Modifier.testTag("quick-create-reference-record-$index-relation-$relation"),
                 )
@@ -1206,13 +1220,6 @@ private fun updateTimeRequirement(
         modifier = Modifier.fillMaxWidth().testTag("condition-relation-reference"),
     )
     val relations = listOf(0, 1, 2, 3, 4)
-    val relationLabel: (Int) -> String = { r -> when (r) {
-        0 -> stringResource(R.string.quickcreate_panel_relation_touch)
-        1 -> stringResource(R.string.quickcreate_panel_relation_inside)
-        2 -> stringResource(R.string.quickcreate_panel_relation_overlap)
-        3 -> stringResource(R.string.quickcreate_panel_relation_before)
-        else -> stringResource(R.string.quickcreate_panel_relation_after)
-    } }
     // M3 Phase 4b: single-choice relation → horizontally scrollable FilterChip row.
     LazyRow(
         modifier = Modifier.fillMaxWidth().testTag("condition-relation-kind-chips"),
@@ -1223,19 +1230,22 @@ private fun updateTimeRequirement(
             FilterChip(
                 selected = value.string("relation", "0").toIntOrNull() == relation,
                 onClick = { onChange(term.withValue("relation", relation)) },
-                label = { Text(relationLabel(relation)) },
+                label = {
+                    val labelRes = when (relation) {
+                        0 -> R.string.quickcreate_panel_relation_touch
+                        1 -> R.string.quickcreate_panel_relation_inside
+                        2 -> R.string.quickcreate_panel_relation_overlap
+                        3 -> R.string.quickcreate_panel_relation_before
+                        else -> R.string.quickcreate_panel_relation_after
+                    }
+                    Text(stringResource(labelRes))
+                },
                 leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
                 modifier = Modifier.testTag("condition-relation-kind-$relation"),
             )
         }
     }
     val windowKinds = listOf(0, 1, 2, 3)
-    val windowKindLabel: (Int) -> String = { k -> when (k) {
-        0 -> stringResource(R.string.quickcreate_panel_window_kind_calendar)
-        1 -> stringResource(R.string.quickcreate_panel_window_kind_label_span)
-        2 -> stringResource(R.string.quickcreate_panel_window_kind_parent_span)
-        else -> stringResource(R.string.quickcreate_panel_window_kind_gap)
-    } }
     // M3 Phase 4b: single-choice window-kind → horizontally scrollable FilterChip row.
     LazyRow(
         modifier = Modifier.fillMaxWidth().testTag("condition-relation-window-chips"),
@@ -1246,7 +1256,15 @@ private fun updateTimeRequirement(
             FilterChip(
                 selected = value.string("windowKind", "0").toIntOrNull() == kind,
                 onClick = { onChange(term.withValue("windowKind", kind)) },
-                label = { Text(windowKindLabel(kind)) },
+                label = {
+                    val labelRes = when (kind) {
+                        0 -> R.string.quickcreate_panel_window_kind_calendar
+                        1 -> R.string.quickcreate_panel_window_kind_label_span
+                        2 -> R.string.quickcreate_panel_window_kind_parent_span
+                        else -> R.string.quickcreate_panel_window_kind_gap
+                    }
+                    Text(stringResource(labelRes))
+                },
                 leadingIcon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
                 modifier = Modifier.testTag("condition-relation-window-$kind"),
             )

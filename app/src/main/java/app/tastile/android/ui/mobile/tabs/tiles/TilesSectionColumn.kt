@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.data.model.Tile
@@ -80,7 +81,7 @@ fun TilesSectionColumn(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        "$totalMinutes min · ${tiles.size}",
+                        stringResource(R.string.tile_section_meta, totalMinutes, tiles.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

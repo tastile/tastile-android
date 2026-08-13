@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Plan
 import app.tastile.android.data.model.Profile
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.ProfileRepository
-import app.tastile.android.data.repository.TastileAuthState
+import app.tastile.android.data.auth.AuthRepository
+import app.tastile.android.data.user.ProfileRepository
+import app.tastile.android.data.auth.TastileAuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

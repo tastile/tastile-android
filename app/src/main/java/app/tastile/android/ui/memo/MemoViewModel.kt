@@ -3,8 +3,8 @@ package app.tastile.android.ui.memo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.CurrentUserProvider
-import app.tastile.android.data.repository.MemoTileRepository
+import app.tastile.android.data.auth.CurrentUserProvider
+import app.tastile.android.data.tile.MemoTileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

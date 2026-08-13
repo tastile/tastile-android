@@ -30,4 +30,14 @@
     <string name="tasks_finish_execution_body">Finish this execution without completing the tile.</string>
     <string name="tasks_start_button">Start</string>
     <string name="tasks_finish_button">Finish</string>
+    <string name="tasks_sort_by_time_asc">Time ↑</string>
+    <string name="tasks_sort_by_time_desc">Time ↓</string>
+    <string name="tasks_sort_by_title">Title</string>
+    <string name="tasks_scope_all">All</string>
+    <string name="tasks_scope_starred">Starred</string>
+    <string name="tasks_scope_unassigned">Unassigned</string>
+    <string name="tasks_tab_new_list">+ New List</string>
+    <string name="tasks_sort_button">Sort</string>
+    <string name="tasks_schedule_tomorrow">Tomorrow</string>
+    <string name="tasks_done_header">Done (%1$d)</string>
 </resources>

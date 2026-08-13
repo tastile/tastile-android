@@ -2,7 +2,7 @@ package app.tastile.android.ui.mobile.panels
 
 import app.tastile.android.data.api.UpdateWorkspaceInput
 import app.tastile.android.data.api.Workspace
-import app.tastile.android.data.repository.WorkspaceRepository
+import app.tastile.android.data.workspace.WorkspaceRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

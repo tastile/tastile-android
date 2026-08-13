@@ -12,7 +12,7 @@ import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.core.CoreRuntimeService
-import app.tastile.android.data.repository.AuthRepository
+import app.tastile.android.data.auth.AuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.datetime.Clock
 import java.net.URLEncoder

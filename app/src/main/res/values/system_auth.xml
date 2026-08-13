@@ -1,3 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="login_subtitle_signin">Sign in to Tastile</string>
+    <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
+    <string name="login_button_signing_in">Signing in…</string>
+    <string name="login_button_continue">Continue with Google</string>
+    <string name="login_logo_cd">Tastile logo</string>
+    <string name="login_brand_label">Tastile</string>
+    <string name="login_terms_link">Terms of Service</string>
+    <string name="login_privacy_link">Privacy Policy</string>
+    <string name="login_footer_separator"> · </string>
 </resources>

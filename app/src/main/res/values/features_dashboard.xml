@@ -22,10 +22,6 @@
     <string name="dashboard_tiles_filter_limit_100">100</string>
     <string name="dashboard_tiles_filter_limit_500">500</string>
     <string name="dashboard_tiles_filter_limit_unlimited">Unlimited</string>
-    <plurals name="dashboard_tiles_omitted_more">
-        <item quantity="one">+%1$d more ▼</item>
-        <item quantity="other">+%1$d more ▼</item>
-    </plurals>
     <string name="dashboard_tiles_delete_dialog_title">Delete this tile?</string>
     <string name="dashboard_tiles_delete_dialog_body">This permanently deletes the tile.</string>
     <string name="dashboard_tiles_delete_dialog_confirm">Delete</string>

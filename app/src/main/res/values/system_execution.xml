@@ -1,3 +1,89 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Dashboard cards & states -->
+    <string name="dashboard_loading">Loading…</string>
+    <string name="dashboard_no_tile">No tiles yet</string>
+    <string name="dashboard_expand_cd">Expand tile</string>
+    <string name="dashboard_next_prefix">Next: %1$s</string>
+    <string name="dashboard_done_prefix">Done: %1$s</string>
+    <string name="dashboard_prompt_button">Prompt</string>
+    <string name="dashboard_status_cd">Tile status</string>
+
+    <!-- Dashboard card action labels (rendered as Text on the card itself) -->
+    <string name="dashboard_card_start">Start</string>
+    <string name="dashboard_card_complete">Complete</string>
+    <string name="dashboard_card_defer">Defer</string>
+    <string name="dashboard_card_delete">Delete</string>
+
+    <!-- Tile defer dialog (mobile/tabs/tiles/TileActionDialogs.kt) -->
+    <string name="defer_invalid_input">Invalid input</string>
+    <string name="defer_dialog_title">Defer tile</string>
+    <string name="defer_mode_datetime">Pick a date and time</string>
+    <string name="defer_mode_duration">Push back by duration</string>
+    <string name="defer_field_minutes">Minutes</string>
+    <string name="defer_field_date">Date</string>
+    <string name="defer_field_time">Time</string>
+    <string name="defer_confirm">Confirm</string>
+
+    <!-- Tile prompt request dialog (mobile/tabs/tiles/TileActionDialogs.kt) -->
+    <string name="prompt_request_title">Request prompt</string>
+    <string name="prompt_request_body">Send a prompt to this tile</string>
+    <string name="prompt_request_body_default">Default body</string>
+    <string name="prompt_request_confirm">Request</string>
+
+    <!-- Project editor (mobile/panels/projects/{New,ProjectEdit}Form.kt) -->
+    <string name="panels_projects_edit_title">Edit project</string>
+    <string name="project_parent_top_level">(Top level)</string>
+    <string name="project_field_name">Name</string>
+    <string name="project_field_slug">Slug</string>
+    <string name="project_field_color">Color</string>
+    <string name="project_field_parent">Parent project</string>
+    <string name="project_saving">Saving…</string>
+    <string name="project_save">Save</string>
+
+    <!-- Tile edit sheet (mobile/sheets/TileEditSheet.kt) -->
+    <string name="tile_edit_edit_cd">Edit tile</string>
+    <string name="tile_edit_delete_cd">Delete tile</string>
+    <string name="tile_new_fab">New tile</string>
+    <string name="tile_edit_retry_loading">Retry</string>
+    <string name="tile_edit_open_time">Open time</string>
+    <string name="tile_edit_open_schedule">Open schedule</string>
+    <string name="tile_edit_back">Back</string>
+    <string name="tile_edit_save_details">Save changes</string>
+    <string name="tile_edit_actions_header">Actions</string>
+    <string name="tile_edit_start">Start</string>
+    <string name="tile_edit_defer">Defer</string>
+    <string name="tile_edit_request_prompt">Request prompt</string>
+    <string name="tile_edit_complete">Complete</string>
+    <string name="tile_edit_pause">Pause</string>
+    <string name="tile_edit_resume">Resume</string>
+    <string name="tile_edit_start_execution">Start execution</string>
+    <string name="tile_edit_finish_execution">Finish execution</string>
+    <string name="tile_edit_delete_occurrence_title">Delete occurrence?</string>
+    <string name="tile_edit_delete_occurrence_body">Only this occurrence will be removed.</string>
+    <string name="tile_edit_delete">Delete</string>
+    <string name="tile_edit_start_execution_title">Start execution?</string>
+    <string name="tile_edit_finish_execution_title">Finish execution?</string>
+    <string name="tile_edit_start_execution_body">Start work on this existing occurrence.</string>
+    <string name="tile_edit_finish_execution_body">Finish this execution without completing the tile.</string>
+    <string name="tile_edit_finish_button">Finish</string>
+    <string name="tile_edit_save_changes_title">Save changes?</string>
+    <string name="tile_edit_save_changes_body">Apply edits to this tile.</string>
+    <string name="tile_edit_save">Save</string>
+    <string name="tile_edit_title_label">Title</string>
+    <string name="tile_edit_description_label">Description</string>
+    <string name="tile_edit_description_hint">Add notes</string>
+    <string name="tile_edit_color_label">Color</string>
+    <string name="tile_edit_color_blue">Blue</string>
+    <string name="tile_edit_color_green">Green</string>
+    <string name="tile_edit_color_purple">Purple</string>
+    <string name="tile_edit_color_orange">Orange</string>
+    <string name="tile_edit_color_pink">Pink</string>
+    <string name="tile_edit_color_cyan">Cyan</string>
+    <string name="tile_edit_color_yellow">Yellow</string>
+    <string name="tile_edit_color_red">Red</string>
+    <string name="tile_edit_color_teal">Teal</string>
+    <string name="tile_edit_color_gray">Gray</string>
+    <string name="tile_edit_icon_label">Icon</string>
+    <string name="tile_edit_icon_hint">Pick an icon</string>
+    <string name="tile_edit_title_fallback">Untitled</string>
 </resources>

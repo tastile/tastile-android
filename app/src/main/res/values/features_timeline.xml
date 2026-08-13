@@ -5,4 +5,8 @@
     <string name="panels_timeline_meta_blocks">blocks</string>
     <string name="panels_timeline_meta_work">work</string>
     <string name="panels_timeline_meta_breaks">breaks</string>
+    <string name="panels_timeline_title">Timeline</string>
+    <string name="panels_timeline_custom_start">Start date</string>
+    <string name="panels_timeline_custom_end">End date</string>
+    <string name="panels_timeline_empty_date">No data for this range.</string>
 </resources>

@@ -10,7 +10,7 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import app.tastile.android.MainActivity
 import app.tastile.android.R
-import app.tastile.android.data.repository.PushEndpointRepository
+import app.tastile.android.data.notification.PushEndpointRepository
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint

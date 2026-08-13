@@ -7,10 +7,15 @@ local.properties
 .vscode/
 .DS_Store
 build/
+build.del2/
 captures/
 .externalNativeBuild/
 .cxx/
 app/src/main/jniLibs/
+# Orphaned one-time verification artifacts from the 2026-07-23 lint sweep.
+# These are not referenced by any design or audit doc and should be regenerated
+# under .tmp/ if a fresh run is ever needed.
+evidence/
 *.so
 *.apk
 *.aab

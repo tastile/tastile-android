@@ -1,7 +1,7 @@
 package app.tastile.android.ui.mobile.decision
 
 import app.tastile.android.data.api.FeedbackChangeDto
-import app.tastile.android.data.repository.SessionRepository
+import app.tastile.android.data.execution.SessionRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

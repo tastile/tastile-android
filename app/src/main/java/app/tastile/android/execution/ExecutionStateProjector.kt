@@ -2,7 +2,7 @@ package app.tastile.android.execution
 
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
-import app.tastile.android.data.repository.EventRow
+import app.tastile.android.data.execution.EventRow
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject

@@ -7,4 +7,7 @@
     <string name="duration_format_hours_minutes">%1$dh %2$dm</string>
     <string name="duration_format_hours">%1$dh</string>
     <string name="duration_format_minutes">%1$dm</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="common_loading">Loading…</string>
 </resources>

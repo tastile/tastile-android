@@ -4,19 +4,20 @@ import app.tastile.android.core.CoreCommandStore
 import app.tastile.android.core.CoreRuntimeService
 import app.tastile.android.core.PersistentCoreRuntimeService
 import app.tastile.android.core.SharedPreferencesCoreCommandStore
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.AuthRepositoryContract
-import app.tastile.android.data.repository.CurrentUserProvider
-import app.tastile.android.data.repository.ExecutionIdStore
-import app.tastile.android.data.repository.MemoTileRepository
-import app.tastile.android.data.repository.PromptTileRepository
-import app.tastile.android.data.repository.PushEndpointStore
-import app.tastile.android.data.repository.PushTokenProvider
-import app.tastile.android.data.repository.FirebasePushTokenProvider
-import app.tastile.android.data.repository.SharedPreferencesExecutionIdStore
-import app.tastile.android.data.repository.SharedPreferencesPushEndpointStore
-import app.tastile.android.data.repository.TileFilter
-import app.tastile.android.data.repository.TileRepository
+import app.tastile.android.data.auth.AuthRepository
+import app.tastile.android.data.auth.AuthRepositoryContract
+import app.tastile.android.data.auth.CurrentUserProvider
+import app.tastile.android.data.execution.ExecutionIdStore
+import app.tastile.android.data.tile.MemoTileRepository
+import app.tastile.android.data.tile.PromptTileRepository
+import app.tastile.android.data.notification.PushEndpointStore
+import app.tastile.android.data.notification.PushTokenProvider
+import app.tastile.android.data.notification.FirebasePushTokenProvider
+import app.tastile.android.data.execution.SharedPreferencesExecutionIdStore
+import app.tastile.android.data.notification.SharedPreferencesPushEndpointStore
+import app.tastile.android.data.repository.TilesResponse
+import app.tastile.android.data.tile.TileFilter
+import app.tastile.android.data.tile.TileRepository
 import app.tastile.android.domain.repository.AuthRepository as DomainAuthRepository
 import app.tastile.android.domain.repository.TileRepository as DomainTileRepository
 import app.tastile.android.domain.repository.TilesResult

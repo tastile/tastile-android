@@ -3,8 +3,8 @@ package app.tastile.android.sync
 import app.tastile.android.core.CoreActorRecord
 import app.tastile.android.core.CoreEventEnvelopeRecord
 import app.tastile.android.core.CoreRuntimeService
-import app.tastile.android.data.repository.EventRepository
-import app.tastile.android.data.repository.EventRow
+import app.tastile.android.data.execution.EventRepository
+import app.tastile.android.data.execution.EventRow
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject

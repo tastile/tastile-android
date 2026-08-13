@@ -6,7 +6,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/git-guard.mjs",
+            "command": "bun",
+            "args": [
+              ".claude/hooks/git-guard.mjs"
+            ],
             "timeout": 10,
             "statusMessage": "Scanning for destructive commands"
           }

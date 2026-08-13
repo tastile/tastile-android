@@ -9,7 +9,7 @@ import org.junit.Test
 /**
  * Tests the wire shape of the v1 token-management API surfaces (`/v1/api-tokens`).
  * These guard against accidental regressions in the JSON envelope that would
- * cause the Android `ApiTokenManager` mint flow to silently desync from the
+ * cause the Android `ApiTokenCache` mint flow to silently desync from the
  * backend in `tastile-core/crates/v1/api/src/handlers/auth.rs`.
  */
 class V1ApiTokenTest {

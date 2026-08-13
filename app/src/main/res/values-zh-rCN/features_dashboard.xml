@@ -22,9 +22,6 @@
     <string name="dashboard_tiles_filter_limit_100">100</string>
     <string name="dashboard_tiles_filter_limit_500">500</string>
     <string name="dashboard_tiles_filter_limit_unlimited">不限</string>
-    <plurals name="dashboard_tiles_omitted_more">
-        <item quantity="other">+%1$d 更多 ▼</item>
-    </plurals>
     <string name="dashboard_tiles_delete_dialog_title">删除此卡片？</string>
     <string name="dashboard_tiles_delete_dialog_body">这将永久删除该卡片。</string>
     <string name="dashboard_tiles_delete_dialog_confirm">删除</string>

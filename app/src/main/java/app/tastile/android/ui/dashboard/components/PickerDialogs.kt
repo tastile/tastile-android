@@ -26,8 +26,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.theme.NiaTheme
-import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.data.repository.ThemeMode
+import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.user.ThemeMode
 
 @Composable
 fun <T> PickerDialog(

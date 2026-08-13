@@ -1,8 +1,8 @@
 package app.tastile.android.ui.login
 
 import android.content.Context
-import app.tastile.android.data.repository.AuthRepositoryContract
-import app.tastile.android.data.repository.TastileAuthState
+import app.tastile.android.data.auth.AuthRepositoryContract
+import app.tastile.android.data.auth.TastileAuthState
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

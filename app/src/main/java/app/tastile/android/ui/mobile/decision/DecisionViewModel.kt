@@ -3,7 +3,7 @@ package app.tastile.android.ui.mobile.decision
 import app.tastile.android.data.api.FeedbackChangeDto
 import app.tastile.android.data.api.PendingSessionView
 import app.tastile.android.data.api.SessionDetailView
-import app.tastile.android.data.repository.SessionRepository
+import app.tastile.android.data.execution.SessionRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

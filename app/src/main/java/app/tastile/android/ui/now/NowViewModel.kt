@@ -3,7 +3,7 @@ package app.tastile.android.ui.now
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.model.Tile
-import app.tastile.android.data.repository.TileFilter
+import app.tastile.android.data.tile.TileFilter
 import app.tastile.android.domain.repository.AuthRepository
 import app.tastile.android.domain.repository.TileRepository
 import app.tastile.android.domain.usecase.GetTilesUseCase
@@ -18,7 +18,7 @@ import javax.inject.Inject
 class NowViewModel @Inject constructor(
     // R23: tile list reads go through the domain use case. Writes still
     // hit the domain repository contract so this ViewModel no longer
-    // imports anything from data.repository beyond `TileFilter`.
+    // imports anything from data.tile beyond `TileFilter`.
     private val getTiles: GetTilesUseCase,
     private val tileRepository: TileRepository,
     private val authRepository: AuthRepository,

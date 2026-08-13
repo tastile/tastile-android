@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -43,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.data.repository.TastileAuthState
+import app.tastile.android.data.auth.TastileAuthState
 
 private object Grid {
     val pageGutter = 24.dp
@@ -91,13 +92,13 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.spacedBy(Grid.inlineGap),
             ) {
                 Text(
-                    text = "Sign in to Tastile",
+                    text = stringResource(R.string.login_subtitle_signin),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "Continue with the account you use to plan your tiles. Your schedule and devices will sync automatically.",
+                    text = stringResource(R.string.login_subtitle_body),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -121,7 +122,7 @@ fun LoginScreen(
                 shape = MaterialTheme.shapes.large,
             ) {
                 Text(
-                    text = if (isSigningIn) "Opening sign-in…" else "Continue with Tastile",
+                    text = if (isSigningIn) stringResource(R.string.login_button_signing_in) else stringResource(R.string.login_button_continue),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(vertical = 6.dp),
                 )
@@ -148,13 +149,13 @@ private fun BrandHeader() {
     ) {
         Image(
             painter = painterResource(id = markRes),
-            contentDescription = "Tastile logo",
+            contentDescription = stringResource(R.string.login_logo_cd),
             modifier = Modifier
                 .size(56.dp)
                 .clip(MaterialTheme.shapes.medium),
         )
         Text(
-            text = "Tastile",
+            text = stringResource(R.string.login_brand_label),
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -166,7 +167,10 @@ private fun PrivacyFooter() {
     val uriHandler = LocalUriHandler.current
     val linkColor = MaterialTheme.colorScheme.primary
     val linkStyle = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
-    val links: AnnotatedString = remember(linkColor) {
+    val termsLabel = stringResource(R.string.login_terms_link)
+    val privacyLabel = stringResource(R.string.login_privacy_link)
+    val footerSeparator = stringResource(R.string.login_footer_separator)
+    val links: AnnotatedString = remember(linkColor, termsLabel, privacyLabel, footerSeparator) {
         buildAnnotatedString {
             withLink(
                 LinkAnnotation.Clickable(
@@ -174,16 +178,16 @@ private fun PrivacyFooter() {
                     styles = TextLinkStyles(style = linkStyle),
                 ) { uriHandler.openUri("https://tastile.app/terms") },
             ) {
-                withStyle(linkStyle) { append("Terms of Service") }
+                withStyle(linkStyle) { append(termsLabel) }
             }
-            append("   ·   ")
+            append(footerSeparator)
             withLink(
                 LinkAnnotation.Clickable(
                     "https://tastile.app/privacy",
                     styles = TextLinkStyles(style = linkStyle),
                 ) { uriHandler.openUri("https://tastile.app/privacy") },
             ) {
-                withStyle(linkStyle) { append("Privacy Policy") }
+                withStyle(linkStyle) { append(privacyLabel) }
             }
         }
     }

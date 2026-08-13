@@ -9,7 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
-import app.tastile.android.data.repository.AppLocale
+import app.tastile.android.data.user.AppLocale
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.panels.ProjectsViewModel

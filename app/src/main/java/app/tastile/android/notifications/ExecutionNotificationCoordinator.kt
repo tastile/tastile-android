@@ -14,8 +14,8 @@ import app.tastile.android.R
 import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.core.CorePromptQueueItem
 import app.tastile.android.core.CoreRuntimeService
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.auth.AuthRepository
+import app.tastile.android.data.user.UserSettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton

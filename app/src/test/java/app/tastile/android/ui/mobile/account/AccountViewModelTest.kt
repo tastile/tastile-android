@@ -1,9 +1,9 @@
 package app.tastile.android.ui.mobile.account
 
-import app.tastile.android.data.repository.AccountProfile
-import app.tastile.android.data.repository.AccountRepository
-import app.tastile.android.data.repository.AccountTokenView
-import app.tastile.android.data.repository.AccountTokenWithSecret
+import app.tastile.android.data.user.AccountProfile
+import app.tastile.android.data.user.AccountRepository
+import app.tastile.android.data.user.AccountTokenView
+import app.tastile.android.data.user.AccountTokenWithSecret
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

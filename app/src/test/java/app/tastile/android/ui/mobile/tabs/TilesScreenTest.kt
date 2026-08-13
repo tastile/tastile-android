@@ -13,7 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
-import app.tastile.android.data.repository.AppLocale
+import app.tastile.android.data.user.AppLocale
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ListGroupingMode
 import app.tastile.android.ui.dashboard.ListViewMode
@@ -63,7 +63,7 @@ class TilesScreenTest {
         every { vm.requestPromptTileId } returns MutableStateFlow(null)
         every { vm.expandedSections } returns MutableStateFlow(emptySet())
         every { vm.sectionLimits } returns MutableStateFlow(sectionLimits)
-        every { vm.tileFilter } returns MutableStateFlow(app.tastile.android.data.repository.TileFilter.DEFAULT)
+        every { vm.tileFilter } returns MutableStateFlow(app.tastile.android.data.tile.TileFilter.DEFAULT)
         return vm
     }
 

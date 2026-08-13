@@ -39,10 +39,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,11 +61,13 @@ fun MemoScreen(
     var noteText by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val savedMessage = stringResource(R.string.memo_saved_message)
+    val errorPrefix = stringResource(R.string.memo_error_prefix)
 
     // Show success snackbar
     LaunchedEffect(saveSuccess) {
         if (saveSuccess) {
-            snackbarHostState.showSnackbar("Saved!")
+            snackbarHostState.showSnackbar(savedMessage)
             viewModel.clearSaveSuccess()
             noteText = "" // Clear input
         }
@@ -72,7 +76,7 @@ fun MemoScreen(
     // Show error snackbar
     LaunchedEffect(error) {
         error?.let {
-            snackbarHostState.showSnackbar("Error: $it")
+            snackbarHostState.showSnackbar(errorPrefix + it)
             viewModel.clearError()
         }
     }
@@ -90,7 +94,7 @@ fun MemoScreen(
                 shadowElevation = 4.dp
             ) {
                 Text(
-                    text = "Memo",
+                    text = stringResource(R.string.memo_screen_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(16.dp)
@@ -118,10 +122,10 @@ fun MemoScreen(
                             Modifier.menuAnchor()
                         }
                         OutlinedTextField(
-                            value = selectedTile?.title ?: "Select a tile",
+                            value = selectedTile?.title ?: stringResource(R.string.memo_select_tile),
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Tile") },
+                            label = { Text(stringResource(R.string.memo_tile_label)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -149,8 +153,8 @@ fun MemoScreen(
                 OutlinedTextField(
                     value = noteText,
                     onValueChange = { noteText = it },
-                    label = { Text("Note") },
-                    placeholder = { Text("Enter your memo...") },
+                    label = { Text(stringResource(R.string.memo_note_label)) },
+                    placeholder = { Text(stringResource(R.string.memo_note_placeholder)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
@@ -167,7 +171,7 @@ fun MemoScreen(
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save Memo")
+                    Text(stringResource(R.string.memo_save_button))
                 }
             }
         }

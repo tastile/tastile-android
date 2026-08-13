@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.tastile.android.data.api.CreateWorkspaceInput
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.data.api.UpdateWorkspaceInput
-import app.tastile.android.data.repository.WorkspaceRepository
+import app.tastile.android.data.workspace.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

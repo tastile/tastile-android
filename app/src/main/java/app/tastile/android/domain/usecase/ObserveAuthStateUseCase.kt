@@ -1,6 +1,6 @@
 package app.tastile.android.domain.usecase
 
-import app.tastile.android.data.repository.TastileAuthState
+import app.tastile.android.data.auth.TastileAuthState
 import app.tastile.android.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject

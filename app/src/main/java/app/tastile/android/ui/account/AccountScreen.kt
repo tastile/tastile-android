@@ -55,11 +55,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.R
 import app.tastile.android.data.model.Plan
 import app.tastile.android.data.model.Profile
 
@@ -74,13 +76,14 @@ fun AccountScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    
+
     val snackbarHostState = remember { SnackbarHostState() }
-    
+    val errorPrefix = stringResource(R.string.account_error_prefix)
+
     // Show error snackbar
     LaunchedEffect(error) {
         error?.let {
-            snackbarHostState.showSnackbar("Error: $it")
+            snackbarHostState.showSnackbar(errorPrefix + it)
             viewModel.clearError()
         }
     }
@@ -96,7 +99,7 @@ fun AccountScreen(
                 shadowElevation = 4.dp
             ) {
                 Text(
-                    text = "Account",
+                    text = stringResource(R.string.account_screen_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(16.dp)
@@ -138,7 +141,7 @@ fun AccountScreen(
                         ) {
                             Icon(Icons.Default.Star, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Manage Billing")
+                            Text(stringResource(R.string.dashboard_account_manage_billing))
                         }
 
                         Spacer(modifier = Modifier.weight(1f))
@@ -150,7 +153,7 @@ fun AccountScreen(
                         ) {
                             Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Sign Out")
+                            Text(stringResource(R.string.dashboard_account_sign_out))
                         }
                     }
                 }
@@ -188,10 +191,10 @@ fun ProfileCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Avatar
-            val displayText = profile?.displayName?.firstOrNull()?.toString() 
-                ?: email.firstOrNull()?.toString() 
+            val displayText = profile?.displayName?.firstOrNull()?.toString()
+                ?: email.firstOrNull()?.toString()
                 ?: "?"
-            
+
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -214,19 +217,19 @@ fun ProfileCard(
                 OutlinedTextField(
                     value = editedName,
                     onValueChange = { editedName = it },
-                    label = { Text("Display Name") },
+                    label = { Text(stringResource(R.string.account_display_name_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onToggleEditing) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.common_cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -235,7 +238,7 @@ fun ProfileCard(
                             onToggleEditing()
                         }
                     ) {
-                        Text("Save")
+                        Text(stringResource(R.string.account_save_button))
                     }
                 }
             } else {
@@ -243,15 +246,15 @@ fun ProfileCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = profile?.displayName ?: "No display name",
+                        text = profile?.displayName ?: stringResource(R.string.dashboard_account_no_display_name),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     IconButton(onClick = onToggleEditing) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "Edit",
+                            contentDescription = stringResource(R.string.account_edit_cd),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -304,9 +307,9 @@ fun PlanBadge(plan: String) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            
+
             Text(
-                text = if (isPro) "Pro Plan" else "Free Plan",
+                text = if (isPro) stringResource(R.string.account_plan_pro) else stringResource(R.string.account_plan_free),
                 style = MaterialTheme.typography.titleMedium,
                 color = textColor,
                 fontWeight = FontWeight.SemiBold

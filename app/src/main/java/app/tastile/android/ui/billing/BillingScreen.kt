@@ -29,11 +29,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.tastile.android.data.repository.TastileAuthState
+import app.tastile.android.R
+import app.tastile.android.data.auth.TastileAuthState
 import app.tastile.android.ui.login.LoginViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,11 +48,11 @@ fun BillingScreen(
     var isLoading by remember { mutableStateOf(true) }
     var canGoBack by remember { mutableStateOf(false) }
     var webView: WebView? by remember { mutableStateOf(null) }
-    
+
     // Pass the Cognito ID token through the callback-aware web entrypoint.
     val authState by loginViewModel.authState.collectAsStateWithLifecycle()
     val accessToken = (authState as? TastileAuthState.Authenticated)?.idToken ?: ""
-    
+
     // Build URL with access token for authentication
     val baseUrl = "https://tastile.app/pricing"
     val url = if (accessToken.isNotEmpty()) {
@@ -69,7 +71,7 @@ fun BillingScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Billing",
+                        text = stringResource(R.string.billing_title),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -77,7 +79,7 @@ fun BillingScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.common_back)
                         )
                     }
                 }
@@ -96,7 +98,7 @@ fun BillingScreen(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT
                         )
-                        
+
                         settings.apply {
                             // Stripe's hosted checkout widget on
                             // tastile.app/pricing requires JS. The WebView
@@ -110,9 +112,9 @@ fun BillingScreen(
                             builtInZoomControls = true
                             displayZoomControls = false
                         }
-                        
+
                         webChromeClient = WebChromeClient()
-                        
+
                         webViewClient = object : WebViewClient() {
                             override fun onPageStarted(
                                 view: WebView?,
@@ -121,12 +123,12 @@ fun BillingScreen(
                             ) {
                                 isLoading = true
                             }
-                            
+
                             override fun onPageFinished(view: WebView?, url: String?) {
                                 isLoading = false
                                 canGoBack = view?.canGoBack() ?: false
                             }
-                            
+
                             override fun shouldOverrideUrlLoading(
                                 view: WebView?,
                                 request: WebResourceRequest?
@@ -135,14 +137,14 @@ fun BillingScreen(
                                 return false
                             }
                         }
-                        
+
                         loadUrl(url)
                         webView = this
                     }
                 },
                 update = { }
             )
-            
+
             if (isLoading) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

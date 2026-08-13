@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.data.repository.AppLocale
-import app.tastile.android.data.util.formatIsoDateTime
+import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.time.formatIsoDateTime
 import app.tastile.android.ui.dashboard.DashboardViewModel
 
 /**

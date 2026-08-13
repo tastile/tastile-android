@@ -19,10 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import app.tastile.android.data.repository.AuthRepository
-import app.tastile.android.data.repository.PushEndpointRepository
-import app.tastile.android.data.repository.TastileAuthState
-import app.tastile.android.data.repository.UserSettingsRepository
+import app.tastile.android.data.auth.AuthRepository
+import app.tastile.android.data.notification.PushEndpointRepository
+import app.tastile.android.data.auth.TastileAuthState
+import app.tastile.android.data.user.UserSettingsRepository
 import app.tastile.android.ui.app.AppShellViewModel
 import app.tastile.android.ui.mobile.MobileNavGraph
 import app.tastile.android.core.CoreBridgeError
@@ -30,9 +30,9 @@ import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import app.tastile.android.sync.SyncCoordinator
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.core.designsystem.theme.NiaTheme
-import app.tastile.android.ui.util.SystemBarEffect
-import app.tastile.android.ui.util.resolveDarkTheme
-import app.tastile.android.ui.util.supportsDynamicColor
+import app.tastile.android.core.designsystem.theme.SystemBarEffect
+import app.tastile.android.core.designsystem.theme.resolveDarkTheme
+import app.tastile.android.core.designsystem.theme.supportsDynamicColor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
