@@ -4,6 +4,7 @@ import app.tastile.android.data.api.RuntimePathView
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.V1ListRuntimePathsResponse
+import app.tastile.android.data.auth.CurrentUserProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
