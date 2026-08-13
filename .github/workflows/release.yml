@@ -32,23 +32,33 @@ jobs:
           distribution: temurin
 
       - name: Set up Android SDK (compile SDK 37, NDK 27.1.12297006)
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: latest
-          packages: >-
-            platform-tools
-            platforms;android-37
-            platforms;android-35
-            build-tools;35.0.0
-            ndk;27.1.12297006
-
-      - name: Accept all SDK licenses (incl. preview)
-        # setup-android@v3's accept-android-sdk-licenses does not
-        # pipe yes through android-sdk-preview-license prompts
-        # (License 4/6). Repeating yes| here covers all licenses.
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+        # android-actions/setup-android@v3's `accept-android-sdk-licenses: true`
+        # hangs on the preview SDK license (License 4/6 = android-sdk-preview-license).
+        # Doing it in bash lets us install cmdline-tools, accept ALL licenses
+        # (including preview), then install packages — in that order.
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          set -e
+          if [ ! -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            cd /tmp
+            curl -sSLO https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q commandlinetools-linux-*_latest.zip
+            rm commandlinetools-linux-*_latest.zip
+            mv cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+          fi
+          PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          # Accept every pending license (incl. preview). The preview SDK
+          # license needs multiple yes passes — run twice to be safe.
+          yes | sdkmanager --licenses || true
+          yes | sdkmanager --licenses
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-37" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.1.12297006"
 
       - name: Resolve version
         id: version
