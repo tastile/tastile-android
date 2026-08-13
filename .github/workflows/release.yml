@@ -53,15 +53,15 @@ jobs:
           PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
           # Accept every pending license (incl. preview). The preview SDK
           # license needs multiple yes passes — run twice to be safe.
-          # --channel=3 (Canary) is required to find the preview channel package
-          # list that contains `platforms;android-37` (Android 16 preview). The
-          # default channel (stable=0) lists it as "package not found" and
-          # aborts the install before any package gets downloaded.
-          yes | sdkmanager --channel=3 --licenses || true
-          yes | sdkmanager --channel=3 --licenses
-          sdkmanager --channel=3 \
+          yes | sdkmanager --licenses || true
+          yes | sdkmanager --licenses
+          # The API 37 platform ships as `platforms;android-37.0` (minor-versioned
+          # path, stable channel). `platforms;android-37` does not exist in
+          # Google's repository2-3.xml and makes sdkmanager abort the whole
+          # install with "Failed to find package".
+          sdkmanager \
             "platform-tools" \
-            "platforms;android-37" \
+            "platforms;android-37.0" \
             "platforms;android-35" \
             "build-tools;35.0.0" \
             "ndk;27.1.12297006"
