@@ -42,6 +42,14 @@ jobs:
             build-tools;35.0.0
             ndk;27.1.12297006
 
+      - name: Accept all SDK licenses (incl. preview)
+        # setup-android@v3's accept-android-sdk-licenses does not
+        # pipe yes through android-sdk-preview-license prompts
+        # (License 4/6). Repeating yes| here covers all licenses.
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+
       - name: Resolve version
         id: version
         run: |
