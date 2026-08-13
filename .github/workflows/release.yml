@@ -43,7 +43,9 @@ jobs:
           if [ ! -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
             mkdir -p "$ANDROID_HOME/cmdline-tools"
             cd /tmp
-            curl -sSLO https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            # 13114758 = cmdline-tools 19.0 + Android API 37 preview repository.
+            # 11076708 (older) does not have android-37 in its package list.
+            curl -sSLO https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
             unzip -q commandlinetools-linux-*_latest.zip
             rm commandlinetools-linux-*_latest.zip
             mv cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
