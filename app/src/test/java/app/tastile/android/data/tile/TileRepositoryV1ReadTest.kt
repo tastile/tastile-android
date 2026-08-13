@@ -5,7 +5,9 @@ import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.V1ListTilesResponse
 import app.tastile.android.data.api.V1NumericConstants
 import app.tastile.android.data.api.TileListView
+import app.tastile.android.data.auth.CurrentUserProvider
 import app.tastile.android.data.command.V1CommandDispatcher
+import app.tastile.android.data.execution.EventRepository
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import io.mockk.coEvery
