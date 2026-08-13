@@ -2,6 +2,7 @@ package app.tastile.android.data.user
 
 import android.util.Base64
 import app.tastile.android.data.api.CognitoAccountApi
+import app.tastile.android.data.auth.AuthRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
