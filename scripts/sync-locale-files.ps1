@@ -1,17 +1,9 @@
-# Sync existing locale files (es, ja, ko, zh-rCN) with the master values/.
-# For each existing locale:
-#   - Copy the master file as a starting point.
-#   - For each <string> in master that is already present in the locale, keep the locale's translation.
-#   - Add missing keys with the master value as fallback so lint is happy.
-# This preserves existing translations while adding missing keys.
+# Sync locale files with master, preserving translations and escaping XML special chars.
+Add-Type -AssemblyName System.Xml
 
-param(
-    [string]$MasterDir = "C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\res\values",
-    [string[]]$Locales = @("values-de", "values-fr", "values-pt-rBR", "values-es", "values-ja", "values-ko", "values-zh-rCN")
-)
+$MasterDir = "C:\Users\rebui\Desktop\tastile\tastile-android\app\src\main\res\values"
 
-# Resources to sync
-$resourceFiles = @(
+$ResourceFiles = @(
     "app_common.xml",
     "app_language.xml",
     "app_shell.xml",
@@ -34,39 +26,74 @@ $resourceFiles = @(
     "system_settings.xml"
 )
 
-# Regex to extract <string name="..." ...>...</string> entries
-$stringPattern = '<string\s+name="(?<name>[^"]+)"(?<attrs>(?:\s+[^>]*?)?)>(?<value>.*?)</string>'
+$Locales = @("values-de", "values-fr", "values-pt-rBR", "values-es", "values-ja", "values-ko", "values-zh-rCN")
 
-function Get-StringMap {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) {
-        return @{}
-    }
-    $content = Get-Content $Path -Raw
-    $map = @{}
-    [regex]::Matches($content, $stringPattern, [System.Text.RegularExpressions.RegexOptions]::Singleline) | ForEach-Object {
-        $name = $_.Groups["name"].Value
-        $attrs = $_.Groups["attrs"].Value
-        $value = $_.Groups["value"].Value
-        $map[$name] = @{ Value = $value; Attributes = $attrs }
-    }
-    return $map
+function Escape-Xml {
+    param([string]$Text)
+    if ($null -eq $Text) { return "" }
+    return $Text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")
 }
 
-function Get-PluralMap {
+function Read-StringMap {
     param([string]$Path)
-    if (-not (Test-Path $Path)) {
-        return @{}
+    $result = [ordered]@{}
+    if (-not (Test-Path $Path)) { return $result }
+    try {
+        $xml = New-Object System.Xml.XmlDocument
+        $xml.Load($Path)
+        foreach ($node in $xml.SelectNodes("/resources/string")) {
+            $name = $node.GetAttribute("name")
+            $attrs = @{}
+            foreach ($attr in $node.Attributes) {
+                if ($attr.Name -ne "name") {
+                    $attrs[$attr.Name] = $attr.Value
+                }
+            }
+            $result[$name] = @{ Value = $node.InnerText; Attrs = $attrs }
+        }
+        foreach ($node in $xml.SelectNodes("/resources/plurals")) {
+            $name = $node.GetAttribute("name")
+            $body = $node.InnerXml
+            $result[$name] = @{ Value = $body; Attrs = @{}; IsPlurals = $true }
+        }
+    } catch {
+        Write-Host "Error reading $Path : $_"
     }
-    $content = Get-Content $Path -Raw
-    $map = @{}
-    $pattern = '<plurals\s+name="(?<name>[^"]+)">(?<body>.*?)</plurals>'
-    [regex]::Matches($content, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline) | ForEach-Object {
-        $name = $_.Groups["name"].Value
-        $body = $_.Groups["body"].Value
-        $map[$name] = $body
+    return $result
+}
+
+function Build-Xml {
+    param(
+        [System.Collections.Specialized.OrderedDictionary]$MasterMap,
+        [hashtable]$LocaleMap
+    )
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine('<?xml version="1.0" encoding="utf-8"?>')
+    [void]$sb.AppendLine('<resources>')
+    foreach ($key in $MasterMap.Keys) {
+        $masterEntry = $MasterMap[$key]
+        $useEntry = $masterEntry
+        if ($LocaleMap.ContainsKey($key)) {
+            $useEntry = $LocaleMap[$key]
+        }
+        $attrParts = @()
+        if ($masterEntry.Attrs.ContainsKey("translatable") -and $masterEntry.Attrs["translatable"] -eq "false") {
+            $attrParts += 'translatable="false"'
+        }
+        $attrStr = ""
+        if ($attrParts.Count -gt 0) {
+            $attrStr = " " + ($attrParts -join " ")
+        }
+        if ($useEntry.IsPlurals) {
+            # Don't escape the plural body - it contains <item> elements
+            [void]$sb.AppendLine("    <plurals name=`"$key`"$attrStr>$($useEntry.Value)</plurals>")
+        } else {
+            $val = Escape-Xml -Text $useEntry.Value
+            [void]$sb.AppendLine("    <string name=`"$key`"$attrStr>$val</string>")
+        }
     }
-    return $map
+    [void]$sb.AppendLine('</resources>')
+    return $sb.ToString()
 }
 
 foreach ($locale in $Locales) {
@@ -74,71 +101,15 @@ foreach ($locale in $Locales) {
     if (-not (Test-Path $localeDir)) {
         New-Item -ItemType Directory -Path $localeDir | Out-Null
     }
-
-    foreach ($file in $resourceFiles) {
+    foreach ($file in $ResourceFiles) {
         $masterPath = Join-Path $MasterDir $file
         $localePath = Join-Path $localeDir $file
-        if (-not (Test-Path $masterPath)) {
-            continue
-        }
+        if (-not (Test-Path $masterPath)) { continue }
 
-        if ($file -eq "plurals.xml") {
-            # Sync plurals entries
-            $masterMap = Get-PluralMap -Path $masterPath
-            $localeMap = Get-PluralMap -Path $localePath
-
-            # Build the output XML
-            $output = "<resources>`n"
-            foreach ($key in $masterMap.Keys) {
-                if ($localeMap.ContainsKey($key)) {
-                    $body = $localeMap[$key]
-                } else {
-                    $body = $masterMap[$key]
-                }
-                $output += "    <plurals name=`"$key`">$body</plurals>`n"
-            }
-            $output += "</resources>`n"
-            Set-Content -Path $localePath -Value $output -Encoding UTF8
-        }
-        else {
-            # Sync string entries
-            $masterMap = Get-StringMap -Path $masterPath
-            $localeMap = Get-StringMap -Path $localePath
-
-            # Build the output XML preserving XML header
-            $masterContent = Get-Content $masterPath -Raw
-            $xmlDeclaration = ""
-            if ($masterContent -match '^<\?xml[^?]+\?>') {
-                $xmlDeclaration = $Matches[0] + "`n"
-            }
-
-            # Detect XML comment block before <resources>
-            $commentBlock = ""
-            if ($masterContent -match '(?s)(<!--.*?-->)\s*<resources>') {
-                $commentBlock = $Matches[1] + "`n"
-            }
-
-            # Build output: start with xmlDeclaration + commentBlock + opening <resources>
-            $output = $xmlDeclaration + $commentBlock + "<resources>`n"
-
-            foreach ($key in $masterMap.Keys) {
-                if ($localeMap.ContainsKey($key)) {
-                    $attrs = $localeMap[$key].Attributes
-                    $value = $localeMap[$key].Value
-                } else {
-                    $attrs = $masterMap[$key].Attributes
-                    $value = $masterMap[$key].Value
-                }
-                # Build attr string. Preserve translatable attribute from master if locale didn't override.
-                $attrStr = ""
-                if ($attrs -match 'translatable="false"') {
-                    $attrStr = ' translatable="false"'
-                }
-                $output += "    <string name=`"$key`"$attrStr>$value</string>`n"
-            }
-            $output += "</resources>`n"
-            Set-Content -Path $localePath -Value $output -Encoding UTF8
-        }
+        $masterMap = Read-StringMap -Path $masterPath
+        $localeMap = Read-StringMap -Path $localePath
+        $output = Build-Xml -MasterMap $masterMap -LocaleMap $localeMap
+        Set-Content -Path $localePath -Value $output -Encoding UTF8
     }
-    Write-Host "Synced locale files for $locale"
+    Write-Host "Synced locale: $locale"
 }
