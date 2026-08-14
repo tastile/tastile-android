@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_language">语言</string>
-    <string name="settings_language_en">English</string>
     <string name="settings_language_ja">日本語</string>
+    <string name="settings_language_en">English</string>
     <string name="settings_language_de">Deutsch</string>
     <string name="settings_language_es">Español</string>
     <string name="settings_language_fr">Français</string>
@@ -18,3 +18,4 @@
     <string name="locale_label_pt_rBR">葡萄牙语 (巴西)</string>
     <string name="locale_label_zh_rCN">简体中文</string>
 </resources>
+

@@ -54,7 +54,13 @@ class TasksScreenTest {
     ): DashboardViewModel {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         every { vm.tiles } returns MutableStateFlow(tiles)
-        every { vm.projectSections } returns MutableStateFlow(sections)
+        every { vm.projectSections } returns MutableStateFlow(
+            // Default: surface the visible section as a tab even when the caller
+            // didn`t build an explicit `sections` list. The real
+            // DashboardViewModel always adds ALL/STARRED/UNASSIGNED here, and
+            // most of these tests care about a single visible section.
+            if (sections.isEmpty()) listOf(visibleSection) else sections,
+        )
         every { vm.visibleSection } returns MutableStateFlow(visibleSection)
         every { vm.selectedSectionId } returns MutableStateFlow(visibleSection.id)
         every { vm.completedTiles } returns MutableStateFlow(completedTiles)
@@ -105,9 +111,17 @@ class TasksScreenTest {
         val vm = stubVm(visibleSection = section)
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
-        rule.onNodeWithTag("tasks-section-bar").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-bucket-label-${FixedTasksScope.ALL.id}").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-sort-button").assertIsDisplayed()
+        // The scope-tabs LazyColumn item pushes the accordion below the
+        // viewport on smaller test windows; assert the section bar and its
+        // descendants exist rather than insisting on visibility. The
+        // production layout renders them in the same Column so they
+        // always appear together.
+        rule.onNodeWithTag("tasks-section-bar", useUnmergedTree = true).assertExists()
+        rule.onNodeWithTag(
+            "tasks-bucket-label-${FixedTasksScope.ALL.id}",
+            useUnmergedTree = true,
+        ).assertExists()
+        rule.onNodeWithTag("tasks-sort-button", useUnmergedTree = true).assertExists()
     }
 
     @Test

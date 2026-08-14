@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notif_alarm_title_decision_required">결정 필요</string>
     <string name="notif_alarm_body_decision_tile">\"%1$s\"에 대한 프롬프트를 확인하세요.</string>
@@ -10,3 +10,4 @@
     <string name="notif_alarm_body_tile_ready">지금 시작해야 할 다음 타일을 확인하세요.</string>
     <string name="notif_alarm_body_decision_default">현재 타일을 완료, 연장 또는 연기할지 결정하세요.</string>
 </resources>
+

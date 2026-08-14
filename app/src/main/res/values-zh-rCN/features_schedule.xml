@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_schedule_recurring">重复卡片</string>
     <string name="panels_schedule_upcoming">即将到期</string>
@@ -7,3 +7,4 @@
     <string name="empty_schedule_hint">快速创建一张卡片或选择一个时间窗口开始。</string>
     <string name="execute_next_label">下一个：%1$s</string>
 </resources>
+

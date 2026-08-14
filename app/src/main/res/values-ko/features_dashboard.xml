@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="dashboard_tiles_title">타일 작업 공간</string>
     <string name="dashboard_tiles_tab_list">목록</string>
@@ -59,3 +59,4 @@
     <string name="dashboard_account_usage_focus_time">집중 시간</string>
     <string name="dashboard_account_usage_activity_heatmap">활동 히트맵</string>
 </resources>
+

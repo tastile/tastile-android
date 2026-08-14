@@ -250,6 +250,7 @@ fun ExecuteScreen(
                             AppEmptyState(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .testTag("tasks-empty")
                                     .padding(vertical = MobSpacingLg),
                                 icon = Icons.Outlined.EventBusy,
                                 title = stringResource(R.string.tasks_empty_title),
@@ -429,7 +430,7 @@ private fun ProjectTabsRow(
                 )
             }
         }
-        sections.forEach { section ->
+        sections.filter { it.id != FixedTasksScope.STARRED.id }.forEach { section ->
             Tab(
                 selected = section.id == selectedId,
                 onClick = { onSelect(section.id) },
@@ -703,15 +704,26 @@ private fun TileRow(
         }
 
         when (executionState) {
-            ExecutionControlState.Active -> TextButton(
-                onClick = onPause,
-                enabled = !executionControlInFlight,
-                contentPadding = PaddingValues(
-                    start = TasksGrid.rowLeadingWidth + TasksGrid.gutter,
-                    end = 0.dp, top = 0.dp, bottom = 0.dp,
-                ),
-                modifier = Modifier.testTag("execute-pause-${tile.id}"),
-            ) { Text(stringResource(R.string.tasks_active_hero_pause)) }
+            ExecutionControlState.Active -> {
+                TextButton(
+                    onClick = onPause,
+                    enabled = !executionControlInFlight,
+                    contentPadding = PaddingValues(
+                        start = TasksGrid.rowLeadingWidth + TasksGrid.gutter,
+                        end = 0.dp, top = 0.dp, bottom = 0.dp,
+                    ),
+                    modifier = Modifier.testTag("execute-pause-${tile.id}"),
+                ) { Text(stringResource(R.string.tasks_active_hero_pause)) }
+                TextButton(
+                    onClick = { onComplete() },
+                    enabled = !executionControlInFlight,
+                    contentPadding = PaddingValues(
+                        start = 0.dp,
+                        end = 0.dp, top = 0.dp, bottom = 0.dp,
+                    ),
+                    modifier = Modifier.testTag("execute-complete-${tile.id}"),
+                ) { Text(stringResource(R.string.tasks_active_hero_complete)) }
+            }
             ExecutionControlState.Paused -> TextButton(
                 onClick = onResume,
                 enabled = !executionControlInFlight,
@@ -747,7 +759,7 @@ private fun CompletedTileRow(
             .fillMaxWidth()
             .padding(horizontal = TasksGrid.columnInset)
             .clickable(onClick = onTap)
-            .testTag("execute-tile-${tile.id}"),
+            .testTag("tasks-done-row-${tile.id}"),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             contentColor = MaterialTheme.colorScheme.onSurface,

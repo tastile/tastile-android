@@ -1,8 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_timeline_empty">此范围内没有块。创建卡片以填充时间线。</string>
     <string name="panels_timeline_loading">正在加载时间线…</string>
     <string name="panels_timeline_meta_blocks">块</string>
     <string name="panels_timeline_meta_work">工作</string>
     <string name="panels_timeline_meta_breaks">休息</string>
+    <string name="panels_timeline_title">Timeline</string>
+    <string name="panels_timeline_custom_start">Start date</string>
+    <string name="panels_timeline_custom_end">End date</string>
+    <string name="panels_timeline_empty_date">No data for this range.</string>
 </resources>
+

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="dashboard_tiles_title">卡片工作区</string>
     <string name="dashboard_tiles_tab_list">列表</string>
@@ -59,3 +59,4 @@
     <string name="dashboard_account_usage_focus_time">专注时间</string>
     <string name="dashboard_account_usage_activity_heatmap">活动热力图</string>
 </resources>
+

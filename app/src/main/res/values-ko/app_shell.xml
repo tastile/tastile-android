@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">메뉴 열기</string>
     <string name="mobile_top_notifications">알림</string>
@@ -15,4 +15,9 @@
     <string name="nav_preferences">환경설정</string>
     <string name="nav_setting">설정</string>
     <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
+    <string name="avatar_image_cd">Account avatar</string>
+    <string name="common_dismiss_cd">Dismiss</string>
+    <string name="search_label">Search</string>
+    <string name="fab_create">Create</string>
 </resources>
+

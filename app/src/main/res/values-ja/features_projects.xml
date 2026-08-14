@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_projects_title">プロジェクト</string>
     <string name="panels_projects_all_projects">すべてのプロジェクト</string>
@@ -13,10 +13,10 @@
     <string name="panels_projects_delete">削除</string>
     <string name="panels_projects_delete_confirm_title">「%1$s」を削除しますか？</string>
     <string name="panels_projects_delete_confirm_body">このプロジェクトと関連付けが完全に削除されます。</string>
-    <string name="empty_projects_title">プロジェクトがありません</string>
-    <string name="empty_projects_hint">プロジェクトを追加してタイルを整理しましょう。</string>
     <string name="panels_projects_tiles_section_title">このプロジェクトのタイル</string>
     <string name="panels_projects_filtered_tile_count">%1$d 件のタイル</string>
+    <string name="empty_projects_title">プロジェクトがありません</string>
+    <string name="empty_projects_hint">プロジェクトを追加してタイルを整理しましょう。</string>
     <string name="projects_summary_count">%1$d 件のプロジェクト</string>
     <string name="projects_summary_count_one">1 件のプロジェクト</string>
     <string name="projects_summary_count_zero">プロジェクトはまだありません</string>
@@ -30,4 +30,6 @@
     <string name="projects_section_all">すべてのプロジェクト</string>
     <string name="projects_section_scoped">このプロジェクトのタイル</string>
     <string name="projects_select_hint">プロジェクトを選ぶと、下のタイルを絞り込みます。</string>
+    <string name="projects_color_default" translatable="false">#6B7280</string>
 </resources>
+

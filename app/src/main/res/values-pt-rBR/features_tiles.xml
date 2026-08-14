@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tiles_duration">Duration</string>
+    <string name="tiles_start_at">Start</string>
+    <string name="panels_references_title">References</string>
+    <string name="panels_references_empty">No labels yet. Tiles with labels will appear here.</string>
+    <string name="empty_tiles_title">No tiles yet</string>
+    <string name="empty_tiles_hint">Create a tile from the Projects tab to seed the timeline.</string>
+    <string name="tile_occurrence_label">Occurrence: %1$s</string>
+    <string name="tiles_stat_open">Open · %1$d</string>
+    <string name="tiles_stat_estimated">Estimated · %1$dm</string>
+    <string name="tiles_stat_sections">Sections · %1$d</string>
+    <string name="tile_card_meta_minutes">%1$d min</string>
+    <string name="tile_section_meta">%1$d min · %2$d tiles</string>
+</resources>
+

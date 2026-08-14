@@ -1,18 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="account_tokens_heading">API 令牌</string>
-    <string name="account_tokens_description">签发永久有效的 API 令牌，并像 API 密钥一样管理名称和使用历史。</string>
-    <string name="account_tokens_new_token_heading">新令牌</string>
-    <string name="account_tokens_name_label">令牌名称</string>
-    <string name="account_tokens_issue">签发令牌</string>
-    <string name="account_tokens_issued_heading">已签发令牌</string>
-    <string name="account_tokens_empty">暂无 API 令牌。</string>
-    <string name="account_tokens_copy">复制</string>
-    <string name="account_tokens_revoked">已撤销</string>
-    <string name="account_tokens_revoke">撤销</string>
-    <string name="account_subscription_current_plan">当前套餐</string>
-    <string name="account_subscription_free_badge">免费</string>
-    <string name="account_subscription_free_description">升级以解锁高级功能</string>
-    <string name="account_subscription_upgrade">升级到 Pro</string>
-    <string name="account_subscription_manage">管理账单</string>
+    <string name="login_subtitle_signin">Sign in to Tastile</string>
+    <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
+    <string name="login_button_signing_in">Signing in…</string>
+    <string name="login_button_continue">Continue with Google</string>
+    <string name="login_logo_cd">Tastile logo</string>
+    <string name="login_brand_label">Tastile</string>
+    <string name="login_terms_link">Terms of Service</string>
+    <string name="login_privacy_link">Privacy Policy</string>
+    <string name="login_footer_separator"> · </string>
 </resources>
+

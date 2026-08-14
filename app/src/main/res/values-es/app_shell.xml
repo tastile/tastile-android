@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">Abrir menú</string>
     <string name="mobile_top_notifications">Notificaciones</string>
@@ -15,4 +15,9 @@
     <string name="nav_preferences">Preferencias</string>
     <string name="nav_setting">Ajuste</string>
     <string name="mobile_day_header_pattern" translatable="false">MMM d (EEE)</string>
+    <string name="avatar_image_cd">Account avatar</string>
+    <string name="common_dismiss_cd">Dismiss</string>
+    <string name="search_label">Search</string>
+    <string name="fab_create">Create</string>
 </resources>
+

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notif_alarm_title_decision_required">需要决策</string>
     <string name="notif_alarm_body_decision_tile">查看 \"%1$s\" 的提示。</string>
@@ -10,3 +10,4 @@
     <string name="notif_alarm_body_tile_ready">查看当前应开始的下一张卡片。</string>
     <string name="notif_alarm_body_decision_default">决定是否完成、延长或推迟当前卡片。</string>
 </resources>
+

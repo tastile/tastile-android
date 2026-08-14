@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_schedule_recurring">반복 타일</string>
     <string name="panels_schedule_upcoming">다가오는 마감</string>
@@ -7,3 +7,4 @@
     <string name="empty_schedule_hint">타일을 빠르게 생성하거나 시간 창을 선택해 시작하세요.</string>
     <string name="execute_next_label">다음: %1$s</string>
 </resources>
+

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tiles_duration">Duración</string>
     <string name="tiles_start_at">Inicio</string>
@@ -10,4 +10,7 @@
     <string name="tiles_stat_open">Abiertas · %1$d</string>
     <string name="tiles_stat_estimated">Estimado · %1$d min</string>
     <string name="tiles_stat_sections">Secciones · %1$d</string>
+    <string name="tile_card_meta_minutes">%1$d min</string>
+    <string name="tile_section_meta">%1$d min · %2$d tiles</string>
 </resources>
+

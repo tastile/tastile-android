@@ -1,24 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_title">설정</string>
-    <string name="settings_theme">테마</string>
-    <string name="settings_theme_light">라이트</string>
-    <string name="settings_theme_dark">다크</string>
-    <string name="settings_theme_system">기기 설정</string>
-    <string name="settings_security_lock_on">보안 잠금 켜짐</string>
-    <string name="settings_security_lock_off">보안 잠금 꺼짐</string>
-    <string name="settings_security_lock_timeout_label">시간 초과: %1$d분</string>
-    <string name="settings_security_lock_timeout_decrease">-5</string>
-    <string name="settings_security_lock_timeout_increase">+5</string>
-    <string name="settings_notifications_allow">허용</string>
-    <string name="settings_notifications_test">테스트</string>
-    <string name="settings_notifications_status_allowed">알림 활성화됨</string>
-    <string name="settings_notifications_status_denied">알림 거부됨</string>
-    <string name="settings_notifications_status_unsupported">알림 미지원</string>
-    <string name="picker_dialog_theme_dark">다크 (기본)</string>
-    <string name="picker_dialog_theme_light">라이트</string>
-    <string name="picker_dialog_timeout_title">잠금 시간 초과</string>
-    <string name="picker_dialog_timeout_5">5분</string>
-    <string name="picker_dialog_timeout_15">15분</string>
-    <string name="picker_dialog_timeout_60">60분</string>
+    <string name="preferences_nav_general">General Preferences</string>
+    <string name="preferences_nav_profile">Profile</string>
+    <string name="preferences_nav_subscription">Subscription</string>
+    <string name="preferences_nav_tokens">Access Tokens</string>
+    <string name="preferences_account_title">Account Settings</string>
+    <string name="preferences_account_profile_heading">Profile Information</string>
+    <string name="preferences_account_profile_guide">Manage your email and sign-in methods.</string>
+    <string name="preferences_account_account_heading">Account</string>
+    <string name="preferences_account_refresh">Refresh</string>
+    <string name="preferences_account_loading">Loading…</string>
+    <string name="preferences_account_email">Email</string>
+    <string name="preferences_account_email_verified">Email verification</string>
+    <string name="preferences_account_verified">Verified</string>
+    <string name="preferences_account_unverified">Not verified</string>
+    <string name="preferences_account_account_id">Account ID</string>
+    <string name="preferences_account_change_email_heading">Change registered email</string>
+    <string name="preferences_account_new_email">New email</string>
+    <string name="preferences_account_send_code">Send change code</string>
+    <string name="preferences_account_code">Verification code</string>
+    <string name="preferences_account_verify_code">Verify code</string>
+    <string name="preferences_account_login_methods">Sign-in methods</string>
+    <string name="preferences_account_passkey">Add or change passkey / external sign-in</string>
+    <string name="preferences_account_email_otp_relogin">Re-login with email OTP</string>
+    <string name="preferences_account_subscription_heading">Subscription</string>
+    <string name="preferences_account_subscription_guide">Manage your plan and billing.</string>
 </resources>
+

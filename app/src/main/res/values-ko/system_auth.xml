@@ -1,18 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="account_tokens_heading">API 토큰</string>
-    <string name="account_tokens_description">무제한 사용 가능한 API 토큰을 발급하고 API 키처럼 이름과 사용 내역을 관리하세요.</string>
-    <string name="account_tokens_new_token_heading">새 토큰</string>
-    <string name="account_tokens_name_label">토큰 이름</string>
-    <string name="account_tokens_issue">토큰 발급</string>
-    <string name="account_tokens_issued_heading">발급된 토큰</string>
-    <string name="account_tokens_empty">아직 API 토큰이 없습니다.</string>
-    <string name="account_tokens_copy">복사</string>
-    <string name="account_tokens_revoked">취소됨</string>
-    <string name="account_tokens_revoke">취소</string>
-    <string name="account_subscription_current_plan">현재 플랜</string>
-    <string name="account_subscription_free_badge">무료</string>
-    <string name="account_subscription_free_description">업그레이드하여 고급 기능을 잠금 해제하세요</string>
-    <string name="account_subscription_upgrade">Pro로 업그레이드</string>
-    <string name="account_subscription_manage">결제 관리</string>
+    <string name="login_subtitle_signin">Sign in to Tastile</string>
+    <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
+    <string name="login_button_signing_in">Signing in…</string>
+    <string name="login_button_continue">Continue with Google</string>
+    <string name="login_logo_cd">Tastile logo</string>
+    <string name="login_brand_label">Tastile</string>
+    <string name="login_terms_link">Terms of Service</string>
+    <string name="login_privacy_link">Privacy Policy</string>
+    <string name="login_footer_separator"> · </string>
 </resources>
+

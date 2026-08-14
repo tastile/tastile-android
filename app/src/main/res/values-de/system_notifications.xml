@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_alarm_title_decision_required">Decision required</string>
+    <string name="notif_alarm_body_decision_tile">Review the prompt for \"%1$s\".</string>
+    <string name="notif_alarm_title_scheduled_start">Scheduled start</string>
+    <string name="notif_alarm_body_scheduled_start">It\'s time to start \"%1$s\".</string>
+    <string name="notif_alarm_title_break_finished">Break finished</string>
+    <string name="notif_alarm_body_break_finished">The break is over. Decide whether to return or extend it.</string>
+    <string name="notif_alarm_title_tile_ready">Tile ready to start</string>
+    <string name="notif_alarm_body_tile_ready">Review the next tile that should start now.</string>
+    <string name="notif_alarm_body_decision_default">Decide whether to complete, extend, or defer the current tile.</string>
+</resources>
+

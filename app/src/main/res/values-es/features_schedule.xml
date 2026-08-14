@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_schedule_recurring">Tarjetas recurrentes</string>
     <string name="panels_schedule_upcoming">Próximas fechas límite</string>
@@ -7,3 +7,4 @@
     <string name="empty_schedule_hint">Crea rápidamente una tarjeta o selecciona una franja de tiempo para comenzar.</string>
     <string name="execute_next_label">Siguiente: %1$s</string>
 </resources>
+

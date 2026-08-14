@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">メニューを開く</string>
     <string name="mobile_top_notifications">通知</string>
@@ -15,4 +15,9 @@
     <string name="nav_preferences">環境設定</string>
     <string name="nav_setting">Setting</string>
     <string name="mobile_day_header_pattern" translatable="false">M月d日 (EEE)</string>
+    <string name="avatar_image_cd">Account avatar</string>
+    <string name="common_dismiss_cd">Dismiss</string>
+    <string name="search_label">Search</string>
+    <string name="fab_create">Create</string>
 </resources>
+

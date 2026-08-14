@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tiles_duration">所要</string>
     <string name="tiles_start_at">開始</string>
@@ -10,4 +10,7 @@
     <string name="tiles_stat_open">オープン · %1$d</string>
     <string name="tiles_stat_estimated">見積もり · %1$d分</string>
     <string name="tiles_stat_sections">セクション · %1$d</string>
+    <string name="tile_card_meta_minutes">%1$d min</string>
+    <string name="tile_section_meta">%1$d min · %2$d tiles</string>
 </resources>
+

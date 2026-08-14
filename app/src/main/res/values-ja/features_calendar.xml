@@ -1,7 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_calendar_day">日</string>
     <string name="panels_calendar_week">週</string>
     <string name="panels_calendar_month">月</string>
     <string name="panels_calendar_custom">カスタム</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_overflow_more">+%1$d more</string>
+    <string name="calendar_day_view">Day</string>
+    <string name="calendar_week_view">Week</string>
+    <string name="calendar_no_blocks_today">No blocks scheduled for today.</string>
+    <string name="calendar_items_count">%1$d items</string>
+    <string name="calendar_filter_calendar_label">Calendar</string>
+    <string name="calendar_filter_date_label">Date</string>
+    <string name="calendar_filter_date_empty">Pick a date</string>
+    <string name="calendar_filter_projects_label">Projects</string>
+    <string name="calendar_event_status_active">Active</string>
+    <string name="calendar_event_status_done">Done</string>
+    <string name="calendar_event_status_pending">Pending</string>
+    <string name="calendar_event_subtitle">%1$s · %2$s · %3$s</string>
 </resources>
+

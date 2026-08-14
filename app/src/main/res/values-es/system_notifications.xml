@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notif_alarm_title_decision_required">Decisión requerida</string>
     <string name="notif_alarm_body_decision_tile">Revisa la indicación de \"%1$s\".</string>
@@ -10,3 +10,4 @@
     <string name="notif_alarm_body_tile_ready">Revisa la siguiente tarjeta que debería comenzar ahora.</string>
     <string name="notif_alarm_body_decision_default">Decide si completar, extender o posponer la tarjeta actual.</string>
 </resources>
+

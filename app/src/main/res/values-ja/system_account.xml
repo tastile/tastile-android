@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="account_tokens_heading">APIトークン</string>
     <string name="account_tokens_description">無期限のAPIトークンを複数発行し、APIキーと同じように名前と使用履歴を管理できます。</string>
@@ -15,4 +15,13 @@
     <string name="account_subscription_free_description">アップグレードして高度な機能を利用</string>
     <string name="account_subscription_upgrade">Pro にアップグレード</string>
     <string name="account_subscription_manage">請求を管理</string>
+    <string name="account_error_prefix">Error: </string>
+    <string name="account_screen_title">Account</string>
+    <string name="account_display_name_label">Display name</string>
+    <string name="account_save_button">Save</string>
+    <string name="account_edit_cd">Edit display name</string>
+    <string name="account_plan_pro">Pro Plan</string>
+    <string name="account_plan_free">Free Plan</string>
+    <string name="billing_title">Billing</string>
 </resources>
+

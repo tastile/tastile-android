@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="dashboard_tiles_title">タイルワークスペース</string>
     <string name="dashboard_tiles_tab_list">リスト</string>
@@ -59,3 +59,4 @@
     <string name="dashboard_account_usage_focus_time">Focus Time</string>
     <string name="dashboard_account_usage_activity_heatmap">Activity Heatmap</string>
 </resources>
+

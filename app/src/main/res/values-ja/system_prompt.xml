@@ -1,3 +1,33 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="now_title">Now</string>
+    <string name="now_refresh">Refresh</string>
+    <string name="now_active_label">Active</string>
+    <string name="now_complete">Complete</string>
+    <string name="now_start_cd">Start tile</string>
+    <string name="now_delete_cd">Delete tile</string>
+    <string name="now_cancel">Cancel</string>
+    <string name="now_delete_confirm">Delete</string>
+    <string name="now_delete_tile_title">Delete this tile?</string>
+    <string name="now_delete_tile_body">This will permanently remove the tile.</string>
+    <string name="now_lifecycle_ready">Ready</string>
+    <string name="now_lifecycle_started">Started</string>
+    <string name="now_lifecycle_done">Done</string>
+    <string name="now_lifecycle_archived">Archived</string>
+    <string name="now_new_tile_title_hint">New tile title</string>
+    <string name="now_add_cd">Add new tile</string>
+    <string name="now_add_button">Add</string>
+    <string name="prompt_error_prefix">Error:</string>
+    <string name="prompt_title">Prompt</string>
+    <string name="prompt_action_refresh">Refresh</string>
+    <string name="prompt_working_for_minutes">Working for %1$d min</string>
+    <string name="prompt_will_appear_after">Will appear after %1$d min</string>
+    <string name="prompt_no_active_tiles">No active tiles</string>
+    <string name="prompt_start_tile_hint">Start a tile to begin</string>
+    <string name="prompt_elapsed_intro">Elapsed time</string>
+    <string name="prompt_minutes_label">minutes</string>
+    <string name="prompt_action_continue_working">Continue working</string>
+    <string name="prompt_action_take_break">Take a break</string>
+    <string name="prompt_action_complete_task">Complete task</string>
 </resources>
+
