@@ -1,16 +1,11 @@
 package app.tastile.android.data.notification
 
 import android.content.Context
-import app.tastile.android.BuildConfig
 import app.tastile.android.data.api.EndpointCapabilityPayload
 import app.tastile.android.data.api.EndpointRegistrationPayload
 import app.tastile.android.data.api.EndpointView
 import app.tastile.android.data.api.V1ApiClient
 import dagger.hilt.android.qualifiers.ApplicationContext
-import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
-import kotlinx.coroutines.tasks.await
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,31 +15,16 @@ fun interface PushTokenProvider {
     suspend fun currentToken(): String?
 }
 
-/** Runtime FCM adapter. Firebase project configuration is supplied outside the APK source tree. */
+/**
+ * No-op push token provider. Firebase Cloud Messaging was removed when the
+ * Android app dropped its Firebase project; the app no longer registers a
+ * remote push endpoint with Core. The provider remains so the surrounding
+ * `PushEndpointRepository.registerCurrentToken()` contract still resolves
+ * cleanly (it returns `null` and the repository skips the network call).
+ */
 @Singleton
-class FirebasePushTokenProvider @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : PushTokenProvider {
-    override suspend fun currentToken(): String? {
-        val applicationId = BuildConfig.FIREBASE_APPLICATION_ID
-        val projectId = BuildConfig.FIREBASE_PROJECT_ID
-        val apiKey = BuildConfig.FIREBASE_API_KEY
-        val senderId = BuildConfig.FIREBASE_GCM_SENDER_ID
-        if (listOf(applicationId, projectId, apiKey, senderId).any(String::isBlank)) return null
-
-        if (FirebaseApp.getApps(context).isEmpty()) {
-            FirebaseApp.initializeApp(
-                context,
-                FirebaseOptions.Builder()
-                    .setApplicationId(applicationId)
-                    .setProjectId(projectId)
-                    .setApiKey(apiKey)
-                    .setGcmSenderId(senderId)
-                    .build(),
-            )
-        }
-        return FirebaseMessaging.getInstance().token.await()
-    }
+class NoOpPushTokenProvider @Inject constructor() : PushTokenProvider {
+    override suspend fun currentToken(): String? = null
 }
 
 /** Persistent state is deliberately only endpoint IDs and token fingerprints, never raw tokens. */

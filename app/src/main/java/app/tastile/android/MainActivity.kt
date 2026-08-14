@@ -147,9 +147,9 @@ class MainActivity : ComponentActivity() {
                 requestNotificationPermissionIfNeeded()
                 executionNotificationCoordinator.start()
 
-                // Registration is intentionally best-effort: a missing or invalid
-                // Firebase runtime configuration must not block the user's core
-                // schedule. The durable local endpoint state makes the next
+                // Token registration is intentionally best-effort: a missing or
+                // invalid push provider configuration must not block the user's
+                // core schedule. The durable local endpoint state makes the next
                 // authenticated launch retry token registration.
                 runCatching { pushEndpointRepository.registerCurrentToken() }
                     .onFailure(Throwable::printStackTrace)

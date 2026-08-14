@@ -12,7 +12,7 @@ import app.tastile.android.data.tile.MemoTileRepository
 import app.tastile.android.data.tile.PromptTileRepository
 import app.tastile.android.data.notification.PushEndpointStore
 import app.tastile.android.data.notification.PushTokenProvider
-import app.tastile.android.data.notification.FirebasePushTokenProvider
+import app.tastile.android.data.notification.NoOpPushTokenProvider
 import app.tastile.android.data.execution.SharedPreferencesExecutionIdStore
 import app.tastile.android.data.notification.SharedPreferencesPushEndpointStore
 import app.tastile.android.data.repository.TilesResponse
@@ -42,7 +42,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providePushTokenProvider(provider: FirebasePushTokenProvider): PushTokenProvider = provider
+    fun providePushTokenProvider(provider: NoOpPushTokenProvider): PushTokenProvider = provider
 
     @Provides
     @Singleton
