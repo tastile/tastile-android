@@ -55,7 +55,7 @@ internal fun TimelineMetaPills(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "${model.totalWorkMin}m " + stringResource(R.string.panels_timeline_meta_work),
+            text = stringResource(R.string.panels_timeline_meta_minutes_value, model.totalWorkMin) + " " + stringResource(R.string.panels_timeline_meta_work),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

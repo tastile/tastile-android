@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 
 /**
  * ProfileScreen — Settings profile screen (v1/15 §4).
@@ -23,13 +25,13 @@ fun ProfileScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Profile", style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.preferences_nav_profile), style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = displayName,
             onValueChange = { displayName = it },
-            label = { Text("Display Name") },
+            label = { Text(stringResource(R.string.account_display_name_label)) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -37,7 +39,7 @@ fun ProfileScreen() {
         OutlinedTextField(
             value = bio,
             onValueChange = { bio = it },
-            label = { Text("Bio") },
+            label = { Text(stringResource(R.string.profile_bio_label)) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))

@@ -6,9 +6,11 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.data.access.AccessRepository
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
+import app.tastile.android.data.model.Workspace
 import app.tastile.android.data.model.projectLabels
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.data.auth.AuthRepository
@@ -139,6 +141,7 @@ data class CreateTileDraft(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val accessRepository: AccessRepository,
     private val profileRepository: ProfileRepository,
     private val tileRepository: TileRepository,
     private val userSettingsRepository: UserSettingsRepository,
@@ -147,6 +150,15 @@ class DashboardViewModel @Inject constructor(
     private val cardMapper = DashboardCardMapper()
     private val _tiles = MutableStateFlow<List<Tile>>(emptyList())
     val tiles: StateFlow<List<Tile>> = _tiles.asStateFlow()
+
+    /**
+     * Owner scopes for the Tasks tab row. Sourced from
+     * `GET /v1/access/subjects` via [AccessRepository] — mirrors
+     * `tastile-web/src/shared/hooks/use-workspaces.ts`. Personal
+     * (`Workspace.kind == 0`) is always the first entry; subsequent
+     * entries are user-created projects (`kind == 1`).
+     */
+    val workspaces: StateFlow<List<Workspace>> = accessRepository.workspaces
 
     private val _tileFilter = MutableStateFlow(TileFilter.DEFAULT)
     val tileFilter: StateFlow<TileFilter> = _tileFilter.asStateFlow()
@@ -506,8 +518,24 @@ class DashboardViewModel @Inject constructor(
     private val _selectedSectionId = MutableStateFlow(FixedTasksScope.DEFAULT.id)
     val selectedSectionId: StateFlow<String> = _selectedSectionId.asStateFlow()
 
+    // Note: workspace fetching and default Personal selection intentionally
+    // moved out of `init` because `accessRepository.refresh()` requires an
+    // auth token. It now runs in `observeAuth` once `authState` transitions
+    // to `Authenticated`, so existing sessions and fresh sign-ins both see
+    // the workspace list resolved before the first tile fetch.
+
+    /**
+     * Updates [selectedSectionId] and, when a workspace tab is selected,
+     * wires the matching `?owner_ids=<id>` filter so `/v1/tiles` returns
+     * only that workspace's tiles. Mirrors the web client's
+     * `use-selected-workspace.ts` + `owner_ids` query handling.
+     */
     fun setSelectedSection(id: String) {
         _selectedSectionId.value = id
+        val workspaceId = id.removePrefix("workspace:")
+        if (workspaceId.isNotBlank() && workspaceId != id) {
+            setOwnerFilters(listOf(workspaceId))
+        }
     }
 
     private val _sortOrder = MutableStateFlow(SortOrder.DEFAULT)
@@ -519,53 +547,38 @@ class DashboardViewModel @Inject constructor(
 
     /**
      * All sections that the Tasks tab row exposes, in render order.
-     * Each section's tiles are non-DONE; the DONE lifecycle is funneled to
-     * [completedTiles] instead so the active list and the collapsed
-     * "Completed (n)" card never duplicate.
+     *
+     * One [ProjectSection] per [Workspace] (Personal + each project)
+     * sourced from [AccessRepository]. The Personal row always renders
+     * first because the server pins it at `kind == 0`.
+     *
+     * The /v1 tile response is already filtered by `?owner_ids=<id>`
+     * (see [setSelectedSection] which sets the filter on each tab
+     * change), so here we just project [tiles] once per Workspace
+     * without trying to re-filter on the client. Personal uses the
+     * server's "unscoped" response — the same tiles shown when no
+     * `owner_ids` filter is applied.
      */
-    val projectSections: StateFlow<List<ProjectSection>> = _tiles
-        .map { list ->
-            val active = list.distinctBy { it.id }
+    val projectSections: StateFlow<List<ProjectSection>> = run {
+        val workspacesFlow = accessRepository.workspaces
+        val tilesFlow = _tiles
+        combine(workspacesFlow, tilesFlow) { wsList: List<Workspace>, tiles: List<Tile> ->
+            val activeTiles = tiles.distinctBy { it.id }
                 .filter { TileLifecycle.fromString(it.lifecycle) != TileLifecycle.DONE }
 
-            val byProject = active.groupBy { tile ->
-                tile.projectLabels().firstOrNull().orEmpty().ifBlank {
-                    // No project label ⇒ falls into UNASSIGNED bucket.
-                    ""
-                }
+            wsList.map { ws ->
+                ProjectSection(
+                    id = "workspace:${ws.id}",
+                    label = if (ws.isPersonal) "Personal" else ws.displayName,
+                    tiles = activeTiles,
+                )
             }
-
-            val sections = mutableListOf<ProjectSection>()
-
-            sections += ProjectSection(
-                id = FixedTasksScope.ALL.id,
-                label = "All",
-                tiles = active,
-            )
-            sections += ProjectSection(
-                id = FixedTasksScope.STARRED.id,
-                label = "Starred",
-                tiles = emptyList(),
-            )
-            sections += ProjectSection(
-                id = FixedTasksScope.UNASSIGNED.id,
-                label = "Unassigned",
-                tiles = byProject[""].orEmpty(),
-            )
-
-            byProject
-                .filterKeys { it.isNotBlank() }
-                .toSortedMap()
-                .forEach { (projectName, tilesForProject) ->
-                    sections += ProjectSection(
-                        id = "project:$projectName",
-                        label = projectName,
-                        tiles = tilesForProject,
-                    )
-                }
-            sections
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            emptyList(),
+        )
+    }
 
     /**
      * The single section currently exposed in the body of the screen,
@@ -577,17 +590,17 @@ class DashboardViewModel @Inject constructor(
         _sortOrder,
     ) { sections, selectedId, sort ->
         val raw = sections.firstOrNull { it.id == selectedId }
-            ?: sections.firstOrNull { it.id == FixedTasksScope.ALL.id }
+            ?: sections.firstOrNull()
             ?: ProjectSection(
-                id = FixedTasksScope.ALL.id,
-                label = "All",
+                id = FixedTasksScope.NONE.id,
+                label = "",
                 tiles = emptyList(),
             )
         raw.copy(tiles = raw.tiles.sortedWith(sortComparator(sort)))
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000),
-        ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList()),
+        ProjectSection(id = FixedTasksScope.NONE.id, label = "", tiles = emptyList()),
     )
 
     private fun sortComparator(order: SortOrder): Comparator<Tile> = when (order) {
@@ -800,6 +813,20 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.authState.collect { state ->
                 if (state is TastileAuthState.Authenticated) {
+                    // Fetch the Workspace list now that we have an auth token.
+                    // Personal is synthesized at the top of the AccessRepository
+                    // cache because the server's kind=1 request omits it.
+                    try {
+                        accessRepository.refresh()
+                        val initial = accessRepository.cached()
+                        initial.firstOrNull { it.isPersonal }?.let { personal ->
+                            _selectedSectionId.value = "workspace:${personal.id}"
+                            setOwnerFilters(listOf(personal.id))
+                        }
+                        refreshAll()
+                    } catch (t: Throwable) {
+                        android.util.Log.e("DashboardViewModel", "workspace fetch failed", t)
+                    }
                     refreshTimeline()
                 }
             }

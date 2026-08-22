@@ -25,7 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.data.user.ThemeMode
 
@@ -128,5 +128,5 @@ fun TimeoutPickerDialog(
 @Preview(showBackground = true)
 @Composable
 private fun LocalePickerDialogPreview() {
-    NiaTheme { LocalePickerDialog(current = AppLocale.JA, onPick = {}, onDismiss = {}) }
+    TastileTheme { LocalePickerDialog(current = AppLocale.JA, onPick = {}, onDismiss = {}) }
 }

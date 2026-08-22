@@ -8,7 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
@@ -31,7 +33,7 @@ fun AvatarLoader(
                 .data(avatarUrl)
                 .crossfade(true)
                 .build(),
-            contentDescription = "$displayName avatar",
+            contentDescription = stringResource(R.string.avatar_user_cd, displayName),
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(size.dp)

@@ -190,12 +190,18 @@ internal fun EventChipContent(
 
 /**
  * Local mirror of the original private `formatDuration` helper. Mirrors
- * `1h`, `45m`, `1h 30m` formatting so the chip subtitle reads identically
- * to the pre-split behavior.
+ * `1h`, `45m`, `1h 30m` formatting via the `duration_format_*` string
+ * resources so the chip subtitle reads identically to the pre-split
+ * behavior, and the day/minute unit ("m" / "h") is locale-aware.
  */
+@Composable
 private fun formatDurationForChip(minutes: Long): String {
-    if (minutes < 60) return "${minutes}m"
-    val h = minutes / 60
-    val m = minutes % 60
-    return if (m == 0L) "${h}h" else "${h}h ${m}m"
+    if (minutes < 60) return stringResource(R.string.duration_format_minutes, minutes.toInt())
+    val h = (minutes / 60).toInt()
+    val m = (minutes % 60).toInt()
+    return if (m == 0) {
+        stringResource(R.string.duration_format_hours, h)
+    } else {
+        stringResource(R.string.duration_format_hours_minutes, h, m)
+    }
 }

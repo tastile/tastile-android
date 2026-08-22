@@ -19,10 +19,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -112,6 +114,8 @@ private fun MonthFrameCell(
 ) {
     val inMonth = date.month == monthStart.month && date.year == monthStart.year
     val isSelected = date == selectedDate
+    val inMonthCd = stringResource(R.string.month_day_in_month_cd)
+    val outOfMonthCd = stringResource(R.string.month_day_out_of_month_cd)
     val numberColor = when {
         isSelected -> MaterialTheme.colorScheme.primary
         !inMonth -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
@@ -162,7 +166,11 @@ private fun MonthFrameCell(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .semantics(mergeDescendants = false) {
-                    contentDescription = if (inMonth) "in-month" else "out-of-month"
+                    contentDescription = if (inMonth) {
+                        inMonthCd
+                    } else {
+                        outOfMonthCd
+                    }
                 },
         )
     }

@@ -23,6 +23,7 @@ import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedCard
+import app.tastile.android.data.model.Plan
 
 @Composable
 fun AccountDashboardScreen(viewModel: DashboardViewModel) {
@@ -86,7 +87,7 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
             "subscription" -> NiaOutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.dashboard_account_subscription_label))
-                    Text(stringResource(R.string.dashboard_account_current_plan_label) + ": ${profile?.plan ?: "free"}")
+                    Text(stringResource(R.string.dashboard_account_current_plan_label) + ": ${profile?.plan ?: Plan.FREE.value}")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         NiaButton(text = { Text(stringResource(R.string.dashboard_account_upgrade_pro)) }, onClick = { uriHandler.openUri("https://tastile.app/api/stripe/checkout") })
                         NiaOutlinedButton(text = { Text(stringResource(R.string.dashboard_account_manage_billing)) }, onClick = { uriHandler.openUri("https://tastile.app/api/stripe/portal") })

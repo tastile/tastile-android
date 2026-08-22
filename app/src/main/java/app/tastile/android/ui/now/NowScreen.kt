@@ -124,7 +124,7 @@ fun NowScreen(
                     color = MaterialTheme.colorScheme.errorContainer
                 ) {
                     Text(
-                        text = error ?: "Unknown error",
+                        text = error ?: stringResource(R.string.now_unknown_error),
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.padding(16.dp)
                     )

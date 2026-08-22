@@ -37,14 +37,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import app.tastile.android.data.user.UserSettingsRepository
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.core.designsystem.theme.SystemBarEffect
 import app.tastile.android.core.designsystem.theme.resolveDarkTheme
-import app.tastile.android.core.designsystem.theme.supportsDynamicColor
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.hypot
@@ -65,15 +66,15 @@ class ExecutionAlarmActivity : ComponentActivity() {
         })
         prepareAlarmWindow()
         startAlarmSignal()
-        val title = intent.getStringExtra(EXTRA_TITLE) ?: "Tastile"
-        val body = intent.getStringExtra(EXTRA_BODY) ?: "Tastile needs your attention."
+        val fallbackTitle = getString(R.string.app_name)
+        val fallbackBody = getString(R.string.alarm_default_body)
+        val title = intent.getStringExtra(EXTRA_TITLE) ?: fallbackTitle
+        val body = intent.getStringExtra(EXTRA_BODY) ?: fallbackBody
         setContent {
             val themeMode = remember { mutableStateOf(userSettingsRepository.getThemeMode()) }
             val darkTheme = resolveDarkTheme(themeMode.value)
-            NiaTheme(
+            TastileTheme(
                 darkTheme = darkTheme,
-                androidTheme = false,
-                disableDynamicTheming = true,
             ) {
                 SystemBarEffect(darkTheme = darkTheme)
                 AlarmSurface(
@@ -277,7 +278,7 @@ private fun AlarmSurface(
                 )
             }
             Text(
-                "Swipe outward",
+                stringResource(R.string.alarm_swipe_outward),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 96.dp),

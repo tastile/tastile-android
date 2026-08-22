@@ -146,16 +146,16 @@ fun MobileScaffold(
     // Week keeps the date at titleMedium and shrinks the parenthesized weekday
     // so the range stays clear of the scale pill.
     val title: CharSequence = when (currentRoute) {
-        "execute" -> "Tasks"
-        "tiles" -> "Projects"
-        "settings" -> "Preferences"
+        "execute" -> stringResource(R.string.mobile_tab_tasks)
+        "tiles" -> stringResource(R.string.panels_projects_title)
+        "settings" -> stringResource(R.string.nav_preferences)
         else -> when (scale) {
             TimelineScale.Day -> selectedDay.format(dayFormatter)
             TimelineScale.Week -> remember(weekStart, weekEnd) {
                 formatWeekTitle(weekStart, weekEnd)
             }
             TimelineScale.Month -> monthStart.format(monthFormatter)
-            TimelineScale.List -> "All events"
+            TimelineScale.List -> stringResource(R.string.mobile_tab_all_events)
         }
     }
 

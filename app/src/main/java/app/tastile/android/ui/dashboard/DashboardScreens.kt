@@ -219,6 +219,10 @@ private fun DashboardCardRenderer(
         is DashboardCardModel.TimelineCard -> card.items.firstOrNull()?.tileId
         else -> card.id
     }
+    val headerTitle = when (card) {
+        is DashboardCardModel.TimelineCard -> stringResource(card.titleRes)
+        else -> card.title
+    }
 
     NiaOutlinedCard(
         modifier = Modifier
@@ -238,7 +242,7 @@ private fun DashboardCardRenderer(
                 imageVector = statusIcon(card.status),
                 contentDescription = stringResource(R.string.dashboard_status_cd),
             )
-            Text(card.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(headerTitle, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         }
 
         when (card) {

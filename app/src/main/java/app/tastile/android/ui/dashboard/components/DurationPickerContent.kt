@@ -1,5 +1,6 @@
 package app.tastile.android.ui.dashboard.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,9 +22,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 import java.util.Locale
+
+private data class DurationPreset(
+    val totalMinutes: Int,
+    @StringRes val labelRes: Int,
+)
+
+private val DurationPresets = listOf(
+    DurationPreset(15, R.string.duration_preset_15m),
+    DurationPreset(25, R.string.duration_preset_25m),
+    DurationPreset(45, R.string.duration_preset_45m),
+    DurationPreset(60, R.string.duration_preset_1h),
+)
 
 @Composable
 internal fun DurationPickerContent(
@@ -67,14 +82,14 @@ internal fun DurationPickerContent(
         Spacer(Modifier.height(16.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(15 to "15m", 25 to "25m", 45 to "45m", 60 to "1h").forEach { (totalMinutes, label) ->
+            DurationPresets.forEach { preset ->
                 FilterChip(
                     selected = false,
                     onClick = {
-                        onHoursChange(totalMinutes / 60)
-                        onMinutesChange(totalMinutes % 60)
+                        onHoursChange(preset.totalMinutes / 60)
+                        onMinutesChange(preset.totalMinutes % 60)
                     },
-                    label = { Text(label) },
+                    label = { Text(stringResource(preset.labelRes)) },
                 )
             }
         }

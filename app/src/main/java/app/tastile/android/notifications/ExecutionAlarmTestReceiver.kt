@@ -3,11 +3,14 @@ package app.tastile.android.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import app.tastile.android.R
 
 class ExecutionAlarmTestReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val title = intent.getStringExtra(EXTRA_TITLE) ?: "Tastile alarm"
-        val body = intent.getStringExtra(EXTRA_BODY) ?: "This is an alarm-style test notification from Tastile."
+        val title = intent.getStringExtra(EXTRA_TITLE)
+            ?: context.getString(R.string.alarm_test_title)
+        val body = intent.getStringExtra(EXTRA_BODY)
+            ?: context.getString(R.string.alarm_test_body)
         val notificationId = intent.getIntExtra(
             ExecutionAlarmActivity.EXTRA_NOTIFICATION_ID,
             ExecutionAlarmActivity.DEFAULT_NOTIFICATION_ID

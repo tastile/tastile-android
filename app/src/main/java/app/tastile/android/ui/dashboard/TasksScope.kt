@@ -39,17 +39,30 @@ data class ProjectSection(
 )
 
 /**
- * Fixed tabs that appear in addition to per-project sections.
- * Project-derived sections are appended after these in the order they
- * appear in the [ProjectSection] list.
+ * Reserved section IDs for non-tile pseudo-tabs in the Tasks view.
+ *
+ * Historically the Tasks view exposed ALL / STARRED / UNASSIGNED as
+ * fixed scopes above the project list. With the v1 source-tiles API
+ * we now treat every project as a first-class section and there is no
+ * "All" / "Unassigned" catch-all. The only pseudo-tab we still need is
+ * a "+ New List" entry that opens the project-creation overlay, plus
+ * a sentinel that the ViewModel uses when nothing is selected yet.
+ *
+ * Kept as a single object so legacy callers that read [DEFAULT] still
+ * resolve.
  */
 enum class FixedTasksScope(val id: String, @StringRes val labelRes: Int) {
-    ALL("all", R.string.tasks_scope_all),
-    STARRED("starred", R.string.tasks_scope_starred),
-    UNASSIGNED("unassigned", R.string.tasks_scope_unassigned);
+    NEW_LIST("new_list", R.string.tasks_tab_new_list),
+    NONE("", R.string.tasks_scope_all);
 
     companion object {
-        val DEFAULT: FixedTasksScope = ALL
+        /**
+         * Default selected scope. There is no real "default" project —
+         * the first project becomes the default once projects are
+         * loaded. Until then we expose the empty-sentinel id.
+         */
+        val DEFAULT: FixedTasksScope = NONE
+
         fun fromId(id: String?): FixedTasksScope =
             entries.firstOrNull { it.id == id } ?: DEFAULT
     }

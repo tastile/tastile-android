@@ -29,10 +29,9 @@ import app.tastile.android.core.CoreBridgeError
 import app.tastile.android.notifications.ExecutionNotificationCoordinator
 import app.tastile.android.sync.SyncCoordinator
 import app.tastile.android.ui.dashboard.DashboardViewModel
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.core.designsystem.theme.SystemBarEffect
 import app.tastile.android.core.designsystem.theme.resolveDarkTheme
-import app.tastile.android.core.designsystem.theme.supportsDynamicColor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -79,19 +78,17 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Handle deep links for OAuth
         handleDeepLink(intent)
-        
+
         enableEdgeToEdge()
         setContent {
             val themeMode by dashboardViewModel.themeMode.collectAsStateWithLifecycle()
             val darkTheme = resolveDarkTheme(themeMode)
 
-            NiaTheme(
+            TastileTheme(
                 darkTheme = darkTheme,
-                androidTheme = supportsDynamicColor(),
-                disableDynamicTheming = !supportsDynamicColor(),
             ) {
                 SystemBarEffect(darkTheme = darkTheme)
                 Surface(

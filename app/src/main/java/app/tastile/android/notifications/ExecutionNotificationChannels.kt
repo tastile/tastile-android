@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.RingtoneManager
+import app.tastile.android.R
 
 object ExecutionNotificationChannels {
     const val STATUS = "execution-status"
@@ -16,28 +17,28 @@ object ExecutionNotificationChannels {
         manager.createNotificationChannel(
             NotificationChannel(
                 STATUS,
-                "Execution status",
+                context.getString(R.string.channel_status_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows the current active execution without making noise."
+                description = context.getString(R.string.channel_status_description)
             }
         )
         manager.createNotificationChannel(
             NotificationChannel(
                 ALERTS,
-                "Execution prompts",
+                context.getString(R.string.channel_prompts_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Intervention prompts when Tastile needs a human decision."
+                description = context.getString(R.string.channel_prompts_description)
             }
         )
         manager.createNotificationChannel(
             NotificationChannel(
                 ALARMS,
-                "Execution alarms",
+                context.getString(R.string.channel_alarms_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Alarm-style prompts that need immediate attention."
+                description = context.getString(R.string.channel_alarms_description)
                 setSound(
                     RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
                     AudioAttributes.Builder()

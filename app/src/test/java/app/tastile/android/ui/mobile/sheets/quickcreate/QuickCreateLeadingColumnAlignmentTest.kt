@@ -5,7 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.ui.mobile.sheets.QuickCreateStateStore
 import org.junit.Ignore
 import org.junit.Rule
@@ -37,7 +37,7 @@ class QuickCreateLeadingColumnAlignmentTest {
     @Test @Ignore("pre-existing flaky pixel-level assertion; never caught before CI compilation was fixed")
     fun `title text and ListItem headline share the same x-coordinate`() {
         composeTestRule.setContent {
-            NiaTheme {
+            TastileTheme {
                 QuickCreatePanelContent(
                     store = QuickCreateStateStore(),
                     onClose = {},

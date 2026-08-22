@@ -16,8 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.tastile.android.R
 
 /**
  * Per-cell event-count indicator for the Month view (Phase v37 / Task 5).
@@ -50,7 +52,7 @@ internal fun MonthEventIndicator(
         when {
             count == 1 -> MonthDot()
             count in 2..3 -> MonthPill(text = count.toString())
-            else -> MonthPill(text = "+$count")
+            else -> MonthPill(text = stringResource(R.string.calendar_overflow_plus, count))
         }
     }
 }

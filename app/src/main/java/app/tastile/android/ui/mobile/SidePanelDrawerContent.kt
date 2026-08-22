@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,7 +49,7 @@ import kotlinx.coroutines.launch
 
 private data class DrawerRoute(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
 )
 
@@ -57,9 +58,9 @@ private data class DrawerRoute(
 // there were no real reference entries to drive the per-label switch
 // list. See `docs/ux-fix-reference-and-buttons.md` for the gate history.
 private val drawerRoutes = listOf(
-    DrawerRoute("timeline", "Timeline", Icons.Outlined.Schedule),
-    DrawerRoute("execute", "Tasks", Icons.Outlined.Checklist),
-    DrawerRoute("tiles", "Projects", Icons.Outlined.FolderOpen),
+    DrawerRoute("timeline", R.string.panels_timeline_title, Icons.Outlined.Schedule),
+    DrawerRoute("execute", R.string.mobile_tab_tasks, Icons.Outlined.Checklist),
+    DrawerRoute("tiles", R.string.panels_projects_title, Icons.Outlined.FolderOpen),
 )
 
 /**
@@ -87,7 +88,7 @@ fun SidePanelDrawerContent(
             BrandHeader()
             drawerRoutes.forEach { item ->
                 NavigationDrawerItem(
-                    label = { Text(item.label) },
+                    label = { Text(stringResource(item.labelRes)) },
                     selected = currentRoute == item.route,
                     onClick = {
                         navController.navigate(item.route) {

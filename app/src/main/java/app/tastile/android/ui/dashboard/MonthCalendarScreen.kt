@@ -57,7 +57,15 @@ fun MonthCalendarScreen(
     val rows = buildMonthCalendarRows(cells)
     val today = LocalDate.now(ZoneId.systemDefault())
     val monthTitle = monthTitleFromProjection(effectiveProjection)
-    val weekdayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val weekdayLabels = listOf(
+        stringResource(R.string.calendar_weekday_short_mon),
+        stringResource(R.string.calendar_weekday_short_tue),
+        stringResource(R.string.calendar_weekday_short_wed),
+        stringResource(R.string.calendar_weekday_short_thu),
+        stringResource(R.string.calendar_weekday_short_fri),
+        stringResource(R.string.calendar_weekday_short_sat),
+        stringResource(R.string.calendar_weekday_short_sun),
+    )
 
     Column(
         modifier = modifier
@@ -189,8 +197,9 @@ internal fun buildMonthCalendarRows(cells: List<MonthCalendarCell>): List<List<M
     return (0 until 6).map { row -> cells.subList(row * 7, row * 7 + 7) }
 }
 
+@Composable
 private fun monthTitleFromProjection(projection: CalendarProjectionResponse): String {
-    val date = parseIsoDate(projection.rangeStart) ?: return "Month"
+    val date = parseIsoDate(projection.rangeStart) ?: return stringResource(R.string.panels_calendar_month)
     val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)
     return date.format(formatter)
 }

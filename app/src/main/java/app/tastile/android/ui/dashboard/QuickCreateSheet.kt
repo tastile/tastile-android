@@ -797,7 +797,15 @@ private fun WeekdayChipRow(
     csv: String,
     onCsvChange: (String) -> Unit,
 ) {
-    val labels = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+    val labels = listOf(
+        stringResource(R.string.calendar_weekday_short_mon),
+        stringResource(R.string.calendar_weekday_short_tue),
+        stringResource(R.string.calendar_weekday_short_wed),
+        stringResource(R.string.calendar_weekday_short_thu),
+        stringResource(R.string.calendar_weekday_short_fri),
+        stringResource(R.string.calendar_weekday_short_sat),
+        stringResource(R.string.calendar_weekday_short_sun),
+    )
     val selected = remember(csv) {
         csv.split(",")
             .mapNotNull { it.trim().toIntOrNull() }

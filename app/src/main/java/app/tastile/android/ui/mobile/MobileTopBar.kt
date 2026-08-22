@@ -168,11 +168,13 @@ private fun ScaleDropdown(
     onScaleChange: (TimelineScale) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val scaleLabel = scale.scaleLabel()
+    val scaleCd = stringResource(R.string.mobile_top_scale_cd, scaleLabel)
     Box {
         CompactPickerButton(
-            label = scale.name,
+            label = scaleLabel,
             onClick = { expanded = true },
-            modifier = Modifier.semantics { contentDescription = "Scale: ${scale.name}" },
+            modifier = Modifier.semantics { contentDescription = scaleCd },
         )
         DropdownMenu(
             expanded = expanded,
@@ -188,7 +190,7 @@ private fun ScaleDropdown(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = entry.name,
+                            text = entry.scaleLabel(),
                             fontWeight = if (entry == scale) FontWeight.SemiBold else FontWeight.Normal,
                         )
                     },
@@ -208,6 +210,16 @@ private fun ScaleDropdown(
         }
     }
 }
+
+@Composable
+private fun TimelineScale.scaleLabel(): String = stringResource(
+    when (this) {
+        TimelineScale.Day -> R.string.panels_calendar_day
+        TimelineScale.Week -> R.string.panels_calendar_week
+        TimelineScale.Month -> R.string.panels_calendar_month
+        TimelineScale.List -> R.string.panels_calendar_list
+    }
+)
 
 /**
  * Compact pill-shaped picker button — wraps [Surface] with a pill shape and
@@ -273,6 +285,8 @@ private fun TopBarAvatarAction(
     avatarFallback: String,
 ) {
     val descriptionString = stringResource(id = descriptionRes)
+    val openCd = stringResource(R.string.mobile_top_avatar_open_cd)
+    val closedCd = stringResource(R.string.mobile_top_avatar_closed_cd)
     var menuOpen by remember { mutableStateOf(false) }
     Box {
         IconButton(
@@ -282,7 +296,7 @@ private fun TopBarAvatarAction(
                 .clearAndSetSemantics {
                     contentDescription = descriptionString
                     role = Role.Button
-                    stateDescription = if (menuOpen) "Open" else "Closed"
+                    stateDescription = if (menuOpen) openCd else closedCd
                 },
         ) {
             AvatarCircle(

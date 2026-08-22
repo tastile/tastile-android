@@ -1,5 +1,7 @@
 package app.tastile.android.ui.dashboard
 
+import androidx.annotation.StringRes
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import kotlinx.serialization.json.JsonElement
@@ -47,10 +49,12 @@ sealed interface DashboardCardModel {
 
     data class TimelineCard(
         override val id: String,
-        override val title: String,
+        @StringRes val titleRes: Int,
         override val status: CardStatus,
-        val items: List<TimelineItem>
-    ) : DashboardCardModel
+        val items: List<TimelineItem>,
+    ) : DashboardCardModel {
+        override val title: String get() = error("TimelineCard.title is unused; use titleRes")
+    }
 }
 
 data class TimelineItem(
@@ -87,9 +91,9 @@ class DashboardCardMapper {
         }
         result += DashboardCardModel.TimelineCard(
             id = "timeline",
-            title = "Timeline",
+            titleRes = R.string.panels_timeline_title,
             status = CardStatus.READY,
-            items = timelineItems
+            items = timelineItems,
         )
         return result
     }

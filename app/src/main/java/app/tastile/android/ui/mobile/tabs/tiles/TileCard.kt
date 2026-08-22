@@ -217,7 +217,13 @@ fun TileLifecycle.glyphChar(): String = when (this) {
     TileLifecycle.ARCHIVED -> "·"
 }
 
-private fun TileLifecycle.shortLabel(): String = name.lowercase()
+@Composable
+private fun TileLifecycle.shortLabel(): String = when (this) {
+    TileLifecycle.READY -> stringResource(R.string.tasks_status_ready)
+    TileLifecycle.STARTED -> stringResource(R.string.tasks_status_started)
+    TileLifecycle.DONE -> stringResource(R.string.tasks_status_completed)
+    TileLifecycle.ARCHIVED -> stringResource(R.string.tasks_status_archived)
+}
 
 private fun buildMeta(project: String?, dueAt: String?, isRecurring: Boolean): String = buildString {
     if (!project.isNullOrBlank()) append(project)

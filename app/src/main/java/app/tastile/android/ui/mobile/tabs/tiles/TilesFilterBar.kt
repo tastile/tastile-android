@@ -294,14 +294,20 @@ private fun limitOptions(): List<Pair<Any, String>> = listOf(
     0 to stringResource(R.string.dashboard_tiles_filter_limit_unlimited),
 )
 
-private fun groupingLabel(g: ListGroupingMode): String = when (g) {
-    ListGroupingMode.STATE -> "By State"
-    ListGroupingMode.PROJECT -> "By Project"
-    ListGroupingMode.TAG -> "By Tag"
-}
+@Composable
+private fun groupingLabel(g: ListGroupingMode): String = stringResource(
+    when (g) {
+        ListGroupingMode.STATE -> R.string.tiles_grouping_state
+        ListGroupingMode.PROJECT -> R.string.tiles_grouping_project
+        ListGroupingMode.TAG -> R.string.tiles_grouping_tag
+    }
+)
 
-private fun viewModeLabel(v: ListViewMode): String = when (v) {
-    ListViewMode.COMPACT -> "Compact"
-    ListViewMode.COMFORTABLE -> "Comfortable"
-    ListViewMode.DETAILED -> "Detailed"
-}
+@Composable
+private fun viewModeLabel(v: ListViewMode): String = stringResource(
+    when (v) {
+        ListViewMode.COMPACT -> R.string.tiles_view_mode_compact
+        ListViewMode.COMFORTABLE -> R.string.tiles_view_mode_comfortable
+        ListViewMode.DETAILED -> R.string.tiles_view_mode_detailed
+    }
+)
