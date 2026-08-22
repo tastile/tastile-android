@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tiles_duration">지속 시간</string>
     <string name="tiles_start_at">시작</string>
@@ -12,5 +12,11 @@
     <string name="tiles_stat_sections">섹션 · %1$d</string>
     <string name="tile_card_meta_minutes">%1$d min</string>
     <string name="tile_section_meta">%1$d min · %2$d tiles</string>
+    <string name="tiles_grouping_state">상태별</string>
+    <string name="tiles_grouping_project">프로젝트별</string>
+    <string name="tiles_grouping_tag">태그별</string>
+    <string name="tiles_view_mode_compact">간결</string>
+    <string name="tiles_view_mode_comfortable">편안</string>
+    <string name="tiles_view_mode_detailed">자세히</string>
 </resources>
 

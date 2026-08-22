@@ -1,8 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">Open menu</string>
     <string name="mobile_top_notifications">Notifications</string>
     <string name="mobile_top_avatar">Account menu</string>
+    <string name="mobile_top_avatar_open_cd">Aberto</string>
+    <string name="mobile_top_avatar_closed_cd">Fechado</string>
     <string name="mobile_top_title_action">Change date</string>
     <string name="date_picker_confirm">OK</string>
     <string name="date_picker_cancel">Cancel</string>
@@ -19,5 +21,31 @@
     <string name="common_dismiss_cd">Dismiss</string>
     <string name="search_label">Search</string>
     <string name="fab_create">Create</string>
+    <string name="mobile_tab_tasks">Tarefas</string>
+    <string name="mobile_tab_all_events">Todos os eventos</string>
+    <string name="avatar_user_cd">Avatar de %1$s</string>
+    <string name="mobile_top_scale_cd">Escala: %1$s</string>
+    <string name="endpoint_start_tile">Iniciar tile</string>
+    <string name="endpoint_complete_tile">Concluir tile</string>
+    <string name="endpoint_defer_tile">Adiar tile</string>
+    <string name="endpoint_delete_tile">Excluir tile</string>
+    <string name="endpoint_start_break">Iniciar pausa</string>
+    <string name="endpoint_extend_tile">Estender +10</string>
+    <string name="endpoint_trigger_prompt">Acionar prompt</string>
+    <string name="endpoint_create_tile">Criar tile</string>
+    <string name="endpoint_list_tiles">Listar tiles</string>
+    <string name="endpoint_list_events">Listar eventos</string>
+    <string name="endpoint_list_integrations">Listar integrações</string>
+    <string name="endpoint_connect_integration">Conectar integração</string>
+    <string name="endpoint_disconnect_integration">Desconectar integração</string>
+    <string name="endpoint_update_preferences">Atualizar preferências</string>
+    <string name="endpoint_get_preferences">Obter preferências</string>
+    <string name="endpoint_sign_out">Sair</string>
+    <string name="endpoint_refresh_token">Atualizar token</string>
+    <string name="endpoint_schedule_tile">Agendar tile</string>
+    <string name="endpoint_unschedule_tile">Desagendar tile</string>
+    <string name="endpoint_acknowledge_prompt">Confirmar prompt</string>
+    <string name="endpoint_snooze_prompt">Adiar prompt</string>
+    <string name="endpoint_read_runtime_state">Ler estado de execução</string>
 </resources>
 

@@ -7,6 +7,7 @@
     <string name="picker_duration_label">Duration</string>
     <string name="picker_reference_label">Reference</string>
     <string name="quick_create_title">Quick Create</string>
+    <string name="quick_create_all_day">All day</string>
     <string name="quick_create_close">Close</string>
     <string name="quick_create_section_title">Title</string>
     <string name="quick_create_section_title_help">Enter task title</string>
@@ -46,7 +47,7 @@
     <string name="quick_create_tag_placeholder">Tag</string>
     <string name="quick_create_memo_section_title">Memo</string>
     <string name="quick_create_memo_section_help">Add notes that surface on completion.</string>
-    <string name="quick_create_memo_placeholder">Notes</string>
+    <string name="quick_create_memo_placeholder">Add a note</string>
     <string name="quick_create_done_section_title">Done when</string>
     <string name="quick_create_done_section_help">Define how the tile is considered complete.</string>
     <string name="quick_create_cancel">Cancel</string>
@@ -160,7 +161,7 @@
     <string name="quickcreate_quickrange_morning">Morning</string>
     <string name="quickcreate_quickrange_midday">Midday</string>
     <string name="quickcreate_quickrange_night">Night</string>
-    <string name="quickcreate_summary_reference_range">%1$s – %2$s</string>
+    <string name="quickcreate_summary_reference_range">%1$s  E%2$s</string>
 
     <!-- QuickCreate window / kind -->
     <string name="quickcreate_panel_window_header">Window</string>
@@ -216,6 +217,8 @@
     <!-- QuickCreate meta panel -->
     <string name="quickcreate_panel_meta_project">Project</string>
     <string name="quickcreate_panel_meta_no_project">No project</string>
+    <string name="quickcreate_panel_meta_tag_chip">#%1$s</string>
+    <string name="quickcreate_panel_meta_tag_chip_remove">#%1$s ×</string>
     <string name="quickcreate_panel_meta_tags">Tags</string>
     <string name="quickcreate_panel_meta_add_tag">Add tag</string>
     <string name="quickcreate_panel_meta_memo">Memo</string>
@@ -239,5 +242,159 @@
     <string name="quickcreate_panel_schedule_offset_label">Offset</string>
     <string name="quickcreate_panel_schedule_offset_suffix">min</string>
     <string name="quickcreate_panel_schedule_excluded_header">Excluded dates</string>
+    <string name="quickcreate_panel_schedule_excluded_chip_remove">%1$s ×</string>
     <string name="quickcreate_panel_schedule_add_excluded">Add excluded date</string>
+
+    <!-- QuickCreate workflow chip + menu (4 peer workflows) -->
+    <string name="quickcreate_workflow_chip_aria">Change creation workflow</string>
+    <string name="quickcreate_workflow_menu_title">Create with</string>
+    <string name="quickcreate_workflow_menu_subtitle">Pick the form that fits this entry.</string>
+    <string name="quickcreate_workflow_event_label">Event</string>
+    <string name="quickcreate_workflow_event_description">Calendar entry with a fixed start and end.</string>
+    <string name="quickcreate_workflow_event_heading_create">Create event</string>
+    <string name="quickcreate_workflow_event_heading_edit">Edit event</string>
+    <string name="quickcreate_workflow_task_label">Task</string>
+    <string name="quickcreate_workflow_task_description">Single to-do with optional subtasks.</string>
+    <string name="quickcreate_workflow_task_heading_create">Create task</string>
+    <string name="quickcreate_workflow_task_heading_edit">Edit task</string>
+    <string name="quickcreate_workflow_recurring_label">Recurring</string>
+    <string name="quickcreate_workflow_recurring_description">Repeats on a schedule (daily, weekly, etc.).</string>
+    <string name="quickcreate_workflow_recurring_heading_create">Create recurring tile</string>
+    <string name="quickcreate_workflow_recurring_heading_edit">Edit recurring tile</string>
+    <string name="quickcreate_workflow_detailed_label">Detailed</string>
+    <string name="quickcreate_workflow_detailed_description">Full editor with every v1 section exposed.</string>
+    <string name="quickcreate_workflow_detailed_heading_create">Create tile (detailed)</string>
+    <string name="quickcreate_workflow_detailed_heading_edit">Edit tile (detailed)</string>
+
+
+    <!-- QuickCreate date / time / memo placeholders (web parity) -->
+    <string name="quick_create_picker_start_date_placeholder">Start date</string>
+    <string name="quick_create_picker_start_time_placeholder">Start time</string>
+    <string name="quick_create_picker_end_date_placeholder">End date</string>
+    <string name="quick_create_picker_end_time_placeholder">End time</string>
+
+    <!-- QuickCreate subtasks (web parity) -->
+    <string name="quickcreate_subtasks_header">Sub-tasks</string>
+    <string name="quickcreate_subtasks_empty">No subtasks yet</string>
+    <string name="quickcreate_subtasks_add">Add a sub-task</string>
+    <string name="quickcreate_subtasks_progress">%1$d/%2$d done</string>
+    <string name="quickcreate_subtasks_move_up">Move up</string>
+    <string name="quickcreate_subtasks_move_down">Move down</string>
+    <string name="quickcreate_subtasks_edit">Edit</string>
+    <string name="quickcreate_subtasks_duplicate">Duplicate</string>
+    <string name="quickcreate_subtasks_delete">Delete</string>
+    <string name="quickcreate_subtasks_untitled">Untitled task</string>
+
+    <!-- QuickCreate task definition editor modal (web parity) -->
+    <string name="quickcreate_task_editor_title">Edit sub-task</string>
+    <string name="quickcreate_task_editor_add_title">Add sub-task</string>
+    <string name="quickcreate_task_editor_note">Note</string>
+    <string name="quickcreate_task_editor_done">Mark as done</string>
+    <string name="quickcreate_task_editor_order_header">Order</string>
+    <string name="quickcreate_task_editor_order_before">Before</string>
+    <string name="quickcreate_task_editor_order_after">After</string>
+    <string name="quickcreate_task_editor_order_target">Task</string>
+    <string name="quickcreate_task_editor_order_add">Add order rule</string>
+    <string name="quickcreate_task_editor_show_header">Show when</string>
+    <string name="quickcreate_task_editor_complete_header">Done when</string>
+    <string name="quickcreate_task_editor_save">Save</string>
+    <string name="quickcreate_task_editor_add">Add</string>
+
+    <!-- QuickCreate identity / color pickers -->
+    <string name="quickcreate_icon_picker_title">Choose icon</string>
+    <string name="quickcreate_color_custom">Custom color</string>
+    <string name="quickcreate_color_custom_hex">Hex</string>
+
+    <!-- QuickCreate base-panel workflows (mobile creation panel) -->
+    <string name="quickcreate_base_event_subtitle">Calendar entry with a fixed start and end.</string>
+    <string name="quickcreate_base_task_subtitle">Single to-do with optional sub-tasks.</string>
+    <string name="quickcreate_base_recurring_subtitle">Repeats on a schedule (daily, weekly, etc.).</string>
+    <string name="quickcreate_base_detailed_subtitle">Full editor with every v1 section exposed.</string>
+
+    <!-- QuickCreate Event workflow — duration / when / all-day -->
+    <string name="quickcreate_event_all_day_label">All day</string>
+    <string name="quickcreate_event_placeholder_title">Untitled event</string>
+
+    <!-- QuickCreate Task workflow — duration / split / due -->
+    <string name="quickcreate_task_duration_label">Duration</string>
+    <string name="quickcreate_task_duration_custom">Custom…</string>
+    <string name="quickcreate_task_duration_minutes">%1$d min</string>
+    <string name="quickcreate_task_duration_hours_one">1 hour</string>
+    <string name="quickcreate_task_duration_hours">%1$s hours</string>
+    <string name="quickcreate_task_duration_custom_minutes">Custom minutes</string>
+    <string name="quickcreate_task_split_header">Breaks</string>
+    <string name="quickcreate_task_split_single">Allow split</string>
+    <string name="quickcreate_task_split_keep">Keep continuous</string>
+    <string name="quickcreate_task_due_date_placeholder">Date (optional)</string>
+    <string name="quickcreate_task_due_time_label">Due time</string>
+
+    <!-- QuickCreate Recurring workflow — repeat mode / per-mode / time model / all-day / repeat-until -->
+    <string name="quickcreate_recurring_repeat_once">Do not repeat</string>
+    <string name="quickcreate_recurring_repeat_daily">Daily</string>
+    <string name="quickcreate_recurring_repeat_weekly">Weekly</string>
+    <string name="quickcreate_recurring_repeat_monthly">Monthly</string>
+    <string name="quickcreate_recurring_repeat_interval">Interval</string>
+    <string name="quickcreate_recurring_repeat_chip">Repeat</string>
+    <string name="quickcreate_recurring_repeat_mode_aria">Change repeat mode</string>
+    <string name="quickcreate_recurring_secondary_everyday">Every day</string>
+    <string name="quickcreate_recurring_secondary_everyweekday">Every weekday</string>
+    <string name="quickcreate_recurring_secondary_everyndays">Every N days</string>
+    <string name="quickcreate_recurring_secondary_once">Once</string>
+    <string name="quickcreate_recurring_interval_value_label">Every</string>
+    <string name="quickcreate_recurring_interval_unit_min">min</string>
+    <string name="quickcreate_recurring_interval_unit_hour">hour</string>
+    <string name="quickcreate_recurring_interval_unit_day">day</string>
+    <string name="quickcreate_recurring_monthly_kind_by_day">By day</string>
+    <string name="quickcreate_recurring_monthly_kind_by_weekday">By weekday</string>
+    <string name="quickcreate_recurring_monthly_day_of_month">Day of month</string>
+    <string name="quickcreate_recurring_monthly_week_of_month">Week of month</string>
+    <string name="quickcreate_recurring_monthly_week_first">1st</string>
+    <string name="quickcreate_recurring_monthly_week_second">2nd</string>
+    <string name="quickcreate_recurring_monthly_week_third">3rd</string>
+    <string name="quickcreate_recurring_monthly_week_fourth">4th</string>
+    <string name="quickcreate_recurring_monthly_last_week">Last</string>
+    <string name="quickcreate_recurring_monthly_weekday">Weekday</string>
+    <string name="quickcreate_recurring_time_model_header">Time model</string>
+    <string name="quickcreate_recurring_time_model_duration_only">Duration only</string>
+    <string name="quickcreate_recurring_time_model_fixed_window">Fixed window</string>
+    <string name="quickcreate_recurring_time_model_window_with_duration">Window + duration</string>
+    <string name="quickcreate_recurring_time_model_duration_only_hint">No fixed time — duration only</string>
+    <string name="quickcreate_recurring_schedulable_window_start_label">Earliest time</string>
+    <string name="quickcreate_recurring_schedulable_window_end_label">Latest time</string>
+    <string name="quickcreate_recurring_time_of_day_label">Time of day</string>
+    <string name="quickcreate_recurring_start_time_label">Start time</string>
+    <string name="quickcreate_recurring_end_time_label">End time</string>
+    <string name="quickcreate_recurring_first_occurrence_placeholder">First occurrence</string>
+    <string name="quickcreate_recurring_repeat_until_label">Repeat until</string>
+    <string name="quickcreate_recurring_repeat_until_aria">Toggle repeat until</string>
+    <string name="quickcreate_recurring_duration_label">Duration</string>
+    <string name="quickcreate_recurring_duration_minutes">%1$d min</string>
+    <string name="quickcreate_recurring_duration_hours_one">1 hour</string>
+    <string name="quickcreate_recurring_duration_hours">%1$s hours</string>
+    <string name="quickcreate_recurring_placeholder_title">Untitled recurring tile</string>
+
+    <!-- QuickCreate Subtasks — inline add / row affordances -->
+    <string name="quickcreate_subtasks_add_inline_cd">Add a sub-task</string>
+    <string name="quickcreate_subtasks_inline_placeholder">Add a sub-task</string>
+    <string name="quickcreate_subtasks_inline_aria">New sub-task title</string>
+    <string name="quickcreate_subtasks_mark_done_aria">Mark done</string>
+    <string name="quickcreate_subtasks_mark_undone_aria">Mark not done</string>
+    <string name="quickcreate_subtasks_menu_aria">Sub-task actions</string>
+    <string name="quickcreate_subtasks_remove_aria">Remove sub-task</string>
+
+    <!-- QuickCreate Detailed workflow — extra sections -->
+    <string name="quickcreate_detailed_plan_section">Plan</string>
+    <string name="quickcreate_detailed_subpanel_source_rules">Source rules</string>
+    <string name="quickcreate_detailed_subpanel_relations">Relations</string>
+    <string name="quickcreate_detailed_subpanel_flows">Flow sequences</string>
+    <string name="quickcreate_detailed_subpanel_placement_rules">Placement rules</string>
+    <string name="quickcreate_detailed_priority_label">Priority</string>
+    <string name="quickcreate_detailed_priority_value">priority %1$d</string>
+    <string name="quickcreate_detailed_priority_split_suffix">· split</string>
+    <string name="quickcreate_detailed_relations_summary">%1$s +%2$d</string>
+    <string name="quickcreate_detailed_items_unit">items</string>
+    <string name="quickcreate_detailed_flows_min_gap">· %1$dm</string>
+    <string name="quickcreate_detailed_placement_rule_rank">· rank %1$d</string>
+    <string name="quickcreate_detailed_clear_aria">Clear</string>
+    <string name="quickcreate_detailed_placeholder_title">Untitled tile</string>
 </resources>

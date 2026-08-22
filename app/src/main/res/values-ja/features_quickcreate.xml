@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="picker_time_start">開始時刻</string>
     <string name="picker_time_end">終了時刻</string>
@@ -7,6 +7,7 @@
     <string name="picker_duration_label">所要時間</string>
     <string name="picker_reference_label">参照</string>
     <string name="quick_create_title">クイック作成</string>
+    <string name="quick_create_all_day">終日</string>
     <string name="quick_create_close">閉じる</string>
     <string name="quick_create_section_title">タイトル</string>
     <string name="quick_create_section_title_help">タスク名を入力してください</string>
@@ -46,7 +47,7 @@
     <string name="quick_create_tag_placeholder">タグ</string>
     <string name="quick_create_memo_section_title">メモ</string>
     <string name="quick_create_memo_section_help">次のアクションを記載</string>
-    <string name="quick_create_memo_placeholder">メモを入力</string>
+    <string name="quick_create_memo_placeholder">メモを追加</string>
     <string name="quick_create_done_section_title">完了条件</string>
     <string name="quick_create_done_section_help">自動生成された完了条件</string>
     <string name="quick_create_cancel">キャンセル</string>
@@ -217,6 +218,55 @@
     <string name="quickcreate_panel_schedule_offset_label">Offset</string>
     <string name="quickcreate_panel_schedule_offset_suffix">min</string>
     <string name="quickcreate_panel_schedule_excluded_header">Excluded dates</string>
-    <string name="quickcreate_panel_schedule_add_excluded">Add excluded date</string>
+    <string name="quickcreate_panel_schedule_add_excluded">除外日を追加</string>
+    <string name="quickcreate_workflow_chip_aria">作成ワークフローを変更</string>
+    <string name="quickcreate_workflow_menu_title">作成モード</string>
+    <string name="quickcreate_workflow_menu_subtitle">入力内容に合うフォームを選んでください。</string>
+    <string name="quickcreate_workflow_event_label">イベント</string>
+    <string name="quickcreate_workflow_event_description">開始と終了を固定したカレンダー予定。</string>
+    <string name="quickcreate_workflow_event_heading_create">イベントを作成</string>
+    <string name="quickcreate_workflow_event_heading_edit">イベントを編集</string>
+    <string name="quickcreate_workflow_task_label">タスク</string>
+    <string name="quickcreate_workflow_task_description">サブタスク付きの単発 To-Do。</string>
+    <string name="quickcreate_workflow_task_heading_create">タスクを作成</string>
+    <string name="quickcreate_workflow_task_heading_edit">タスクを編集</string>
+    <string name="quickcreate_workflow_recurring_label">繰り返し</string>
+    <string name="quickcreate_workflow_recurring_description">日次 / 週次などのスケジュールで繰り返すタイル。</string>
+    <string name="quickcreate_workflow_recurring_heading_create">繰り返しタイルを作成</string>
+    <string name="quickcreate_workflow_recurring_heading_edit">繰り返しタイルを編集</string>
+    <string name="quickcreate_workflow_detailed_label">詳細</string>
+    <string name="quickcreate_workflow_detailed_description">v1 の全セクションを露出する完全版エディタ。</string>
+    <string name="quickcreate_workflow_detailed_heading_create">タイルを作成 (詳細)</string>
+    <string name="quickcreate_workflow_detailed_heading_edit">タイルを編集 (詳細)</string>
+    <string name="quick_create_picker_start_date_placeholder">開始日</string>
+    <string name="quick_create_picker_start_time_placeholder">開始時刻</string>
+    <string name="quick_create_picker_end_date_placeholder">終了日</string>
+    <string name="quick_create_picker_end_time_placeholder">終了時刻</string>
+    <string name="quickcreate_subtasks_header">Sub-tasks</string>
+    <string name="quickcreate_subtasks_empty">No subtasks yet</string>
+    <string name="quickcreate_subtasks_add">Add a sub-task</string>
+    <string name="quickcreate_subtasks_progress">%1$d/%2$d done</string>
+    <string name="quickcreate_subtasks_move_up">Move up</string>
+    <string name="quickcreate_subtasks_move_down">Move down</string>
+    <string name="quickcreate_subtasks_edit">Edit</string>
+    <string name="quickcreate_subtasks_duplicate">Duplicate</string>
+    <string name="quickcreate_subtasks_delete">Delete</string>
+    <string name="quickcreate_subtasks_untitled">Untitled task</string>
+    <string name="quickcreate_task_editor_title">Edit sub-task</string>
+    <string name="quickcreate_task_editor_add_title">Add sub-task</string>
+    <string name="quickcreate_task_editor_note">Note</string>
+    <string name="quickcreate_task_editor_done">Mark as done</string>
+    <string name="quickcreate_task_editor_order_header">Order</string>
+    <string name="quickcreate_task_editor_order_before">Before</string>
+    <string name="quickcreate_task_editor_order_after">After</string>
+    <string name="quickcreate_task_editor_order_target">Task</string>
+    <string name="quickcreate_task_editor_order_add">Add order rule</string>
+    <string name="quickcreate_task_editor_show_header">Show when</string>
+    <string name="quickcreate_task_editor_complete_header">Done when</string>
+    <string name="quickcreate_task_editor_save">Save</string>
+    <string name="quickcreate_task_editor_add">Add</string>
+    <string name="quickcreate_icon_picker_title">Choose icon</string>
+    <string name="quickcreate_color_custom">Custom color</string>
+    <string name="quickcreate_color_custom_hex">Hex</string>
 </resources>
 

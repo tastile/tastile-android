@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="account_tokens_heading">API Tokens</string>
     <string name="account_tokens_description">Issue unlimited-lived API tokens and manage names and usage history like API keys.</string>

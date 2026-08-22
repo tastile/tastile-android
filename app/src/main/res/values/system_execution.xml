@@ -46,7 +46,9 @@
     <string name="tile_new_fab">New tile</string>
     <string name="tile_edit_retry_loading">Retry</string>
     <string name="tile_edit_open_time">Open time</string>
+    <string name="tile_edit_open_duration">Open duration</string>
     <string name="tile_edit_open_schedule">Open schedule</string>
+    <string name="tile_edit_open_label">Open</string>
     <string name="tile_edit_back">Back</string>
     <string name="tile_edit_save_details">Save changes</string>
     <string name="tile_edit_actions_header">Actions</string>

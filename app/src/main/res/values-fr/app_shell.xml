@@ -1,8 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">Open menu</string>
     <string name="mobile_top_notifications">Notifications</string>
     <string name="mobile_top_avatar">Account menu</string>
+    <string name="mobile_top_avatar_open_cd">Ouvert</string>
+    <string name="mobile_top_avatar_closed_cd">Fermé</string>
     <string name="mobile_top_title_action">Change date</string>
     <string name="date_picker_confirm">OK</string>
     <string name="date_picker_cancel">Cancel</string>
@@ -19,5 +21,31 @@
     <string name="common_dismiss_cd">Dismiss</string>
     <string name="search_label">Search</string>
     <string name="fab_create">Create</string>
+    <string name="mobile_tab_tasks">Tâches</string>
+    <string name="mobile_tab_all_events">Tous les événements</string>
+    <string name="avatar_user_cd">Avatar de %1$s</string>
+    <string name="mobile_top_scale_cd">Échelle : %1$s</string>
+    <string name="endpoint_start_tile">Démarrer la tuile</string>
+    <string name="endpoint_complete_tile">Terminer la tuile</string>
+    <string name="endpoint_defer_tile">Reporter la tuile</string>
+    <string name="endpoint_delete_tile">Supprimer la tuile</string>
+    <string name="endpoint_start_break">Démarrer la pause</string>
+    <string name="endpoint_extend_tile">Prolonger de 10</string>
+    <string name="endpoint_trigger_prompt">Déclencher l\'invite</string>
+    <string name="endpoint_create_tile">Créer une tuile</string>
+    <string name="endpoint_list_tiles">Lister les tuiles</string>
+    <string name="endpoint_list_events">Lister les événements</string>
+    <string name="endpoint_list_integrations">Lister les intégrations</string>
+    <string name="endpoint_connect_integration">Connecter l\'intégration</string>
+    <string name="endpoint_disconnect_integration">Déconnecter l\'intégration</string>
+    <string name="endpoint_update_preferences">Mettre à jour les préférences</string>
+    <string name="endpoint_get_preferences">Obtenir les préférences</string>
+    <string name="endpoint_sign_out">Se déconnecter</string>
+    <string name="endpoint_refresh_token">Rafraîchir le jeton</string>
+    <string name="endpoint_schedule_tile">Planifier la tuile</string>
+    <string name="endpoint_unschedule_tile">Déplanifier la tuile</string>
+    <string name="endpoint_acknowledge_prompt">Acquitter l\'invite</string>
+    <string name="endpoint_snooze_prompt">Reporter l\'invite</string>
+    <string name="endpoint_read_runtime_state">Lire l\'état d\'exécution</string>
 </resources>
 

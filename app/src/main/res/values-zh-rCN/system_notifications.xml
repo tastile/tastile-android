@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notif_alarm_title_decision_required">需要决策</string>
     <string name="notif_alarm_body_decision_tile">查看 \"%1$s\" 的提示。</string>
@@ -9,5 +9,19 @@
     <string name="notif_alarm_title_tile_ready">卡片可开始</string>
     <string name="notif_alarm_body_tile_ready">查看当前应开始的下一张卡片。</string>
     <string name="notif_alarm_body_decision_default">决定是否完成、延长或推迟当前卡片。</string>
+    <string name="alarm_default_body">Tastile 需要您的注意。</string>
+    <string name="alarm_swipe_outward">向外滑动</string>
+    <string name="alarm_test_title">Tastile 闹钟</string>
+    <string name="alarm_test_body">这是一条来自 Tastile 的闹钟式测试通知。</string>
+    <string name="channel_status_name">执行状态</string>
+    <string name="channel_status_description">在不发出声音的情况下显示当前正在执行的任务。</string>
+    <string name="channel_prompts_name">执行提示</string>
+    <string name="channel_prompts_description">Tastile 需要人工决策时的干预提示。</string>
+    <string name="channel_alarms_name">执行警报</string>
+    <string name="channel_alarms_description">需要立即处理的闹钟式提示。</string>
+    <string name="notif_status_break">休息</string>
+    <string name="notif_status_executing">执行中</string>
+    <string name="notif_status_with_target">%1$s  %2$d/%3$d 分</string>
+    <string name="notif_status_no_target">%1$s  %2$d 分</string>
 </resources>
 

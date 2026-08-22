@@ -25,4 +25,5 @@
     <string name="preferences_account_email_otp_relogin">Re-login with email OTP</string>
     <string name="preferences_account_subscription_heading">Subscription</string>
     <string name="preferences_account_subscription_guide">Manage your plan and billing.</string>
+    <string name="profile_bio_label">Bio</string>
 </resources>

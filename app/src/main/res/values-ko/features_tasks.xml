@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tasks_bucket_today">오늘</string>
     <string name="tasks_bucket_this_week">이번 주</string>
@@ -7,6 +7,7 @@
     <string name="tasks_status_ready">준비됨</string>
     <string name="tasks_status_started">시작됨</string>
     <string name="tasks_status_completed">완료됨</string>
+    <string name="tasks_status_archived">보관됨</string>
     <string name="tasks_time_range_dash">%1$s – %2$s</string>
     <string name="tasks_time_range_at">%1$s · %2$s</string>
     <string name="tasks_empty_title">예정된 항목 없음</string>

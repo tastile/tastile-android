@@ -10,4 +10,9 @@
     <string name="dialog_ok">OK</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="common_loading">Loading…</string>
+    <string name="avatar_default_fallback">U</string>
+    <string name="duration_preset_15m">15m</string>
+    <string name="duration_preset_25m">25m</string>
+    <string name="duration_preset_45m">45m</string>
+    <string name="duration_preset_1h">1h</string>
 </resources>

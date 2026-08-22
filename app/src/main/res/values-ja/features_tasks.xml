@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tasks_bucket_today">今日</string>
     <string name="tasks_bucket_this_week">今週</string>
@@ -7,6 +7,7 @@
     <string name="tasks_status_ready">準備中</string>
     <string name="tasks_status_started">開始済み</string>
     <string name="tasks_status_completed">完了</string>
+    <string name="tasks_status_archived">アーカイブ済み</string>
     <string name="tasks_time_range_dash">%1$s – %2$s</string>
     <string name="tasks_time_range_at">%1$s · %2$s</string>
     <string name="tasks_empty_title">予定はありません</string>

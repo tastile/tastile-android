@@ -1,8 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">메뉴 열기</string>
     <string name="mobile_top_notifications">알림</string>
     <string name="mobile_top_avatar">계정 메뉴</string>
+    <string name="mobile_top_avatar_open_cd">열림</string>
+    <string name="mobile_top_avatar_closed_cd">닫힘</string>
     <string name="mobile_top_title_action">날짜 변경</string>
     <string name="date_picker_confirm">확인</string>
     <string name="date_picker_cancel">취소</string>
@@ -19,5 +21,31 @@
     <string name="common_dismiss_cd">Dismiss</string>
     <string name="search_label">Search</string>
     <string name="fab_create">Create</string>
+    <string name="mobile_tab_tasks">작업</string>
+    <string name="mobile_tab_all_events">모든 이벤트</string>
+    <string name="avatar_user_cd">%1$s 아바타</string>
+    <string name="mobile_top_scale_cd">단위: %1$s</string>
+    <string name="endpoint_start_tile">타일 시작</string>
+    <string name="endpoint_complete_tile">타일 완료</string>
+    <string name="endpoint_defer_tile">타일 연기</string>
+    <string name="endpoint_delete_tile">타일 삭제</string>
+    <string name="endpoint_start_break">휴식 시작</string>
+    <string name="endpoint_extend_tile">+10분 연장</string>
+    <string name="endpoint_trigger_prompt">프롬프트 트리거</string>
+    <string name="endpoint_create_tile">타일 만들기</string>
+    <string name="endpoint_list_tiles">타일 목록</string>
+    <string name="endpoint_list_events">이벤트 목록</string>
+    <string name="endpoint_list_integrations">통합 목록</string>
+    <string name="endpoint_connect_integration">통합 연결</string>
+    <string name="endpoint_disconnect_integration">통합 해제</string>
+    <string name="endpoint_update_preferences">환경설정 업데이트</string>
+    <string name="endpoint_get_preferences">환경설정 가져오기</string>
+    <string name="endpoint_sign_out">로그아웃</string>
+    <string name="endpoint_refresh_token">토큰 새로 고침</string>
+    <string name="endpoint_schedule_tile">타일 예약</string>
+    <string name="endpoint_unschedule_tile">예약 취소</string>
+    <string name="endpoint_acknowledge_prompt">프롬프트 확인</string>
+    <string name="endpoint_snooze_prompt">프롬프트 스누즈</string>
+    <string name="endpoint_read_runtime_state">런타임 상태 읽기</string>
 </resources>
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notif_alarm_title_decision_required">Decisión requerida</string>
     <string name="notif_alarm_body_decision_tile">Revisa la indicación de \"%1$s\".</string>
@@ -9,5 +9,19 @@
     <string name="notif_alarm_title_tile_ready">Tarjeta lista para iniciar</string>
     <string name="notif_alarm_body_tile_ready">Revisa la siguiente tarjeta que debería comenzar ahora.</string>
     <string name="notif_alarm_body_decision_default">Decide si completar, extender o posponer la tarjeta actual.</string>
+    <string name="alarm_default_body">Tastile necesita tu atención.</string>
+    <string name="alarm_swipe_outward">Desliza hacia afuera</string>
+    <string name="alarm_test_title">Alarma de Tastile</string>
+    <string name="alarm_test_body">Esta es una notificación de prueba estilo alarma de Tastile.</string>
+    <string name="channel_status_name">Estado de ejecución</string>
+    <string name="channel_status_description">Muestra la ejecución activa sin hacer ruido.</string>
+    <string name="channel_prompts_name">Avisos de ejecución</string>
+    <string name="channel_prompts_description">Avisos de intervención cuando Tastile necesita una decisión humana.</string>
+    <string name="channel_alarms_name">Alarmas de ejecución</string>
+    <string name="channel_alarms_description">Avisos estilo alarma que necesitan atención inmediata.</string>
+    <string name="notif_status_break">Descanso</string>
+    <string name="notif_status_executing">Ejecutando</string>
+    <string name="notif_status_with_target">%1$s  %2$d/%3$d min</string>
+    <string name="notif_status_no_target">%1$s  %2$d min</string>
 </resources>
 

@@ -1,8 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">Open menu</string>
     <string name="mobile_top_notifications">Notifications</string>
     <string name="mobile_top_avatar">Account menu</string>
+    <string name="mobile_top_avatar_open_cd">Offen</string>
+    <string name="mobile_top_avatar_closed_cd">Geschlossen</string>
     <string name="mobile_top_title_action">Change date</string>
     <string name="date_picker_confirm">OK</string>
     <string name="date_picker_cancel">Cancel</string>
@@ -19,5 +21,31 @@
     <string name="common_dismiss_cd">Dismiss</string>
     <string name="search_label">Search</string>
     <string name="fab_create">Create</string>
+    <string name="mobile_tab_tasks">Aufgaben</string>
+    <string name="mobile_tab_all_events">Alle Ereignisse</string>
+    <string name="avatar_user_cd">Avatar von %1$s</string>
+    <string name="mobile_top_scale_cd">Maßstab: %1$s</string>
+    <string name="endpoint_start_tile">Tile starten</string>
+    <string name="endpoint_complete_tile">Tile abschließen</string>
+    <string name="endpoint_defer_tile">Tile verschieben</string>
+    <string name="endpoint_delete_tile">Tile löschen</string>
+    <string name="endpoint_start_break">Pause starten</string>
+    <string name="endpoint_extend_tile">+10 verlängern</string>
+    <string name="endpoint_trigger_prompt">Eingabeaufforderung auslösen</string>
+    <string name="endpoint_create_tile">Tile erstellen</string>
+    <string name="endpoint_list_tiles">Tiles auflisten</string>
+    <string name="endpoint_list_events">Ereignisse auflisten</string>
+    <string name="endpoint_list_integrations">Integrationen auflisten</string>
+    <string name="endpoint_connect_integration">Integration verbinden</string>
+    <string name="endpoint_disconnect_integration">Integration trennen</string>
+    <string name="endpoint_update_preferences">Einstellungen aktualisieren</string>
+    <string name="endpoint_get_preferences">Einstellungen abrufen</string>
+    <string name="endpoint_sign_out">Abmelden</string>
+    <string name="endpoint_refresh_token">Token aktualisieren</string>
+    <string name="endpoint_schedule_tile">Tile planen</string>
+    <string name="endpoint_unschedule_tile">Planung aufheben</string>
+    <string name="endpoint_acknowledge_prompt">Eingabeaufforderung bestätigen</string>
+    <string name="endpoint_snooze_prompt">Eingabeaufforderung zurückstellen</string>
+    <string name="endpoint_read_runtime_state">Laufzeitstatus lesen</string>
 </resources>
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tasks_bucket_today">Hoy</string>
     <string name="tasks_bucket_this_week">Esta semana</string>
@@ -7,6 +7,7 @@
     <string name="tasks_status_ready">LISTA</string>
     <string name="tasks_status_started">INICIADA</string>
     <string name="tasks_status_completed">COMPLETADA</string>
+    <string name="tasks_status_archived">ARCHIVADA</string>
     <string name="tasks_time_range_dash">%1$s – %2$s</string>
     <string name="tasks_time_range_at">%1$s · %2$s</string>
     <string name="tasks_empty_title">Nada programado</string>

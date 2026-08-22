@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">Tastile</string>
     <string name="common_cancel">キャンセル</string>
@@ -10,5 +10,10 @@
     <string name="dialog_ok">OK</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="common_loading">Loading…</string>
+    <string name="avatar_default_fallback">U</string>
+    <string name="duration_preset_15m">15分</string>
+    <string name="duration_preset_25m">25分</string>
+    <string name="duration_preset_45m">45分</string>
+    <string name="duration_preset_1h">1時間</string>
 </resources>
 

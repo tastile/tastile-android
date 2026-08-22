@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_projects_title">Projects</string>
     <string name="panels_projects_all_projects">All Projects</string>
@@ -31,5 +31,8 @@
     <string name="projects_section_scoped">Tiles in this project</string>
     <string name="projects_select_hint">Select a project to scope the tiles below.</string>
     <string name="projects_color_default" translatable="false">#6B7280</string>
+    <string name="projects_personal_title">Pessoal</string>
+    <string name="projects_personal_scope">Escopo pessoal</string>
+    <string name="projects_owner_prefix">proprietário: %1$s</string>
 </resources>
 

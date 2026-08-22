@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notif_alarm_title_decision_required">결정 필요</string>
     <string name="notif_alarm_body_decision_tile">\"%1$s\"에 대한 프롬프트를 확인하세요.</string>
@@ -9,5 +9,19 @@
     <string name="notif_alarm_title_tile_ready">시작할 타일 준비됨</string>
     <string name="notif_alarm_body_tile_ready">지금 시작해야 할 다음 타일을 확인하세요.</string>
     <string name="notif_alarm_body_decision_default">현재 타일을 완료, 연장 또는 연기할지 결정하세요.</string>
+    <string name="alarm_default_body">Tastile이(가) 주의를 기울여 달라고 요청합니다.</string>
+    <string name="alarm_swipe_outward">바깥으로 스와이프</string>
+    <string name="alarm_test_title">Tastile 알람</string>
+    <string name="alarm_test_body">Tastile에서 보내는 알람 스타일의 테스트 알림입니다.</string>
+    <string name="channel_status_name">실행 상태</string>
+    <string name="channel_status_description">소리 없이 현재 활성 실행을 표시합니다.</string>
+    <string name="channel_prompts_name">실행 프롬프트</string>
+    <string name="channel_prompts_description">Tastile이(가) 사람의 결정을 필요로 할 때의 개입 프롬프트.</string>
+    <string name="channel_alarms_name">실행 알람</string>
+    <string name="channel_alarms_description">즉각적인 주의가 필요한 알람 스타일 프롬프트.</string>
+    <string name="notif_status_break">휴식</string>
+    <string name="notif_status_executing">실행 중</string>
+    <string name="notif_status_with_target">%1$s  %2$d/%3$d 분</string>
+    <string name="notif_status_no_target">%1$s  %2$d 분</string>
 </resources>
 

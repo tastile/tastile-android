@@ -9,4 +9,18 @@
     <string name="notif_alarm_title_tile_ready">Tile ready to start</string>
     <string name="notif_alarm_body_tile_ready">Review the next tile that should start now.</string>
     <string name="notif_alarm_body_decision_default">Decide whether to complete, extend, or defer the current tile.</string>
+    <string name="alarm_default_body">Tastile needs your attention.</string>
+    <string name="alarm_swipe_outward">Swipe outward</string>
+    <string name="alarm_test_title">Tastile alarm</string>
+    <string name="alarm_test_body">This is an alarm-style test notification from Tastile.</string>
+    <string name="channel_status_name">Execution status</string>
+    <string name="channel_status_description">Shows the current active execution without making noise.</string>
+    <string name="channel_prompts_name">Execution prompts</string>
+    <string name="channel_prompts_description">Intervention prompts when Tastile needs a human decision.</string>
+    <string name="channel_alarms_name">Execution alarms</string>
+    <string name="channel_alarms_description">Alarm-style prompts that need immediate attention.</string>
+    <string name="notif_status_break">Break</string>
+    <string name="notif_status_executing">Executing</string>
+    <string name="notif_status_with_target">%1$s  %2$d/%3$d min</string>
+    <string name="notif_status_no_target">%1$s  %2$d min</string>
 </resources>

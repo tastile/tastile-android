@@ -12,4 +12,10 @@
     <string name="tiles_stat_sections">Sections · %1$d</string>
     <string name="tile_card_meta_minutes">%1$d min</string>
     <string name="tile_section_meta">%1$d min · %2$d tiles</string>
+    <string name="tiles_grouping_state">By State</string>
+    <string name="tiles_grouping_project">By Project</string>
+    <string name="tiles_grouping_tag">By Tag</string>
+    <string name="tiles_view_mode_compact">Compact</string>
+    <string name="tiles_view_mode_comfortable">Comfortable</string>
+    <string name="tiles_view_mode_detailed">Detailed</string>
 </resources>

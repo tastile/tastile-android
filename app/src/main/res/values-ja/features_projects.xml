@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_projects_title">プロジェクト</string>
     <string name="panels_projects_all_projects">すべてのプロジェクト</string>
@@ -31,5 +31,8 @@
     <string name="projects_section_scoped">このプロジェクトのタイル</string>
     <string name="projects_select_hint">プロジェクトを選ぶと、下のタイルを絞り込みます。</string>
     <string name="projects_color_default" translatable="false">#6B7280</string>
+    <string name="projects_personal_title">パーソナル</string>
+    <string name="projects_personal_scope">パーソナルスコープ</string>
+    <string name="projects_owner_prefix">オーナー: %1$s</string>
 </resources>
 

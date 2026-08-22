@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notif_alarm_title_decision_required">Decision required</string>
     <string name="notif_alarm_body_decision_tile">Review the prompt for \"%1$s\".</string>
@@ -9,5 +9,19 @@
     <string name="notif_alarm_title_tile_ready">Tile ready to start</string>
     <string name="notif_alarm_body_tile_ready">Review the next tile that should start now.</string>
     <string name="notif_alarm_body_decision_default">Decide whether to complete, extend, or defer the current tile.</string>
+    <string name="alarm_default_body">O Tastile precisa da sua atenção.</string>
+    <string name="alarm_swipe_outward">Arraste para fora</string>
+    <string name="alarm_test_title">Alarme Tastile</string>
+    <string name="alarm_test_body">Esta é uma notificação de teste no estilo alarme do Tastile.</string>
+    <string name="channel_status_name">Status de execução</string>
+    <string name="channel_status_description">Mostra a execução atual sem fazer barulho.</string>
+    <string name="channel_prompts_name">Prompts de execução</string>
+    <string name="channel_prompts_description">Prompts de intervenção quando o Tastile precisa de uma decisão humana.</string>
+    <string name="channel_alarms_name">Alarmes de execução</string>
+    <string name="channel_alarms_description">Prompts no estilo alarme que precisam de atenção imediata.</string>
+    <string name="notif_status_break">Pausa</string>
+    <string name="notif_status_executing">Executando</string>
+    <string name="notif_status_with_target">%1$s  %2$d/%3$d min</string>
+    <string name="notif_status_no_target">%1$s  %2$d min</string>
 </resources>
 

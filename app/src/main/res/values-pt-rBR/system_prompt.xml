@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="now_title">Now</string>
     <string name="now_refresh">Refresh</string>
@@ -17,6 +17,7 @@
     <string name="now_new_tile_title_hint">New tile title</string>
     <string name="now_add_cd">Add new tile</string>
     <string name="now_add_button">Add</string>
+    <string name="now_unknown_error">Erro desconhecido</string>
     <string name="prompt_error_prefix">Error:</string>
     <string name="prompt_title">Prompt</string>
     <string name="prompt_action_refresh">Refresh</string>

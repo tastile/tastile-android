@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_projects_title">Proyectos</string>
     <string name="panels_projects_all_projects">Todos los proyectos</string>
@@ -31,5 +31,8 @@
     <string name="projects_section_scoped">Tarjetas en este proyecto</string>
     <string name="projects_select_hint">Selecciona un proyecto para acotar las tarjetas de abajo.</string>
     <string name="projects_color_default" translatable="false">#6B7280</string>
+    <string name="projects_personal_title">Personal</string>
+    <string name="projects_personal_scope">Ámbito personal</string>
+    <string name="projects_owner_prefix">propietario: %1$s</string>
 </resources>
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="panels_timeline_empty">이 범위에 블록이 없습니다. 타일을 생성해 타임라인을 채워보세요.</string>
     <string name="panels_timeline_loading">타임라인 로드 중…</string>
@@ -9,5 +9,6 @@
     <string name="panels_timeline_custom_start">Start date</string>
     <string name="panels_timeline_custom_end">End date</string>
     <string name="panels_timeline_empty_date">No data for this range.</string>
+    <string name="panels_timeline_meta_minutes_value">%1$d분</string>
 </resources>
 

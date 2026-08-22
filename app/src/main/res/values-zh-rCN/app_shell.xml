@@ -1,8 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">打开菜单</string>
     <string name="mobile_top_notifications">通知</string>
     <string name="mobile_top_avatar">账户菜单</string>
+    <string name="mobile_top_avatar_open_cd">打开</string>
+    <string name="mobile_top_avatar_closed_cd">关闭</string>
     <string name="mobile_top_title_action">更改日期</string>
     <string name="date_picker_confirm">确定</string>
     <string name="date_picker_cancel">取消</string>
@@ -19,5 +21,31 @@
     <string name="common_dismiss_cd">Dismiss</string>
     <string name="search_label">Search</string>
     <string name="fab_create">Create</string>
+    <string name="mobile_tab_tasks">任务</string>
+    <string name="mobile_tab_all_events">所有事件</string>
+    <string name="avatar_user_cd">%1$s 的头像</string>
+    <string name="mobile_top_scale_cd">时间范围: %1$s</string>
+    <string name="endpoint_start_tile">开始任务</string>
+    <string name="endpoint_complete_tile">完成任务</string>
+    <string name="endpoint_defer_tile">推迟任务</string>
+    <string name="endpoint_delete_tile">删除任务</string>
+    <string name="endpoint_start_break">开始休息</string>
+    <string name="endpoint_extend_tile">延长 10 分钟</string>
+    <string name="endpoint_trigger_prompt">触发提示</string>
+    <string name="endpoint_create_tile">创建任务</string>
+    <string name="endpoint_list_tiles">任务列表</string>
+    <string name="endpoint_list_events">事件列表</string>
+    <string name="endpoint_list_integrations">集成列表</string>
+    <string name="endpoint_connect_integration">连接集成</string>
+    <string name="endpoint_disconnect_integration">断开集成</string>
+    <string name="endpoint_update_preferences">更新偏好</string>
+    <string name="endpoint_get_preferences">获取偏好</string>
+    <string name="endpoint_sign_out">登出</string>
+    <string name="endpoint_refresh_token">刷新令牌</string>
+    <string name="endpoint_schedule_tile">安排任务</string>
+    <string name="endpoint_unschedule_tile">取消安排</string>
+    <string name="endpoint_acknowledge_prompt">确认提示</string>
+    <string name="endpoint_snooze_prompt">延迟提示</string>
+    <string name="endpoint_read_runtime_state">读取运行时状态</string>
 </resources>
 

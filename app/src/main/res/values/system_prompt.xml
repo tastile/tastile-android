@@ -17,6 +17,7 @@
     <string name="now_new_tile_title_hint">New tile title</string>
     <string name="now_add_cd">Add new tile</string>
     <string name="now_add_button">Add</string>
+    <string name="now_unknown_error">Unknown error</string>
 
     <!-- Prompt screen (ui/prompt/PromptScreen.kt) -->
     <string name="prompt_error_prefix">Error:</string>

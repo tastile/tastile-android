@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="preferences_nav_general">全般設定</string>
     <string name="preferences_nav_profile">プロフィール</string>
@@ -25,5 +25,6 @@
     <string name="preferences_account_email_otp_relogin">メールOTPで再ログイン</string>
     <string name="preferences_account_subscription_heading">サブスクリプション</string>
     <string name="preferences_account_subscription_guide">プランと請求情報を管理します。</string>
+    <string name="profile_bio_label">自己紹介</string>
 </resources>
 

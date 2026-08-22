@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tiles_duration">Duración</string>
     <string name="tiles_start_at">Inicio</string>
@@ -12,5 +12,11 @@
     <string name="tiles_stat_sections">Secciones · %1$d</string>
     <string name="tile_card_meta_minutes">%1$d min</string>
     <string name="tile_section_meta">%1$d min · %2$d tiles</string>
+    <string name="tiles_grouping_state">Por estado</string>
+    <string name="tiles_grouping_project">Por proyecto</string>
+    <string name="tiles_grouping_tag">Por etiqueta</string>
+    <string name="tiles_view_mode_compact">Compacto</string>
+    <string name="tiles_view_mode_comfortable">Cómodo</string>
+    <string name="tiles_view_mode_detailed">Detallado</string>
 </resources>
 

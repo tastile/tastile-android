@@ -1,8 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="mobile_top_menu">メニューを開く</string>
     <string name="mobile_top_notifications">通知</string>
     <string name="mobile_top_avatar">アカウントメニュー</string>
+    <string name="mobile_top_avatar_open_cd">開く</string>
+    <string name="mobile_top_avatar_closed_cd">閉じる</string>
     <string name="mobile_top_title_action">日付を変更</string>
     <string name="date_picker_confirm">OK</string>
     <string name="date_picker_cancel">キャンセル</string>
@@ -19,5 +21,31 @@
     <string name="common_dismiss_cd">Dismiss</string>
     <string name="search_label">Search</string>
     <string name="fab_create">Create</string>
+    <string name="mobile_tab_tasks">タスク</string>
+    <string name="mobile_tab_all_events">すべてのイベント</string>
+    <string name="avatar_user_cd">%1$s のアバター</string>
+    <string name="mobile_top_scale_cd">スケール: %1$s</string>
+    <string name="endpoint_start_tile">タイルを開始</string>
+    <string name="endpoint_complete_tile">タイルを完了</string>
+    <string name="endpoint_defer_tile">タイルを延期</string>
+    <string name="endpoint_delete_tile">タイルを削除</string>
+    <string name="endpoint_start_break">休憩を開始</string>
+    <string name="endpoint_extend_tile">+10分延長</string>
+    <string name="endpoint_trigger_prompt">プロンプトをトリガー</string>
+    <string name="endpoint_create_tile">タイルを作成</string>
+    <string name="endpoint_list_tiles">タイル一覧</string>
+    <string name="endpoint_list_events">イベント一覧</string>
+    <string name="endpoint_list_integrations">連携一覧</string>
+    <string name="endpoint_connect_integration">連携を接続</string>
+    <string name="endpoint_disconnect_integration">連携を切断</string>
+    <string name="endpoint_update_preferences">環境設定を更新</string>
+    <string name="endpoint_get_preferences">環境設定を取得</string>
+    <string name="endpoint_sign_out">サインアウト</string>
+    <string name="endpoint_refresh_token">トークンを更新</string>
+    <string name="endpoint_schedule_tile">タイルをスケジュール</string>
+    <string name="endpoint_unschedule_tile">スケジュール解除</string>
+    <string name="endpoint_acknowledge_prompt">プロンプトを確認</string>
+    <string name="endpoint_snooze_prompt">プロンプトをスヌーズ</string>
+    <string name="endpoint_read_runtime_state">ランタイム状態を取得</string>
 </resources>
 

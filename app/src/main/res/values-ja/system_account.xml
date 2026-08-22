@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="account_tokens_heading">APIトークン</string>
     <string name="account_tokens_description">無期限のAPIトークンを複数発行し、APIキーと同じように名前と使用履歴を管理できます。</string>

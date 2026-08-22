@@ -31,4 +31,7 @@
     <string name="projects_section_scoped">Tiles in this project</string>
     <string name="projects_select_hint">Select a project to scope the tiles below.</string>
     <string name="projects_color_default" translatable="false">#6B7280</string>
+    <string name="projects_personal_title">Personal</string>
+    <string name="projects_personal_scope">Personal scope</string>
+    <string name="projects_owner_prefix">owner: %1$s</string>
 </resources>
