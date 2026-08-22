@@ -23,7 +23,7 @@ import okhttp3.Response
  */
 @Singleton
 class V1AuthInterceptor @Inject constructor(
-    private val tokenProvider: AuthTokenProvider,
+    private val tokenProvider: @JvmSuppressWildcards AuthTokenProvider,
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val token = runBlocking { tokenProvider() }

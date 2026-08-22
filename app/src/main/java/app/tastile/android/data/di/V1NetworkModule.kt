@@ -4,6 +4,7 @@ import app.tastile.android.BuildConfig
 import app.tastile.android.data.api.V1AuthInterceptor
 import app.tastile.android.data.api.generated.v1.apis.ReadApi
 import app.tastile.android.data.api.generated.v1.apis.SourceTileApi
+import app.tastile.android.data.auth.ApiTokenCache
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -57,8 +58,25 @@ object V1NetworkModule {
 
     @Provides
     @Singleton
+    @JvmSuppressWildcards
+    fun provideAuthTokenProvider(
+        apiTokenCache: ApiTokenCache,
+    ): suspend () -> String? = { apiTokenCache.getOrMint() }
+
+    @Provides
+    @Singleton
     @V1Moshi
     fun provideV1Moshi(): Moshi = Moshi.Builder()
+        // Generated v1 DTOs expose `java.time.OffsetDateTime` / `OffsetTime`
+        // fields. `Rfc3339DateJsonAdapter` only handles `java.util.Date`, so
+        // we register purpose-built adapters that round-trip RFC 3339 strings
+        // while preserving the server-supplied offset.
+        .add(OffsetDateTimeJsonAdapter())
+        .add(OffsetTimeJsonAdapter())
+        // Generated v1 DTOs also expose `java.util.UUID` fields (e.g.
+        // `ownerId` on SourceTileRead). Moshi refuses platform types without
+        // an explicit adapter, so register a string-backed one.
+        .add(UuidJsonAdapter())
         .add(KotlinJsonAdapterFactory())
         .build()
 
@@ -74,7 +92,7 @@ object V1NetworkModule {
 
         if (BuildConfig.DEBUG) {
             val logging = HttpLoggingInterceptor()
-            logging.level = HttpLoggingInterceptor.Level.BASIC
+            logging.level = HttpLoggingInterceptor.Level.BODY
             builder.addInterceptor(logging)
         }
         return builder.build()

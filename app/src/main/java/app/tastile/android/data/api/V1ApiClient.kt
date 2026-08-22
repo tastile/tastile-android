@@ -264,6 +264,12 @@ class V1ApiClient @Inject constructor(
     // `crates/v1/api/src/handlers/access.rs` accept a plain JSON body, so
     // we follow suit.
 
+    /**
+     * `GET /v1/access/subjects?kind=1` returns only WORKSPACE (=Project)
+     * rows. Personal scope (`kind=0`) is synthesized client-side in
+     * [app.tastile.android.data.access.AccessRepository] from the
+     * authenticated user's id.
+     */
     suspend fun listWorkspaces(): V1ListWorkspacesResponse =
         get("/v1/access/subjects?kind=1")
 
