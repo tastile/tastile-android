@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.theme.GradientColors
 import app.tastile.android.core.designsystem.theme.LocalBackgroundTheme
 import app.tastile.android.core.designsystem.theme.LocalGradientColors
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import kotlin.math.tan
 
 /**
@@ -150,7 +150,7 @@ annotation class ThemePreviews
 @ThemePreviews
 @Composable
 fun BackgroundDefault() {
-    NiaTheme(disableDynamicTheming = true) {
+    TastileTheme {
         NiaBackground(Modifier.size(100.dp), content = {})
     }
 }
@@ -158,7 +158,7 @@ fun BackgroundDefault() {
 @ThemePreviews
 @Composable
 fun BackgroundDynamic() {
-    NiaTheme(disableDynamicTheming = false) {
+    TastileTheme {
         NiaBackground(Modifier.size(100.dp), content = {})
     }
 }
@@ -166,7 +166,7 @@ fun BackgroundDynamic() {
 @ThemePreviews
 @Composable
 fun BackgroundAndroid() {
-    NiaTheme(androidTheme = true) {
+    TastileTheme {
         NiaBackground(Modifier.size(100.dp), content = {})
     }
 }
@@ -174,7 +174,7 @@ fun BackgroundAndroid() {
 @ThemePreviews
 @Composable
 fun GradientBackgroundDefault() {
-    NiaTheme(disableDynamicTheming = true) {
+    TastileTheme {
         NiaGradientBackground(Modifier.size(100.dp), content = {})
     }
 }
@@ -182,7 +182,7 @@ fun GradientBackgroundDefault() {
 @ThemePreviews
 @Composable
 fun GradientBackgroundDynamic() {
-    NiaTheme(disableDynamicTheming = false) {
+    TastileTheme {
         NiaGradientBackground(Modifier.size(100.dp), content = {})
     }
 }
@@ -190,7 +190,7 @@ fun GradientBackgroundDynamic() {
 @ThemePreviews
 @Composable
 fun GradientBackgroundAndroid() {
-    NiaTheme(androidTheme = true) {
+    TastileTheme {
         NiaGradientBackground(Modifier.size(100.dp), content = {})
     }
 }

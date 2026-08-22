@@ -45,7 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.icon.NiaIcons
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 /**
  * Tastile filled button with generic content slot. Wraps Material 3 [Button].
@@ -279,7 +279,7 @@ private fun NiaButtonContent(
 @ThemePreviews
 @Composable
 fun NiaButtonPreview() {
-    NiaTheme {
+    TastileTheme {
         NiaBackground(modifier = Modifier.size(150.dp, 50.dp)) {
             NiaButton(onClick = {}, text = { Text("Test button") })
         }
@@ -289,7 +289,7 @@ fun NiaButtonPreview() {
 @ThemePreviews
 @Composable
 fun NiaOutlinedButtonPreview() {
-    NiaTheme {
+    TastileTheme {
         NiaBackground(modifier = Modifier.size(150.dp, 50.dp)) {
             NiaOutlinedButton(onClick = {}, text = { Text("Test button") })
         }
@@ -299,7 +299,7 @@ fun NiaOutlinedButtonPreview() {
 @ThemePreviews
 @Composable
 fun NiaButtonLeadingIconPreview() {
-    NiaTheme {
+    TastileTheme {
         NiaBackground(modifier = Modifier.size(150.dp, 50.dp)) {
             NiaButton(
                 onClick = {},

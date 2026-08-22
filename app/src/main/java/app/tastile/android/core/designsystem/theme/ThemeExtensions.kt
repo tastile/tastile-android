@@ -10,7 +10,7 @@ import androidx.core.view.WindowCompat
 import app.tastile.android.data.user.ThemeMode
 
 /**
- * Maps [ThemeMode] to a boolean flag suitable for `NiaTheme(darkTheme = …)`.
+ * Maps [ThemeMode] to a boolean flag suitable for `TastileTheme(darkTheme = …)`.
  * SYSTEM follows the platform; LIGHT/DARK are explicit overrides.
  */
 @Composable

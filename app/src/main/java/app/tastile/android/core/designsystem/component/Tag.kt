@@ -25,7 +25,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 @Composable
 fun NiaTopicTag(
@@ -64,7 +64,7 @@ fun NiaTopicTag(
 @ThemePreviews
 @Composable
 fun TagPreview() {
-    NiaTheme {
+    TastileTheme {
         NiaTopicTag(followed = true, onClick = {}) {
             Text("Topic".uppercase())
         }

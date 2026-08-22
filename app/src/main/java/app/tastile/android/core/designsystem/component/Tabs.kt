@@ -29,7 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 /**
  * Tastile tab. Wraps Material 3 [Tab] and shifts text label down.
@@ -102,7 +102,7 @@ fun NiaTabRow(
 @ThemePreviews
 @Composable
 fun TabsPreview() {
-    NiaTheme {
+    TastileTheme {
         val titles = listOf("Topics", "People")
         NiaTabRow(selectedTabIndex = 0) {
             titles.forEachIndexed { index, title ->

@@ -40,7 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.icon.NiaIcons
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 /**
  * Tastile navigation bar item with icon and label content slots. Wraps Material 3
@@ -278,7 +278,7 @@ fun NiaNavigationBarPreview() {
         NiaIcons.Grid3x3,
     )
 
-    NiaTheme {
+    TastileTheme {
         NiaNavigationBar {
             items.forEachIndexed { index, item ->
                 NiaNavigationBarItem(
@@ -318,7 +318,7 @@ fun NiaNavigationRailPreview() {
         NiaIcons.Grid3x3,
     )
 
-    NiaTheme {
+    TastileTheme {
         NiaNavigationRail {
             items.forEachIndexed { index, item ->
                 NiaNavigationRailItem(

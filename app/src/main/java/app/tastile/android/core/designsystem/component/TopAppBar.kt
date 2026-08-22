@@ -34,7 +34,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import app.tastile.android.core.designsystem.icon.NiaIcons
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +78,7 @@ fun NiaTopAppBar(
 @Preview("Top App Bar")
 @Composable
 private fun NiaTopAppBarPreview() {
-    NiaTheme {
+    TastileTheme {
         NiaTopAppBar(
             titleRes = android.R.string.untitled,
             navigationIcon = NiaIcons.Search,

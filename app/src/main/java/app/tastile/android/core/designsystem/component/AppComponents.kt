@@ -59,7 +59,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 /**
  * Mobile-design spacing tokens. Mirrors the deleted `MobileSpacing` object
@@ -79,7 +79,7 @@ object MobileSpacing {
  * under the historical `AppTheme` namespace so that call-sites still using
  * `AppTheme.colors.*` / `AppTheme.typography.*` / `AppTheme.spacing.*` keep
  * compiling after the legacy `ui.designsystem` package was deleted. The
- * actual theme values come from [NiaTheme] / Material 3's `colorScheme` /
+ * actual theme values come from [TastileTheme] / Material 3's `colorScheme` /
  * `typography`; [AppTheme] is a stable wrapper that never re-defines colors.
  */
 object AppTheme {

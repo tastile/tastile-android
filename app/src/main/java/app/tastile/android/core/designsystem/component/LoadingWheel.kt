@@ -49,7 +49,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import kotlinx.coroutines.launch
 
 @Composable
@@ -158,7 +158,7 @@ fun NiaOverlayLoadingWheel(
 @ThemePreviews
 @Composable
 fun NiaLoadingWheelPreview() {
-    NiaTheme {
+    TastileTheme {
         Surface {
             NiaLoadingWheel(contentDesc = "LoadingWheel")
         }
@@ -168,7 +168,7 @@ fun NiaLoadingWheelPreview() {
 @ThemePreviews
 @Composable
 fun NiaOverlayLoadingWheelPreview() {
-    NiaTheme {
+    TastileTheme {
         Surface {
             NiaOverlayLoadingWheel(contentDesc = "LoadingWheel")
         }

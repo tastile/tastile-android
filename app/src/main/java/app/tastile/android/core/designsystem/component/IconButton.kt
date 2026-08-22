@@ -24,7 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import app.tastile.android.core.designsystem.icon.NiaIcons
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 /**
  * Tastile toggle button with icon and checked icon content slots. Wraps Material 3
@@ -73,7 +73,7 @@ fun NiaIconToggleButton(
 @ThemePreviews
 @Composable
 fun IconButtonPreview() {
-    NiaTheme {
+    TastileTheme {
         NiaIconToggleButton(
             checked = true,
             onCheckedChange = { },
@@ -96,7 +96,7 @@ fun IconButtonPreview() {
 @ThemePreviews
 @Composable
 fun IconButtonPreviewUnchecked() {
-    NiaTheme {
+    TastileTheme {
         NiaIconToggleButton(
             checked = false,
             onCheckedChange = { },

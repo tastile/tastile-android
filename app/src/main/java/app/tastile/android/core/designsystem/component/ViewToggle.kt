@@ -32,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.icon.NiaIcons
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 /**
  * Tastile view toggle button with included trailing icon as well as compact and expanded
@@ -112,7 +112,7 @@ private fun NiaViewToggleButtonContent(
 @ThemePreviews
 @Composable
 fun ViewTogglePreviewExpanded() {
-    NiaTheme {
+    TastileTheme {
         Surface {
             NiaViewToggleButton(
                 expanded = true,
@@ -127,7 +127,7 @@ fun ViewTogglePreviewExpanded() {
 @Preview
 @Composable
 fun ViewTogglePreviewCompact() {
-    NiaTheme {
+    TastileTheme {
         Surface {
             NiaViewToggleButton(
                 expanded = false,

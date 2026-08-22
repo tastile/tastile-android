@@ -29,7 +29,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import app.tastile.android.core.designsystem.theme.NiaTheme
+import app.tastile.android.core.designsystem.theme.TastileTheme
 
 /**
  * Tastile filled card. Wraps Material 3 [Card].
@@ -155,7 +155,7 @@ object NiaCardDefaults {
 @ThemePreviews
 @Composable
 fun NiaCardPreview() {
-    NiaTheme {
+    TastileTheme {
         NiaCard {
             androidx.compose.foundation.layout.Box(
                 Modifier.padding(16.dp),
@@ -169,7 +169,7 @@ fun NiaCardPreview() {
 @ThemePreviews
 @Composable
 fun NiaOutlinedCardPreview() {
-    NiaTheme {
+    TastileTheme {
         NiaOutlinedCard {
             androidx.compose.foundation.layout.Box(
                 Modifier.padding(16.dp),
