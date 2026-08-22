@@ -1,13 +1,16 @@
 package app.tastile.android.ui.account
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.R
 import app.tastile.android.data.model.Plan
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.auth.AuthRepository
 import app.tastile.android.data.user.ProfileRepository
 import app.tastile.android.data.auth.TastileAuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AccountViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _profile = MutableStateFlow<Profile?>(null)
@@ -47,14 +51,14 @@ class AccountViewModel @Inject constructor(
                 val authState = authRepository.authState.value as? TastileAuthState.Authenticated
                 val legacySession = authRepository.currentSession
                 val userId = authState?.userId ?: legacySession.readNestedString("user", "id")
-                
+
                 _email.value = authState?.email ?: legacySession.readNestedString("user", "email").orEmpty()
-                
+
                 if (userId != null) {
                     _profile.value = profileRepository.getProfile(userId)
                 }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load profile"
+                _error.value = e.message ?: context.getString(R.string.account_error_load_profile)
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
@@ -67,17 +71,17 @@ class AccountViewModel @Inject constructor(
             try {
                 _error.value = null
                 val userId = authRepository.currentUserId()
-                
+
                 if (userId != null) {
                     val updatedProfile = profileRepository.updateDisplayName(userId, name)
                     if (updatedProfile != null) {
                         _profile.value = updatedProfile
                     } else {
-                        _error.value = "Failed to update display name"
+                        _error.value = context.getString(R.string.account_error_update_display_name)
                     }
                 }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to update display name"
+                _error.value = e.message ?: context.getString(R.string.account_error_update_display_name)
                 e.printStackTrace()
             }
         }
@@ -94,7 +98,7 @@ class AccountViewModel @Inject constructor(
                 authRepository.signOut()
                 onSignOut()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to sign out"
+                _error.value = e.message ?: context.getString(R.string.account_error_sign_out)
                 e.printStackTrace()
             }
         }

@@ -1,12 +1,15 @@
 package app.tastile.android.ui.prompt
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.auth.CurrentUserProvider
 import app.tastile.android.data.tile.PromptViewResponse
 import app.tastile.android.data.tile.PromptTileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class PromptViewModel @Inject constructor(
     private val tileRepository: PromptTileRepository,
-    private val currentUserProvider: CurrentUserProvider
+    private val currentUserProvider: CurrentUserProvider,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _activeTile = MutableStateFlow<Tile?>(null)
@@ -54,7 +58,7 @@ class PromptViewModel @Inject constructor(
                     updateElapsedTime()
                 }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load active tile"
+                _error.value = e.message ?: context.getString(R.string.prompt_error_load_active_tile)
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
@@ -74,14 +78,14 @@ class PromptViewModel @Inject constructor(
     private fun updateElapsedTime() {
         val tile = _activeTile.value ?: return
         val updatedAt = tile.updatedAt ?: return
-        
+
         val updatedTime = try {
             Instant.parse(updatedAt)
         } catch (e: Exception) {
             // Skip unparseable tiles
             return
         }
-        
+
         try {
             val now = Clock.System.now()
             val elapsed = now - updatedTime
@@ -104,7 +108,7 @@ class PromptViewModel @Inject constructor(
                 _pendingPrompt.value = tileRepository.getPendingPrompt()
                 loadActiveTile()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to continue tile"
+                _error.value = e.message ?: context.getString(R.string.prompt_error_continue_tile)
                 e.printStackTrace()
             }
         }
@@ -121,7 +125,7 @@ class PromptViewModel @Inject constructor(
                 _elapsedMinutes.value = 0
                 _pendingPrompt.value = null
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to pause tile"
+                _error.value = e.message ?: context.getString(R.string.prompt_error_pause_tile)
                 e.printStackTrace()
             }
         }
@@ -137,7 +141,7 @@ class PromptViewModel @Inject constructor(
                 _elapsedMinutes.value = 0
                 _pendingPrompt.value = null
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to complete tile"
+                _error.value = e.message ?: context.getString(R.string.prompt_error_complete_tile)
                 e.printStackTrace()
             }
         }

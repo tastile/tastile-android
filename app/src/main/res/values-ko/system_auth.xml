@@ -9,5 +9,7 @@
     <string name="login_terms_link">Terms of Service</string>
     <string name="login_privacy_link">Privacy Policy</string>
     <string name="login_footer_separator"> · </string>
+    <string name="login_error_sign_in_failed">로그인할 수 없습니다</string>
+    <string name="login_error_sign_out_failed">로그아웃할 수 없습니다</string>
 </resources>
 

@@ -30,5 +30,9 @@
     <string name="prompt_action_continue_working">Continue working</string>
     <string name="prompt_action_take_break">Take a break</string>
     <string name="prompt_action_complete_task">Complete task</string>
+    <string name="prompt_error_load_active_tile">Impossible de charger la carte active</string>
+    <string name="prompt_error_continue_tile">Impossible de continuer la carte</string>
+    <string name="prompt_error_pause_tile">Impossible de mettre la carte en pause</string>
+    <string name="prompt_error_complete_tile">Impossible de terminer la carte</string>
 </resources>
 

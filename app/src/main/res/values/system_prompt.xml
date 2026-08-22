@@ -32,4 +32,8 @@
     <string name="prompt_action_continue_working">Continue working</string>
     <string name="prompt_action_take_break">Take a break</string>
     <string name="prompt_action_complete_task">Complete task</string>
+    <string name="prompt_error_load_active_tile">Failed to load active tile</string>
+    <string name="prompt_error_continue_tile">Failed to continue tile</string>
+    <string name="prompt_error_pause_tile">Failed to pause tile</string>
+    <string name="prompt_error_complete_tile">Failed to complete tile</string>
 </resources>

@@ -133,12 +133,23 @@ private fun WeekAgendaScreen(
             val count = blocks.count { block ->
                 parseInstant(block.startAt)?.atZone(zone)?.toLocalDate() == day
             }
+            val weekdayShort = stringResource(
+                when (day.dayOfWeek.value) {
+                    1 -> R.string.calendar_weekday_short_mon
+                    2 -> R.string.calendar_weekday_short_tue
+                    3 -> R.string.calendar_weekday_short_wed
+                    4 -> R.string.calendar_weekday_short_thu
+                    5 -> R.string.calendar_weekday_short_fri
+                    6 -> R.string.calendar_weekday_short_sat
+                    else -> R.string.calendar_weekday_short_sun
+                }
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp)
             ) {
-                Text(day.dayOfWeek.name.take(3), modifier = Modifier.width(56.dp))
+                Text(weekdayShort, modifier = Modifier.width(56.dp))
                 Text(stringResource(R.string.calendar_items_count, count))
             }
         }

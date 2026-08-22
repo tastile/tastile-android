@@ -34,5 +34,10 @@
     <string name="projects_personal_title">パーソナル</string>
     <string name="projects_personal_scope">パーソナルスコープ</string>
     <string name="projects_owner_prefix">オーナー: %1$s</string>
+    <string name="panels_projects_error_load">プロジェクトを読み込めませんでした</string>
+    <string name="panels_projects_error_create">プロジェクトを作成できませんでした</string>
+    <string name="panels_projects_error_update">プロジェクトを更新できませんでした</string>
+    <string name="panels_projects_error_delete">プロジェクトを削除できませんでした</string>
+    <string name="panels_projects_error_name_required">名前は必須です</string>
 </resources>
 

@@ -1,12 +1,15 @@
 package app.tastile.android.ui.mobile.account
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.R
 import app.tastile.android.data.user.AccountProfile
 import app.tastile.android.data.user.AccountRepository
 import app.tastile.android.data.user.AccountTokenView
 import app.tastile.android.data.user.AccountTokenWithSecret
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +28,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AccountViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     data class ProfileState(
@@ -77,7 +81,7 @@ class AccountViewModel @Inject constructor(
                 }
                 .onFailure { err ->
                     _profile.update {
-                        it.copy(loading = false, error = err.message ?: "load failed")
+                        it.copy(loading = false, error = err.message ?: context.getString(R.string.account_error_load_profile))
                     }
                 }
         }
@@ -149,7 +153,7 @@ class AccountViewModel @Inject constructor(
                 }
                 .onFailure { err ->
                     _tokens.update {
-                        it.copy(loading = false, error = err.message ?: "load_failed")
+                        it.copy(loading = false, error = err.message ?: context.getString(R.string.account_error_load_tokens_failed))
                     }
                 }
         }
@@ -165,7 +169,7 @@ class AccountViewModel @Inject constructor(
                 }
                 .onFailure { err ->
                     _tokens.update {
-                        it.copy(submitting = false, error = err.message ?: "create_failed")
+                        it.copy(submitting = false, error = err.message ?: context.getString(R.string.account_error_create_token_failed))
                     }
                 }
         }
@@ -181,7 +185,7 @@ class AccountViewModel @Inject constructor(
                 }
                 .onFailure { err ->
                     _tokens.update {
-                        it.copy(submitting = false, error = err.message ?: "revoke_failed")
+                        it.copy(submitting = false, error = err.message ?: context.getString(R.string.account_error_revoke_token_failed))
                     }
                 }
         }

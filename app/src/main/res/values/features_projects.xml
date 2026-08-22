@@ -34,4 +34,9 @@
     <string name="projects_personal_title">Personal</string>
     <string name="projects_personal_scope">Personal scope</string>
     <string name="projects_owner_prefix">owner: %1$s</string>
+    <string name="panels_projects_error_load">Failed to load projects</string>
+    <string name="panels_projects_error_create">Failed to create project</string>
+    <string name="panels_projects_error_update">Failed to update project</string>
+    <string name="panels_projects_error_delete">Failed to delete project</string>
+    <string name="panels_projects_error_name_required">Name is required</string>
 </resources>

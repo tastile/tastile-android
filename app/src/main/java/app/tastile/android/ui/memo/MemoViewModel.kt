@@ -1,11 +1,14 @@
 package app.tastile.android.ui.memo
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.R
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.auth.CurrentUserProvider
 import app.tastile.android.data.tile.MemoTileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MemoViewModel @Inject constructor(
     private val tileRepository: MemoTileRepository,
-    private val currentUserProvider: CurrentUserProvider
+    private val currentUserProvider: CurrentUserProvider,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _recentTiles = MutableStateFlow<List<Tile>>(emptyList())
@@ -46,14 +50,14 @@ class MemoViewModel @Inject constructor(
                 if (userId != null) {
                     val tiles = tileRepository.getRecentTiles(userId, limit = 5)
                     _recentTiles.value = tiles
-                    
+
                     // Select first tile by default
                     if (_selectedTileId.value == null && tiles.isNotEmpty()) {
                         _selectedTileId.value = tiles.first().id
                     }
                 }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load tiles"
+                _error.value = e.message ?: context.getString(R.string.memo_error_load_tiles)
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
@@ -75,7 +79,7 @@ class MemoViewModel @Inject constructor(
                 tileRepository.saveMemo(tileId, note)
                 _saveSuccess.value = true
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to save memo"
+                _error.value = e.message ?: context.getString(R.string.memo_error_save_memo)
                 e.printStackTrace()
             }
         }

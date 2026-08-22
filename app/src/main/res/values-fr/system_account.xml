@@ -23,5 +23,11 @@
     <string name="account_plan_pro">Pro Plan</string>
     <string name="account_plan_free">Free Plan</string>
     <string name="billing_title">Billing</string>
+    <string name="account_error_load_profile">Impossible de charger le profil</string>
+    <string name="account_error_update_display_name">Impossible de mettre à jour le nom affiché</string>
+    <string name="account_error_sign_out">Échec de la déconnexion</string>
+    <string name="account_error_load_tokens_failed">Impossible de charger les jetons</string>
+    <string name="account_error_create_token_failed">Impossible de créer le jeton</string>
+    <string name="account_error_revoke_token_failed">Impossible de révoquer le jeton</string>
 </resources>
 

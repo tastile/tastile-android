@@ -34,5 +34,10 @@
     <string name="projects_personal_title">Persönlich</string>
     <string name="projects_personal_scope">Persönlicher Bereich</string>
     <string name="projects_owner_prefix">Eigentümer: %1$s</string>
+    <string name="panels_projects_error_load">Projekte konnten nicht geladen werden</string>
+    <string name="panels_projects_error_create">Projekt konnte nicht erstellt werden</string>
+    <string name="panels_projects_error_update">Projekt konnte nicht aktualisiert werden</string>
+    <string name="panels_projects_error_delete">Projekt konnte nicht gelöscht werden</string>
+    <string name="panels_projects_error_name_required">Name ist erforderlich</string>
 </resources>
 

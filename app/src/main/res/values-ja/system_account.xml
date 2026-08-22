@@ -23,5 +23,11 @@
     <string name="account_plan_pro">Pro Plan</string>
     <string name="account_plan_free">Free Plan</string>
     <string name="billing_title">Billing</string>
+    <string name="account_error_load_profile">プロフィールを読み込めませんでした</string>
+    <string name="account_error_update_display_name">表示名を更新できませんでした</string>
+    <string name="account_error_sign_out">サインアウトできませんでした</string>
+    <string name="account_error_load_tokens_failed">トークンを読み込めませんでした</string>
+    <string name="account_error_create_token_failed">トークンを作成できませんでした</string>
+    <string name="account_error_revoke_token_failed">トークンを失効できませんでした</string>
 </resources>
 

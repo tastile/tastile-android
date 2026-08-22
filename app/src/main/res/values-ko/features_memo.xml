@@ -8,5 +8,7 @@
     <string name="memo_note_label">Note</string>
     <string name="memo_note_placeholder">Write your memo here…</string>
     <string name="memo_save_button">Save Memo</string>
+    <string name="memo_error_load_tiles">타일을 불러오지 못했습니다</string>
+    <string name="memo_error_save_memo">메모를 저장하지 못했습니다</string>
 </resources>
 

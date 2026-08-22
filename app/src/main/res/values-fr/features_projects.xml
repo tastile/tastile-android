@@ -34,5 +34,10 @@
     <string name="projects_personal_title">Personnel</string>
     <string name="projects_personal_scope">Périmètre personnel</string>
     <string name="projects_owner_prefix">propriétaire : %1$s</string>
+    <string name="panels_projects_error_load">Impossible de charger les projets</string>
+    <string name="panels_projects_error_create">Impossible de créer le projet</string>
+    <string name="panels_projects_error_update">Impossible de mettre à jour le projet</string>
+    <string name="panels_projects_error_delete">Impossible de supprimer le projet</string>
+    <string name="panels_projects_error_name_required">Le nom est obligatoire</string>
 </resources>
 

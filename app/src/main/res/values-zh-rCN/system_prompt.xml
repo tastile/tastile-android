@@ -30,5 +30,9 @@
     <string name="prompt_action_continue_working">Continue working</string>
     <string name="prompt_action_take_break">Take a break</string>
     <string name="prompt_action_complete_task">Complete task</string>
+    <string name="prompt_error_load_active_tile">加载当前卡片失败</string>
+    <string name="prompt_error_continue_tile">继续卡片失败</string>
+    <string name="prompt_error_pause_tile">暂停卡片失败</string>
+    <string name="prompt_error_complete_tile">完成卡片失败</string>
 </resources>
 

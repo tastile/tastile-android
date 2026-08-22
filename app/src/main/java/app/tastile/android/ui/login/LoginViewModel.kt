@@ -3,9 +3,11 @@ package app.tastile.android.ui.login
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.R
 import app.tastile.android.data.auth.AuthRepositoryContract
 import app.tastile.android.data.auth.TastileAuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authRepository: AuthRepositoryContract
+    private val authRepository: AuthRepositoryContract,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
     val authState: StateFlow<TastileAuthState> = authRepository.authState
     private val _error = MutableStateFlow<String?>(null)
@@ -33,7 +36,7 @@ class LoginViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _error.value = e.message ?: "Unable to sign in"
+                _error.value = e.message ?: this@LoginViewModel.context.getString(R.string.login_error_sign_in_failed)
             } finally {
                 _isSigningIn.value = false
             }
@@ -50,7 +53,7 @@ class LoginViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _error.value = e.message ?: "Unable to sign in"
+                _error.value = e.message ?: this@LoginViewModel.context.getString(R.string.login_error_sign_in_failed)
             } finally {
                 _isSigningIn.value = false
             }
@@ -65,7 +68,7 @@ class LoginViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _error.value = "Unable to sign out"
+                _error.value = context.getString(R.string.login_error_sign_out_failed)
             }
         }
     }

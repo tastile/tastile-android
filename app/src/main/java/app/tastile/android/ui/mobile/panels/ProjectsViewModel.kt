@@ -1,12 +1,15 @@
 package app.tastile.android.ui.mobile.panels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.R
 import app.tastile.android.data.api.CreateWorkspaceInput
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.data.api.UpdateWorkspaceInput
 import app.tastile.android.data.workspace.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +37,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProjectsViewModel @Inject constructor(
     private val workspaceRepository: WorkspaceRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     data class State(
@@ -79,7 +83,7 @@ class ProjectsViewModel @Inject constructor(
                 }
                 .onFailure { err ->
                     _state.update {
-                        it.copy(loading = false, error = err.message ?: "load failed")
+                        it.copy(loading = false, error = err.message ?: context.getString(R.string.panels_projects_error_load))
                     }
                 }
         }
@@ -106,7 +110,7 @@ class ProjectsViewModel @Inject constructor(
         parentSubjectId: String? = null,
     ) {
         if (name.isBlank()) {
-            _state.update { it.copy(createError = "name required") }
+            _state.update { it.copy(createError = context.getString(R.string.panels_projects_error_name_required)) }
             return
         }
         viewModelScope.launch {
@@ -130,7 +134,7 @@ class ProjectsViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         createBusy = false,
-                        createError = err.message ?: "create failed",
+                        createError = err.message ?: context.getString(R.string.panels_projects_error_create),
                     )
                 }
             }
@@ -156,7 +160,7 @@ class ProjectsViewModel @Inject constructor(
                     _deleteCandidate.value = null
                 }
                 .onFailure { err ->
-                    _state.update { it.copy(error = err.message ?: "delete failed") }
+                    _state.update { it.copy(error = err.message ?: context.getString(R.string.panels_projects_error_delete)) }
                 }
         }
     }
@@ -169,7 +173,7 @@ class ProjectsViewModel @Inject constructor(
         parentSubjectId: String?,
     ) {
         if (name.isBlank()) {
-            _state.update { it.copy(updateError = "name required") }
+            _state.update { it.copy(updateError = context.getString(R.string.panels_projects_error_name_required)) }
             return
         }
         viewModelScope.launch {
@@ -193,7 +197,7 @@ class ProjectsViewModel @Inject constructor(
                     )
                 }
             }.onFailure { err ->
-                _state.update { it.copy(updateBusy = false, updateError = err.message ?: "update failed") }
+                _state.update { it.copy(updateBusy = false, updateError = err.message ?: context.getString(R.string.panels_projects_error_update)) }
             }
         }
     }

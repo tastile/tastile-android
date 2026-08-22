@@ -1,13 +1,17 @@
 package app.tastile.android.notifications
 
+import android.content.Context
 import app.tastile.android.execution.ProjectedExecution
 import app.tastile.android.execution.ProjectedTile
+import io.mockk.mockk
 import kotlinx.datetime.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ExecutionNotificationPolicyTest {
+
+    private val context: Context = mockk(relaxed = true)
 
     @Test
     fun evaluate_returnsGentleNudgeAfter15MinutesOfWork() {
@@ -18,7 +22,8 @@ class ExecutionNotificationPolicyTest {
                 startedAt = "2026-03-27T01:00:00Z"
             ),
             now = Instant.parse("2026-03-27T01:16:00Z"),
-            emittedMilestones = emptySet()
+            emittedMilestones = emptySet(),
+            context = context,
         )
 
         assertEquals(NotificationMilestone.WORK_GENTLE_NUDGE, decision.milestone)
@@ -33,7 +38,8 @@ class ExecutionNotificationPolicyTest {
                 startedAt = "2026-03-27T01:00:00Z"
             ),
             now = Instant.parse("2026-03-27T01:26:00Z"),
-            emittedMilestones = emptySet()
+            emittedMilestones = emptySet(),
+            context = context,
         )
 
         assertEquals(NotificationMilestone.WORK_INTERVENTION, decision.milestone)
@@ -48,7 +54,8 @@ class ExecutionNotificationPolicyTest {
                 startedAt = "2026-03-27T01:00:00Z"
             ),
             now = Instant.parse("2026-03-27T01:06:00Z"),
-            emittedMilestones = emptySet()
+            emittedMilestones = emptySet(),
+            context = context,
         )
 
         assertEquals(NotificationMilestone.BREAK_ENDED, decision.milestone)
@@ -63,7 +70,8 @@ class ExecutionNotificationPolicyTest {
                 startedAt = "2026-03-27T01:00:00Z"
             ),
             now = Instant.parse("2026-03-27T01:26:00Z"),
-            emittedMilestones = setOf("segment-1:${NotificationMilestone.WORK_INTERVENTION.name}")
+            emittedMilestones = setOf("segment-1:${NotificationMilestone.WORK_INTERVENTION.name}"),
+            context = context,
         )
 
         assertNull(decision.milestone)

@@ -562,7 +562,7 @@ fun QuickCreateSheet(
                         FilterChip(
                             selected = true,
                             onClick = { selectedTags.remove(tag) },
-                            label = { Text("#$tag ×") }
+                            label = { Text(stringResource(R.string.quickcreate_panel_meta_tag_chip_remove, tag)) }
                         )
                     }
                 }

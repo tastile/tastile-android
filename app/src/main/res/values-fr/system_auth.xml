@@ -9,5 +9,7 @@
     <string name="login_terms_link">Terms of Service</string>
     <string name="login_privacy_link">Privacy Policy</string>
     <string name="login_footer_separator"> · </string>
+    <string name="login_error_sign_in_failed">Connexion impossible</string>
+    <string name="login_error_sign_out_failed">Déconnexion impossible</string>
 </resources>
 

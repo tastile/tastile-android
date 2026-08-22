@@ -71,7 +71,7 @@ fun MobileTopBar(
     onNotifications: () -> Unit,
     modifier: Modifier = Modifier,
     avatarUrl: String? = null,
-    avatarFallback: String = "U",
+    avatarFallback: String = stringResource(R.string.avatar_default_fallback),
     showScale: Boolean = true,
     onTitleClick: (() -> Unit)? = null,
 ) {

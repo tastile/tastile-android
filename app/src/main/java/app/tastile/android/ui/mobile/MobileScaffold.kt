@@ -197,7 +197,7 @@ fun MobileScaffold(
                         avatarUrl = avatarUrl,
                         avatarFallback = profile?.displayName?.firstOrNull()?.toString()
                             ?: email.firstOrNull()?.toString()
-                            ?: "U",
+                            ?: stringResource(R.string.avatar_default_fallback),
                         showScale = currentRoute == "timeline",
                         onTitleClick = openPicker,
                     )

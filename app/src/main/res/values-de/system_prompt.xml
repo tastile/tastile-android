@@ -30,5 +30,9 @@
     <string name="prompt_action_continue_working">Continue working</string>
     <string name="prompt_action_take_break">Take a break</string>
     <string name="prompt_action_complete_task">Complete task</string>
+    <string name="prompt_error_load_active_tile">Aktive Kachel konnte nicht geladen werden</string>
+    <string name="prompt_error_continue_tile">Kachel konnte nicht fortgesetzt werden</string>
+    <string name="prompt_error_pause_tile">Kachel konnte nicht pausiert werden</string>
+    <string name="prompt_error_complete_tile">Kachel konnte nicht abgeschlossen werden</string>
 </resources>
 

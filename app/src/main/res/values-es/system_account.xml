@@ -23,5 +23,11 @@
     <string name="account_plan_pro">Pro Plan</string>
     <string name="account_plan_free">Free Plan</string>
     <string name="billing_title">Billing</string>
+    <string name="account_error_load_profile">No se pudo cargar el perfil</string>
+    <string name="account_error_update_display_name">No se pudo actualizar el nombre mostrado</string>
+    <string name="account_error_sign_out">No se pudo cerrar sesión</string>
+    <string name="account_error_load_tokens_failed">No se pudieron cargar los tokens</string>
+    <string name="account_error_create_token_failed">No se pudo crear el token</string>
+    <string name="account_error_revoke_token_failed">No se pudo revocar el token</string>
 </resources>
 

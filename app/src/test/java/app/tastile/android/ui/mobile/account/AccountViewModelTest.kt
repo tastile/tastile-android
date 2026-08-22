@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.account
 
+import android.content.Context
 import app.tastile.android.data.user.AccountProfile
 import app.tastile.android.data.user.AccountRepository
 import app.tastile.android.data.user.AccountTokenView
@@ -37,6 +38,7 @@ class AccountViewModelTest {
 
     private val dispatcher = UnconfinedTestDispatcher()
     private val mockRepository = mockk<AccountRepository>(relaxed = true)
+    private val mockContext = mockk<Context>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -48,7 +50,7 @@ class AccountViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = AccountViewModel(mockRepository)
+    private fun viewModel() = AccountViewModel(mockRepository, mockContext)
 
     @Test
     fun `init loads profile and tokens`() = runTest {

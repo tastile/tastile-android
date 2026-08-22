@@ -45,16 +45,16 @@ fun parseTimeToMinutes(time: String): Int? {
 /**
  * Format a duration as a localized human-readable string.
  *
- * Pass a [Context] so [AppLocale.JA] resolves through `R.string.duration_format_*`
- * (JA and EN share the pattern via `values/strings.xml` and `values-ja/strings.xml`).
- * When [context] is null (rare — used by callers with no Android dependency), the
- * helper falls back to the canonical `"<hours>h <minutes>m"` representation.
+ * Pass a [Context] so the helper resolves the per-locale pattern through
+ * `R.string.duration_format_*`. When [context] is null (rare, used by callers
+ * with no Android dependency), the helper falls back to the canonical
+ * "<hours>h <minutes>m" representation.
  */
 @SuppressLint("StringFormatInvalid")
 fun formatDuration(totalMinutes: Int, locale: AppLocale, context: Context? = null): String {
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
-    if (locale == AppLocale.JA && context != null) {
+    if (context != null) {
         return when {
             hours > 0 && minutes > 0 ->
                 context.getString(R.string.duration_format_hours_minutes, hours, minutes)

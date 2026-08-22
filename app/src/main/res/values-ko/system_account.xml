@@ -23,5 +23,11 @@
     <string name="account_plan_pro">Pro Plan</string>
     <string name="account_plan_free">Free Plan</string>
     <string name="billing_title">Billing</string>
+    <string name="account_error_load_profile">프로필을 불러오지 못했습니다</string>
+    <string name="account_error_update_display_name">표시 이름을 업데이트하지 못했습니다</string>
+    <string name="account_error_sign_out">로그아웃하지 못했습니다</string>
+    <string name="account_error_load_tokens_failed">토큰을 불러오지 못했습니다</string>
+    <string name="account_error_create_token_failed">토큰을 생성하지 못했습니다</string>
+    <string name="account_error_revoke_token_failed">토큰을 폐기하지 못했습니다</string>
 </resources>
 

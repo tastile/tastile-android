@@ -1,5 +1,7 @@
 package app.tastile.android.notifications
 
+import android.content.Context
+import app.tastile.android.R
 import app.tastile.android.execution.ProjectedExecution
 import kotlinx.datetime.Instant
 import kotlin.math.max
@@ -40,22 +42,17 @@ object ExecutionNotificationPolicy {
     fun evaluate(
         execution: ProjectedExecution,
         now: Instant,
-        emittedMilestones: Set<String>
+        emittedMilestones: Set<String>,
+        context: Context,
     ): ExecutionNotificationDecision {
         val elapsedMinutes = max(0, ((now.toEpochMilliseconds() - execution.startedAt.toEpochMilliseconds()) / 60_000L).toInt())
         val targetMinutes = execution.targetMinutes
         val isBreak = execution.semanticRole == "break"
         val statusRole = if (isBreak) StatusRole.BREAK else StatusRole.EXECUTING
-        // TODO(i18n-adr-0003): replace with `context.getString(R.string.notif_status_with_target, …)`
-        // once [ExecutionNotificationPolicy.evaluate] takes a Context. Today this formatter runs in
-        // a pure-data layer with no Context; plumbing it requires updating the four callers in
-        // [ExecutionNotificationPolicyTest] (test/** is WIP-protected by the parent ADR, so this
-        // is deferred). The exposed `statusText` is meant to be re-rendered by the notification
-        // renderer with [StatusRole] as the key.
         val statusText = if (targetMinutes != null) {
-            "${execution.tile.title}  ${elapsedMinutes}/${targetMinutes} min"
+            context.getString(R.string.notif_status_with_target, execution.tile.title, elapsedMinutes, targetMinutes)
         } else {
-            "${execution.tile.title}  ${elapsedMinutes} min"
+            context.getString(R.string.notif_status_no_target, execution.tile.title, elapsedMinutes)
         }
 
         val milestone = when {

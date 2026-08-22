@@ -8,5 +8,7 @@
     <string name="memo_note_label">Note</string>
     <string name="memo_note_placeholder">Write your memo here…</string>
     <string name="memo_save_button">Save Memo</string>
+    <string name="memo_error_load_tiles">Falha ao carregar cartões</string>
+    <string name="memo_error_save_memo">Falha ao salvar o memo</string>
 </resources>
 

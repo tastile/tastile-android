@@ -34,5 +34,10 @@
     <string name="projects_personal_title">个人</string>
     <string name="projects_personal_scope">个人范围</string>
     <string name="projects_owner_prefix">所有者: %1$s</string>
+    <string name="panels_projects_error_load">加载项目失败</string>
+    <string name="panels_projects_error_create">创建项目失败</string>
+    <string name="panels_projects_error_update">更新项目失败</string>
+    <string name="panels_projects_error_delete">删除项目失败</string>
+    <string name="panels_projects_error_name_required">名称不能为空</string>
 </resources>
 

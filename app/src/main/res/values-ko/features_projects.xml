@@ -34,5 +34,10 @@
     <string name="projects_personal_title">개인</string>
     <string name="projects_personal_scope">개인 범위</string>
     <string name="projects_owner_prefix">소유자: %1$s</string>
+    <string name="panels_projects_error_load">프로젝트를 불러오지 못했습니다</string>
+    <string name="panels_projects_error_create">프로젝트를 생성하지 못했습니다</string>
+    <string name="panels_projects_error_update">프로젝트를 업데이트하지 못했습니다</string>
+    <string name="panels_projects_error_delete">프로젝트를 삭제하지 못했습니다</string>
+    <string name="panels_projects_error_name_required">이름은 필수입니다</string>
 </resources>
 
