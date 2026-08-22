@@ -58,12 +58,12 @@ fun SearchOverlaySheet(overlay: OverlayViewModel) {
                 )
                 val matches = EndpointsCatalog.entries.filter {
                     query.isBlank() ||
-                        it.label.contains(query, ignoreCase = true) ||
+                        stringResource(it.labelRes).contains(query, ignoreCase = true) ||
                         it.operationId.contains(query, ignoreCase = true)
                 }
                 matches.take(8).forEach { entry ->
                     Text(
-                        text = entry.label,
+                        text = stringResource(entry.labelRes),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
                             .fillMaxWidth()

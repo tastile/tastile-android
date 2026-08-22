@@ -34,8 +34,10 @@ import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlacementRule
 import app.tastile.android.ui.mobile.sheets.QuickCreatePlanRole
 import app.tastile.android.ui.mobile.sheets.QuickCreateRecurring
+import app.tastile.android.ui.mobile.sheets.QuickCreateTaskDefinition
 import app.tastile.android.ui.mobile.sheets.QuickCreateTileKind
 import app.tastile.android.ui.mobile.sheets.QuickCreateTime
+import app.tastile.android.ui.mobile.sheets.WorkflowKind
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -109,6 +111,12 @@ fun quickCreateSubmissionValidation(draft: QuickCreateDraftState): QuickCreateSu
     val duration = draft.time.durationMinMax
     if (duration.minMs != null && duration.maxMs != null && duration.minMs > duration.maxMs) {
         return QuickCreateSubmissionValidation(false, "Minimum duration must not exceed maximum duration")
+    }
+    if (draft.workflow == WorkflowKind.Task) {
+        val tasks = draft.plan.completion.tasks
+        if (tasks.isEmpty()) {
+            return QuickCreateSubmissionValidation(false, "Task workflow requires at least one task")
+        }
     }
     val start = normalizeSpanInstant(draft.time.span.start) ?: return QuickCreateSubmissionValidation(false, "Start is required")
     val rawEnd = normalizeSpanInstant(draft.time.span.end)
@@ -194,6 +202,9 @@ class QuickCreateSubmissionDispatcher(private val gateway: QuickCreateCommandGat
         val schedule = draft.schedule
         val time = draft.time
         val recurring = draft.recurring
+        // Workflow-driven defaults: buildGenerationPayload receives the user's
+        // selected workflow and may force the wire payload's repeat mode
+        // (e.g. Task forces OneTime). Detailed preserves user choice.
         val tile = SourceTileDefinitionPayload(
             title = identity.title.trim(),
             description = identity.description,
@@ -229,7 +240,7 @@ class QuickCreateSubmissionDispatcher(private val gateway: QuickCreateCommandGat
             metrics = emptyList(),
             decisions = emptyList(),
         )
-        val generation = buildGenerationPayload(recurring, time, schedule.offsetMin, schedule.excludedDates)
+        val generation = buildGenerationPayload(recurring, time, schedule.offsetMin, schedule.excludedDates, draft.workflow)
         val requiredDurationMs = time.durationMinMax.minMs
             ?: time.durationMinMax.maxMs
             ?: 0L
@@ -264,19 +275,25 @@ class QuickCreateSubmissionDispatcher(private val gateway: QuickCreateCommandGat
         time: QuickCreateTime,
         offsetMin: Int,
         excludedDates: List<String>,
+        workflow: WorkflowKind,
     ): SourceGenerationPayload {
         // Map the Web's repeat-mode + weekday-mask onto the typed v1 generation.
         // 0 = OneTime, 1 = Recurring, 2 = DemandDriven (per openapi.rs:728).
-        val kind: Short = when (recurring.repeatMode) {
-            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Once -> 0
-            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Condition -> 2
+        // Task workflow forces a one-time generation (no repeat, no weekday mask,
+        // no interval) regardless of what the draft's recurring.repeatMode says.
+        val isTaskWorkflow = workflow == WorkflowKind.Task
+        val kind: Short = when {
+            isTaskWorkflow -> 0
+            recurring.repeatMode == app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Once -> 0
+            recurring.repeatMode == app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Condition -> 2
             else -> 1
         }
-        val weekdayMask: Byte? = if (recurring.repeatMode == app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Weekly) recurring.weekdayMask.toByte() else null
-        val intervalMs: Long? = when (recurring.repeatMode) {
-            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Daily,
-            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Weekly -> 86_400_000L
-            app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Interval -> {
+        val weekdayMask: Byte? = if (!isTaskWorkflow && recurring.repeatMode == app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Weekly) recurring.weekdayMask.toByte() else null
+        val intervalMs: Long? = when {
+            isTaskWorkflow -> null
+            recurring.repeatMode == app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Daily -> 86_400_000L
+            recurring.repeatMode == app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Weekly -> 86_400_000L
+            recurring.repeatMode == app.tastile.android.ui.mobile.sheets.QuickCreateRepeatMode.Interval -> {
                 val unitMs = when (recurring.intervalUnit) {
                     app.tastile.android.ui.mobile.sheets.QuickCreateIntervalUnit.Minute -> 60_000L
                     app.tastile.android.ui.mobile.sheets.QuickCreateIntervalUnit.Hour -> 3_600_000L
@@ -345,6 +362,39 @@ class QuickCreateSubmissionDispatcher(private val gateway: QuickCreateCommandGat
         frameRule = frameRule,
     )
 
+    /**
+     * Wire-clean task list mirroring `tastile-web`'s `tasksForSubmission`:
+     *   1. drop tasks with a blank `content.title`
+     *   2. drop `order` rules whose `targetTaskId` no longer references a
+     *      surviving task (so the server never sees a dangling pointer)
+     */
+    private fun tasksForSubmission(draft: QuickCreateDraftState): List<QuickCreateTaskDefinition> {
+        val titled = draft.plan.completion.tasks.filter { it.content.title.isNotBlank() }
+        if (titled.isEmpty()) return titled
+        val survivingIds = titled.mapTo(HashSet()) { it.id }
+        return titled.map { task ->
+            val cleaned = task.order.filter { element ->
+                val obj = element as? JsonObject ?: return@filter false
+                val target = obj["targetTaskId"] as? JsonPrimitive
+                target?.content?.takeUnless { it == "null" }?.let { it in survivingIds } ?: false
+            }
+            if (cleaned.size == task.order.size) task else task.copy(order = JsonArray(cleaned))
+        }
+    }
+
+    private fun taskToJson(task: QuickCreateTaskDefinition): JsonObject = buildJsonObject {
+        put("id", task.id)
+        put("content", buildJsonObject {
+            put("title", task.content.title)
+            val note: JsonElement = task.content.note?.let { JsonPrimitive(it) } ?: JsonNull
+            put("note", note)
+        })
+        val show: JsonElement = task.show?.let(::snakeCase) ?: JsonNull
+        put("show", show)
+        put("complete", conditionJson(task.complete))
+        put("order", snakeCase(task.order))
+    }
+
     private fun planPayload(draft: QuickCreateDraftState, tileId: String) = SetPlanPayload(
         tileId = tileId,
         role = role(draft.plan.role),
@@ -354,9 +404,7 @@ class QuickCreateSubmissionDispatcher(private val gateway: QuickCreateCommandGat
             put("time_requirements", JsonArray(draft.plan.completion.timeRequirements.map { requirement -> buildJsonObject {
                 put("id", requirement.id); put("observation", snakeCase(requirement.observation)); put("required", snakeCase(requirement.required)); put("preferred", requirement.preferred?.let(::snakeCase) ?: JsonNull)
             } }))
-            put("tasks", JsonArray(draft.plan.completion.tasks.map { task -> buildJsonObject {
-                put("id", task.id); put("content", buildJsonObject { put("title", task.content.title); put("note", task.content.note?.let(::JsonPrimitive) ?: JsonNull) }); put("show", task.show?.let(::snakeCase) ?: JsonNull); put("complete", conditionJson(task.complete)); put("order", snakeCase(task.order))
-            } }))
+            put("tasks", JsonArray(tasksForSubmission(draft).map { task -> taskToJson(task) }))
         },
         planning = buildJsonObject {
             put("placement_rules", JsonArray(draft.plan.planning.placementRules.map(::placementRuleJson))); put("nesting_rules", snakeCase(draft.plan.planning.nestingRules)); put("flows", snakeCase(draft.plan.planning.flows))

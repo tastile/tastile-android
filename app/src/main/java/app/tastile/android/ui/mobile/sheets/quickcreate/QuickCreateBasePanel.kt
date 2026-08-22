@@ -1,72 +1,57 @@
 package app.tastile.android.ui.mobile.sheets.quickcreate
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.CheckBox
-import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material.icons.outlined.Tune
-// m2-allow: primitive
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.HourglassEmpty
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Link2
+import androidx.compose.material.icons.outlined.ListChecks
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.SlidersHorizontal
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: state-holder
-import androidx.compose.material3.ListItemDefaults
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
-// m2-allow: m3-component
-import androidx.compose.material3.FilterChip
-// m2-allow: m3-component
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaListItem
-import app.tastile.android.core.designsystem.component.NiaLoadingWheel
-import app.tastile.android.core.designsystem.theme.PanelTokens
 import app.tastile.android.ui.mobile.sheets.QuickCreateDraftState
 import app.tastile.android.ui.mobile.sheets.QuickCreatePanel
-import app.tastile.android.ui.mobile.sheets.QuickCreatePlanRole
 import app.tastile.android.ui.mobile.sheets.QuickCreateProject
 import app.tastile.android.ui.mobile.sheets.QuickCreateStateStore
-import java.time.OffsetDateTime
+import app.tastile.android.ui.mobile.sheets.WorkflowKind
 
-/** Mobile Quick Create content. Set [keepBaseVisible] when the outer sheet hosts subpanels. */
+/**
+ * Root dispatcher for the QuickCreate authors. Evaluates the [WorkflowKind]
+ * in the draft and routes to the appropriate peer workflow panel.
+ *
+ * The workflow batch scroll state is hoisted here (not inside each
+ * panel) so switching workflow chips keeps the batch row's horizontal
+ * offset instead of resetting it — the panels swap in and out of
+ * composition, but this dispatcher stays mounted for the whole session,
+ * and a `remember` at this level survives those swaps.
+ */
 @Composable
 fun QuickCreatePanelContent(
     store: QuickCreateStateStore,
@@ -74,340 +59,243 @@ fun QuickCreatePanelContent(
     projects: List<QuickCreateProject> = emptyList(),
     knownTags: List<String> = emptyList(),
     isSubmitting: Boolean = false,
-    submitError: String? = null,
-    keepBaseVisible: Boolean = false,
+    batchScrollState: ScrollState? = null,
 ) {
-    val draft by store.state.collectAsStateWithLifecycle()
-    val active = draft.activePanel
-    if (!keepBaseVisible && active != null && active != QuickCreatePanel.Base) {
-        QuickCreateSubpanel(active, draft, store, store::backToBase, projects, knownTags)
-    } else {
-        QuickCreateBaseComposition(draft, store, isSubmitting, submitError, projects)
+    val draft = store.draft
+    val submitError = store.submitError
+    val sharedBatchScroll = batchScrollState ?: remember { ScrollState(0) }
+
+    when (draft.workflow) {
+        WorkflowKind.Event -> QuickCreateEventPanel(draft, store, isSubmitting, submitError, projects, knownTags, sharedBatchScroll)
+        WorkflowKind.Task -> QuickCreateTaskPanel(draft, store, isSubmitting, submitError, projects, knownTags, sharedBatchScroll)
+        WorkflowKind.Recurring -> QuickCreateRecurringPanel(draft, store, isSubmitting, submitError, projects, knownTags, sharedBatchScroll)
+        WorkflowKind.Detailed -> QuickCreateDetailedComposition(draft, store, isSubmitting, submitError, projects, sharedBatchScroll)
     }
 }
 
+/**
+ * Detailed workflow — mirrors the web's peer workflow structure while
+ * exposing all sub-panel affordances.
+ *
+ * Each row is a tappable navigation affordance that opens the
+ * corresponding sub-panel; the leading icon column stays reserved via
+ * [FormRow] so the body's icon track lines up with the rest of the panel.
+ * Matches `tastile-web/src/features/create-tile/ui/QuickCreate.tsx` (Event /
+ * Duration / Repeat / Source rules / Relations / Flows / Placement rules /
+ * Completion / Project+Color / Memo).
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun QuickCreateBaseComposition(
+fun QuickCreateDetailedComposition(
     draft: QuickCreateDraftState,
     store: QuickCreateStateStore,
     isSubmitting: Boolean,
     submitError: String?,
     projects: List<QuickCreateProject>,
+    batchScrollState: ScrollState? = null,
 ) {
-    val projectName = projects.firstOrNull { it.id == draft.meta.ownerSubjectId }?.displayName
-        ?: draft.meta.ownerSubjectId
-    Column(
-        Modifier
-            .testTag("quick-create-base")
+    FormFieldColumn(
+        modifier = Modifier
+            .testTag("quick-create-detailed")
             .fillMaxHeight()
             .verticalScroll(rememberScrollState())
             .padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        EditableTitleField(
-            value = draft.identity.title,
-            onValueChange = { newTitle ->
-                store.updateIdentity(draft.identity.copy(title = newTitle))
-            },
+        QuickCreateHeader(
+            title = draft.identity.title,
+            onTitleChange = { store.updateIdentity(draft.identity.copy(title = it)) },
+            modifier = Modifier.testTag("quick-create-detailed-header"),
         )
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = PanelTokens.LeadingColumnWidth, end = 16.dp)
-                .testTag("quick-create-organize-row"),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            if (projectName != null) {
-                FilterChip(
-                    selected = false,
-                    onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
-                    label = { Text(projectName) },
-                )
-            }
-            draft.meta.tags.forEach { tag ->
-                FilterChip(
-                    selected = false,
-                    onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
-                    label = { Text("#$tag") },
-                )
-            }
-            FilterChip(
-                selected = false,
-                onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
-                label = { Text(stringResource(R.string.quickcreate_organize_chip)) },
-                leadingIcon = { Icon(Icons.Outlined.Tune, contentDescription = null) },
-                modifier = Modifier.testTag("quick-create-organize"),
-            )
-        }
-        HorizontalDivider()
-        EssentialRow(
-            label = stringResource(R.string.quickcreate_essential_time),
-            summary = timeSummary(draft),
-            tag = "quick-create-essential-time",
-            leadingIcon = Icons.Outlined.Schedule,
+
+        WorkflowBatch(
+            workflow = draft.workflow,
+            onWorkflowChange = { kind -> store.setWorkflow(kind) },
+            modifier = Modifier.testTag("quick-create-detailed-batch"),
+            scrollState = batchScrollState,
+        )
+
+        DetailedRow(
+            icon = Icons.Outlined.CalendarMonth,
+            label = stringResource(R.string.tile_edit_open_time),
+            summary = detailedTimeSummary(draft),
             onClick = { store.openSubpanel(QuickCreatePanel.Time) },
+            testTag = "detailed-open-time",
         )
-        EssentialRow(
-            label = stringResource(R.string.quickcreate_essential_duration),
-            summary = durationSummary(draft),
-            tag = "quick-create-essential-duration",
-            leadingIcon = Icons.Outlined.Timer,
+        DetailedRow(
+            icon = Icons.Outlined.HourglassEmpty,
+            label = stringResource(R.string.tile_edit_open_duration),
+            summary = detailedDurationSummary(draft),
             onClick = { store.openSubpanel(QuickCreatePanel.Duration) },
+            testTag = "detailed-open-duration",
         )
-        HorizontalDivider()
-        NiaListItem(
-            content = { Text(stringResource(R.string.quickcreate_section_identity)) },
-            supportingContent = {
-                Text(
-                    listOf(draft.identity.visual.icon, draft.identity.visual.color)
-                        .plus(draft.identity.description?.takeIf { it.isNotBlank() })
-                        .filterNotNull()
-                        .joinToString(" · ")
-                )
-            },
-            leadingContent = { Icon(Icons.Outlined.Flag, contentDescription = null) },
-            trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { store.openSubpanel(QuickCreatePanel.Identity) }
-                .testTag("quick-create-identity-link"),
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        DetailedRow(
+            icon = Icons.Outlined.Repeat,
+            label = stringResource(R.string.tile_edit_open_schedule),
+            summary = detailedRepeatSummary(draft),
+            onClick = { store.openSubpanel(QuickCreatePanel.Schedule) },
+            testTag = "detailed-open-schedule",
         )
-        EssentialRow(
-            label = stringResource(R.string.quickcreate_section_recurring),
-            summary = draft.recurring.repeatMode.name,
-            tag = "quick-create-essential-recurring",
-            leadingIcon = Icons.Outlined.Schedule,
-            onClick = { store.openSubpanel(QuickCreatePanel.Recurring) },
+        DetailedRow(
+            icon = Icons.Outlined.SlidersHorizontal,
+            label = stringResource(R.string.quickcreate_detailed_subpanel_source_rules),
+            summary = detailedPrioritySummary(draft),
+            onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
+            testTag = "detailed-open-source-rules",
         )
-        EssentialRow(
-            label = stringResource(R.string.quickcreate_section_placement_rules),
-            summary = stringResource(
-                R.string.quickcreate_placement_rule_count,
-                draft.plan.planning.placementRules.size,
-            ),
-            tag = "quick-create-placement-rules-link",
-            leadingIcon = Icons.Outlined.Tune,
+        DetailedRow(
+            icon = Icons.Outlined.Link2,
+            label = stringResource(R.string.quickcreate_detailed_subpanel_relations),
+            summary = null,
+            onClick = { store.openSubpanel(QuickCreatePanel.References) },
+            testTag = "detailed-open-relations",
+        )
+        DetailedRow(
+            icon = Icons.Outlined.Layers,
+            label = stringResource(R.string.quickcreate_detailed_subpanel_flows),
+            summary = null,
             onClick = { store.openSubpanel(QuickCreatePanel.PlacementRules) },
+            testTag = "detailed-open-flows",
         )
-        HorizontalDivider()
-        NiaListItem(
-            content = { Text(stringResource(R.string.quickcreate_section_completion_logic)) },
-            supportingContent = { Text(conditionSummary(draft.plan.completion.root.kind)) },
-            leadingContent = { Icon(Icons.Outlined.Checklist, contentDescription = null) },
-            trailingContent = { Icon(Icons.Outlined.Add, contentDescription = null) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { store.openSubpanel(QuickCreatePanel.Completion) }
-                .testTag("quick-create-condition-card"),
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        DetailedRow(
+            icon = Icons.Outlined.SlidersHorizontal,
+            label = stringResource(R.string.quickcreate_detailed_subpanel_placement_rules),
+            summary = null,
+            onClick = { store.openSubpanel(QuickCreatePanel.PlacementRules) },
+            testTag = "detailed-open-placement-rules",
         )
-        NiaListItem(
-            content = { Text(stringResource(R.string.quickcreate_section_completion_requires)) },
-            supportingContent = {
-                Text(stringResource(R.string.quickcreate_completion_item_count, draft.plan.completion.tasks.size))
-            },
-            leadingContent = { Icon(Icons.Outlined.PlayArrow, contentDescription = null) },
-            trailingContent = { Icon(Icons.Outlined.Add, contentDescription = null) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { store.openSubpanel(QuickCreatePanel.Completion) }
-                .testTag("quick-create-tasks-header"),
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        DetailedRow(
+            icon = Icons.Outlined.ListChecks,
+            label = stringResource(R.string.quickcreate_section_completion_logic),
+            summary = null,
+            onClick = { store.openSubpanel(QuickCreatePanel.Completion) },
+            testTag = "detailed-open-completion",
         )
-        draft.plan.completion.tasks.forEachIndexed { index, task ->
-            NiaListItem(
-                content = { Text(task.content.title.ifBlank { stringResource(R.string.tile_edit_title_fallback) }) },
-                leadingContent = { Icon(Icons.Outlined.CheckBox, contentDescription = null) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { /* tap to focus task */ }
-                    .testTag("quick-create-task-row-$index"),
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            )
-        }
-        HorizontalDivider()
-        val isLabel = draft.plan.role == QuickCreatePlanRole.Label
-        NiaListItem(
-            content = { Text(stringResource(R.string.quickcreate_section_label)) },
-            supportingContent = {
-                Text(
-                    if (isLabel) stringResource(R.string.quickcreate_label_markers_only)
-                    else stringResource(R.string.quickcreate_label_executable)
+
+        ProjectColorRow(
+            projects = projects,
+            selectedProjectId = draft.meta.ownerSubjectId,
+            selectedColor = parseHexColor(draft.identity.visual.color),
+            onProjectChange = { id -> store.updateMeta(draft.meta.copy(ownerSubjectId = id)) },
+            onColorChange = { color ->
+                store.updateIdentity(
+                    draft.identity.copy(
+                        visual = draft.identity.visual.copy(color = color.toHexString())
+                    )
                 )
             },
-            leadingContent = { Icon(Icons.Outlined.Flag, contentDescription = null) },
-            trailingContent = {
-                // m2-allow: m3-component
-                Switch(
-                    checked = isLabel,
-                    onCheckedChange = { on ->
-                        store.updateRole(if (on) QuickCreatePlanRole.Label else QuickCreatePlanRole.Executable)
-                    },
-                    modifier = Modifier.testTag("quick-create-label-toggle"),
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("quick-create-behavior-card"),
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            modifier = Modifier.testTag("detailed-project-color"),
         )
-        NiaListItem(
-            content = { Text(stringResource(R.string.quickcreate_section_references)) },
-            leadingContent = { Icon(Icons.Outlined.Link, contentDescription = null) },
-            trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { store.openSubpanel(QuickCreatePanel.References) }
-                .testTag("quick-create-references-link"),
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+
+        MemoSection(
+            memo = draft.meta.memo,
+            onMemoChange = { store.updateMeta(draft.meta.copy(memo = it)) },
         )
-        val submissionValidation = quickCreateSubmissionValidation(draft)
-        if (!submissionValidation.isValid) {
-            val fallbackMessage = stringResource(R.string.quickcreate_fix_required)
-            Text(
-                submissionValidation.message ?: fallbackMessage,
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .testTag("quick-create-validation-error"),
-            )
-        }
+
         submitError?.let {
             Text(
-                it,
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .testTag("quick-create-submit-error"),
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(vertical = 12.dp),
             )
-        }
-        if (isSubmitting) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                    .testTag("quick-create-submitting"),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                NiaLoadingWheel(
-                    contentDesc = stringResource(R.string.quickcreate_creating_cd),
-                    wheelSize = 20.dp,
-                )
-                Text(text = stringResource(R.string.quickcreate_creating))
-            }
         }
     }
 }
 
 @Composable
-private fun EssentialRow(
+private fun DetailedRow(
+    icon: ImageVector,
     label: String,
-    summary: String,
-    tag: String,
-    leadingIcon: ImageVector,
+    summary: String?,
     onClick: () -> Unit,
+    testTag: String,
 ) {
-    NiaListItem(
-        content = { Text(label) },
-        supportingContent = { Text(summary) },
-        leadingContent = { Icon(leadingIcon, contentDescription = null) },
-        trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
+    FormRow(
         modifier = Modifier
-            .fillMaxWidth()
             .clickable(onClick = onClick)
-            .testTag(tag),
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            .testTag(testTag),
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        },
+        content = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!summary.isNullOrBlank()) {
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
+        },
+        trailing = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
     )
 }
 
-private fun timeSummary(draft: QuickCreateDraftState): String = when {
-    draft.time.whenMode.name == "None" -> "Not set"
-    draft.time.whenMode.name == "Reference" -> "Reference range"
-    draft.time.span.start.isNotBlank() -> draft.time.span.start
-    else -> "Not set"
+private fun detailedTimeSummary(draft: QuickCreateDraftState): String? {
+    val start = draft.time.span.start
+    val end = draft.time.span.end
+    return when {
+        start.isBlank() && end.isBlank() -> null
+        else -> {
+            val s = start.take(10)
+            val e = end.take(10)
+            if (s == e) s else "$s → $e"
+        }
+    }
 }
 
-private fun durationSummary(draft: QuickCreateDraftState): String =
-    draft.time.durationMinMax.minMs?.div(60_000)?.let { "$it min" } ?: "Not set"
-
-@Composable
-private fun conditionSummary(kind: Int): String = when (kind) {
-    0 -> stringResource(R.string.quickcreate_completion_logic_all)
-    1 -> stringResource(R.string.quickcreate_completion_logic_any)
-    2 -> stringResource(R.string.quickcreate_completion_logic_not)
-    else -> stringResource(R.string.quickcreate_completion_logic_all)
+private fun detailedDurationSummary(draft: QuickCreateDraftState): String? {
+    val minMs = draft.time.durationMinMax.minMs
+    val maxMs = draft.time.durationMinMax.maxMs
+    if (minMs == null && maxMs == null) return null
+    val min = ((minMs ?: maxMs!!) / 60_000L).toInt()
+    return if (minMs == null || maxMs == null || minMs == maxMs) {
+        "${min}m"
+    } else {
+        "${min}m – ${(maxMs / 60_000L).toInt()}m"
+    }
 }
 
-private fun String.parseOffsetDateTimeOrNull(): OffsetDateTime? =
-    runCatching { OffsetDateTime.parse(this) }.getOrNull()
+private fun detailedRepeatSummary(draft: QuickCreateDraftState): String? {
+    val mode = draft.recurring.repeatMode
+    return when (mode.name) {
+        "Once" -> null
+        "Daily" -> "Daily"
+        "Weekly" -> "Weekly"
+        "Interval" -> "Every ${draft.recurring.intervalValue}d"
+        "Condition" -> "Conditional"
+        else -> null
+    }
+}
 
-/**
- * Underline-style title input: tap to focus → primary-colored underline
- * appears; loses focus → fades to a faint on-surface divider. No enclosing
- * box (no rounded corners, no fill, no outline border), per the QuickCreate
- * redesign brief.
- *
- * Text is left-aligned (matches every other row in the panel), and the field
- * requests focus as soon as it enters composition — the keyboard opens with
- * the sheet so users can start typing the tile title immediately.
- */
 @Composable
-internal fun EditableTitleField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val colors = MaterialTheme.colorScheme
-    val typography = MaterialTheme.typography
-    val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
-    LaunchedEffect(value) {
-        if (value.isEmpty()) focusRequester.requestFocus()
-    }
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = PanelTokens.LeadingColumnWidth, end = 16.dp),
-    ) {
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            textStyle = typography.titleLarge.copy(
-                color = colors.onSurface,
-                textAlign = TextAlign.Start,
-            ),
-            singleLine = true,
-            cursorBrush = SolidColor(colors.primary),
-            interactionSource = interactionSource,
-            decorationBox = { innerTextField ->
-                if (value.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.quickcreate_tile_title_placeholder),
-                        style = typography.titleLarge,
-                        color = colors.onSurfaceVariant,
-                        textAlign = TextAlign.Start,
-                    )
-                } else {
-                    innerTextField()
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .testTag("quick-create-title"),
-        )
-        HorizontalDivider(
-            thickness = if (isFocused) 2.dp else 1.dp,
-            color = if (isFocused) colors.primary
-            else colors.onSurfaceVariant.copy(alpha = 0.4f),
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
+private fun detailedPrioritySummary(draft: QuickCreateDraftState): String {
+    val priority = draft.schedule.priority
+    val splitSuffix = if (draft.schedule.splitPolicyKind.toInt() == 1) " · split" else ""
+    return stringResource(R.string.quickcreate_detailed_priority_value, priority) + splitSuffix
 }

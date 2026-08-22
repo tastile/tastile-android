@@ -46,6 +46,8 @@ import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.dashboard.TileUpdateField
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.sheets.WorkflowKind
+import app.tastile.android.ui.mobile.sheets.quickcreate.WorkflowBatch
 import app.tastile.android.ui.mobile.tabs.tiles.DeleteTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.DeferTileDialog
 import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
@@ -113,10 +115,22 @@ fun TileEditSheet(
             if (currentDetail != null && tileId != null) {
                 val existing = store.state.value
                 if (existing.editingTileId != tileId) {
+                    // Heuristic: recurring tiles set `schedule.generation.kind = 1`
+                    // (Recurring) on the v1 wire; placement / event / task tiles
+                    // leave it at 0 (OneTime) or 2 (DemandDriven). Pre-select the
+                    // matching workflow so the user sees the correct base form
+                    // when they reopen the edit sheet; the chip below lets them
+                    // switch peer workflows without losing their draft.
+                    val initialWorkflow = if (currentDetail.source.schedule.generation.kind == 1.toShort()) {
+                        WorkflowKind.Recurring
+                    } else {
+                        WorkflowKind.Event
+                    }
                     store.hydrateForEdit(
                         tileId = tileId,
                         placementId = tileEdit.placementId,
                         detail = currentDetail,
+                        workflow = initialWorkflow,
                     )
                 }
             }
@@ -145,6 +159,13 @@ fun TileEditSheet(
                     text = headerTitle,
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.testTag("tile-edit-header-title"),
+                )
+                // Workflow batch — mirrors the peer workflow structure for
+                // consistent authors. Pre-selected via hydrateForEdit.
+                WorkflowBatch(
+                    workflow = draft.workflow,
+                    onWorkflowChange = { kind -> store.setWorkflow(kind) },
+                    modifier = Modifier.testTag("tile-edit-workflow-batch"),
                 )
                 Text(
                     text = tile?.lifecycle ?: "—",

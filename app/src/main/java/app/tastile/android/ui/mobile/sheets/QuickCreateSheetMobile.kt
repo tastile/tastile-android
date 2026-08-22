@@ -7,8 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 // m2-allow: m3-component
 import androidx.compose.foundation.layout.padding
-// m2-allow: m3-component
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 // m2-allow: m3-component
 import androidx.compose.material.icons.Icons
 // m2-allow: m3-component
@@ -59,7 +58,6 @@ import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreatePanelContent
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateSubmissionViewModel
 import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateSubpanel
 import app.tastile.android.ui.mobile.sheets.quickcreate.quickCreateSubmissionValidation
-import app.tastile.android.core.designsystem.theme.PanelTokens
 
 /**
  * Two-sheet QuickCreate flow.
@@ -106,7 +104,16 @@ fun QuickCreateSheetMobile(
                 ),
             )
         } ?: QuickCreateDraftState()
-        val quickCreateStore = remember(current) { QuickCreateStateStore(initialDraft) }
+        val quickCreateStore = remember(current) {
+            val store = QuickCreateStateStore(initialDraft)
+            // No slot target → web-equivalent defaults for the default workflow
+            // (Event, not all-day) so the panel opens with a meaningful next-15-min
+            // slot, not a bare empty draft.
+            if (current !is Overlay.QuickCreateAt) {
+                store.openCreate(WorkflowKind.Event, initialAllDay = false)
+            }
+            store
+        }
         LaunchedEffect(submission.createdTileId) {
             if (submission.createdTileId != null) {
                 quickCreateStore.reset()
@@ -124,15 +131,29 @@ fun QuickCreateSheetMobile(
         // Base sheet — always rendered while the overlay is QuickCreate.
         val baseSheetState = rememberNiaModalBottomSheetState(skipPartiallyExpanded = true)
         val baseValidation = quickCreateSubmissionValidation(draft)
+        // The workflow chip is rendered inside the panel content (next to the
+        // title) rather than inside the drag-handle row, so the header strip
+        // only owns the close + drag + Create button affordances. This mirrors
+        // tastile-web's `QuickCreate.tsx` layout where the workflow picker sits
+        // in the body, not the chrome.
         ModalBottomSheet(
             onDismissRequest = { overlay.dismiss() },
             sheetState = baseSheetState,
             dragHandle = {
                 QuickCreateHandleRow(
                     leading = {
+                        // M3 IconButton's intrinsic touch target is 48dp
+                        // but the inner icon-cell layer can render at 40dp
+                        // unless we pin the outer Box to 48dp. Pin the
+                        // outer Box to 48dp so the button's **bounds**
+                        // match the standard touch-target size and line
+                        // up with the body's 48dp-wide icon-column track
+                        // (24dp icon + 24dp reserved space).
                         IconButton(
                             onClick = { overlay.dismiss() },
-                            modifier = Modifier.testTag("quick-create-close"),
+                            modifier = Modifier
+                                .size(48.dp)
+                                .testTag("quick-create-close"),
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Close,
@@ -159,14 +180,15 @@ fun QuickCreateSheetMobile(
                 )
             },
         ) {
+            LaunchedEffect(submission.error) {
+                quickCreateStore.submitError = submission.error
+            }
             QuickCreatePanelContent(
                 store = quickCreateStore,
                 onClose = { overlay.dismiss() },
                 isSubmitting = submission.isSubmitting,
-                submitError = submission.error,
                 projects = projects,
                 knownTags = knownTags,
-                keepBaseVisible = true,
             )
         }
 
@@ -212,9 +234,20 @@ fun QuickCreateSheetMobile(
  *
  * Uses a `Box` layout (not `Row`) so the drag pill is *always* screen-centered
  * regardless of the leading / trailing slot widths:
- *  - [leading] (X close / back): absolutely positioned to the leading edge,
- *    with [PanelTokens.LeadingColumnWidth] of breathing room so the icon
- *    lines up with the leading icon column of the rows underneath.
+ *  - [leading] (X close / back): absolutely positioned to the leading edge.
+ *    The single horizontal control is the 16dp outer `padding(start=...)`,
+ *    which matches the outer padding of the body's `FormFieldColumn`. The
+ *    M3 `IconButton`'s default 48dp touch target then places the glyph
+ *    centerline at x = 16dp + 24dp = 40dp.
+ *
+ *    The body's icon column centerline is x = 16dp + (20dp / 2) = 26dp.
+ *    The header intentionally uses the M3 IconButton standard instead of
+ *    the body icon column, so the close icon and the body icons sit on
+ *    different but consistent x-axes rather than colliding visually.
+ *
+ *    DO NOT combine a fixed `.width(...)` here with the `.padding(start=...)`
+ *    — that double-applies the horizontal slot and drifts the icon. This
+ *    was the previous bug (`width(48.dp) + padding(start=16.dp)`).
  *  - center: standard M3 drag pill, screen-centered.
  *  - [trailing] (Create): absolutely positioned to the trailing edge with
  *    16.dp of right padding so the button's right edge lines up with the
@@ -235,11 +268,28 @@ private fun QuickCreateHandleRow(
         contentAlignment = Alignment.Center,
     ) {
         if (leading != null) {
+            // Line up the close icon with the body rows' icon column
+            // centerline. The body's icon column is reserved at
+            // x=16dp (leading padding) + 24dp (`IconColumnWidth`) = 40dp
+            // on screen, so the column's **centerline** sits at x =
+            // 16dp + 12dp = 28dp.
+            //
+            // The header uses an M3 `IconButton` (48dp touch target =
+            // 48px). To place that button's centerline at x=28dp, the
+            // button's left edge must be at x = 28dp - 24dp = 4dp.
+            // We therefore apply `padding(start = 4.dp)` and let the
+            // button's intrinsic centerline fall on the body's icon
+            // column centerline.
+            //
+            // DO NOT combine a fixed `.width(...)` here with the
+            // `padding(start = 4.dp)` — that double-applies the slot
+            // and drifts the icon. Width is implicit from the M3
+            // IconButton's 48dp touch target.
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .width(PanelTokens.LeadingColumnWidth),
-                contentAlignment = Alignment.Center,
+                    .padding(start = 4.dp),
+                contentAlignment = Alignment.CenterStart,
             ) { leading() }
         }
         BottomSheetDefaults.DragHandle(
