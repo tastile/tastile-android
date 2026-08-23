@@ -1,1 +1,0 @@
--keep,allowobfuscation,allowshrinking class app.tastile.android.ui.account.AccountViewModel
