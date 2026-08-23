@@ -30,26 +30,21 @@ RELEASE_KEY_ALIAS=tastile
 RELEASE_KEY_PASSWORD=<KEY_PASSWORD>
 ```
 
-### 1.3 `app/build.gradle.kts` に signingConfigs 追加
-```kotlin
-android {
-    signingConfigs {
-        create("release") {
-            storeFile = file(project.findProperty("RELEASE_STORE_FILE") as String)
-            storePassword = project.findProperty("RELEASE_STORE_PASSWORD") as String
-            keyAlias = project.findProperty("RELEASE_KEY_ALIAS") as String
-            keyPassword = project.findProperty("RELEASE_KEY_PASSWORD") as String
-        }
-    }
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("release")
-            proguardFiles(...)
-        }
-    }
-}
-```
+### 1.3 `app/build.gradle.kts` の signingConfigs
+実装は `app/build.gradle.kts:11-42` に既にある。`RELEASE_STORE_FILE` /
+`RELEASE_STORE_PASSWORD` / `RELEASE_KEY_ALIAS` / `RELEASE_KEY_PASSWORD` が
+すべて `~/.gradle/gradle.properties` か `-PKEY=value` で供給された時のみ
+`signingConfigs.release` が生成され、`buildTypes.release.signingConfig`
+がそれを参照する。未設定で release 系 task を実行すると `gradle.taskGraph
+.whenReady` (line 147-155) が `GradleException` で fail-fast する。
+
+加えて `gradle.projectsEvaluated` フック (line 472-491) が Cognito /
+`TASTILE_CORE_URL` / `GOOGLE_WEB_CLIENT_ID` の BuildConfig 7 種を
+blank 不許可で検証する。release task はこれらも揃って初めて通る。
+
+BuildConfig 文字列リテラルを compile 時に埋め込むため、CI の
+`.github/workflows/release.yml` は Secrets から `gradle.properties`
+へ書き出して起動する。
 
 ### 1.4 AAB (Android App Bundle) ビルド
 ```bash
@@ -123,8 +118,18 @@ local.properties
 - 署名設定の説明追記
 
 ### 4.3 versionCode / versionName 確認
-- 現在: versionCode=1, versionName="0.1.0"
-- 内部テストとして妥当
+- 現在: versionCode=33, versionName="0.4.0" (`app/build.gradle.kts:50-51`)
+- 既に Play Store へ versionCode 31 がアップロード済み (line 49 コメント参照)。
+  CI は monotonic な versionCode を維持しつつ、31 の再 upload を禁止する
+- 内部テスト用 build は tag-triggered ではなく `workflow_dispatch` で
+  `version` + `track` を指定して起動する。release.yml は `tag=v*` または
+  workflow_dispatch 駆動で、tag version と `versionName` が一致しない場合は
+  fail-fast する (`release.yml:69-77` で version resolve → APK ビルド →
+  Play Console upload の順)
+- Android Lint で `OldTargetApi` 警告が surface する可能性あり。tracking は
+  `app/lint-baseline-old-target-api.md` (placeholder、AGP API-36 SDK 入手後に
+  作成) を参照。lint `disable +=` への逃避は禁止 (`app/build.gradle.kts:104-108`
+  + AGENTS.md の Build-Time Hard Requirements)
 
 ---
 
