@@ -14,12 +14,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.Layers
-import androidx.compose.material.icons.outlined.Link2
-import androidx.compose.material.icons.outlined.ListChecks
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Repeat
-import androidx.compose.material.icons.outlined.SlidersHorizontal
+import androidx.compose.material.icons.outlined.Tune
 // m2-allow: primitive
 import androidx.compose.material3.Icon
 // m2-allow: theme-bridge
@@ -136,14 +136,14 @@ fun QuickCreateDetailedComposition(
             testTag = "detailed-open-schedule",
         )
         DetailedRow(
-            icon = Icons.Outlined.SlidersHorizontal,
+            icon = Icons.Outlined.Tune,
             label = stringResource(R.string.quickcreate_detailed_subpanel_source_rules),
             summary = detailedPrioritySummary(draft),
             onClick = { store.openSubpanel(QuickCreatePanel.Meta) },
             testTag = "detailed-open-source-rules",
         )
         DetailedRow(
-            icon = Icons.Outlined.Link2,
+            icon = Icons.Outlined.Link,
             label = stringResource(R.string.quickcreate_detailed_subpanel_relations),
             summary = null,
             onClick = { store.openSubpanel(QuickCreatePanel.References) },
@@ -157,14 +157,14 @@ fun QuickCreateDetailedComposition(
             testTag = "detailed-open-flows",
         )
         DetailedRow(
-            icon = Icons.Outlined.SlidersHorizontal,
+            icon = Icons.Outlined.Tune,
             label = stringResource(R.string.quickcreate_detailed_subpanel_placement_rules),
             summary = null,
             onClick = { store.openSubpanel(QuickCreatePanel.PlacementRules) },
             testTag = "detailed-open-placement-rules",
         )
         DetailedRow(
-            icon = Icons.Outlined.ListChecks,
+            icon = Icons.Outlined.Checklist,
             label = stringResource(R.string.quickcreate_section_completion_logic),
             summary = null,
             onClick = { store.openSubpanel(QuickCreatePanel.Completion) },

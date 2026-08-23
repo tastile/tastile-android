@@ -368,6 +368,7 @@
     <string name="quickcreate_recurring_repeat_until_label">Repeat until</string>
     <string name="quickcreate_recurring_repeat_until_aria">Toggle repeat until</string>
     <string name="quickcreate_recurring_duration_label">Duration</string>
+    <string name="quickcreate_recurring_duration_custom">Custom</string>
     <string name="quickcreate_recurring_duration_minutes">%1$d min</string>
     <string name="quickcreate_recurring_duration_hours_one">1 hour</string>
     <string name="quickcreate_recurring_duration_hours">%1$s hours</string>
