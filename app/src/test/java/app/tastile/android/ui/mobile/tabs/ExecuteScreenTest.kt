@@ -17,7 +17,6 @@ import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ExecutionControlState
-import app.tastile.android.ui.dashboard.FixedTasksScope
 import app.tastile.android.ui.dashboard.ProjectSection
 import app.tastile.android.ui.dashboard.SortOrder
 import app.tastile.android.ui.mobile.OverlayViewModel
@@ -56,7 +55,7 @@ class ExecuteScreenTest {
     ): DashboardViewModel {
         val vm = mockk<DashboardViewModel>(relaxed = true)
         val section = visibleSection ?: ProjectSection(
-            id = FixedTasksScope.ALL.id,
+            id = "all",
             label = "All",
             tiles = tiles,
         )
@@ -171,9 +170,9 @@ class ExecuteScreenTest {
 
     @Test
     fun `scope tab click delegates to setSelectedSection on the view model`() {
-        val sectionAll = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val sectionAll = ProjectSection(id = "all", label = "All", tiles = emptyList())
         val sectionUnassigned = ProjectSection(
-            id = FixedTasksScope.UNASSIGNED.id,
+            id = "unassigned",
             label = "Unassigned",
             tiles = emptyList(),
         )
@@ -184,8 +183,8 @@ class ExecuteScreenTest {
         every { vm.projectSections } returns MutableStateFlow(listOf(sectionAll, sectionUnassigned))
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
-        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.UNASSIGNED.id}").performClick()
-        verify(exactly = 1) { vm.setSelectedSection(FixedTasksScope.UNASSIGNED.id) }
+        rule.onNodeWithTag("tasks-scope-tab-${"unassigned"}").performClick()
+        verify(exactly = 1) { vm.setSelectedSection("unassigned") }
     }
 
     @Test

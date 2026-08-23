@@ -45,7 +45,7 @@ class TasksScreenTest {
         tiles: List<Tile> = emptyList(),
         sections: List<ProjectSection> = emptyList(),
         visibleSection: ProjectSection = ProjectSection(
-            id = FixedTasksScope.ALL.id,
+            id = "all",
             label = "All",
             tiles = emptyList(),
         ),
@@ -81,33 +81,33 @@ class TasksScreenTest {
 
     @Test
     fun `tabs render one entry per project section`() {
-        val sectionAll = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
-        val sectionStarred = ProjectSection(id = FixedTasksScope.STARRED.id, label = "Starred", tiles = emptyList())
-        val sectionUnassigned = ProjectSection(id = FixedTasksScope.UNASSIGNED.id, label = "Unassigned", tiles = emptyList())
+        val sectionAll = ProjectSection(id = "all", label = "All", tiles = emptyList())
+        val sectionStarred = ProjectSection(id = "starred", label = "Starred", tiles = emptyList())
+        val sectionUnassigned = ProjectSection(id = "unassigned", label = "Unassigned", tiles = emptyList())
         val sectionProject = ProjectSection(id = "project:Lab", label = "Lab", tiles = emptyList())
         val vm = stubVm(sections = listOf(sectionAll, sectionStarred, sectionUnassigned, sectionProject))
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
         rule.onNodeWithTag("tasks-scope-tabs-row").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.ALL.id}").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.STARRED.id}").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.UNASSIGNED.id}").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tab-${"all"}").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tab-${"starred"}").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tab-${"unassigned"}").assertIsDisplayed()
         rule.onNodeWithTag("tasks-scope-tab-project:Lab").assertIsDisplayed()
     }
 
     @Test
     fun `first tab label sits flush with the tab-row start edge`() {
-        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All",
+        val section = ProjectSection(id = "all", label = "All",
             tiles = emptyList())
         val vm = stubVm(visibleSection = section)
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
-        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.ALL.id}").assertIsDisplayed()
+        rule.onNodeWithTag("tasks-scope-tab-${"all"}").assertIsDisplayed()
     }
 
     @Test
     fun `section bar exposes label, sort icon and chevron`() {
-        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val section = ProjectSection(id = "all", label = "All", tiles = emptyList())
         val vm = stubVm(visibleSection = section)
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
@@ -118,7 +118,7 @@ class TasksScreenTest {
         // always appear together.
         rule.onNodeWithTag("tasks-section-bar", useUnmergedTree = true).assertExists()
         rule.onNodeWithTag(
-            "tasks-bucket-label-${FixedTasksScope.ALL.id}",
+            "tasks-bucket-label-${"all"}",
             useUnmergedTree = true,
         ).assertExists()
         rule.onNodeWithTag("tasks-sort-button", useUnmergedTree = true).assertExists()
@@ -128,7 +128,7 @@ class TasksScreenTest {
     fun `bucket header does not show the raw sort order id`() {
         // Regression: bucket label should read "All" — never the "time_asc"
         // debug chip that earlier revisions leaked onto the bar.
-        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All",
+        val section = ProjectSection(id = "all", label = "All",
             tiles = emptyList())
         val vm = stubVm(visibleSection = section,
             sortOrder = SortOrder.BY_TIME_DESC)
@@ -141,7 +141,7 @@ class TasksScreenTest {
     @Test
     fun `tapping the section bar collapses the body and hides tiles`() {
         val section = ProjectSection(
-            id = FixedTasksScope.ALL.id,
+            id = "all",
             label = "All",
             tiles = listOf(
                 Tile(id = "a", title = "Alpha", lifecycle = TileLifecycle.READY.value),
@@ -171,7 +171,7 @@ class TasksScreenTest {
             releaseAt = "2026-07-21T16:00:00Z",
         )
         val section = ProjectSection(
-            id = FixedTasksScope.ALL.id,
+            id = "all",
             label = "All",
             tiles = listOf(plain, scheduled),
         )
@@ -184,8 +184,8 @@ class TasksScreenTest {
 
     @Test
     fun `tapping a tab calls setSelectedSection on the view model`() {
-        val sectionAll = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
-        val sectionUnassigned = ProjectSection(id = FixedTasksScope.UNASSIGNED.id, label = "Unassigned", tiles = emptyList())
+        val sectionAll = ProjectSection(id = "all", label = "All", tiles = emptyList())
+        val sectionUnassigned = ProjectSection(id = "unassigned", label = "Unassigned", tiles = emptyList())
         val vm = stubVm(
             tiles = emptyList(),
             visibleSection = sectionAll,
@@ -193,14 +193,14 @@ class TasksScreenTest {
         every { vm.projectSections } returns MutableStateFlow(listOf(sectionAll, sectionUnassigned))
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
-        rule.onNodeWithTag("tasks-scope-tab-${FixedTasksScope.UNASSIGNED.id}").performClick()
-        verify(exactly = 1) { vm.setSelectedSection(FixedTasksScope.UNASSIGNED.id) }
+        rule.onNodeWithTag("tasks-scope-tab-${"unassigned"}").performClick()
+        verify(exactly = 1) { vm.setSelectedSection("unassigned") }
     }
 
     @Test
     fun `each tile renders with execute-tile test tag`() {
         val section = ProjectSection(
-            id = FixedTasksScope.ALL.id,
+            id = "all",
             label = "All",
             tiles = listOf(
                 Tile(id = "a", title = "Alpha", lifecycle = TileLifecycle.READY.value),
@@ -236,7 +236,7 @@ class TasksScreenTest {
 
     @Test
     fun `sort icon delegates to setSortOrder on the view model`() {
-        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val section = ProjectSection(id = "all", label = "All", tiles = emptyList())
         val vm = stubVm(visibleSection = section)
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 
@@ -247,7 +247,7 @@ class TasksScreenTest {
 
     @Test
     fun `empty section surfaces the empty state card`() {
-        val section = ProjectSection(id = FixedTasksScope.ALL.id, label = "All", tiles = emptyList())
+        val section = ProjectSection(id = "all", label = "All", tiles = emptyList())
         val vm = stubVm(visibleSection = section)
         rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
 

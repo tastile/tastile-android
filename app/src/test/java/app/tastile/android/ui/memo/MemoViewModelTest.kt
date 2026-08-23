@@ -1,8 +1,10 @@
 package app.tastile.android.ui.memo
 
+import android.content.Context
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.auth.CurrentUserProvider
 import app.tastile.android.data.tile.MemoTileRepository
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -32,7 +34,7 @@ class MemoViewModelTest {
         val repository = FakeMemoTileRepository(recentTiles = tiles)
         val currentUserProvider = FakeCurrentUserProvider(userId = "user-1")
 
-        val viewModel = MemoViewModel(repository, currentUserProvider)
+        val viewModel = MemoViewModel(repository, currentUserProvider, mockk<Context>(relaxed = true))
 
         assertEquals("user-1", repository.lastRecentTilesUserId)
         assertEquals(5, repository.lastRecentTilesLimit)
@@ -44,7 +46,7 @@ class MemoViewModelTest {
     fun selectTile_thenSaveMemo_callsRepositorySaveMemo() {
         val repository = FakeMemoTileRepository(recentTiles = listOf(Tile(id = "tile-1")))
         val currentUserProvider = FakeCurrentUserProvider(userId = "user-1")
-        val viewModel = MemoViewModel(repository, currentUserProvider)
+        val viewModel = MemoViewModel(repository, currentUserProvider, mockk<Context>(relaxed = true))
         viewModel.selectTile("tile-99")
 
         viewModel.saveMemo("deep focus")

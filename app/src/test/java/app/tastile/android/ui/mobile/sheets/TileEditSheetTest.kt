@@ -22,6 +22,7 @@ import app.tastile.android.data.api.SourceWindowPayload
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.user.AppLocale
+import app.tastile.android.data.access.AccessRepository
 import app.tastile.android.data.auth.AuthRepository
 import app.tastile.android.data.user.ProfileRepository
 import app.tastile.android.data.workspace.ReferenceOverlayStore
@@ -63,6 +64,7 @@ class TileEditSheetTest {
 
     private fun newDashboardViewModel(): DashboardViewModel {
         val authRepo = mockk<AuthRepository>(relaxed = true)
+        val accessRepo = mockk<AccessRepository>(relaxed = true)
         val profileRepo = mockk<ProfileRepository>(relaxed = true)
         val tileRepo = mockk<TileRepository>(relaxed = true)
         tileRepositories.add(tileRepo)
@@ -79,6 +81,7 @@ class TileEditSheetTest {
         coEvery { tileRepo.getTileDetail(any()) } returns null
         return DashboardViewModel(
             authRepository = authRepo,
+            accessRepository = accessRepo,
             profileRepository = profileRepo,
             tileRepository = tileRepo,
             userSettingsRepository = userSettingsRepo,
@@ -191,6 +194,7 @@ class TileEditSheetTest {
         //     test seam.
         // Then we seed `_executionControlStates` and assert "Pause" renders.
         val authRepo = mockk<AuthRepository>(relaxed = true)
+        val accessRepo = mockk<AccessRepository>(relaxed = true)
         val profileRepo = mockk<ProfileRepository>(relaxed = true)
         val tileRepo = mockk<TileRepository>(relaxed = true)
         tileRepositories.add(tileRepo)
@@ -214,6 +218,7 @@ class TileEditSheetTest {
         coEvery { tileRepo.getTileDetail("tile-1") } returns sampleDetail("tile-1", "Focus")
         val vm = DashboardViewModel(
             authRepository = authRepo,
+            accessRepository = accessRepo,
             profileRepository = profileRepo,
             tileRepository = tileRepo,
             userSettingsRepository = userSettingsRepo,

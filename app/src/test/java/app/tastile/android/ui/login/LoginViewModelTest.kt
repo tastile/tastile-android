@@ -1,8 +1,10 @@
 package app.tastile.android.ui.login
 
 import android.content.Context
+import app.tastile.android.R
 import app.tastile.android.data.auth.AuthRepositoryContract
 import app.tastile.android.data.auth.TastileAuthState
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,7 +21,10 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
-    private val context = mockk<Context>(relaxed = true)
+    private val context = mockk<Context>(relaxed = true).also {
+        every { it.getString(R.string.login_error_sign_in_failed) } returns "Cognito sign-in failed"
+        every { it.getString(R.string.login_error_sign_out_failed) } returns "Unable to sign out"
+    }
 
     @Before
     fun setUp() {
@@ -34,7 +39,7 @@ class LoginViewModelTest {
     @Test
     fun signInWithCognito_whenRepositoryFails_exposesErrorMessage() {
         val repository = FakeAuthRepository(signInError = IllegalStateException("Cognito sign-in failed"))
-        val viewModel = LoginViewModel(repository)
+        val viewModel = LoginViewModel(repository, context)
 
         viewModel.signInWithCognito(context)
 
@@ -45,7 +50,7 @@ class LoginViewModelTest {
     @Test
     fun signInWithCognito_whenRepositorySucceeds_resetsSigningInAndKeepsErrorNull() {
         val repository = FakeAuthRepository()
-        val viewModel = LoginViewModel(repository)
+        val viewModel = LoginViewModel(repository, context)
 
         viewModel.signInWithCognito(context)
 
@@ -56,7 +61,7 @@ class LoginViewModelTest {
     @Test
     fun signOut_whenRepositoryFails_exposesErrorMessage() {
         val repository = FakeAuthRepository(signOutError = IllegalStateException("Sign out failed"))
-        val viewModel = LoginViewModel(repository)
+        val viewModel = LoginViewModel(repository, context)
 
         viewModel.signOut()
 
@@ -66,7 +71,7 @@ class LoginViewModelTest {
     @Test
     fun clearError_resetsCurrentError() {
         val repository = FakeAuthRepository(signInError = IllegalStateException("Cognito sign-in failed"))
-        val viewModel = LoginViewModel(repository)
+        val viewModel = LoginViewModel(repository, context)
 
         viewModel.signInWithCognito(context)
         viewModel.clearError()

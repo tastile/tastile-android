@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.panels
 
+import android.content.Context
 import app.tastile.android.data.api.UpdateWorkspaceInput
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.data.workspace.WorkspaceRepository
@@ -37,7 +38,7 @@ class ProjectsViewModelTest {
         val updated = workspace("one", "After", "parent")
         coEvery { repository.list() } returns listOf(existing)
         coEvery { repository.update("one", any()) } returns updated
-        val viewModel = ProjectsViewModel(repository)
+        val viewModel = ProjectsViewModel(repository, mockk<Context>(relaxed = true))
         advanceUntilIdle()
 
         viewModel.update("one", "After", "after", "#abcdef", "parent")
@@ -52,7 +53,7 @@ class ProjectsViewModelTest {
     fun selectedOwner_canSelectAndClearAllProjects() = runTest(dispatcher) {
         val repository = mockk<WorkspaceRepository>()
         coEvery { repository.list() } returns emptyList()
-        val viewModel = ProjectsViewModel(repository)
+        val viewModel = ProjectsViewModel(repository, mockk<Context>(relaxed = true))
         advanceUntilIdle()
 
         viewModel.selectOwner("project-1")

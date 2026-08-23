@@ -1,5 +1,6 @@
 package app.tastile.android.ui.dashboard
 
+import app.tastile.android.data.access.AccessRepository
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.user.AppLocale
@@ -52,6 +53,7 @@ class DashboardViewModelSelectedTileTest {
 
     private fun newViewModel(): DashboardViewModel {
         val authRepository = mockk<AuthRepository>(relaxed = true)
+        val accessRepository = mockk<AccessRepository>(relaxed = true)
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
@@ -64,6 +66,7 @@ class DashboardViewModelSelectedTileTest {
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         return DashboardViewModel(
             authRepository,
+            accessRepository,
             profileRepository,
             tileRepository,
             userSettingsRepository,
@@ -97,6 +100,7 @@ class DashboardViewModelSelectedTileTest {
     @Test
     fun `prompt request waits for confirmation and rejected request shows error without refresh`() = runTest {
         val authRepository = mockk<AuthRepository>(relaxed = true)
+        val accessRepository = mockk<AccessRepository>(relaxed = true)
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val tileRepository = mockk<TileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
@@ -109,7 +113,7 @@ class DashboardViewModelSelectedTileTest {
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { tileRepository.requestPrompt("tile-1") } returns false
         val vm = DashboardViewModel(
-            authRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore,
+            authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore,
         ).also { viewModels.add(it) }
 
         clearMocks(tileRepository, answers = false)

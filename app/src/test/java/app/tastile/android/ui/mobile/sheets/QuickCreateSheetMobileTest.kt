@@ -1,5 +1,6 @@
 package app.tastile.android.ui.mobile.sheets
 
+import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -7,6 +8,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.data.access.AccessRepository
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.data.auth.AuthRepository
@@ -52,7 +54,8 @@ class QuickCreateSheetMobileTest {
     private fun newProjectsViewModel(): ProjectsViewModel {
         val workspaceRepository = mockk<WorkspaceRepository>()
         coEvery { workspaceRepository.list() } returns emptyList()
-        return ProjectsViewModel(workspaceRepository).also { viewModels.add(it) }
+        return ProjectsViewModel(workspaceRepository, mockk<Context>(relaxed = true))
+            .also { viewModels.add(it) }
     }
 
     private fun newSubmissionViewModel(): QuickCreateSubmissionViewModel =
@@ -61,6 +64,7 @@ class QuickCreateSheetMobileTest {
 
     private fun newDashboardViewModel(): DashboardViewModel {
         val authRepo = mockk<AuthRepository>(relaxed = true)
+        val accessRepo = mockk<AccessRepository>(relaxed = true)
         val profileRepo = mockk<ProfileRepository>(relaxed = true)
         val tileRepo = mockk<TileRepository>(relaxed = true)
         val userSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
@@ -75,6 +79,7 @@ class QuickCreateSheetMobileTest {
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")
         return DashboardViewModel(
             authRepository = authRepo,
+            accessRepository = accessRepo,
             profileRepository = profileRepo,
             tileRepository = tileRepo,
             userSettingsRepository = userSettingsRepo,

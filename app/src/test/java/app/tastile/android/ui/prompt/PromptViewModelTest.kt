@@ -1,8 +1,10 @@
 package app.tastile.android.ui.prompt
 
+import android.content.Context
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.auth.CurrentUserProvider
 import app.tastile.android.data.tile.PromptTileRepository
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -34,7 +36,7 @@ class PromptViewModelTest {
         )
         val currentUserProvider = FakeCurrentUserProvider(userId = "user-1")
 
-        val viewModel = PromptViewModel(repository, currentUserProvider)
+        val viewModel = PromptViewModel(repository, currentUserProvider, mockk<Context>(relaxed = true))
 
         assertEquals("user-1", repository.lastActiveUserId)
         assertEquals("tile-1", viewModel.activeTile.value?.id)
@@ -47,7 +49,7 @@ class PromptViewModelTest {
             afterContinueTile = Tile(id = "tile-1", updatedAt = "2025-01-01T00:05:00Z")
         )
         val currentUserProvider = FakeCurrentUserProvider(userId = "user-1")
-        val viewModel = PromptViewModel(repository, currentUserProvider)
+        val viewModel = PromptViewModel(repository, currentUserProvider, mockk<Context>(relaxed = true))
 
         viewModel.continueTile()
 
@@ -62,7 +64,7 @@ class PromptViewModelTest {
             activeTile = Tile(id = "tile-2", updatedAt = "2025-01-01T00:00:00Z")
         )
         val currentUserProvider = FakeCurrentUserProvider(userId = "user-1")
-        val viewModel = PromptViewModel(repository, currentUserProvider)
+        val viewModel = PromptViewModel(repository, currentUserProvider, mockk<Context>(relaxed = true))
 
         viewModel.takeBreak()
 
@@ -77,7 +79,7 @@ class PromptViewModelTest {
             activeTile = Tile(id = "tile-3", updatedAt = "2025-01-01T00:00:00Z")
         )
         val currentUserProvider = FakeCurrentUserProvider(userId = "user-1")
-        val viewModel = PromptViewModel(repository, currentUserProvider)
+        val viewModel = PromptViewModel(repository, currentUserProvider, mockk<Context>(relaxed = true))
 
         viewModel.completeTile()
 

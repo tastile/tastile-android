@@ -20,7 +20,7 @@ class EndpointsCatalogTest {
     @Test
     fun `every endpoint has non-empty label and operationId`() {
         EndpointsCatalog.entries.forEach { e ->
-            assertTrue(e.label.isNotBlank())
+            assertTrue(e.labelRes != 0)
             assertTrue(e.operationId.isNotBlank())
         }
     }

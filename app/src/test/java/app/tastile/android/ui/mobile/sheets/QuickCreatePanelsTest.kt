@@ -170,7 +170,6 @@ class QuickCreatePanelsTest {
                 store = store,
                 onClose = {},
                 projects = projects,
-                submitError = "Plan unavailable",
             )
         }
 

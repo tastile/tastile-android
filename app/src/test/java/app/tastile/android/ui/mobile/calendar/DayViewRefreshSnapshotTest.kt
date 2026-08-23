@@ -2,6 +2,7 @@ package app.tastile.android.ui.mobile.calendar
 
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.data.access.AccessRepository
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.data.auth.AuthRepository
 import app.tastile.android.data.user.ProfileRepository
@@ -68,6 +69,7 @@ class DayViewRefreshSnapshotTest {
 
     private fun newViewModel(
         authRepository: AuthRepository,
+        accessRepository: AccessRepository,
         profileRepository: ProfileRepository,
         tileRepository: TileRepository,
         userSettingsRepository: UserSettingsRepository,
@@ -80,6 +82,7 @@ class DayViewRefreshSnapshotTest {
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
         return DashboardViewModel(
             authRepository,
+            accessRepository,
             profileRepository,
             tileRepository,
             userSettingsRepository,
@@ -107,6 +110,7 @@ class DayViewRefreshSnapshotTest {
         val initial = listOf(item("a", 540), item("b", 600), item("c", 660))
 
         val authRepository = mockk<AuthRepository>(relaxed = true)
+        val accessRepository = mockk<AccessRepository>(relaxed = true)
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
@@ -121,13 +125,7 @@ class DayViewRefreshSnapshotTest {
         coEvery { tileRepository.getTimeline(any(), any(), any()) } throws
             RuntimeException("net down")
 
-        val viewModel = newViewModel(
-            authRepository,
-            profileRepository,
-            tileRepository,
-            userSettingsRepository,
-            referenceOverlayStore,
-        )
+        val viewModel = newViewModel(authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModel.replaceTimelineForTest(initial)
 
         val before = viewModel.timeline.value
@@ -154,6 +152,7 @@ class DayViewRefreshSnapshotTest {
         val refreshed = listOf(item("d", 720), item("e", 780))
 
         val authRepository = mockk<AuthRepository>(relaxed = true)
+        val accessRepository = mockk<AccessRepository>(relaxed = true)
         val profileRepository = mockk<ProfileRepository>(relaxed = true)
         val userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true)
         val referenceOverlayStore = mockk<ReferenceOverlayStore>(relaxed = true)
@@ -177,13 +176,7 @@ class DayViewRefreshSnapshotTest {
             if (calls <= 1) emptyList() else refreshed
         }
 
-        val viewModel = newViewModel(
-            authRepository,
-            profileRepository,
-            tileRepository,
-            userSettingsRepository,
-            referenceOverlayStore,
-        )
+        val viewModel = newViewModel(authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModel.replaceTimelineForTest(initial)
 
         // First owner-filter change kicks the refresh; the second one
