@@ -61,6 +61,22 @@ Authoritative versions live in `build.gradle.kts` (plugins) and `app/build.gradl
 - `kotlinx-datetime` is pinned at 0.6.1 and `kotlinx-coroutines-test` at 1.9.0 — bumping either surfaces an `ExperimentalTime` opt-in requirement. See `docs/plans/`.
 - Compose Compiler Reports land in `app/build/compose-reports/` and `app/build/compose-metrics/`; baseline at `docs/superpowers/m3/before-reports/`.
 
+## IDE-agnostic Kotlin tooling (kotlin-lsp)
+
+Android Studio 以外の editor を使う contributor のため、JetBrains 公式の
+Kotlin Language Server (`Kotlin/kotlin-lsp`) を **alpha status** の範囲で
+project-local に vendor 可能にしている。Build には影響しない。
+
+- Bootstrap: `./scripts/install-kotlin-lsp.ps1` (Windows) / `./scripts/install-kotlin-lsp.sh` (wslc / POSIX)
+- Launcher:  `./scripts/kotlin-lsp-launcher.ps1` / `./scripts/kotlin-lsp-launcher.sh`
+- Pin manifest: `scripts/kotlin-lsp-release.json` (version + URL + SHA-256)
+- Decision: `docs/adr/0001-kotlin-lsp-toolchain.md`
+
+JDK 25 を別途用意する必要がある。優先順: `$KOTLIN_LSP_JAVA_HOME` → `.tools/jdk-25/`
+→ 標準 install 配下。`.tools/` は gitignored。Editor pointer
+(例: `.vscode/settings.json` の `kotlin.lsp.executable`) は contributor 各自
+が設定し、リポジトリには commit しない。
+
 ## WSLC Dev Container
 
 `.wslc/` holds the Windows + WSL Container definitions; the version is auto-extracted from `app/build.gradle.kts`.
