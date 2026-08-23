@@ -53,9 +53,11 @@ Auth and server-backed reads go through Cognito + daemon API. Command execution,
 
 ## Toolchain
 
-- AGP 9.2.1, Kotlin 2.1.0, Compose Compiler plugin 2.1.0, Hilt 2.60.1, KSP 2.1.0-1.0.29
+Authoritative versions live in `build.gradle.kts` (plugins) and `app/build.gradle.kts` (deps + sdk). The table below is a snapshot for orientation; if it disagrees with the build script, the build script wins.
+
+- AGP 9.3.1, Kotlin 2.2.10, Compose Compiler plugin 2.2.10, Hilt plugin 2.59.2 / Hilt 2.60.1, KSP 2.3.6
 - Compose BOM 2024.12.01, Navigation Compose 2.9.8
-- `minSdk` 26, `targetSdk` 35, `compileSdk` 37, `versionCode` 32, `versionName` 0.3.1
+- `minSdk` 26, `targetSdk` 35, `compileSdk` 37, `versionCode` 33, `versionName` 0.4.0
 - `kotlinx-datetime` is pinned at 0.6.1 and `kotlinx-coroutines-test` at 1.9.0 — bumping either surfaces an `ExperimentalTime` opt-in requirement. See `docs/plans/`.
 - Compose Compiler Reports land in `app/build/compose-reports/` and `app/build/compose-metrics/`; baseline at `docs/superpowers/m3/before-reports/`.
 
