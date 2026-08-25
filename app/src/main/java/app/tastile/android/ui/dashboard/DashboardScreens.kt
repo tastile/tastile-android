@@ -42,6 +42,7 @@ import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedCard
+import app.tastile.android.core.designsystem.component.TastileStatusCircle
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 
@@ -107,7 +108,7 @@ private fun TileCompactCard(tile: Tile?, onStart: (String) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StatusCircle(
+        TastileStatusCircle(
             lifecycle = lifecycle,
             onClick = if (lifecycle == TileLifecycle.READY) ({ onStart(tile.id) }) else null
         )
@@ -135,7 +136,7 @@ private fun TileExpandableCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            StatusCircle(
+            TastileStatusCircle(
                 lifecycle = lifecycle,
                 onClick = if (lifecycle == TileLifecycle.READY) onStart else null
             )
@@ -187,26 +188,6 @@ private fun TileExpandableCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun StatusCircle(lifecycle: TileLifecycle, onClick: (() -> Unit)?) {
-    Box(
-        modifier = Modifier
-            .size(20.dp)
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = when (lifecycle) {
-                TileLifecycle.DONE -> "✓"
-                TileLifecycle.STARTED -> "▶"
-                TileLifecycle.READY -> "○"
-                TileLifecycle.ARCHIVED -> "·"
-            },
-            style = MaterialTheme.typography.labelSmall
-        )
     }
 }
 
