@@ -16,13 +16,17 @@
 
 package app.tastile.android.core.designsystem.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 /**
@@ -33,14 +37,17 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TastileTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme =
-        if (darkTheme) {
-            darkColorScheme()
-        } else {
-            lightColorScheme()
-        }
+    val context = LocalContext.current
+    val supportsDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val colorScheme = when {
+        dynamicColor && supportsDynamic && darkTheme  -> dynamicDarkColorScheme(context)
+        dynamicColor && supportsDynamic && !darkTheme -> dynamicLightColorScheme(context)
+        darkTheme                                     -> darkColorScheme()
+        else                                          -> lightColorScheme()
+    }
 
     val gradientColors = GradientColors(
         top = colorScheme.inverseOnSurface,
@@ -63,10 +70,12 @@ fun TastileTheme(
         LocalTastileCardRoleTokens provides TastileCardRoleTokens.default(colorScheme),
         LocalTastileSurfaceElevationTokens provides TastileSurfaceElevationTokens.Default,
         LocalTastileSpacingTokens provides TastileSpacingTokens.Default,
+        LocalTastileShapeTokens provides TastileShapeTokens.Default,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = TastileTypography,
+            shapes = TastileShapes,
             content = content,
         )
     }
