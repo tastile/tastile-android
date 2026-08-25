@@ -1,26 +1,18 @@
 package app.tastile.android.ui.dashboard
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-// m2-allow: primitive
-import androidx.compose.material3.HorizontalDivider
 // m2-allow: primitive
 import androidx.compose.material3.Icon
 // m2-allow: theme-bridge
@@ -31,22 +23,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaButton
-import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
-import app.tastile.android.core.designsystem.component.NiaOutlinedCard
 import app.tastile.android.core.designsystem.component.TastileCardActions
 import app.tastile.android.core.designsystem.component.TastileCardActionRow
 import app.tastile.android.core.designsystem.component.TastileCompactTileRow
-import app.tastile.android.core.designsystem.component.TastileStatusCircle
-import app.tastile.android.data.model.Tile
+import app.tastile.android.core.designsystem.component.TastileDashboardCardShell
+import app.tastile.android.core.designsystem.component.TastileTileCard
 import app.tastile.android.data.model.TileLifecycle
 
 @Composable
@@ -65,8 +55,11 @@ fun ExecuteDashboardScreen(viewModel: DashboardViewModel) {
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text(stringResource(R.string.dashboard_execute_title), style = MaterialTheme.typography.titleLarge) }
         items(cards, key = { it.id }) { card ->
+            var expanded by remember(card.id) { mutableStateOf(false) }
             DashboardCardRenderer(
                 card = card,
+                expanded = expanded,
+                onToggleExpanded = { expanded = !expanded },
                 onAction = viewModel::handleCardAction
             )
         }
@@ -89,8 +82,11 @@ fun TilesDashboardScreen(viewModel: DashboardViewModel) {
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text(stringResource(R.string.dashboard_tiles_work_title), style = MaterialTheme.typography.titleLarge) }
         items(cards, key = { it.id }) { card ->
+            var expanded by remember(card.id) { mutableStateOf(false) }
             DashboardCardRenderer(
                 card = card,
+                expanded = expanded,
+                onToggleExpanded = { expanded = !expanded },
                 onAction = viewModel::handleCardAction
             )
         }
@@ -98,84 +94,11 @@ fun TilesDashboardScreen(viewModel: DashboardViewModel) {
 }
 
 @Composable
-private fun TileExpandableCard(
-    tile: Tile,
-    onStart: () -> Unit,
-    onComplete: () -> Unit,
-    onDefer: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val expanded = remember(tile.id) { mutableStateOf(false) }
-    val lifecycle = TileLifecycle.fromString(tile.lifecycle)
-
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded.value = !expanded.value }
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            TastileStatusCircle(
-                lifecycle = lifecycle,
-                onClick = if (lifecycle == TileLifecycle.READY) onStart else null
-            )
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(tile.title, style = MaterialTheme.typography.titleSmall)
-                Text(tile.lifecycle, style = MaterialTheme.typography.labelSmall)
-            }
-            Icon(
-                imageVector = if (expanded.value) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = stringResource(R.string.dashboard_expand_cd)
-            )
-        }
-
-        if (expanded.value) {
-            HorizontalDivider()
-            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                tile.nextAction?.takeIf { it.isNotBlank() }?.let {
-                    Text(stringResource(R.string.dashboard_next_prefix, it), style = MaterialTheme.typography.bodySmall)
-                }
-                tile.doneDefinition?.takeIf { it.isNotBlank() }?.let {
-                    Text(stringResource(R.string.dashboard_done_prefix, it), style = MaterialTheme.typography.bodySmall)
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (lifecycle == TileLifecycle.READY) {
-                        NiaButton(
-                            text = { Text(stringResource(R.string.dashboard_card_start)) },
-                            onClick = onStart,
-                        )
-                    }
-                    if (lifecycle == TileLifecycle.STARTED) {
-                        NiaButton(
-                            text = { Text(stringResource(R.string.dashboard_card_complete)) },
-                            onClick = onComplete,
-                        )
-                    }
-                    NiaFilledTonalButton(
-                        text = { Text(stringResource(R.string.dashboard_card_defer)) },
-                        onClick = onDefer,
-                    )
-                    NiaOutlinedButton(
-                        text = { Text(stringResource(R.string.dashboard_card_delete)) },
-                        onClick = onDelete,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun DashboardCardRenderer(
     card: DashboardCardModel,
-    onAction: (CardAction) -> Unit
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    onAction: (CardAction) -> Unit,
 ) {
     val headerActionTileId = when (card) {
         is DashboardCardModel.TimelineCard -> card.items.firstOrNull()?.tileId
@@ -185,46 +108,59 @@ private fun DashboardCardRenderer(
         is DashboardCardModel.TimelineCard -> stringResource(card.titleRes)
         else -> card.title
     }
+    // TileLifecycle.fromString is case-sensitive and expects title case
+    // ("Ready"/"Started"/"Done"/"Archived"). CardStatus.name returns uppercase
+    // enum names, so map via CardStatus -> TileLifecycle instead.
+    val lifecycle = when (card) {
+        is DashboardCardModel.BaseCard, is DashboardCardModel.TimePriorityCard -> when (card.status) {
+            CardStatus.READY -> TileLifecycle.READY
+            CardStatus.STARTED -> TileLifecycle.STARTED
+            CardStatus.DONE -> TileLifecycle.DONE
+            CardStatus.ARCHIVED -> TileLifecycle.ARCHIVED
+        }
+        is DashboardCardModel.TimelineCard -> TileLifecycle.READY
+    }
 
-    NiaOutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    TastileDashboardCardShell(
+        header = {
             NiaOutlinedButton(
                 text = { Text(stringResource(R.string.dashboard_prompt_button)) },
-                onClick = { headerActionTileId?.let { onAction(CardAction.TriggerPrompt(it)) } }
+                onClick = { headerActionTileId?.let { onAction(CardAction.TriggerPrompt(it)) } },
             )
             Icon(
                 imageVector = statusIcon(card.status),
                 contentDescription = stringResource(R.string.dashboard_status_cd),
             )
             Text(headerTitle, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        }
-
+        },
+    ) {
         when (card) {
             is DashboardCardModel.BaseCard,
             is DashboardCardModel.TimePriorityCard,
             -> {
-                TastileCardActionRow(
-                    actions = when (card.status) {
-                        CardStatus.READY -> TastileCardActions.Ready
-                        CardStatus.STARTED -> TastileCardActions.Started
-                        CardStatus.DONE, CardStatus.ARCHIVED -> TastileCardActions.DoneOrArchived
+                TastileTileCard(
+                    title = headerTitle,
+                    lifecycle = lifecycle,
+                    expanded = expanded,
+                    onToggleExpanded = onToggleExpanded,
+                    expandToggleContentDescription = stringResource(R.string.dashboard_expand_cd),
+                    actions = {
+                        TastileCardActionRow(
+                            actions = when (card.status) {
+                                CardStatus.READY -> TastileCardActions.Ready
+                                CardStatus.STARTED -> TastileCardActions.Started
+                                CardStatus.DONE, CardStatus.ARCHIVED -> TastileCardActions.DoneOrArchived
+                            },
+                            onStart = { onAction(CardAction.StartTile(card.id)) },
+                            onComplete = { onAction(CardAction.CompleteTile(card.id)) },
+                            onDefer = { onAction(CardAction.DeferTile(card.id)) },
+                            onDelete = { onAction(CardAction.DeleteTile(card.id)) },
+                            startLabel = { Text(stringResource(R.string.dashboard_card_start)) },
+                            completeLabel = { Text(stringResource(R.string.dashboard_card_complete)) },
+                            deferLabel = { Text(stringResource(R.string.dashboard_card_defer)) },
+                            deleteLabel = { Text(stringResource(R.string.dashboard_card_delete)) },
+                        )
                     },
-                    onStart = { onAction(CardAction.StartTile(card.id)) },
-                    onComplete = { onAction(CardAction.CompleteTile(card.id)) },
-                    onDefer = { onAction(CardAction.DeferTile(card.id)) },
-                    onDelete = { onAction(CardAction.DeleteTile(card.id)) },
-                    startLabel = { Text(stringResource(R.string.dashboard_card_start)) },
-                    completeLabel = { Text(stringResource(R.string.dashboard_card_complete)) },
-                    deferLabel = { Text(stringResource(R.string.dashboard_card_defer)) },
-                    deleteLabel = { Text(stringResource(R.string.dashboard_card_delete)) },
                 )
             }
             is DashboardCardModel.TimelineCard -> {
@@ -232,11 +168,11 @@ private fun DashboardCardRenderer(
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         NiaOutlinedButton(
                             text = { Text(stringResource(R.string.dashboard_prompt_button)) },
-                            onClick = { onAction(CardAction.TriggerPrompt(item.tileId)) }
+                            onClick = { onAction(CardAction.TriggerPrompt(item.tileId)) },
                         )
                         Icon(
                             imageVector = statusIcon(item.status),
