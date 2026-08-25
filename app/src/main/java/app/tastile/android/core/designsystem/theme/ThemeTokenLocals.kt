@@ -22,3 +22,7 @@ val LocalTastileSurfaceElevationTokens = staticCompositionLocalOf<TastileSurface
 val LocalTastileSpacingTokens = staticCompositionLocalOf<TastileSpacingTokens> {
     error("TastileSpacingTokens not provided. Wrap content in TastileTheme { ... }.")
 }
+
+val LocalTastileShapeTokens = staticCompositionLocalOf<TastileShapeTokens> {
+    error("TastileShapeTokens not provided. Wrap content in TastileTheme { ... }.")
+}
