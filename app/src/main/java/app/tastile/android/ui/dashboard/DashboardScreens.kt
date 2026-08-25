@@ -42,6 +42,8 @@ import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedCard
+import app.tastile.android.core.designsystem.component.TastileCardActions
+import app.tastile.android.core.designsystem.component.TastileCardActionRow
 import app.tastile.android.core.designsystem.component.TastileCompactTileRow
 import app.tastile.android.core.designsystem.component.TastileStatusCircle
 import app.tastile.android.data.model.Tile
@@ -206,8 +208,25 @@ private fun DashboardCardRenderer(
         }
 
         when (card) {
-            is DashboardCardModel.BaseCard -> CardPrimaryActions(card.id, card.status, onAction)
-            is DashboardCardModel.TimePriorityCard -> CardPrimaryActions(card.id, card.status, onAction)
+            is DashboardCardModel.BaseCard,
+            is DashboardCardModel.TimePriorityCard,
+            -> {
+                TastileCardActionRow(
+                    actions = when (card.status) {
+                        CardStatus.READY -> TastileCardActions.Ready
+                        CardStatus.STARTED -> TastileCardActions.Started
+                        CardStatus.DONE, CardStatus.ARCHIVED -> TastileCardActions.DoneOrArchived
+                    },
+                    onStart = { onAction(CardAction.StartTile(card.id)) },
+                    onComplete = { onAction(CardAction.CompleteTile(card.id)) },
+                    onDefer = { onAction(CardAction.DeferTile(card.id)) },
+                    onDelete = { onAction(CardAction.DeleteTile(card.id)) },
+                    startLabel = { Text(stringResource(R.string.dashboard_card_start)) },
+                    completeLabel = { Text(stringResource(R.string.dashboard_card_complete)) },
+                    deferLabel = { Text(stringResource(R.string.dashboard_card_defer)) },
+                    deleteLabel = { Text(stringResource(R.string.dashboard_card_delete)) },
+                )
+            }
             is DashboardCardModel.TimelineCard -> {
                 card.items.forEach { item ->
                     Row(
@@ -228,49 +247,6 @@ private fun DashboardCardRenderer(
                         Text(item.title, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CardPrimaryActions(
-    tileId: String,
-    status: CardStatus,
-    onAction: (CardAction) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        when (status) {
-            CardStatus.READY -> {
-                NiaButton(
-                    text = { Text(stringResource(R.string.dashboard_card_start)) },
-                    onClick = { onAction(CardAction.StartTile(tileId)) },
-                )
-                NiaOutlinedButton(
-                    text = { Text(stringResource(R.string.dashboard_card_delete)) },
-                    onClick = { onAction(CardAction.DeleteTile(tileId)) },
-                )
-            }
-            CardStatus.STARTED -> {
-                NiaButton(
-                    text = { Text(stringResource(R.string.dashboard_card_complete)) },
-                    onClick = { onAction(CardAction.CompleteTile(tileId)) },
-                )
-                NiaFilledTonalButton(
-                    text = { Text(stringResource(R.string.dashboard_card_defer)) },
-                    onClick = { onAction(CardAction.DeferTile(tileId)) },
-                )
-            }
-            CardStatus.DONE, CardStatus.ARCHIVED -> {
-                NiaOutlinedButton(
-                    text = { Text(stringResource(R.string.dashboard_card_delete)) },
-                    onClick = { onAction(CardAction.DeleteTile(tileId)) },
-                )
             }
         }
     }
