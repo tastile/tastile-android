@@ -42,6 +42,7 @@ import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedCard
+import app.tastile.android.core.designsystem.component.TastileCompactTileRow
 import app.tastile.android.core.designsystem.component.TastileStatusCircle
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
@@ -91,28 +92,6 @@ fun TilesDashboardScreen(viewModel: DashboardViewModel) {
                 onAction = viewModel::handleCardAction
             )
         }
-    }
-}
-
-@Composable
-private fun TileCompactCard(tile: Tile?, onStart: (String) -> Unit) {
-    if (tile == null) {
-        Text(stringResource(R.string.dashboard_no_tile), style = MaterialTheme.typography.bodySmall)
-        return
-    }
-    val lifecycle = TileLifecycle.fromString(tile.lifecycle)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        TastileStatusCircle(
-            lifecycle = lifecycle,
-            onClick = if (lifecycle == TileLifecycle.READY) ({ onStart(tile.id) }) else null
-        )
-        Text(tile.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
     }
 }
 
