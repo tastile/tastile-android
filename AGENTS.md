@@ -8,6 +8,24 @@ This is the `tastile-android` child repository of the Tastile workspace. The wor
 
 Project-local Skills live in `.agents/skills/`. Claude Code skill adapter mirrors the canonical skills at `.claude/skills/`. Agent-specific settings and hooks inherit from the workspace root; this repo does not redefine them. Do not duplicate workspace-wide rules here.
 
+## Agent Skills (UI 必須セット, vendored upstream)
+
+15 件の third-party Skill を `.agents/upstream-skills/<repo>/` に `git subtree --squash` で
+取り込み済み。Canonical pointer は `.agents/skills/<name>/SKILL.md`、Claude Code adapter
+は `.claude/skills/<name>/SKILL.md` (pointer を指すだけ)。`description:` frontmatter は
+upstream verbatim なので trigger は upstream と一致する。更新は `git subtree pull`。
+詳細: `docs/adr/0006-android-ui-skills-vendoring.md`。
+
+- adaptive, edge-to-edge, navigation-3, testing-setup, styles, android-cli
+  (from [android/skills](https://github.com/android/skills) @ `aaca635061a4`, Apache-2.0)
+- material-3
+  (from [hamen/material-3-skill](https://github.com/hamen/material-3-skill) @ `14385f2bf380`, Apache-2.0)
+- compose-state-and-effects, compose-performance, compose-component-design,
+  compose-animations, compose-focus-navigation, compose-ui-testing-patterns
+  (from [chrisbanes/skills](https://github.com/chrisbanes/skills) @ `948acbbd6c44`, Apache-2.0)
+- compose-agent, jetpack-compose-audit
+  (from [hamen/compose_skill](https://github.com/hamen/compose_skill) @ `f815c31d6cc1`, Apache-2.0)
+
 ## Build and Verify
 
 All commands run from this repo root. JDK 17 or 21, Android SDK with API 35, NDK, and the Rust toolchain with `cargo-ndk` are required.
