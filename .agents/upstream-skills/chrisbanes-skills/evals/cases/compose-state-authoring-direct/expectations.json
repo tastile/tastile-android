@@ -1,0 +1,13 @@
+{
+  "files": [
+    "src/main/kotlin/example/Subject.kt"
+  ],
+  "must_contain": [
+    "mutableStateOf"
+  ],
+  "must_contain_any": [
+    ["private set", "private var"],
+    ["private set", "val count"]
+  ],
+  "must_not_contain": []
+}

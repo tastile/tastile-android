@@ -1,0 +1,14 @@
+{
+  "files": [
+    "src/test/kotlin/example/SubjectTest.kt"
+  ],
+  "must_contain": [
+    "setContent"
+  ],
+  "must_contain_any": [
+    ["runComposeUiTest", "createComposeRule"]
+  ],
+  "must_not_contain": [
+    "ActivityScenario"
+  ]
+}
