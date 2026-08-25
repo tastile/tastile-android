@@ -59,6 +59,10 @@ fun TastileTheme(
         LocalGradientColors provides gradientColors,
         LocalBackgroundTheme provides backgroundTheme,
         LocalTintTheme provides tintTheme,
+        LocalTastileStatusTokens provides TastileStatusTokens.default(colorScheme),
+        LocalTastileCardRoleTokens provides TastileCardRoleTokens.default(colorScheme),
+        LocalTastileSurfaceElevationTokens provides TastileSurfaceElevationTokens.Default,
+        LocalTastileSpacingTokens provides TastileSpacingTokens.Default,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
