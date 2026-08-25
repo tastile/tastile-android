@@ -13,11 +13,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-// m2-allow: primitive
+// m2-allow: primitive - statusIcon() returns an ImageVector; TastileDashboardCardShell header slot has no status icon wrapper, so the raw M3 Icon is required here.
 import androidx.compose.material3.Icon
-// m2-allow: theme-bridge
+// m2-allow: theme-bridge - MaterialTheme.typography consumed by every Text in this file until a text-style design-system wrapper exists.
 import androidx.compose.material3.MaterialTheme
-// m2-allow: primitive
+// m2-allow: primitive - statuses/labels/timestamps rendered directly inside TastileCardActionRow and TastileDashboardCardShell slots that take @Composable content.
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
