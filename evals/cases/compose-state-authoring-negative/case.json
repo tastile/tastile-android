@@ -1,0 +1,40 @@
+{
+  "id": "compose-state-authoring-negative",
+  "title": "Preserve correctly encapsulated state",
+  "family": "state-effects",
+  "target_skills": [
+    "compose-state-and-effects"
+  ],
+  "expected_skills": [
+    "compose-state-and-effects"
+  ],
+  "task_mode": "edit",
+  "kind": "negative",
+  "fixture": "compose-jvm",
+  "allowed_write_paths": [
+    "src/main/kotlin/example/Subject.kt"
+  ],
+  "validators": [
+    {
+      "argv": [
+        "python3",
+        "@validators/compose_case.py",
+        "compose-state-authoring-negative"
+      ],
+      "timeout_seconds": 30
+    }
+  ],
+  "rubric": [
+    {
+      "id": "criterion-1",
+      "text": "Recognizes the existing snapshot-aware state and private mutation boundary"
+    },
+    {
+      "id": "criterion-2",
+      "text": "Leaves the workspace unchanged"
+    }
+  ],
+  "provenance": {
+    "kind": "synthetic"
+  }
+}

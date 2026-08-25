@@ -1,0 +1,14 @@
+{
+  "files": [
+    "src/main/kotlin/example/Subject.kt"
+  ],
+  "must_contain": [],
+  "minimum_occurrences": {
+    "@Composable () -> Unit": 2
+  },
+  "must_contain_any": [],
+  "must_not_contain": [
+    "title: String",
+    "icon: ImageVector"
+  ]
+}

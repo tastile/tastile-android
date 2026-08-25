@@ -1,0 +1,40 @@
+{
+  "id": "compose-stability-diagnostics-direct",
+  "title": "Remove mutable collection instability",
+  "family": "performance",
+  "target_skills": [
+    "compose-performance"
+  ],
+  "expected_skills": [
+    "compose-performance"
+  ],
+  "task_mode": "edit",
+  "kind": "direct",
+  "fixture": "compose-jvm",
+  "allowed_write_paths": [
+    "src/main/kotlin/example/Subject.kt"
+  ],
+  "validators": [
+    {
+      "argv": [
+        "python3",
+        "@validators/compose_case.py",
+        "compose-stability-diagnostics-direct"
+      ],
+      "timeout_seconds": 30
+    }
+  ],
+  "rubric": [
+    {
+      "id": "criterion-1",
+      "text": "The state exposes a read-only collection contract"
+    },
+    {
+      "id": "criterion-2",
+      "text": "The change does not add unsupported stability annotations"
+    }
+  ],
+  "provenance": {
+    "kind": "synthetic"
+  }
+}

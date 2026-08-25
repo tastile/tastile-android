@@ -1,0 +1,42 @@
+{
+  "id": "compose-ui-testing-patterns-novel",
+  "title": "Review timing-dependent interaction coverage",
+  "family": "testing",
+  "target_skills": [
+    "compose-ui-testing-patterns"
+  ],
+  "expected_skills": [
+    "compose-ui-testing-patterns"
+  ],
+  "task_mode": "review",
+  "kind": "novel",
+  "fixture": "compose-jvm",
+  "allowed_write_paths": [],
+  "validators": [
+    {
+      "argv": [
+        "python3",
+        "@validators/compose_case.py",
+        "compose-ui-testing-patterns-novel"
+      ],
+      "timeout_seconds": 30
+    }
+  ],
+  "rubric": [
+    {
+      "id": "criterion-1",
+      "text": "Identifies the fixed sleep as nondeterministic and production integration as a broader-than-needed asynchronous seam"
+    },
+    {
+      "id": "criterion-2",
+      "text": "Recommends a controlled UI seam with an observable callback or semantic assertion and does not recommend a fixed delay"
+    }
+  ],
+  "provenance": {
+    "kind": "historical",
+    "source_url": "https://github.com/android/compose-samples/blob/018c5207fb63c4f78e5841bd8ddd4faabdf19d3a/Jetchat/app/src/androidTest/java/com/example/compose/jetchat/UserInputTest.kt",
+    "revision": "018c5207fb63c4f78e5841bd8ddd4faabdf19d3a",
+    "license": "Apache-2.0",
+    "normalization_note": "Reduced and perturbed interaction test preserving the user-input semantics and synchronization boundary."
+  }
+}

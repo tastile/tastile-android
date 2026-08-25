@@ -1,0 +1,42 @@
+{
+  "id": "compose-stability-diagnostics-novel",
+  "title": "Review an unsupported stable promise",
+  "family": "performance",
+  "target_skills": [
+    "compose-performance"
+  ],
+  "expected_skills": [
+    "compose-performance"
+  ],
+  "task_mode": "review",
+  "kind": "novel",
+  "fixture": "compose-jvm",
+  "allowed_write_paths": [],
+  "validators": [
+    {
+      "argv": [
+        "python3",
+        "@validators/compose_case.py",
+        "compose-stability-diagnostics-novel"
+      ],
+      "timeout_seconds": 30
+    }
+  ],
+  "rubric": [
+    {
+      "id": "criterion-1",
+      "text": "Identifies mutable non-snapshot properties that violate the stable contract"
+    },
+    {
+      "id": "criterion-2",
+      "text": "Recommends first making mutable properties immutable or snapshot-observable, then deciding whether an annotation is needed"
+    }
+  ],
+  "provenance": {
+    "kind": "historical",
+    "source_url": "https://github.com/chrisbanes/haze/blob/09ffd45f2ca253553039583065a8f78043eb439a/sample/shared/src/androidMain/kotlin/dev/chrisbanes/haze/sample/GlassProfilingScenario.kt",
+    "revision": "09ffd45f2ca253553039583065a8f78043eb439a",
+    "license": "Apache-2.0",
+    "normalization_note": "Reduced and deliberately perturbed profiling scenario preserving the public stable-contract review seam."
+  }
+}
