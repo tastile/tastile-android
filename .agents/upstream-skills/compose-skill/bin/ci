@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+git diff --check
+
+node --input-type=module <<'NODE'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+
+function walk(dir) {
+  const out = [];
+  for (const entry of readdirSync(dir)) {
+    if (entry === '.git') continue;
+    const path = join(dir, entry);
+    const stat = statSync(path);
+    if (stat.isDirectory()) out.push(...walk(path));
+    else out.push(path.replace(/^\.\//, ''));
+  }
+  return out;
+}
+
+for (const file of walk('.').filter((path) => path.endsWith('plugin.json') || path.endsWith('marketplace.json'))) {
+  JSON.parse(readFileSync(file, 'utf8'));
+}
+
+const files = new Set(walk('.'));
+for (const file of [...files]) {
+  const parts = file.split('/');
+  for (let i = 1; i < parts.length; i++) {
+    files.add(`${parts.slice(0, i).join('/')}/`);
+  }
+}
+
+const readme = readFileSync('README.md', 'utf8');
+const missingLinks = [];
+for (const match of readme.matchAll(/\[[^\]]+\]\((\.\/?[^)#?]+)(?:#[^)]*)?\)/g)) {
+  let path = match[1].replace(/^\.\//, '');
+  if (match[1].endsWith('/') && !path.endsWith('/')) path += '/';
+  if (!files.has(path)) {
+    const line = readme.slice(0, match.index).split('\n').length;
+    missingLinks.push(`${line}: ${match[1]}`);
+  }
+}
+if (missingLinks.length) {
+  throw new Error(`Broken README relative links:\n${missingLinks.join('\n')}`);
+}
+
+const plugins = ['compose-agent', 'jetpack-compose-audit'];
+const marketplace = JSON.parse(readFileSync('.claude-plugin/marketplace.json', 'utf8'));
+const marketplacePaths = new Map(marketplace.plugins.map((plugin) => [plugin.name, plugin.source.path]));
+
+for (const plugin of plugins) {
+  const claudeManifest = JSON.parse(readFileSync(`skills/${plugin}/.claude-plugin/plugin.json`, 'utf8'));
+  const cursorManifest = JSON.parse(readFileSync(`skills/${plugin}/.cursor-plugin/plugin.json`, 'utf8'));
+
+  if (!existsSync(`skills/${plugin}/SKILL.md`)) {
+    throw new Error(`skills/${plugin} is missing SKILL.md`);
+  }
+  if (existsSync(`skills/${plugin}/skills`)) {
+    throw new Error(`skills/${plugin}/skills must not exist; use direct skills/<name>/SKILL.md layout`);
+  }
+  if (marketplacePaths.get(plugin) !== `skills/${plugin}`) {
+    throw new Error(`marketplace path for ${plugin} must be skills/${plugin}`);
+  }
+  if ('skills' in claudeManifest) {
+    throw new Error(`skills/${plugin}/.claude-plugin/plugin.json must use default skills/ discovery`);
+  }
+  if (claudeManifest.version !== cursorManifest.version) {
+    throw new Error(`skills/${plugin} manifest versions differ`);
+  }
+  if (!readFileSync(`skills/${plugin}/SKILL.md`, 'utf8').includes(`name: ${plugin}`)) {
+    throw new Error(`skills/${plugin}/SKILL.md frontmatter name must be ${plugin}`);
+  }
+}
+
+const composeSkill = readFileSync('skills/compose-agent/SKILL.md', 'utf8');
+const composeVersion = JSON.parse(readFileSync('skills/compose-agent/.claude-plugin/plugin.json', 'utf8')).version;
+if (!composeSkill.includes(`version: "${composeVersion}"`)) {
+  throw new Error('compose-agent SKILL.md metadata version does not match manifest version');
+}
+
+const composeAgentDocs = [...files]
+  .filter((file) => file.startsWith('skills/compose-agent/') && file.endsWith('.md'))
+  .map((file) => readFileSync(file, 'utf8'))
+  .join('\n');
+if (
+  !composeAgentDocs.includes('windowSplashScreenAnimatedIcon') ||
+  !/animated[- ]vector/i.test(composeAgentDocs) ||
+  !/108\s*dp/i.test(composeAgentDocs) ||
+  !/160\s*dp/i.test(composeAgentDocs) ||
+  !/blurr/i.test(composeAgentDocs)
+) {
+  throw new Error('compose-agent docs must cover the Android 12+ static splash icon blur workaround');
+}
+
+const auditDocs = [...files]
+  .filter((file) => file.startsWith('skills/jetpack-compose-audit/') && file.endsWith('.md'))
+  .map((file) => readFileSync(file, 'utf8'))
+  .join('\n');
+if (
+  !auditDocs.includes('Android Launch UX') ||
+  !auditDocs.includes('windowSplashScreenAnimatedIcon') ||
+  !auditDocs.includes('drawable-v31') ||
+  !/static splash icon may render blurry/i.test(auditDocs) ||
+  !/non-scored|not score/i.test(auditDocs) ||
+  !auditDocs.includes('https://issuetracker.google.com/issues/520672537')
+) {
+  throw new Error('jetpack-compose-audit docs must detect and report the Android 12+ static splash icon blur risk');
+}
+
+if (
+  !composeAgentDocs.includes('references/animation.md') ||
+  !composeAgentDocs.includes('updateTransition') ||
+  !composeAgentDocs.includes('snapTo') ||
+  !composeAgentDocs.includes('MotionDurationScale') ||
+  !composeAgentDocs.includes('animateEnterExit')
+) {
+  throw new Error('compose-agent animation reference must cover updateTransition, gesture snapTo, reduced motion/MotionDurationScale, and animateEnterExit');
+}
+
+if (
+  !auditDocs.includes('Animation performance signals') ||
+  !auditDocs.includes('Animation side-effect signals') ||
+  !/Animation phase correctness/i.test(auditDocs)
+) {
+  throw new Error('jetpack-compose-audit docs must surface animation findings in Performance and Side Effects report sections');
+}
+
+if (!readFileSync('skills/compose-agent/references/performance.md', 'utf8').includes('references/animation.md')) {
+  throw new Error('compose-agent performance.md must cross-link references/animation.md');
+}
+
+if (
+  !composeAgentDocs.includes('references/paging.md') ||
+  !composeAgentDocs.includes('collectAsLazyPagingItems') ||
+  !composeAgentDocs.includes('itemKey') ||
+  !composeAgentDocs.includes('LoadState') ||
+  !composeAgentDocs.includes('Golden Path') ||
+  !composeAgentDocs.includes('PagingData.from')
+) {
+  throw new Error('compose-agent paging reference must cover collectAsLazyPagingItems, itemKey, LoadState, golden path, and PagingData.from preview pattern');
+}
+
+if (!readFileSync('skills/compose-agent/references/performance.md', 'utf8').includes('references/paging.md')) {
+  throw new Error('compose-agent performance.md must cross-link references/paging.md');
+}
+
+if (
+  !auditDocs.includes('Paging list correctness') ||
+  !auditDocs.includes('Paging load-state handling') ||
+  !auditDocs.includes('Paging list signals') ||
+  !auditDocs.includes('Paging load-state signals') ||
+  !auditDocs.includes('Paging side-effect signals')
+) {
+  throw new Error('jetpack-compose-audit docs must surface paging findings in Performance, State, and Side Effects report sections');
+}
+
+const auditSkill = readFileSync('skills/jetpack-compose-audit/SKILL.md', 'utf8');
+const auditVersion = JSON.parse(readFileSync('skills/jetpack-compose-audit/.claude-plugin/plugin.json', 'utf8')).version;
+if (!auditSkill.includes(`**Skill version:** ${auditVersion}`)) {
+  throw new Error('jetpack-compose-audit SKILL.md version does not match manifest version');
+}
+
+// Eval suites: structural validation for every skills/<name>/evals/evals.json.
+const evalSuites = new Map();
+for (const evalFile of [...files].filter((file) => file.endsWith('/evals/evals.json'))) {
+  const skillName = evalFile.split('/')[1];
+  let suite;
+  try {
+    suite = JSON.parse(readFileSync(evalFile, 'utf8'));
+  } catch (error) {
+    throw new Error(`${evalFile} is not valid JSON: ${error.message}`);
+  }
+  if (suite.skill_name !== skillName) {
+    throw new Error(`${evalFile} skill_name must be "${skillName}", got "${suite.skill_name}"`);
+  }
+  if (!Array.isArray(suite.evals) || suite.evals.length === 0) {
+    throw new Error(`${evalFile} must have a non-empty "evals" array`);
+  }
+  const seenIds = new Set();
+  for (const item of suite.evals) {
+    if (typeof item.id !== 'number' || seenIds.has(item.id)) {
+      throw new Error(`${evalFile} eval ids must be unique numbers (offender: ${JSON.stringify(item.id)})`);
+    }
+    seenIds.add(item.id);
+    for (const field of ['prompt', 'expected_output']) {
+      if (typeof item[field] !== 'string' || !item[field].trim()) {
+        throw new Error(`${evalFile} eval ${item.id} is missing a non-empty "${field}"`);
+      }
+    }
+    if (!Array.isArray(item.files)) {
+      throw new Error(`${evalFile} eval ${item.id} must have a "files" array`);
+    }
+    if (!Array.isArray(item.expectations) || item.expectations.length === 0) {
+      throw new Error(`${evalFile} eval ${item.id} must have a non-empty "expectations" array`);
+    }
+    if (!item.expectations.every((expectation) => typeof expectation === 'string' && expectation.trim())) {
+      throw new Error(`${evalFile} eval ${item.id} expectations must all be non-empty strings`);
+    }
+  }
+  evalSuites.set(skillName, suite);
+}
+
+// compose-agent write-mode evals must keep pace with the 4.3.x authoring rules,
+// so the authoring path can't silently drift from the audit scoring path. Checked
+// per eval CASE (not whole-file text), so the suite description can't satisfy them.
+const composeSuite = evalSuites.get('compose-agent');
+if (!composeSuite) {
+  throw new Error('compose-agent must ship write-mode evals at skills/compose-agent/evals/evals.json');
+}
+// The three 4.3.x authoring rules, each with the token that identifies its case.
+const authoringRules = [
+  ['cross-phase back-write', /onSizeChanged|onGloballyPositioned|onPlaced|cross-phase/],
+  ['Strong Skipping false lead', /Strong Skipping[\s\S]*memoiz|memoiz[\s\S]*Strong Skipping/i],
+  ['snapshot self-invalidation', /mutableStateMapOf|mutableStateListOf|self-invalidation/],
+];
+// Each rule must be covered by its own DISTINCT case — so one case stuffed with all
+// three keywords can't fake coverage.
+const usedIds = new Set();
+const matchedByRule = new Map();
+for (const [label, needle] of authoringRules) {
+  const match = composeSuite.evals.find((item) => !usedIds.has(item.id) && needle.test(JSON.stringify(item)));
+  if (!match) {
+    throw new Error(`compose-agent evals must include a distinct case covering the ${label} authoring rule`);
+  }
+  usedIds.add(match.id);
+  matchedByRule.set(label, match);
+}
+// The Strong Skipping false-lead case must cover BOTH subcases: the auto-memoized
+// lambda AND the remember(index) pure-expression no-op. Checked on the same case the
+// Strong Skipping rule matched above, not a fresh lookup.
+const falseLeadCase = matchedByRule.get('Strong Skipping false lead');
+if (!/remember\(index\)|remember\(i\)/.test(JSON.stringify(falseLeadCase))) {
+  throw new Error('compose-agent Strong Skipping false-lead case must cover both the auto-memoized-lambda and the remember(index) pure-expression subcases');
+}
+// Bidirectional lockstep: the audit must keep cases 12-14 AND they must still cover
+// the same three rules (an id alone is not enough).
+const auditSuite = evalSuites.get('jetpack-compose-audit');
+if (auditSuite) {
+  const auditMirror = [[12, authoringRules[0]], [13, authoringRules[1]], [14, authoringRules[2]]];
+  for (const [id, [label, needle]] of auditMirror) {
+    const auditCase = auditSuite.evals.find((item) => item.id === id);
+    if (!auditCase) {
+      throw new Error(`jetpack-compose-audit evals must retain case ${id} (the audit side of the compose-agent write-mode mirror)`);
+    }
+    if (!needle.test(JSON.stringify(auditCase))) {
+      throw new Error(`jetpack-compose-audit case ${id} must still cover the ${label} rule (mirror of compose-agent write-mode evals)`);
+    }
+  }
+}
+NODE
+
+if command -v claude >/dev/null 2>&1; then
+  claude plugin validate ./skills/compose-agent
+  claude plugin validate ./skills/jetpack-compose-audit
+else
+  echo "warning: claude CLI not found; skipped Claude plugin validation" >&2
+fi
