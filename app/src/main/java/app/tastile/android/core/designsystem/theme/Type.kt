@@ -18,6 +18,8 @@ package app.tastile.android.core.designsystem.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.LineHeightStyle.Alignment
@@ -25,6 +27,13 @@ import androidx.compose.ui.text.style.LineHeightStyle.Trim
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.sp
+import app.tastile.android.R
+
+private val NotoSansJp = FontFamily(
+    Font(R.font.noto_sans_jp_regular, FontWeight.Normal),
+    Font(R.font.noto_sans_jp_medium, FontWeight.Medium),
+    Font(R.font.noto_sans_jp_bold, FontWeight.Bold),
+)
 
 /**
  * Tastile typography (Material 3 compliant).
@@ -32,6 +41,7 @@ import androidx.compose.ui.unit.sp
 internal val TastileTypography = Typography(
     displayLarge = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 57.sp,
         lineHeight = 64.sp,
         letterSpacing = (-0.25).sp,
@@ -40,6 +50,7 @@ internal val TastileTypography = Typography(
     ),
     displayMedium = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 45.sp,
         lineHeight = 52.sp,
         letterSpacing = 0.sp,
@@ -48,6 +59,7 @@ internal val TastileTypography = Typography(
     ),
     displaySmall = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 36.sp,
         lineHeight = 44.sp,
         letterSpacing = 0.sp,
@@ -56,6 +68,7 @@ internal val TastileTypography = Typography(
     ),
     headlineLarge = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 32.sp,
         lineHeight = 40.sp,
         letterSpacing = 0.sp,
@@ -64,6 +77,7 @@ internal val TastileTypography = Typography(
     ),
     headlineMedium = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 28.sp,
         lineHeight = 36.sp,
         letterSpacing = 0.sp,
@@ -72,6 +86,7 @@ internal val TastileTypography = Typography(
     ),
     headlineSmall = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 24.sp,
         lineHeight = 32.sp,
         letterSpacing = 0.sp,
@@ -84,6 +99,7 @@ internal val TastileTypography = Typography(
     ),
     titleLarge = TextStyle(
         fontWeight = FontWeight.Bold,
+        fontFamily = NotoSansJp,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp,
@@ -96,6 +112,7 @@ internal val TastileTypography = Typography(
     ),
     titleMedium = TextStyle(
         fontWeight = FontWeight.Bold,
+        fontFamily = NotoSansJp,
         fontSize = 18.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.1.sp,
@@ -104,6 +121,7 @@ internal val TastileTypography = Typography(
     ),
     titleSmall = TextStyle(
         fontWeight = FontWeight.Medium,
+        fontFamily = NotoSansJp,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
@@ -113,6 +131,7 @@ internal val TastileTypography = Typography(
     // Default text style
     bodyLarge = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp,
@@ -125,6 +144,7 @@ internal val TastileTypography = Typography(
     ),
     bodyMedium = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.25.sp,
@@ -133,6 +153,7 @@ internal val TastileTypography = Typography(
     ),
     bodySmall = TextStyle(
         fontWeight = FontWeight.Normal,
+        fontFamily = NotoSansJp,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.4.sp,
@@ -142,6 +163,7 @@ internal val TastileTypography = Typography(
     // Used for Button
     labelLarge = TextStyle(
         fontWeight = FontWeight.Medium,
+        fontFamily = NotoSansJp,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
@@ -155,6 +177,7 @@ internal val TastileTypography = Typography(
     // Used for Navigation items
     labelMedium = TextStyle(
         fontWeight = FontWeight.Medium,
+        fontFamily = NotoSansJp,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
@@ -168,6 +191,7 @@ internal val TastileTypography = Typography(
     // Used for Tag
     labelSmall = TextStyle(
         fontWeight = FontWeight.Medium,
+        fontFamily = NotoSansJp,
         fontSize = 10.sp,
         lineHeight = 14.sp,
         letterSpacing = 0.sp,
