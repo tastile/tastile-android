@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -31,6 +32,7 @@ import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.ui.mobile.panels.projects.NewProjectForm
 import app.tastile.android.ui.mobile.panels.projects.ProjectsList
 import app.tastile.android.ui.mobile.panels.projects.ProjectEditForm
@@ -83,7 +85,7 @@ fun ProjectsSectionContent(
             Text(
                 text = stringResource(R.string.panels_projects_title),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
             if (!creating) {
                 NiaTextButton(
@@ -122,13 +124,13 @@ fun ProjectsSectionContent(
                 Text(
                     text = stringResource(R.string.panels_projects_loading_projects),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
             state.error != null -> Text(
                 text = state.error.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
+                color = LocalTastileStatusTokens.current.archived.icon,
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             else -> ProjectsList(
