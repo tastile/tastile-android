@@ -28,6 +28,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 // m2-allow: m3-component
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,7 +81,7 @@ fun ProjectColorRow(
             Icon(
                 imageVector = Icons.Outlined.Folder,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
@@ -120,8 +123,8 @@ private fun ProjectChip(
             .clickable { onExpandedChange(!expanded) }
             .testTag("$testTag-picker"),
         shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = LocalTastileCardRoleTokens.current.actionable.container,
+        border = BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -130,7 +133,7 @@ private fun ProjectChip(
             Text(
                 text = selected?.displayName ?: stringResource(R.string.quickcreate_panel_meta_no_project),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = LocalContentColor.current,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.testTag("$testTag-picker-label"),
@@ -176,7 +179,7 @@ private fun ColorSwatchRow(
                 color = Color.Transparent,
                 border = BorderStroke(
                     if (isSelected) 2.dp else 1.dp,
-                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                    if (isSelected) LocalTastileCardRoleTokens.current.actionable.border else LocalTastileCardRoleTokens.current.completed.border,
                 ),
                 modifier = Modifier
                     .size(24.dp)
@@ -204,8 +207,8 @@ private fun ColorSwatchRow(
         Surface(
             onClick = { showCustom = true },
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            color = LocalTastileCardRoleTokens.current.actionable.container,
+            border = BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border),
             modifier = Modifier
                 .size(24.dp)
                 .testTag("$testTag-color-custom"),
@@ -214,7 +217,7 @@ private fun ColorSwatchRow(
                 Icon(
                     Icons.Outlined.Palette,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = LocalContentColor.current,
                     modifier = Modifier.size(16.dp),
                 )
             }
