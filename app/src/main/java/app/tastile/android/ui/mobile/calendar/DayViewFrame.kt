@@ -4,8 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -14,6 +12,7 @@ import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 
 /**
  * Static Frame half of the Day view (Phase v37 / Task 3.5).
@@ -37,7 +36,7 @@ fun DayViewFrame(
     onCreateAt: (hour: Int, minute: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val outlineColor: Color = MaterialTheme.colorScheme.outlineVariant
+    val outlineColor: Color = LocalTastileCardRoleTokens.current.completed.border
     val density = LocalDensity.current.density
 
     Box(
