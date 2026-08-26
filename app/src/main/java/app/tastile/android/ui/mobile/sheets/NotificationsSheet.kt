@@ -19,9 +19,12 @@ import androidx.compose.material3.ListItem
 // m2-allow: m3-component
 import androidx.compose.material3.ListItemDefaults
 // m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+// m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
 import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -64,7 +67,7 @@ fun NotificationsSheet(
                         ListItem(
                             content = { Text(it.label, style = MaterialTheme.typography.bodyLarge) },
                             leadingContent = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
-                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                            colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
                         )
                     }
                 }
@@ -84,20 +87,20 @@ private fun NotificationsEmptyState() {
         Icon(
             imageVector = Icons.Outlined.Notifications,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = LocalContentColor.current,
             modifier = Modifier.size(48.dp),
         )
         Box(Modifier.size(12.dp))
         Text(
             text = stringResource(R.string.empty_tiles_title),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = LocalContentColor.current,
         )
         Box(Modifier.size(4.dp))
         Text(
             text = stringResource(R.string.empty_tiles_hint),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
     }
 }
