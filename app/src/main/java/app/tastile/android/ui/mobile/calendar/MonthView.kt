@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -78,7 +80,7 @@ fun MonthView(
                     text = shortDowLabel(gridStart.plusDays(col.toLong())),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f),
                 )
