@@ -18,6 +18,8 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.DatePickerDialog
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
@@ -43,6 +45,8 @@ import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.data.time.formatIsoDateTime
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -70,7 +74,7 @@ fun TilesTimelineBody(
         Text(
             text = stringResource(R.string.dashboard_tiles_timeline_section_title),
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         TimelineScaleHeader(
             current = scale,
@@ -83,7 +87,7 @@ fun TilesTimelineBody(
             Text(
                 text = stringResource(R.string.dashboard_tiles_timeline_empty),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -108,7 +112,7 @@ private fun TimelineScaleHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(LocalTastileStatusTokens.current.ready.container)
                 .padding(2.dp)
                 .testTag("tiles-timeline-scale"),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -118,10 +122,10 @@ private fun TimelineScaleHeader(
                 Text(
                     scale.label(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (active) LocalContentColor.current else LocalContentColor.current,
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(if (active) MaterialTheme.colorScheme.surface else Color.Transparent)
+                        .background(if (active) LocalTastileCardRoleTokens.current.neutral.container else Color.Transparent)
                         .clickable { onPick(scale) }
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 )
@@ -232,7 +236,7 @@ private fun DateRangeRow(
 @Composable
 private fun TimelineRow(item: CoreTimelineItem, locale: AppLocale) {
     val ended = item.type.endsWith("_ended") || item.status == "done" || item.status == "completed"
-    val dotColor = if (ended) StatusStartedGreen else MaterialTheme.colorScheme.primary
+    val dotColor = if (ended) StatusStartedGreen else LocalTastileCardRoleTokens.current.actionable.border
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -250,12 +254,12 @@ private fun TimelineRow(item: CoreTimelineItem, locale: AppLocale) {
         Text(
             text = formatIsoDateTime(item.startAt, locale),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Text(
             text = "${item.title} · ${item.type}",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = LocalContentColor.current,
         )
     }
 }
