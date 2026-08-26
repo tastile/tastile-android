@@ -23,8 +23,6 @@ import androidx.compose.material3.Icon
 // m2-allow: m3-component
 import androidx.compose.material3.IconButton
 // m2-allow: m3-component
-import androidx.compose.material3.MaterialTheme
-// m2-allow: m3-component
 import androidx.compose.foundation.layout.PaddingValues
 // m2-allow: m3-component
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +36,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 // m2-allow: state-holder
 import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -158,7 +159,7 @@ fun QuickCreateSheetMobile(
                             Icon(
                                 imageVector = Icons.Outlined.Close,
                                 contentDescription = stringResource(R.string.quickcreate_close_cd),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = LocalContentColor.current,
                             )
                         }
                     },
@@ -169,8 +170,8 @@ fun QuickCreateSheetMobile(
                             shape = RoundedCornerShape(50),
                             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                                containerColor = LocalTastileCardRoleTokens.current.actionable.container,
+                                contentColor = LocalContentColor.current,
                             ),
                             modifier = Modifier.testTag("quick-create-handle-submit"),
                         ) {
@@ -209,7 +210,7 @@ fun QuickCreateSheetMobile(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
                                     contentDescription = stringResource(R.string.quickcreate_back_cd),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = LocalContentColor.current,
                                 )
                             }
                         },
