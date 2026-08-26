@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
 
 /**
  * Per-cell event-count indicator for the Month view (Phase v37 / Task 5).
@@ -66,7 +70,7 @@ private fun MonthDot() {
     Box(
         modifier = Modifier
             .size(6.dp)
-            .background(MaterialTheme.colorScheme.primary, CircleShape),
+            .background(LocalTastileCardRoleTokens.current.actionable.border, CircleShape),
     )
 }
 
@@ -78,11 +82,11 @@ private fun MonthDot() {
  */
 @Composable
 private fun MonthPill(text: String) {
-    val pillColor = MaterialTheme.colorScheme.primary
-    val onPillColor = MaterialTheme.colorScheme.onPrimary
+    val pillColor = LocalTastileCardRoleTokens.current.actionable.border
+    val onPillColor = LocalContentColor.current
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(LocalTastileShapeTokens.current.xs))
             .background(pillColor)
             .padding(horizontal = 4.dp, vertical = 1.dp),
         contentAlignment = Alignment.Center,
