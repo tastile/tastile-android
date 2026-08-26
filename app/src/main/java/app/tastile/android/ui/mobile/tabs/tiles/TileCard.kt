@@ -16,6 +16,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 // m2-allow: m3-component
 import androidx.compose.material3.ListItemDefaults
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -32,6 +34,7 @@ import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.model.dueAtDate
 import app.tastile.android.data.model.isRecurring
 import app.tastile.android.data.model.projectLabel
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.ui.dashboard.ListViewMode
 
 /**
@@ -63,7 +66,7 @@ fun CompactTileCard(
                 Text(
                     text = "›",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
         },
@@ -71,13 +74,13 @@ fun CompactTileCard(
             Text(
                 text = lifecycle.shortLabel(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         },
         modifier = modifier
             .clickable(onClick = onClick)
             .testTag("tile-card-${tile.id}-compact"),
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
     )
 }
 
@@ -106,7 +109,7 @@ fun ComfortableTileCard(
                 Text(
                     text = "›",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
         },
@@ -114,13 +117,13 @@ fun ComfortableTileCard(
             Text(
                 text = meta.ifBlank { lifecycle.shortLabel() },
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         },
         modifier = modifier
             .clickable(onClick = onClick)
             .testTag("tile-card-${tile.id}-comfortable"),
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
     )
 }
 
@@ -152,7 +155,7 @@ fun DetailedTileCard(
             Text(
                 tile.title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = LocalContentColor.current,
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = onDelete) {
@@ -163,7 +166,7 @@ fun DetailedTileCard(
             Text(
                 meta,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         }
         Row(
@@ -175,14 +178,14 @@ fun DetailedTileCard(
             Text(
                 text = stringResource(R.string.tiles_duration) + ": " + stringResource(R.string.tile_card_meta_minutes, tile.targetWorkMin ?: 0),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
             val start = tile.fixedStart ?: tile.activeStart
             if (!start.isNullOrBlank()) {
                 Text(
                     text = "${stringResource(R.string.tiles_start_at)}: $start",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
         }
