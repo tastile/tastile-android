@@ -7,12 +7,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 
 /**
  * Vertical "now" indicator rendered on top of the day grid.
@@ -37,12 +36,13 @@ fun NowIndicator(
     val minutesOfDay = localTime.hour * 60 + localTime.minute
     val pxPerMinEff = pxPerMin.coerceAtLeast(0.0001f)
     val nowY = ((minutesOfDay - dayRangeStartHour * 60) * pxPerMinEff).dp
+    val nowColor = LocalTastileStatusTokens.current.archived.icon
     Box(modifier) {
         Box(
             modifier = Modifier
                 .offset(x = (-5).dp, y = nowY - 5.dp)
                 .size(10.dp)
-                .background(MaterialTheme.colorScheme.error, CircleShape)
+                .background(nowColor, CircleShape)
                 .testTag("now-indicator-dot"),
         )
         Box(
@@ -50,7 +50,7 @@ fun NowIndicator(
                 .offset(y = nowY - 1.dp)
                 .fillMaxWidth()
                 .height(2.dp)
-                .background(MaterialTheme.colorScheme.error)
+                .background(nowColor)
                 .testTag("now-indicator-line"),
         )
     }
