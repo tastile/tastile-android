@@ -21,6 +21,7 @@ import app.tastile.android.R
 import androidx.compose.material3.Icon
 // m2-allow: m3-component
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
@@ -37,6 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 
 /**
  * Single workspace row with a long-press-revealed delete × button.
@@ -78,9 +81,9 @@ fun ProjectRow(
             modifier = Modifier.fillMaxWidth(),
             colors = ListItemDefaults.colors(
                 containerColor = if (selected) {
-                    MaterialTheme.colorScheme.secondaryContainer
+                    LocalTastileStatusTokens.current.done.container
                 } else {
-                    MaterialTheme.colorScheme.surface
+                    LocalTastileCardRoleTokens.current.neutral.container
                 },
             ),
         )
@@ -98,7 +101,7 @@ fun ProjectRow(
                     Icon(
                         imageVector = Icons.Outlined.Edit,
                         contentDescription = stringResource(R.string.tile_edit_edit_cd),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = LocalContentColor.current,
                     )
                 }
                 IconButton(
@@ -110,7 +113,7 @@ fun ProjectRow(
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = stringResource(R.string.tile_edit_delete_cd),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = LocalContentColor.current,
                     )
                 }
             }
