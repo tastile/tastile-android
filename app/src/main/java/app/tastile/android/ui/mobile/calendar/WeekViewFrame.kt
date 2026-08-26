@@ -5,13 +5,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import java.time.LocalDate
 
 /**
@@ -32,7 +31,7 @@ fun WeekViewFrame(
     modifier: Modifier = Modifier,
     pxPerMin: Float,
 ) {
-    val outlineColor = MaterialTheme.colorScheme.outlineVariant
+    val outlineColor = LocalTastileCardRoleTokens.current.completed.border
 
     Column(modifier = modifier.testTag("week-view-frame").fillMaxSize()) {
         // Hour-grid Canvas. Fills the rest of the Frame's height; the
