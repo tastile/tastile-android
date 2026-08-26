@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -31,6 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.MobileSpacing
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.data.model.Workspace
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.mobile.OverlayViewModel
@@ -88,7 +91,7 @@ private fun ProjectListRow(
     onSelect: () -> Unit,
 ) {
     val rowBg = if (selected) {
-        MaterialTheme.colorScheme.surfaceContainerHigh
+        LocalTastileCardRoleTokens.current.actionable.container
     } else {
         Color.Transparent
     }
@@ -130,7 +133,7 @@ private fun ProjectListRow(
             Text(
                 text = subtitleText,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -147,7 +150,7 @@ private fun EmptyProjectsMessage() {
         Text(
             text = stringResource(R.string.empty_projects_title),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
     }
 }
