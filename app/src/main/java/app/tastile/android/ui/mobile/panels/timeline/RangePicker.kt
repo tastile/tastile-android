@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -20,6 +21,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.ui.dashboard.TimelineSubScale
 
 /**
@@ -45,9 +48,9 @@ internal fun RangePicker(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
             .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
+                LocalTastileStatusTokens.current.ready.container.copy(alpha = 0.20f),
             )
             .padding(2.dp),
     ) {
@@ -56,9 +59,9 @@ internal fun RangePicker(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
                     .background(
-                        if (selected) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                        if (selected) LocalTastileStatusTokens.current.ready.container.copy(alpha = 0.55f)
                         else Color.Transparent,
                     )
                     .clickable { onSelect(item) }
@@ -69,7 +72,7 @@ internal fun RangePicker(
                     text = stringResource(labelRes),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (selected) LocalContentColor.current else LocalContentColor.current,
                 )
             }
         }
