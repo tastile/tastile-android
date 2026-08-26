@@ -92,6 +92,8 @@ class PromptViewModelTest {
         private val userId: String?
     ) : CurrentUserProvider {
         override fun currentUserId(): String? = userId
+        override fun currentEmail(): String? = null
+        override fun currentSessionToken(): String? = null
     }
 
     private class FakePromptTileRepository(

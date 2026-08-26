@@ -234,7 +234,7 @@ class DashboardViewModelTest {
     @Test
     fun authoritativeExecutionRefresh_clearsUnvalidatedPausedState() = runTest {
         val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
-        val authState = MutableStateFlow<TastileAuthState>(TastileAuthState.Authenticated("user-1", "user@example.test", "id-token", "access-token", null))
+        val authState = MutableStateFlow<TastileAuthState>(TastileAuthState.Authenticated("user-1", "user@example.test"))
         every { authRepository.authState } returns authState
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
             listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),

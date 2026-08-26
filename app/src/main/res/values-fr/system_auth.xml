@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="login_subtitle_signin">Sign in to Tastile</string>
-    <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
-    <string name="login_button_signing_in">Signing in…</string>
-    <string name="login_button_continue">Continue with Google</string>
-    <string name="login_logo_cd">Tastile logo</string>
+    <string name="login_subtitle_signin">Se connecter à Tastile</string>
+    <string name="login_subtitle_body">Planifiez, exécutez et suivez vos tâches avec des blocs de temps ciblés.</string>
+    <string name="login_email_label">E-mail</string>
+    <string name="login_password_label">Mot de passe</string>
+    <string name="login_button_signin">Se connecter</string>
+    <string name="login_button_signing_in">Connexion…</string>
+    <string name="login_button_continue_google">Continuer avec Google</string>
+    <string name="login_signup_link">Créer un compte</string>
+    <string name="login_signup_button">Créer un compte</string>
+    <string name="login_logo_cd">Logo Tastile</string>
     <string name="login_brand_label">Tastile</string>
-    <string name="login_terms_link">Terms of Service</string>
-    <string name="login_privacy_link">Privacy Policy</string>
+    <string name="login_terms_link">Conditions d\'utilisation</string>
+    <string name="login_privacy_link">Politique de confidentialité</string>
     <string name="login_footer_separator"> · </string>
     <string name="login_error_sign_in_failed">Connexion impossible</string>
     <string name="login_error_sign_out_failed">Déconnexion impossible</string>

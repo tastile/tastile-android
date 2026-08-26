@@ -1,9 +1,8 @@
 package app.tastile.android
 
-import android.content.Intent
+import android.content.Context
 import android.content.pm.PackageManager
 import android.app.KeyguardManager
-import android.content.Context
 import android.os.Bundle
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -19,9 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import app.tastile.android.data.auth.ApiTokenCache
 import app.tastile.android.data.auth.AuthRepository
-import app.tastile.android.data.notification.PushEndpointRepository
 import app.tastile.android.data.auth.TastileAuthState
+import app.tastile.android.data.notification.PushEndpointRepository
 import app.tastile.android.data.user.UserSettingsRepository
 import app.tastile.android.ui.app.AppShellViewModel
 import app.tastile.android.ui.mobile.MobileNavGraph
@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
+
+    @Inject
+    lateinit var apiTokenCache: ApiTokenCache
 
     @Inject
     lateinit var syncCoordinator: SyncCoordinator
@@ -79,9 +82,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Handle deep links for OAuth
-        handleDeepLink(intent)
-
         enableEdgeToEdge()
         setContent {
             val themeMode by dashboardViewModel.themeMode.collectAsStateWithLifecycle()
@@ -116,23 +116,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        handleDeepLink(intent)
-    }
-
-    private fun handleDeepLink(intent: Intent?) {
-        if (intent?.data == null) return
-        lifecycleScope.launch {
-            runCatching {
-                authRepository.handleDeepLink(intent)
-            }.onFailure {
-                it.printStackTrace()
-            }
-        }
-    }
-
     private fun observeSessionForCoreSync() {
         lifecycleScope.launch {
             authRepository.authState.collectLatest { status ->
@@ -140,7 +123,30 @@ class MainActivity : ComponentActivity() {
                     executionNotificationCoordinator.stop()
                     return@collectLatest
                 }
-                val refreshToken = status.refreshToken ?: return@collectLatest
+                // The Core bridge needs the user identity plus the bearer
+                // credentials. The v1 API token is the bearer for v1 calls;
+                // the BetterAuth session token is the refresh credential
+                // used to mint a fresh v1 token when the cached one is
+                // rejected.
+                val v1Token = apiTokenCache.currentCachedToken()
+                    ?: apiTokenCache.getOrMint(
+                        onMintFailed = { error ->
+                            // Surface a one-line toast so the user sees that
+                            // sync / API calls are running unauthenticated
+                            // instead of failing silently. We keep the
+                            // null return contract so the call site can
+                            // still bail out cleanly.
+                            android.widget.Toast.makeText(
+                                this@MainActivity,
+                                getString(R.string.api_token_mint_failed),
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                            error.printStackTrace()
+                        },
+                    )
+                    ?: return@collectLatest
+                val sessionToken = authRepository.currentSessionToken()
+                    ?: return@collectLatest
                 requestNotificationPermissionIfNeeded()
                 executionNotificationCoordinator.start()
 
@@ -154,8 +160,8 @@ class MainActivity : ComponentActivity() {
                 runCatching {
                     syncCoordinator.onSessionAvailable(
                         userId = status.userId,
-                        accessToken = status.idToken,
-                        refreshToken = refreshToken
+                        accessToken = v1Token,
+                        refreshToken = sessionToken,
                     )
                 }.onFailure { error ->
                     if (error is CoreBridgeError.NativeMethodUnavailable || error is CoreBridgeError.LibraryLoadFailed) {

@@ -25,13 +25,13 @@ class TileRepositoryV1ReadTest {
     private fun newRepository(
         apiClient: V1ApiClient,
         userId: String = "user-1",
-        idToken: String? = "token-abc"
+        sessionToken: String? = "session-abc"
     ): TileRepository = TileRepository(
         executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
         eventRepository = mockk<EventRepository>(relaxed = true),
         currentUserProvider = mockk<CurrentUserProvider> {
             every { currentUserId() } returns userId
-            every { currentIdToken() } returns idToken
+            every { currentSessionToken() } returns sessionToken
         },
         v1ApiClient = apiClient,
         v1CommandDispatcher = mockk<V1CommandDispatcher>(relaxed = true)
@@ -97,9 +97,9 @@ class TileRepositoryV1ReadTest {
     }
 
     @Test
-    fun getTiles_returnsEmptyWhenIdTokenMissing_andDoesNotCallV1() = runTest {
+    fun getTiles_returnsEmptyWhenSessionTokenMissing_andDoesNotCallV1() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
-        val repository = newRepository(apiClient, idToken = null)
+        val repository = newRepository(apiClient, sessionToken = null)
 
         val response = repository.getTiles()
 

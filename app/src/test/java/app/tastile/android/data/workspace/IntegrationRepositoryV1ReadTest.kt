@@ -44,7 +44,7 @@ class IntegrationRepositoryV1ReadTest {
         )
         val repository = IntegrationRepository(
             currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentIdToken() } returns "token-abc"
+                every { currentSessionToken() } returns "session-abc"
             },
             v1ApiClient = apiClient
         )
@@ -67,7 +67,7 @@ class IntegrationRepositoryV1ReadTest {
         coEvery { apiClient.listRuntimePaths() } throws V1Error.Network(IOException("boom"))
         val repository = IntegrationRepository(
             currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentIdToken() } returns "token-abc"
+                every { currentSessionToken() } returns "session-abc"
             },
             v1ApiClient = apiClient
         )
@@ -89,7 +89,7 @@ class IntegrationRepositoryV1ReadTest {
         coEvery { apiClient.listRuntimePaths() } throws V1Error.Auth()
         val repository = IntegrationRepository(
             currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentIdToken() } returns "token-abc"
+                every { currentSessionToken() } returns "session-abc"
             },
             v1ApiClient = apiClient
         )
@@ -106,7 +106,7 @@ class IntegrationRepositoryV1ReadTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         val repository = IntegrationRepository(
             currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentIdToken() } returns null
+                every { currentSessionToken() } returns null
             },
             v1ApiClient = apiClient
         )
@@ -135,7 +135,7 @@ class IntegrationRepositoryV1ReadTest {
         )
         val repository = IntegrationRepository(
             currentUserProvider = mockk<CurrentUserProvider> {
-                every { currentIdToken() } returns "token-abc"
+                every { currentSessionToken() } returns "session-abc"
             },
             v1ApiClient = apiClient
         )

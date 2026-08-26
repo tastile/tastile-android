@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="login_subtitle_signin">Sign in to Tastile</string>
-    <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
-    <string name="login_button_signing_in">Signing in…</string>
-    <string name="login_button_continue">Continue with Google</string>
-    <string name="login_logo_cd">Tastile logo</string>
+    <string name="login_subtitle_signin">登录 Tastile</string>
+    <string name="login_subtitle_body">通过专注的时间块规划、执行并跟踪你的任务。</string>
+    <string name="login_email_label">电子邮箱</string>
+    <string name="login_password_label">密码</string>
+    <string name="login_button_signin">登录</string>
+    <string name="login_button_signing_in">正在登录…</string>
+    <string name="login_button_continue_google">使用 Google 继续</string>
+    <string name="login_signup_link">创建账户</string>
+    <string name="login_signup_button">创建账户</string>
+    <string name="login_logo_cd">Tastile 标志</string>
     <string name="login_brand_label">Tastile</string>
-    <string name="login_terms_link">Terms of Service</string>
-    <string name="login_privacy_link">Privacy Policy</string>
+    <string name="login_terms_link">服务条款</string>
+    <string name="login_privacy_link">隐私政策</string>
     <string name="login_footer_separator"> · </string>
     <string name="login_error_sign_in_failed">无法登录</string>
     <string name="login_error_sign_out_failed">无法退出登录</string>

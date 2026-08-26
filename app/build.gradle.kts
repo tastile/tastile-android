@@ -14,11 +14,7 @@ val releaseStorePassword = providers.gradleProperty("RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS")
 val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD")
 val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
-val cognitoClientId = providers.gradleProperty("COGNITO_CLIENT_ID")
-val cognitoRegion = providers.gradleProperty("COGNITO_REGION")
-val cognitoHostedUiDomain = providers.gradleProperty("COGNITO_HOSTED_UI_DOMAIN")
-val cognitoRedirectUri = providers.gradleProperty("COGNITO_REDIRECT_URI")
-val cognitoWebAuthBaseUrl = providers.gradleProperty("COGNITO_WEB_AUTH_BASE_URL")
+val webBaseUrl = providers.gradleProperty("WEB_BASE_URL")
 val tastileCoreUrl = providers.gradleProperty("TASTILE_CORE_URL")
 val hasReleaseSigning =
     releaseStoreFile.isPresent &&
@@ -63,11 +59,7 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         // requireGradleProperty guard so a partial config fails the build fast
         // instead of silently embedding the wrong environment.
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
-        buildConfigField("String", "COGNITO_CLIENT_ID", "\"${cognitoClientId.orNull ?: ""}\"")
-        buildConfigField("String", "COGNITO_REGION", "\"${cognitoRegion.orNull ?: ""}\"")
-        buildConfigField("String", "COGNITO_HOSTED_UI_DOMAIN", "\"${cognitoHostedUiDomain.orNull ?: ""}\"")
-        buildConfigField("String", "COGNITO_REDIRECT_URI", "\"${cognitoRedirectUri.orNull ?: ""}\"")
-        buildConfigField("String", "COGNITO_WEB_AUTH_BASE_URL", "\"${cognitoWebAuthBaseUrl.orNull ?: ""}\"")
+        buildConfigField("String", "WEB_BASE_URL", "\"${webBaseUrl.orNull ?: ""}\"")
         buildConfigField("String", "TASTILE_CORE_URL", "\"${tastileCoreUrl.orNull ?: ""}\"")
     }
 
@@ -656,8 +648,8 @@ dependencies {
 }
 
 // R18 (android refactor 2026-07-22): fail-fast guard.
-// Every BuildConfig.* field that ships into runtime (Cognito client/region/hosted-ui,
-// web-auth base, TASTILE_CORE_URL, Google web client ID) MUST be supplied by
+// Every BuildConfig.* field that ships into runtime (web base URL,
+// TASTILE_CORE_URL, Google web client ID) MUST be supplied by
 // gradle.properties — empty strings cause silent auth breakage on a release build.
 // Set them in:
 //   - gradle.properties (CI / shared values), or
@@ -666,11 +658,7 @@ dependencies {
 gradle.projectsEvaluated {
     val requiredProps = listOf(
         "GOOGLE_WEB_CLIENT_ID",
-        "COGNITO_CLIENT_ID",
-        "COGNITO_REGION",
-        "COGNITO_HOSTED_UI_DOMAIN",
-        "COGNITO_REDIRECT_URI",
-        "COGNITO_WEB_AUTH_BASE_URL",
+        "WEB_BASE_URL",
         "TASTILE_CORE_URL",
     )
     requiredProps.forEach { name ->

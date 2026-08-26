@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="login_subtitle_signin">Sign in to Tastile</string>
-    <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
-    <string name="login_button_signing_in">Signing in…</string>
-    <string name="login_button_continue">Continue with Google</string>
-    <string name="login_logo_cd">Tastile logo</string>
+    <string name="login_subtitle_signin">Tastile にサインイン</string>
+    <string name="login_subtitle_body">集中できる時間ブロックでタスクを計画・実行・追跡しましょう。</string>
+    <string name="login_email_label">メールアドレス</string>
+    <string name="login_password_label">パスワード</string>
+    <string name="login_button_signin">サインイン</string>
+    <string name="login_button_signing_in">サインイン中…</string>
+    <string name="login_button_continue_google">Google で続ける</string>
+    <string name="login_signup_link">アカウントを作成</string>
+    <string name="login_signup_button">アカウントを作成</string>
+    <string name="login_logo_cd">Tastile ロゴ</string>
     <string name="login_brand_label">Tastile</string>
-    <string name="login_terms_link">Terms of Service</string>
-    <string name="login_privacy_link">Privacy Policy</string>
+    <string name="login_terms_link">利用規約</string>
+    <string name="login_privacy_link">プライバシーポリシー</string>
     <string name="login_footer_separator"> · </string>
     <string name="login_error_sign_in_failed">サインインできません</string>
     <string name="login_error_sign_out_failed">サインアウトできません</string>

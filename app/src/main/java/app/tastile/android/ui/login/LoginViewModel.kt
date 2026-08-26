@@ -25,14 +25,32 @@ class LoginViewModel @Inject constructor(
     val error: StateFlow<String?> = _error.asStateFlow()
     private val _isSigningIn = MutableStateFlow(false)
     val isSigningIn: StateFlow<Boolean> = _isSigningIn.asStateFlow()
+    private val _email = MutableStateFlow("")
+    val email: StateFlow<String> = _email.asStateFlow()
+    private val _password = MutableStateFlow("")
+    val password: StateFlow<String> = _password.asStateFlow()
 
-    fun signInWithCognito(context: Context) {
+    fun onEmailChange(value: String) {
+        _email.value = value
+    }
+
+    fun onPasswordChange(value: String) {
+        _password.value = value
+    }
+
+    fun signInWithEmail(@Suppress("UNUSED_PARAMETER") context: Context) {
+        val email = _email.value.trim()
+        val password = _password.value
+        if (email.isBlank() || password.isBlank()) {
+            _error.value = this.context.getString(R.string.login_error_sign_in_failed)
+            return
+        }
         viewModelScope.launch {
             if (_isSigningIn.value) return@launch
             try {
                 _isSigningIn.value = true
                 _error.value = null
-                authRepository.signInWithCognito(context)
+                authRepository.signInWithEmail(email = email, password = password)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -43,13 +61,23 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun signInWithGoogle(context: Context) {
+    fun signUp(@Suppress("UNUSED_PARAMETER") context: Context) {
+        val email = _email.value.trim()
+        val password = _password.value
+        if (email.isBlank() || password.isBlank()) {
+            _error.value = this.context.getString(R.string.login_error_sign_in_failed)
+            return
+        }
         viewModelScope.launch {
             if (_isSigningIn.value) return@launch
             try {
                 _isSigningIn.value = true
                 _error.value = null
-                authRepository.signInWithGoogle(context)
+                authRepository.signUpWithEmail(
+                    email = email,
+                    password = password,
+                    name = email.substringBefore('@').ifBlank { email },
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

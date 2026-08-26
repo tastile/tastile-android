@@ -2,8 +2,13 @@
 <resources>
     <string name="login_subtitle_signin">Sign in to Tastile</string>
     <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
+    <string name="login_email_label">Email</string>
+    <string name="login_password_label">Password</string>
+    <string name="login_button_signin">Sign in</string>
     <string name="login_button_signing_in">Signing in…</string>
-    <string name="login_button_continue">Continue with Google</string>
+    <string name="login_button_continue_google">Continue with Google</string>
+    <string name="login_signup_link">Create an account</string>
+    <string name="login_signup_button">Create account</string>
     <string name="login_logo_cd">Tastile logo</string>
     <string name="login_brand_label">Tastile</string>
     <string name="login_terms_link">Terms of Service</string>

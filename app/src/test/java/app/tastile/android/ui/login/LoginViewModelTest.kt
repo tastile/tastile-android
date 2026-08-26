@@ -22,7 +22,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
     private val context = mockk<Context>(relaxed = true).also {
-        every { it.getString(R.string.login_error_sign_in_failed) } returns "Cognito sign-in failed"
+        every { it.getString(R.string.login_error_sign_in_failed) } returns "Sign-in failed"
         every { it.getString(R.string.login_error_sign_out_failed) } returns "Unable to sign out"
     }
 
@@ -37,24 +37,58 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun signInWithCognito_whenRepositoryFails_exposesErrorMessage() {
-        val repository = FakeAuthRepository(signInError = IllegalStateException("Cognito sign-in failed"))
+    fun signInWithEmail_whenRepositoryFails_exposesErrorMessage() {
+        val repository = FakeAuthRepository(signInError = IllegalStateException("Sign-in failed"))
         val viewModel = LoginViewModel(repository, context)
 
-        viewModel.signInWithCognito(context)
+        viewModel.onEmailChange("user@example.com")
+        viewModel.onPasswordChange("hunter2")
+        viewModel.signInWithEmail(context)
 
-        assertEquals("Cognito sign-in failed", viewModel.error.value)
+        assertEquals("Sign-in failed", viewModel.error.value)
         assertEquals(false, viewModel.isSigningIn.value)
     }
 
     @Test
-    fun signInWithCognito_whenRepositorySucceeds_resetsSigningInAndKeepsErrorNull() {
+    fun signInWithEmail_whenRepositorySucceeds_resetsSigningInAndKeepsErrorNull() {
         val repository = FakeAuthRepository()
         val viewModel = LoginViewModel(repository, context)
 
-        viewModel.signInWithCognito(context)
+        viewModel.onEmailChange("user@example.com")
+        viewModel.onPasswordChange("hunter2")
+        viewModel.signInWithEmail(context)
 
         assertNull(viewModel.error.value)
+        assertEquals(false, viewModel.isSigningIn.value)
+    }
+
+    @Test
+    fun signInWithEmail_whenFieldsBlank_setsErrorWithoutCallingRepository() {
+        var called = false
+        val repository = FakeAuthRepository(onSignIn = { _, _ -> called = true })
+        val viewModel = LoginViewModel(repository, context)
+
+        viewModel.onEmailChange("")
+        viewModel.onPasswordChange("")
+        viewModel.signInWithEmail(context)
+
+        assertEquals("Sign-in failed", viewModel.error.value)
+        assertEquals(false, called)
+    }
+
+    @Test
+    fun signUp_derivesNameFromEmailAndCallsRepository() {
+        var captured: Triple<String, String, String>? = null
+        val repository = FakeAuthRepository(onSignUp = { email, password, name ->
+            captured = Triple(email, password, name)
+        })
+        val viewModel = LoginViewModel(repository, context)
+
+        viewModel.onEmailChange("alice@example.com")
+        viewModel.onPasswordChange("hunter2")
+        viewModel.signUp(context)
+
+        assertEquals(Triple("alice@example.com", "hunter2", "alice"), captured)
         assertEquals(false, viewModel.isSigningIn.value)
     }
 
@@ -70,10 +104,12 @@ class LoginViewModelTest {
 
     @Test
     fun clearError_resetsCurrentError() {
-        val repository = FakeAuthRepository(signInError = IllegalStateException("Cognito sign-in failed"))
+        val repository = FakeAuthRepository(signInError = IllegalStateException("Sign-in failed"))
         val viewModel = LoginViewModel(repository, context)
 
-        viewModel.signInWithCognito(context)
+        viewModel.onEmailChange("user@example.com")
+        viewModel.onPasswordChange("hunter2")
+        viewModel.signInWithEmail(context)
         viewModel.clearError()
 
         assertNull(viewModel.error.value)
@@ -81,24 +117,30 @@ class LoginViewModelTest {
 
     private class FakeAuthRepository(
         private val signInError: Exception? = null,
-        private val signOutError: Exception? = null
+        private val signOutError: Exception? = null,
+        private val onSignIn: (String, String) -> Unit = { _, _ -> },
+        private val onSignUp: (String, String, String) -> Unit = { _, _, _ -> },
     ) : AuthRepositoryContract {
         private val auth = MutableStateFlow<TastileAuthState>(TastileAuthState.Unauthenticated)
 
         override val authState: StateFlow<TastileAuthState> = auth
 
-        override suspend fun signInWithCognito(context: Context) {
+        override suspend fun signInWithEmail(email: String, password: String) {
+            onSignIn(email, password)
             signInError?.let { throw it }
         }
 
-        override suspend fun signInWithGoogle(context: Context) {
+        override suspend fun signUpWithEmail(email: String, password: String, name: String) {
+            onSignUp(email, password, name)
             signInError?.let { throw it }
         }
+
+        override suspend fun signInWithProvider(provider: String) = Unit
 
         override suspend fun signOut() {
             signOutError?.let { throw it }
         }
 
-        override fun currentIdToken(): String? = null
+        override fun currentSessionToken(): String? = null
     }
 }

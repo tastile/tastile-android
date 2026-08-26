@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.tastile.android.BuildConfig
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
@@ -294,9 +295,14 @@ private fun LoginMethodsPanel() {
             supporting = null,
             leading = Icons.Outlined.Shield,
             onClick = {
+                // Route to the BetterAuth re-login endpoint instead of the
+                // removed /auth/cognito/* legacy path. The base URL comes
+                // from BuildConfig.WEB_BASE_URL — the same source the rest
+                // of the app uses for web URLs (see AuthRepository.signInWithProvider).
+                val reloginUrl = "${BuildConfig.WEB_BASE_URL.trim().trimEnd('/')}/login?next=/dashboard/account"
                 val intent = Intent(
                     Intent.ACTION_VIEW,
-                    "https://app.tastile.app/auth/cognito/login?next=/dashboard/account".toUri(),
+                    reloginUrl.toUri(),
                 ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             },

@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="login_subtitle_signin">Sign in to Tastile</string>
-    <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
-    <string name="login_button_signing_in">Signing in…</string>
-    <string name="login_button_continue">Continue with Google</string>
-    <string name="login_logo_cd">Tastile logo</string>
+    <string name="login_subtitle_signin">Tastile에 로그인</string>
+    <string name="login_subtitle_body">집중할 수 있는 시간 블록으로 작업을 계획하고 실행하며 추적하세요.</string>
+    <string name="login_email_label">이메일</string>
+    <string name="login_password_label">비밀번호</string>
+    <string name="login_button_signin">로그인</string>
+    <string name="login_button_signing_in">로그인 중…</string>
+    <string name="login_button_continue_google">Google로 계속하기</string>
+    <string name="login_signup_link">계정 만들기</string>
+    <string name="login_signup_button">계정 만들기</string>
+    <string name="login_logo_cd">Tastile 로고</string>
     <string name="login_brand_label">Tastile</string>
-    <string name="login_terms_link">Terms of Service</string>
-    <string name="login_privacy_link">Privacy Policy</string>
+    <string name="login_terms_link">이용 약관</string>
+    <string name="login_privacy_link">개인정보 처리방침</string>
     <string name="login_footer_separator"> · </string>
     <string name="login_error_sign_in_failed">로그인할 수 없습니다</string>
     <string name="login_error_sign_out_failed">로그아웃할 수 없습니다</string>

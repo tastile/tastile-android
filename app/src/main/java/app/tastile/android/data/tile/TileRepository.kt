@@ -57,7 +57,9 @@ class TileRepository @Inject constructor(
     private var latestCloudTiles: List<Tile> = emptyList()
 
     suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): TilesResponse {
-        val token = currentUserProvider.currentIdToken()
+        // Use the BetterAuth session token as the cheap "is the user signed in"
+        // check. The actual v1 call uses the minted token from ApiTokenCache.
+        val token = currentUserProvider.currentSessionToken()
         if (token.isNullOrBlank()) {
             latestReadDiagnostics = "source=v1_skipped reason=no_token count=0 user_match=true"
             return TilesResponse(emptyList(), null, null)
@@ -114,7 +116,7 @@ class TileRepository @Inject constructor(
      */
     suspend fun getTileDetail(tileId: String): SourceTileDetailRead? {
         if (tileId.isBlank()) return null
-        val token = currentUserProvider.currentIdToken()
+        val token = currentUserProvider.currentSessionToken()
         if (token.isNullOrBlank()) return null
         return try {
             v1ApiClient.readSourceTile(tileId)
@@ -128,7 +130,7 @@ class TileRepository @Inject constructor(
     }
 
     private suspend fun readCloudTilesUnfiltered(): List<Tile> {
-        val token = currentUserProvider.currentIdToken()
+        val token = currentUserProvider.currentSessionToken()
         if (token.isNullOrBlank()) return emptyList()
         return try {
             val userId = currentUserProvider.currentUserId().orEmpty()
@@ -379,7 +381,7 @@ class TileRepository @Inject constructor(
         end: Instant,
         ownerIds: List<String>,
     ): List<CoreTimelineItem>? {
-        val token = currentUserProvider.currentIdToken()
+        val token = currentUserProvider.currentSessionToken()
         if (token.isNullOrBlank()) return null
         return try {
             val response = v1ApiClient.getTimeline(start, end, ownerIds)

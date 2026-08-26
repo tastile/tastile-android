@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="login_subtitle_signin">Sign in to Tastile</string>
-    <string name="login_subtitle_body">Plan, execute, and track your tasks with focused time blocks.</string>
-    <string name="login_button_signing_in">Signing in…</string>
-    <string name="login_button_continue">Continue with Google</string>
-    <string name="login_logo_cd">Tastile logo</string>
+    <string name="login_subtitle_signin">Inicia sesión en Tastile</string>
+    <string name="login_subtitle_body">Planifica, ejecuta y haz seguimiento de tus tareas con bloques de tiempo enfocados.</string>
+    <string name="login_email_label">Correo electrónico</string>
+    <string name="login_password_label">Contraseña</string>
+    <string name="login_button_signin">Iniciar sesión</string>
+    <string name="login_button_signing_in">Iniciando sesión…</string>
+    <string name="login_button_continue_google">Continuar con Google</string>
+    <string name="login_signup_link">Crear cuenta</string>
+    <string name="login_signup_button">Crear cuenta</string>
+    <string name="login_logo_cd">Logo de Tastile</string>
     <string name="login_brand_label">Tastile</string>
-    <string name="login_terms_link">Terms of Service</string>
-    <string name="login_privacy_link">Privacy Policy</string>
+    <string name="login_terms_link">Términos del servicio</string>
+    <string name="login_privacy_link">Política de privacidad</string>
     <string name="login_footer_separator"> · </string>
     <string name="login_error_sign_in_failed">No se pudo iniciar sesión</string>
     <string name="login_error_sign_out_failed">No se pudo cerrar sesión</string>

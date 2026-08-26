@@ -101,7 +101,7 @@ class V1ApiClient @Inject constructor(
         coreUrlOverride ?: BuildConfig.TASTILE_CORE_URL.trim().trimEnd('/')
 
     private fun webAuthBaseUrl(): String =
-        BuildConfig.COGNITO_WEB_AUTH_BASE_URL.trim().trimEnd('/')
+        BuildConfig.WEB_BASE_URL.trim().trimEnd('/')
 
     private suspend inline fun <reified T> get(path: String): T =
         json.decodeFromString(getRaw(path))
@@ -567,11 +567,11 @@ class V1ApiClient @Inject constructor(
 
     /**
      * Mints the first Tastile API token through the web public-client boundary.
-     * The Cognito access token is verified server-side; the Core bridge secret
-     * never leaves the web host or enters the Android artifact.
+     * The BetterAuth session token is verified server-side; the Core bridge
+     * secret never leaves the web host or enters the Android artifact.
      */
     suspend fun mintApiTokenViaWeb(
-        accessToken: String,
+        sessionToken: String,
         request: V1ApiTokenCreateRequest
     ): V1ApiTokenCreateResponse = withContext(Dispatchers.IO) {
         try {
@@ -583,7 +583,7 @@ class V1ApiClient @Inject constructor(
                 requestMethod = "POST"
                 doOutput = true
                 doInput = true
-                setRequestProperty("Authorization", "Bearer $accessToken")
+                setRequestProperty("Authorization", "Bearer $sessionToken")
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Accept", "application/json")
                 connectTimeout = 15_000

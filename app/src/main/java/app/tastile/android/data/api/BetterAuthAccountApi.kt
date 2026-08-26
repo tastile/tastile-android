@@ -19,37 +19,34 @@ import javax.inject.Singleton
 
 /**
  * Thin HTTP client for the account-management endpoints exposed by the
- * Next.js web app and the v1 daemon. The Cognito id/access tokens are
- * the bearer credential for the Next routes (`/api/account/...`); the
- * Tastile API token is the bearer for the v1 routes (`/v1/api-tokens`).
+ * Next.js web app and the v1 daemon.
  *
- * Distinct from [V1ApiClient] because:
- *   * these endpoints are not in the v1 Command envelope shape,
- *   * account/profile reads use the Cognito id_token claims, not the v1
- *     API token,
- *   * tokens (`/v1/api-tokens`) share the v1 base URL but follow the
- *     web flat JSON shape (the v1 envelope decoder would reject them).
+ * Two distinct credential paths live here:
+ *   * `/api/account/...` Next.js routes live on `WEB_BASE_URL` and require
+ *     the BetterAuth session token (`Authorization: Bearer <session>`). The
+ *     session token is provided by [app.tastile.android.data.auth.AuthRepository].
+ *   * `/v1/api-tokens` lives on `TASTILE_CORE_URL` and uses the minted
+ *     Tastile API token (`v1ApiTokenProvider`).
  *
- * Decoding is JSON; no signature verification happens client-side.
- *
- * The "/api/account/profile" route is currently a Next.js web proxy.
- * When [getProfile] fails the repository falls back to the cached
- * Cognito id_token claims (see `AccountRepository.loadProfile`).
+ * Routing the two credentials through separate providers keeps the
+ * bootstrap chain (`session_token -> mint -> v1 token`) explicit at the
+ * Wiring boundary in [app.tastile.android.data.di.ApiModule].
  */
 @Singleton
-class CognitoAccountApi @Inject constructor(
-    private val tokenProvider: AuthTokenProvider,
+class BetterAuthAccountApi @Inject constructor(
+    private val sessionTokenProvider: suspend () -> String?,
+    private val v1ApiTokenProvider: suspend () -> String?,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
     private fun webBaseUrl(): String =
-        BuildConfig.COGNITO_WEB_AUTH_BASE_URL.trim().trimEnd('/')
+        BuildConfig.WEB_BASE_URL.trim().trimEnd('/')
 
     private fun v1BaseUrl(): String =
         BuildConfig.TASTILE_CORE_URL.trim().trimEnd('/')
 
     suspend fun getProfile(): AccountProfileDto = withContext(Dispatchers.IO) {
-        val token = tokenProvider()
+        val token = sessionTokenProvider()
         val url = URL("${webBaseUrl()}/api/account/profile")
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -66,7 +63,7 @@ class CognitoAccountApi @Inject constructor(
     }
 
     suspend fun startEmailChange(email: String) {
-        val token = tokenProvider()
+        val token = sessionTokenProvider()
         val url = URL("${webBaseUrl()}/api/account/email/start")
         val body = "email=${URLEncoder.encode(email, Charsets.UTF_8.name())}"
         val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -86,7 +83,7 @@ class CognitoAccountApi @Inject constructor(
     }
 
     suspend fun verifyEmailChange(code: String) {
-        val token = tokenProvider()
+        val token = sessionTokenProvider()
         val url = URL("${webBaseUrl()}/api/account/email/verify")
         val body = "code=${URLEncoder.encode(code, Charsets.UTF_8.name())}"
         val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -106,7 +103,7 @@ class CognitoAccountApi @Inject constructor(
     }
 
     suspend fun listTokens(): List<AccountTokenDto> = withContext(Dispatchers.IO) {
-        val token = tokenProvider()
+        val token = v1ApiTokenProvider()
         val url = URL("${v1BaseUrl()}/v1/api-tokens")
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -123,7 +120,7 @@ class CognitoAccountApi @Inject constructor(
     }
 
     suspend fun createToken(label: String?): AccountTokenWithSecretDto = withContext(Dispatchers.IO) {
-        val token = tokenProvider()
+        val token = v1ApiTokenProvider()
         val url = URL("${v1BaseUrl()}/v1/api-tokens")
         val body = buildJsonObject {
             put("label", label?.let { JsonPrimitive(it) } ?: JsonNull)
@@ -146,7 +143,7 @@ class CognitoAccountApi @Inject constructor(
     }
 
     suspend fun revokeToken(id: String) {
-        val token = tokenProvider()
+        val token = v1ApiTokenProvider()
         val url = URL("${v1BaseUrl()}/v1/api-tokens/$id")
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "DELETE"

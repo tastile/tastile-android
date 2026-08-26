@@ -1,60 +1,31 @@
 package app.tastile.android.data.user
 
-import android.util.Base64
-import app.tastile.android.data.api.CognitoAccountApi
-import app.tastile.android.data.auth.AuthRepository
+import app.tastile.android.data.api.BetterAuthAccountApi
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * C7 — Preferences sidebar + sub-sheets wiring tests for
- * [AccountRepository]. Verifies that the repository delegates the
- * web-route account endpoints and the v1 token endpoints to
- * [CognitoAccountApi] in the right direction (no accidental swap of
- * the Next route base vs. the v1 base).
- *
- * Web routes at `/api/account/...` live on `COGNITO_WEB_AUTH_BASE_URL`
- * and use the Cognito id/access token.
- * V1 routes at `/v1/api-tokens...` live on `TASTILE_CORE_URL` and use
- * the Tastile API token.
+ * Tests for [AccountRepository]. Verifies that the repository delegates
+ * the web-route account endpoints (`/api/account/...`) and the v1 token
+ * endpoints (`/v1/api-tokens*`) to [BetterAuthAccountApi] correctly. The
+ * `AuthStateProvider` is mocked separately so the fallback path (used
+ * when the web route is unreachable) can be exercised end-to-end without
+ * dragging in the full `AuthRepository` machinery.
  */
 class AccountRepositoryTest {
 
-    private val mockApi = mockk<CognitoAccountApi>(relaxed = true)
-    private val mockAuth = mockk<AuthRepository>(relaxed = true)
-    private val repository = AccountRepository(mockApi, mockAuth)
-
-    init {
-        // Robolectric's android.util.Base64 shadow was removed in SDK 35
-        // and the real Android jar's Base64 returns null for these flag
-        // combinations, so [AccountRepository.decodeClaims] would fall
-        // through with `fallbackClaims == null` and re-throw the API
-        // error. Stub the static decoder to mirror the JVM behaviour so
-        // the fallback path is testable end-to-end.
-        mockkStatic(Base64::class)
-        every { Base64.decode(any<String>(), any<Int>()) } answers {
-            val raw = firstArg<String>()
-            java.util.Base64.getUrlDecoder().decode(raw)
-        }
-    }
-
-    @After
-    fun tearDownBase64Mock() {
-        unmockkStatic(Base64::class)
-    }
+    private val mockApi = mockk<BetterAuthAccountApi>(relaxed = true)
+    private val mockAuthState = mockk<AuthStateProvider>(relaxed = true)
+    private val repository = AccountRepository(mockApi, mockAuthState)
 
     @Test
-    fun loadProfile_delegatesToCognitoAccountApi() = runTest {
+    fun loadProfile_delegatesToBetterAuthAccountApi() = runTest {
         val expected = AccountProfile(
             username = "alice",
             sub = "sub-123",
@@ -62,7 +33,7 @@ class AccountRepositoryTest {
             emailVerified = true,
             preferredUsername = null,
         )
-        coEvery { mockApi.getProfile() } returns CognitoAccountApi.AccountProfileDto(
+        coEvery { mockApi.getProfile() } returns BetterAuthAccountApi.AccountProfileDto(
             username = "alice",
             sub = "sub-123",
             email = "alice@example.com",
@@ -99,7 +70,7 @@ class AccountRepositoryTest {
     @Test
     fun listTokens_mapsDtoToViewWithCanonicalId() = runTest {
         coEvery { mockApi.listTokens() } returns listOf(
-            CognitoAccountApi.AccountTokenDto(
+            BetterAuthAccountApi.AccountTokenDto(
                 id = "v1-id",
                 name = null,
                 label = "CI bot",
@@ -109,7 +80,7 @@ class AccountRepositoryTest {
                 lastUsedPath = null,
                 revokedAt = null,
             ),
-            CognitoAccountApi.AccountTokenDto(
+            BetterAuthAccountApi.AccountTokenDto(
                 id = "",
                 tokenId = "web-id",
                 name = "Local script",
@@ -133,7 +104,7 @@ class AccountRepositoryTest {
 
     @Test
     fun createToken_delegatesAndMapsResponse() = runTest {
-        coEvery { mockApi.createToken("ci") } returns CognitoAccountApi.AccountTokenWithSecretDto(
+        coEvery { mockApi.createToken("ci") } returns BetterAuthAccountApi.AccountTokenWithSecretDto(
             token = "tk_secret_xyz",
             tokenId = "tk-id",
             label = "ci",
@@ -159,32 +130,30 @@ class AccountRepositoryTest {
     }
 
     @Test
-    fun loadProfile_fallsBackToCachedJwtClaimsWhenWebRouteFails() = runTest {
-        // C7-fallback: when /api/account/profile fails (Next proxy
-        // unreachable / dev / staging), the repository decodes the
-        // cached Cognito id_token so the user still sees email + sub.
-        val jwt = makeIdToken(sub = "sub-xyz", email = "alice@example.com", emailVerified = true)
-        // `currentIdToken()` is not a suspend function — use `every` so mockk
-        // registers the stub under the synchronous dispatcher chain that
-        // `withContext(Dispatchers.IO)` runs on. (With `coEvery`, the stub
-        // sometimes fails to register on the relaxed mock and the call
-        // resolves to `null`, defeating the fallback path.)
-        every { mockAuth.currentIdToken() } returns jwt
+    fun loadProfile_fallsBackToCachedAuthStateWhenWebRouteFails() = runTest {
+        // The /api/account/profile route is best-effort: when the Next.js
+        // proxy is unreachable (dev / staging), the repository falls back
+        // to the locally-cached AuthStateProvider values. After the
+        // Cognito -> BetterAuth migration, the fallback source is the
+        // session payload, not a decoded JWT.
+        every { mockAuthState.currentUserId() } returns "sub-xyz"
+        every { mockAuthState.currentEmail() } returns "alice@example.com"
         coEvery { mockApi.getProfile() } throws java.io.IOException("http 502")
 
         val profile = repository.loadProfile()
 
         assertEquals("sub-xyz", profile.sub)
         assertEquals("alice@example.com", profile.email)
-        assertTrue(profile.emailVerified)
-        // No fallback data was supplied, so username falls back to sub.
+        assertEquals(false, profile.emailVerified)
+        // No fallback data was supplied for username, so the username
+        // falls back to the user id (matches the C7 contract).
         assertEquals("sub-xyz", profile.username)
-        assertNull(profile.preferredUsername)
+        assertEquals(null, profile.preferredUsername)
     }
 
     @Test
     fun loadProfile_throwsWhenBothApiAndFallbackUnavailable() = runTest {
-        coEvery { mockAuth.currentIdToken() } returns null
+        every { mockAuthState.currentUserId() } returns null
         coEvery { mockApi.getProfile() } throws java.io.IOException("http 502")
 
         try {
@@ -194,21 +163,4 @@ class AccountRepositoryTest {
             assertTrue(e.message!!.contains("502"))
         }
     }
-
-    /** Encode `{ "sub": "sub", "email": "email", "email_verified": boolean }`
-     *  as a Cognito-shape JWT (header.payload.signature). The literal
-     *  sub/email keys are encoded as JSON object keys inside the payload. */
-    private fun makeIdToken(sub: String, email: String, emailVerified: Boolean): String {
-        val header = base64Url("""{"alg":"RS256","typ":"JWT"}""")
-        val payload = base64Url(
-            """{"sub":"$sub","email":"$email","email_verified":$emailVerified,"cognito:username":"$sub"}""",
-        )
-        val sig = base64Url("signature")
-        return "$header.$payload.$sig"
-    }
-
-    private fun base64Url(value: String): String =
-        java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
-            value.toByteArray(Charsets.UTF_8),
-        )
 }

@@ -1,9 +1,11 @@
 package app.tastile.android.data.di
 
-import app.tastile.android.data.api.CognitoAccountApi
+import app.tastile.android.data.api.BetterAuthAccountApi
 import app.tastile.android.data.api.V1ApiClient
-import app.tastile.android.data.command.V1CommandDispatcher
 import app.tastile.android.data.auth.ApiTokenCache
+import app.tastile.android.data.auth.AuthRepositoryContract
+import app.tastile.android.data.auth.BetterAuthHttpClient
+import app.tastile.android.data.command.V1CommandDispatcher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,10 +16,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object ApiModule {
     /**
-     * The [AuthTokenProvider] returns the Tastile API token (minted on first
-     * authenticated use and cached in encrypted storage), not the Cognito
-     * `id_token`. The Cognito token is the *bootstrap* credential used only
-     * to mint the Tastile token. See `PROJECT-TRUTH.md` ("Authentication").
+     * The [V1ApiClient] `tokenProvider` returns the Tastile API token (minted
+     * on first authenticated use and cached in encrypted storage), not the
+     * BetterAuth session token. The session token is the *bootstrap*
+     * credential used only to mint the Tastile token. See `PROJECT-TRUTH.md`
+     * ("Authentication").
      *
      * Returns `null` when no token has been minted yet, so callers that
      * require auth surface as a recoverable retry rather than sending the
@@ -34,8 +37,24 @@ object ApiModule {
 
     @Provides
     @Singleton
-    fun provideCognitoAccountApi(apiTokenCache: ApiTokenCache): CognitoAccountApi =
-        CognitoAccountApi { apiTokenCache.getOrMint() }
+    fun provideBetterAuthHttpClient(): BetterAuthHttpClient = BetterAuthHttpClient()
+
+    /**
+     * Wires the BetterAuth account API with two distinct token providers.
+     * The session token authorizes `/api/account/...` (the Next.js proxy
+     * routes); the v1 API token authorizes `/v1/api-tokens`. Each call
+     * site in [BetterAuthAccountApi] picks the right provider so a stale
+     * session never reaches the v1 daemon and vice versa.
+     */
+    @Provides
+    @Singleton
+    fun provideBetterAuthAccountApi(
+        authRepository: AuthRepositoryContract,
+        apiTokenCache: ApiTokenCache,
+    ): BetterAuthAccountApi = BetterAuthAccountApi(
+        sessionTokenProvider = { authRepository.currentSessionToken() },
+        v1ApiTokenProvider = { apiTokenCache.getOrMint() },
+    )
 
     @Provides
     @Singleton

@@ -14,26 +14,26 @@ import androidx.security.crypto.MasterKey
  *
  * Two distinct prefs files are exposed:
  *
- * - [cognitoPrefs]: holds the Cognito OIDC tokens issued by the hosted UI flow.
- *   These are bootstrap credentials used to mint a Tastile API token; they are
- *   *not* the bearer for v1 API calls.
- * - [apiTokenPrefs]: holds the minted Tastile API token used as the `Authorization:
- *   Bearer` credential against v1 endpoints.
+ * - [sessionTokenPrefs]: holds the BetterAuth session token issued by
+ *   `POST /api/auth/sign-in/email`. This token is the bootstrap credential
+ *   used to mint a Tastile API token; it is *not* the bearer for v1 API calls.
+ * - [apiTokenPrefs]: holds the minted Tastile API token used as the
+ *   `Authorization: Bearer` credential against v1 endpoints.
  *
  * Both files are excluded from cloud backup and device-to-device transfer via
  * `res/xml/backup_rules.xml` and `res/xml/data_extraction_rules.xml`, and they
  * are also backed by `android:allowBackup="false"` in AndroidManifest.xml.
  */
 object EncryptedTokenStorage {
-    const val COGNITO_PREFS = "tastile_cognito_auth"
+    const val SESSION_TOKEN_PREFS = "tastile_better_auth_session"
     const val API_TOKEN_PREFS = "tastile_v1_api_tokens"
 
-    @Volatile private var cachedCognito: SharedPreferences? = null
+    @Volatile private var cachedSessionToken: SharedPreferences? = null
     @Volatile private var cachedApiTokens: SharedPreferences? = null
 
-    fun cognitoPrefs(context: Context): SharedPreferences =
-        cachedCognito ?: synchronized(this) {
-            cachedCognito ?: openEncrypted(context, COGNITO_PREFS).also { cachedCognito = it }
+    fun sessionTokenPrefs(context: Context): SharedPreferences =
+        cachedSessionToken ?: synchronized(this) {
+            cachedSessionToken ?: openEncrypted(context, SESSION_TOKEN_PREFS).also { cachedSessionToken = it }
         }
 
     fun apiTokenPrefs(context: Context): SharedPreferences =

@@ -38,7 +38,11 @@ class IntegrationRepository @Inject constructor(
     fun latestReadDiagnostics(): String = latestReadDiagnostics
 
     suspend fun getRuntimePaths(): RuntimePathsResponse {
-        val token = currentUserProvider.currentIdToken()
+        // The v1 list-runtime-paths endpoint needs *any* live credential;
+        // the BetterAuth session is the cheapest one to test for (the
+        // minted v1 token is owned by ApiTokenCache and is unnecessary for
+        // this read).
+        val token = currentUserProvider.currentSessionToken()
         if (token.isNullOrBlank()) {
             latestReadDiagnostics = "source=v1_skipped reason=no_token count=0 user_match=true"
             return emptyRuntimePathsResponse()

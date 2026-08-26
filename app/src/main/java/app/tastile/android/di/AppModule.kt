@@ -7,6 +7,7 @@ import app.tastile.android.core.SharedPreferencesCoreCommandStore
 import app.tastile.android.data.auth.AuthRepository
 import app.tastile.android.data.auth.AuthRepositoryContract
 import app.tastile.android.data.auth.CurrentUserProvider
+import app.tastile.android.data.user.AuthStateProvider
 import app.tastile.android.data.execution.ExecutionIdStore
 import app.tastile.android.data.tile.MemoTileRepository
 import app.tastile.android.data.tile.PromptTileRepository
@@ -64,6 +65,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAuthRepositoryContract(authRepository: AuthRepository): AuthRepositoryContract = authRepository
+
+    @Provides
+    @Singleton
+    fun provideAuthStateProvider(authRepository: AuthRepository): AuthStateProvider =
+        object : AuthStateProvider {
+            override fun currentUserId(): String? = authRepository.fallbackUserId
+            override fun currentEmail(): String? = authRepository.fallbackEmail
+        }
 
     @Provides
     @Singleton

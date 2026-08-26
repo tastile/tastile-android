@@ -7,8 +7,8 @@ import app.tastile.android.R
 import app.tastile.android.data.model.Plan
 import app.tastile.android.data.model.Profile
 import app.tastile.android.data.auth.AuthRepository
-import app.tastile.android.data.user.ProfileRepository
 import app.tastile.android.data.auth.TastileAuthState
+import app.tastile.android.data.user.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,10 +49,8 @@ class AccountViewModel @Inject constructor(
             _error.value = null
             try {
                 val authState = authRepository.authState.value as? TastileAuthState.Authenticated
-                val legacySession = authRepository.currentSession
-                val userId = authState?.userId ?: legacySession.readNestedString("user", "id")
-
-                _email.value = authState?.email ?: legacySession.readNestedString("user", "email").orEmpty()
+                val userId = authState?.userId ?: authRepository.currentUserId()
+                _email.value = authState?.email ?: authRepository.currentEmail().orEmpty()
 
                 if (userId != null) {
                     _profile.value = profileRepository.getProfile(userId)
@@ -111,20 +109,4 @@ class AccountViewModel @Inject constructor(
     fun clearError() {
         _error.value = null
     }
-}
-
-private fun Any?.readNestedString(vararg propertyNames: String): String? {
-    var current: Any? = this
-    for (propertyName in propertyNames) {
-        current = current?.javaClass?.methods
-            ?.firstOrNull { method ->
-                method.parameterCount == 0 &&
-                    method.name.equals(
-                        "get${propertyName.replaceFirstChar { it.uppercase() }}",
-                        ignoreCase = true
-                    )
-            }
-            ?.invoke(current)
-    }
-    return current as? String
 }

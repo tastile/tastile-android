@@ -210,9 +210,6 @@ class TileEditSheetTest {
             TastileAuthState.Authenticated(
                 userId = "user-1",
                 email = "u@example.com",
-                idToken = "id",
-                accessToken = "acc",
-                refreshToken = null,
             )
         )
         coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()

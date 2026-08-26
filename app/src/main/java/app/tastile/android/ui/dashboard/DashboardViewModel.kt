@@ -873,13 +873,11 @@ class DashboardViewModel @Inject constructor(
             _error.value = null
             try {
                 val authState = authRepository.authState.value as? TastileAuthState.Authenticated
-                val legacySession = authRepository.currentSession
-                val userId = authState?.userId ?: legacySession.readNestedString("user", "id")
-                _email.value = authState?.email ?: legacySession.readNestedString("user", "email").orEmpty()
-                val metadataAvatar: String? = null
+                val userId = authState?.userId ?: authRepository.currentUserId()
+                _email.value = authState?.email ?: authRepository.currentEmail().orEmpty()
                 if (userId != null) {
                     _profile.value = profileRepository.getProfile(userId)
-                    _avatarUrl.value = metadataAvatar ?: _profile.value?.avatarUrl
+                    _avatarUrl.value = _profile.value?.avatarUrl
                     val (tlStart, tlEnd) = _timelineRange.value
                     _timeline.value = filterCalendarByMinimumDuration(
                         tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds),
@@ -1412,22 +1410,6 @@ private fun extractAvatarUrlFromMetadata(metadata: JsonObject): String? {
         listOf("avatar_url", "picture", "photo_url")
             .firstNotNullOfOrNull { key -> identityData[key]?.jsonPrimitive?.contentOrNull }
     }
-}
-
-private fun Any?.readNestedString(vararg propertyNames: String): String? {
-    var current: Any? = this
-    for (propertyName in propertyNames) {
-        current = current?.javaClass?.methods
-            ?.firstOrNull { method ->
-                method.parameterCount == 0 &&
-                    method.name.equals(
-                        "get${propertyName.replaceFirstChar { it.uppercase() }}",
-                        ignoreCase = true
-                    )
-            }
-            ?.invoke(current)
-    }
-    return current as? String
 }
 
 private fun parseIsoOrNull(value: String?): Instant? {

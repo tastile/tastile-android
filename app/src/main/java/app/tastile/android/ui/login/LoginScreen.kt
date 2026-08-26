@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,6 +39,9 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withLink
@@ -62,6 +68,8 @@ fun LoginScreen(
     val authState by viewModel.authState.collectAsStateWithLifecycle()
     val errorMessage by viewModel.error.collectAsStateWithLifecycle()
     val isSigningIn by viewModel.isSigningIn.collectAsStateWithLifecycle()
+    val email by viewModel.email.collectAsStateWithLifecycle()
+    val password by viewModel.password.collectAsStateWithLifecycle()
 
     if (authState is TastileAuthState.Authenticated) {
         onLoginSuccess()
@@ -80,7 +88,7 @@ fun LoginScreen(
                 .padding(horizontal = Grid.pageGutter)
                 .padding(top = Grid.topInset, bottom = Grid.pageGutter),
         ) {
-            Spacer(modifier = Modifier.weight(0.7f))
+            Spacer(modifier = Modifier.weight(0.4f))
 
             BrandHeader()
 
@@ -105,6 +113,16 @@ fun LoginScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.height(Grid.blockGap))
+
+            EmailPasswordFields(
+                email = email,
+                password = password,
+                enabled = !isSigningIn,
+                onEmailChange = viewModel::onEmailChange,
+                onPasswordChange = viewModel::onPasswordChange,
+            )
+
             Spacer(modifier = Modifier.weight(1f))
 
             errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
@@ -116,15 +134,28 @@ fun LoginScreen(
             }
 
             Button(
-                onClick = { viewModel.signInWithCognito(context) },
-                enabled = !isSigningIn,
+                onClick = { viewModel.signInWithEmail(context) },
+                enabled = !isSigningIn && email.isNotBlank() && password.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
             ) {
                 Text(
-                    text = if (isSigningIn) stringResource(R.string.login_button_signing_in) else stringResource(R.string.login_button_continue),
+                    text = if (isSigningIn) stringResource(R.string.login_button_signing_in) else stringResource(R.string.login_button_signin),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(vertical = 6.dp),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Grid.inlineGap))
+
+            TextButton(
+                onClick = { viewModel.signUp(context) },
+                enabled = !isSigningIn,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(R.string.login_signup_link),
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
 
@@ -132,6 +163,46 @@ fun LoginScreen(
 
             PrivacyFooter()
         }
+    }
+}
+
+@Composable
+private fun EmailPasswordFields(
+    email: String,
+    password: String,
+    enabled: Boolean,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Grid.inlineGap),
+    ) {
+        OutlinedTextField(
+            value = email,
+            onValueChange = onEmailChange,
+            singleLine = true,
+            enabled = enabled,
+            label = { Text(stringResource(R.string.login_email_label)) },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
+            singleLine = true,
+            enabled = enabled,
+            label = { Text(stringResource(R.string.login_password_label)) },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

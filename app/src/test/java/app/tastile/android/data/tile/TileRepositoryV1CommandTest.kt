@@ -41,13 +41,13 @@ class TileRepositoryV1CommandTest {
         v1ApiClient: V1ApiClient,
         v1Dispatcher: V1CommandDispatcher,
         userId: String = "user-1",
-        idToken: String? = "token-abc"
+        sessionToken: String? = "session-abc"
     ): TileRepository = TileRepository(
         executionNotificationCoordinator = mockk<ExecutionNotificationCoordinator>(relaxed = true),
         eventRepository = mockk<EventRepository>(relaxed = true),
         currentUserProvider = mockk<CurrentUserProvider> {
             every { currentUserId() } returns userId
-            every { currentIdToken() } returns idToken
+            every { currentSessionToken() } returns sessionToken
         },
         v1ApiClient = v1ApiClient,
         v1CommandDispatcher = v1Dispatcher

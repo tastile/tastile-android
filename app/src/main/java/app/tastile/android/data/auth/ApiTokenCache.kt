@@ -20,9 +20,10 @@ import javax.inject.Singleton
  * [EncryptedTokenStorage]'s Keystore-backed preferences. All v1 API calls
  * (`V1ApiClient` → `tokenProvider`) read the cached token from this cache.
  *
- * Bootstrap uses the public-client web endpoint with the user's Cognito
- * access token. The web server verifies that token with Cognito and keeps the
- * Core bridge secret server-side; no shared credential is embedded in the APK.
+ * Bootstrap uses the public-client web endpoint with the user's BetterAuth
+ * session token. The web server verifies that token against the BetterAuth
+ * session and keeps the Core bridge secret server-side; no shared credential
+ * is embedded in the APK.
  *
  * Concurrency: a single [Mutex] guards the mint path so multiple parallel
  * first-use callers issue exactly one mint request.
@@ -38,19 +39,29 @@ class ApiTokenCache @Inject constructor(
     @Volatile
     private var cachedToken: String? = loadCachedToken()
 
-    /** Returns the cached Tastile API token, minting one on first use if possible. */
-    suspend fun getOrMint(): String? {
+    /**
+     * Returns the cached Tastile API token, minting one on first use if
+     * possible. When a mint attempt fails, the optional [onMintFailed]
+     * callback receives the underlying throwable so callers can surface a
+     * one-line toast instead of a silent fallback. The exception is still
+     * swallowed and `null` is returned — the existing contract that "no
+     * token" is signaled by `null` is preserved.
+     */
+    suspend fun getOrMint(
+        onMintFailed: ((Throwable) -> Unit)? = null,
+    ): String? {
         cachedToken?.takeIf { it.isNotBlank() }?.let { return it }
         return mutex.withLock {
             cachedToken?.takeIf { it.isNotBlank() }?.let { return@withLock it }
-            val accessToken = currentUser.currentAccessToken() ?: return@withLock null
+            val sessionToken = currentUser.currentSessionToken() ?: return@withLock null
             val response = try {
                 v1ApiClient.get().mintApiTokenViaWeb(
-                    accessToken = accessToken,
+                    sessionToken = sessionToken,
                     request = V1ApiTokenCreateRequest(label = "android-client"),
                 )
             } catch (e: Exception) {
                 Log.w(TAG, "mintApiToken failed: ${e.message}")
+                onMintFailed?.invoke(e)
                 null
             } ?: return@withLock null
             persistToken(response)
@@ -58,6 +69,15 @@ class ApiTokenCache @Inject constructor(
             response.token
         }
     }
+
+    /**
+     * Best-effort synchronous read of the cached token. Returns `null` if
+     * no token has been minted yet. Used by the auth-state observer in
+     * [app.tastile.android.MainActivity] to hand the bearer to
+     * [app.tastile.android.sync.SyncCoordinator] without triggering a
+     * network round-trip.
+     */
+    fun currentCachedToken(): String? = cachedToken?.takeIf { it.isNotBlank() }
 
     /** Drops the in-memory token. Does NOT clear the encrypted prefs; call [signOut] for that. */
     fun invalidate() {

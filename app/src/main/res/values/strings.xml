@@ -1,3 +1,4 @@
 <resources>
     <string name="tasks_all_done">すべてのタスクが完了しました</string>
+    <string name="api_token_mint_failed">Sign-in refresh failed. Pull-to-refresh to retry.</string>
 </resources>
