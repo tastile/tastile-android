@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.data.repository.CalendarProjectionResponse
 import java.time.Instant
 import java.time.LocalDate
@@ -79,7 +80,7 @@ private fun DayAgendaScreen(
 
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
+            .background(LocalTastileCardRoleTokens.current.neutral.container)
             .padding(12.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -124,7 +125,7 @@ private fun WeekAgendaScreen(
 
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
+            .background(LocalTastileCardRoleTokens.current.neutral.container)
             .padding(12.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -178,7 +179,7 @@ private fun TimelineEventBlock(
             .offset { IntOffset(leftPx.roundToInt(), topPx.roundToInt()) }
             .width((columnWidthPx / androidx.compose.ui.platform.LocalDensity.current.density).dp)
             .height((heightPx / androidx.compose.ui.platform.LocalDensity.current.density).dp)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+            .background(LocalTastileCardRoleTokens.current.actionable.border.copy(alpha = 0.16f))
             .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
