@@ -23,6 +23,8 @@ import androidx.compose.foundation.verticalScroll
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+// m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +51,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -113,7 +116,7 @@ fun WeekView(
         }
     }
     val totalMinutes = GridConstants.DAY_END_HOUR * 60 + GridConstants.SCROLL_BUFFER_MIN * 2
-    val background = MaterialTheme.colorScheme.background
+    val background = LocalTastileCardRoleTokens.current.neutral.container
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current.density
@@ -318,15 +321,15 @@ private fun WeekHeaderRow(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (isToday) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isToday) LocalTastileCardRoleTokens.current.actionable.border
+                    else LocalContentColor.current,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = day.dayOfMonth.toString(),
                     style = MaterialTheme.typography.titleSmall,
-                    color = if (isToday) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface,
+                    color = if (isToday) LocalTastileCardRoleTokens.current.actionable.border
+                    else LocalContentColor.current,
                     fontWeight = if (isToday) FontWeight.Bold
                     else FontWeight.SemiBold,
                 )
@@ -378,7 +381,7 @@ internal fun WeekTimeGutter(
 ) {
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall.copy(
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = LocalContentColor.current,
     )
     val padRight = 6.dp
     val measurements = rememberGutterMeasurements(textMeasurer, labelStyle, 0, endHour)
