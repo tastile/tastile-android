@@ -20,6 +20,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 // m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
@@ -38,6 +40,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.ui.dashboard.ListGroupingMode
 import app.tastile.android.ui.dashboard.ListViewMode
 import app.tastile.android.ui.dashboard.TileGranularity
@@ -68,8 +73,8 @@ fun TilesFilterBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+            .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
+            .background(LocalTastileCardRoleTokens.current.neutral.container.copy(alpha = 0.6f))
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -193,7 +198,7 @@ private fun GenericDropdown(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
             .clickable { expanded = true }
             .padding(vertical = 4.dp)
             .testTag(testTag),
@@ -203,15 +208,15 @@ private fun GenericDropdown(
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(currentLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(currentLabel, style = MaterialTheme.typography.bodyMedium, color = LocalContentColor.current)
+                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null, tint = LocalContentColor.current)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 items.forEach { (value, labelText) ->
@@ -240,7 +245,7 @@ private fun GenericSegmented(
             .fillMaxWidth()
             .testTag(testTag)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(LocalTastileStatusTokens.current.ready.container)
             .padding(2.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -249,10 +254,10 @@ private fun GenericSegmented(
             Text(
                 labelText,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (active) LocalContentColor.current else LocalContentColor.current,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (active) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant)
+                    .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
+                    .background(if (active) LocalTastileCardRoleTokens.current.neutral.container else LocalTastileStatusTokens.current.ready.container)
                     .clickable {
                         onPick(value)
                     }
