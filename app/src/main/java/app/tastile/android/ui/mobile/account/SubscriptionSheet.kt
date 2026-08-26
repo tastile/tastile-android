@@ -6,11 +6,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
-// m2-allow: m3-component
 import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -74,7 +75,7 @@ private fun SubscriptionBody() {
         Text(
             text = stringResource(R.string.preferences_account_subscription_guide),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         PlanCard()
     }
@@ -92,17 +93,17 @@ private fun PlanCard() {
             Text(
                 text = stringResource(R.string.account_subscription_current_plan),
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = LocalContentColor.current,
             )
             Text(
                 text = stringResource(R.string.account_subscription_free_description),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
             Text(
                 text = stringResource(R.string.account_subscription_free_badge),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         }
         NiaOutlinedButton(
