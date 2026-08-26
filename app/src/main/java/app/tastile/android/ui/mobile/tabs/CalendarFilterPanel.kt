@@ -44,6 +44,7 @@ import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.ui.mobile.components.AppPickerButton
 import app.tastile.android.ui.mobile.components.AppSectionHeader
@@ -90,8 +91,8 @@ internal fun CalendarFilterPanel(
                 StatChip(
                     label = stringResource(R.string.calendar_filter_projects_label),
                     value = "${selected.size}/${allIds.size}",
-                    background = MaterialTheme.colorScheme.secondaryContainer,
-                    foreground = MaterialTheme.colorScheme.onSecondaryContainer,
+                    background = LocalTastileStatusTokens.current.done.container,
+                    foreground = LocalTastileStatusTokens.current.done.onContainer,
                 )
                 NiaFilledTonalButton(
                     onClick = { onOwnerIdsChange(emptySet()) },
