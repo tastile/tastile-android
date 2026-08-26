@@ -63,6 +63,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 // m2-allow: m3-component
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -131,7 +134,7 @@ fun SubtasksSection(
             Icon(
                 imageVector = Icons.Outlined.Checklist,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier
                     .size(24.dp)
                     .semantics { contentDescription = addAria }
@@ -142,7 +145,7 @@ fun SubtasksSection(
             Text(
                 text = stringResource(R.string.quickcreate_subtasks_header),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = LocalContentColor.current,
             )
         },
         trailing = {
@@ -150,7 +153,7 @@ fun SubtasksSection(
                 Text(
                     text = stringResource(R.string.quickcreate_subtasks_progress, doneCount, total),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                     modifier = Modifier.testTag("$testTag-progress"),
                 )
             }
@@ -164,7 +167,7 @@ fun SubtasksSection(
                 Text(
                     text = stringResource(R.string.quickcreate_subtasks_empty),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             },
         )
@@ -196,7 +199,7 @@ fun SubtasksSection(
             Icon(
                 imageVector = Icons.Outlined.PlaylistAdd,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
@@ -273,7 +276,7 @@ private fun SubtaskRow(
                 },
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     textDecoration = if (task.done) TextDecoration.LineThrough else null,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = LocalContentColor.current,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -442,7 +445,7 @@ private fun TaskDefinitionEditorModal(
                 if (titleError) {
                     Text(
                         text = stringResource(R.string.quick_create_error_title_required),
-                        color = MaterialTheme.colorScheme.error,
+                        color = LocalTastileStatusTokens.current.archived.icon,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.testTag("task-editor-$testIdSuffix-title-error"),
                     )
