@@ -2,7 +2,6 @@ package app.tastile.android.ui.mobile.calendar
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
@@ -12,6 +11,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -40,7 +40,7 @@ class MonthEventIndicatorTest {
 
     @Test fun indicator_zeroCount_rendersNothing() = runTest {
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(60.dp, 60.dp)) {
                     MonthEventIndicator(count = 0)
                 }
@@ -52,7 +52,7 @@ class MonthEventIndicatorTest {
 
     @Test fun indicator_oneCount_rendersDot() = runTest {
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(60.dp, 60.dp)) {
                     MonthEventIndicator(
                         count = 1,
@@ -69,7 +69,7 @@ class MonthEventIndicatorTest {
 
     @Test fun indicator_threeCount_rendersPillWithText() = runTest {
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(60.dp, 60.dp)) {
                     MonthEventIndicator(
                         count = 3,
@@ -85,7 +85,7 @@ class MonthEventIndicatorTest {
 
     @Test fun indicator_overflowCount_rendersPlusN() = runTest {
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(60.dp, 60.dp)) {
                     MonthEventIndicator(
                         count = 5,

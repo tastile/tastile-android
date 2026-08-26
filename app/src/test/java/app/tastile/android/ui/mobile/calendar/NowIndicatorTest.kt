@@ -2,7 +2,6 @@ package app.tastile.android.ui.mobile.calendar
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHeightIsEqualTo
@@ -10,6 +9,7 @@ import androidx.compose.ui.test.assertLeftPositionInRootIsEqualTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -24,7 +24,7 @@ class NowIndicatorTest {
 
     @Test fun nowIndicator_dotAndLine_areDisplayed() = runTest {
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.size(400.dp, 1200.dp)) {
                     NowIndicator(
                         nowProvider = { now },
@@ -63,7 +63,7 @@ class NowIndicatorTest {
         }
 
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.size(400.dp, 1440.dp)) {
                     NowIndicator(
                         nowProvider = { instant },

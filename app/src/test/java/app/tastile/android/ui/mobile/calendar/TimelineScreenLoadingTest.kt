@@ -2,7 +2,6 @@ package app.tastile.android.ui.mobile.calendar
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
@@ -10,6 +9,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
 import app.tastile.android.ui.mobile.OverlayViewModel
@@ -56,7 +56,7 @@ class TimelineScreenLoadingTest {
 
     @Test fun frame_rendersImmediately_whenTimelineEmpty() = runTest {
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(400.dp, 1440.dp)) {
                     DayView(
                         date = pageDay,
@@ -93,7 +93,7 @@ class TimelineScreenLoadingTest {
         val overlayVm = mockk<OverlayViewModel>(relaxed = true)
 
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(400.dp, 1440.dp)) {
                     TimelineScreen(viewModel = vm, overlay = overlayVm)
                 }

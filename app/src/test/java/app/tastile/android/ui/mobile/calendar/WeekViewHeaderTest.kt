@@ -3,7 +3,6 @@ package app.tastile.android.ui.mobile.calendar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
@@ -15,6 +14,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.test.runTest
@@ -36,7 +36,7 @@ class WeekViewHeaderTest {
 
     private fun renderWeek() {
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(
                     Modifier
                         .requiredSize(800.dp, 1200.dp)

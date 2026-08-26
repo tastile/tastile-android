@@ -4,7 +4,6 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -17,6 +16,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pinch
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
@@ -35,7 +35,7 @@ class WeekViewZoomTest {
         var observedZoom = 1.5f
         compose.setContent {
             var zoom by remember { mutableFloatStateOf(1.5f) }
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(800.dp, 1200.dp)) {
                     WeekView(
                         items = emptyList(),
@@ -77,7 +77,7 @@ class WeekViewZoomTest {
         val scrollState = ScrollState(0)
         var observedZoom = 1.5f
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(800.dp, 1200.dp)) {
                     WeekView(
                         items = emptyList(),

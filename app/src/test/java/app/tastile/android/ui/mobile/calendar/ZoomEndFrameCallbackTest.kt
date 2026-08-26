@@ -3,7 +3,6 @@ package app.tastile.android.ui.mobile.calendar
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -12,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pinch
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertTrue
@@ -26,7 +26,7 @@ class ZoomEndFrameCallbackTest {
     @Test fun pinchOut_scrollsWithinOneFrameBridge() {
         val scrollState = ScrollState(0)
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 val zoom = androidx.compose.runtime.remember { mutableFloatStateOf(1.5f) }
                 Box(Modifier.requiredSize(800.dp, 1200.dp)) {
                     DayView(

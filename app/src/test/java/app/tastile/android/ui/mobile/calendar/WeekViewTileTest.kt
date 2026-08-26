@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -12,6 +11,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.test.runTest
@@ -27,7 +27,7 @@ class WeekViewTileTest {
     @Test fun tile_emptyColumns_rootIsDisplayed() = runTest {
         val today = LocalDate.now()
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(800.dp, 600.dp)) {
                     WeekViewTile(
                         weekStart = LocalDate.of(2026, 7, 13),
@@ -65,7 +65,7 @@ class WeekViewTileTest {
             ),
         )
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(800.dp, 1440.dp)) {
                     WeekViewTile(
                         weekStart = monday,
@@ -87,7 +87,7 @@ class WeekViewTileTest {
         val today = LocalDate.now()
         val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
         compose.setContent {
-            MaterialTheme {
+            TastileTheme {
                 Box(Modifier.requiredSize(800.dp, 600.dp)) {
                     WeekViewTile(
                         weekStart = weekStart,
