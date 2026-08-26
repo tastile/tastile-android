@@ -25,7 +25,10 @@ import androidx.compose.material3.Icon
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+// m2-allow: primitive
 import androidx.compose.material3.Text
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -194,7 +197,7 @@ fun QuickCreateDetailedComposition(
         submitError?.let {
             Text(
                 text = it,
-                color = MaterialTheme.colorScheme.error,
+                color = LocalTastileStatusTokens.current.archived.icon,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(vertical = 12.dp),
             )
@@ -218,7 +221,7 @@ private fun DetailedRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
@@ -238,7 +241,7 @@ private fun DetailedRow(
                     Text(
                         text = summary,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = LocalContentColor.current,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(start = 8.dp),
@@ -250,7 +253,7 @@ private fun DetailedRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
             )
         },
     )
