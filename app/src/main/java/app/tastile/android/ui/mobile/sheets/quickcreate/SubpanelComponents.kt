@@ -50,6 +50,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 // m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -99,13 +103,13 @@ internal fun LocalSectionHeader(title: String, subtitle: String? = null) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = LocalContentColor.current,
             )
             if (subtitle != null) {
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
             HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
@@ -177,10 +181,10 @@ internal fun SwatchChip(
     Surface(
         onClick = onClick,
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
+        color = LocalTastileCardRoleTokens.current.neutral.container,
         border = androidx.compose.foundation.BorderStroke(
             if (selected) 2.dp else 1.dp,
-            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+            if (selected) LocalTastileCardRoleTokens.current.actionable.border else LocalTastileCardRoleTokens.current.completed.border,
         ),
         modifier = modifier.size(36.dp),
     ) {
@@ -215,10 +219,10 @@ internal fun IconChip(
     Surface(
         onClick = onClick,
         shape = CircleShape,
-        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = if (selected) LocalTastileStatusTokens.current.done.container else LocalTastileCardRoleTokens.current.actionable.container,
         border = androidx.compose.foundation.BorderStroke(
             if (selected) 2.dp else 1.dp,
-            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+            if (selected) LocalTastileCardRoleTokens.current.actionable.border else LocalTastileCardRoleTokens.current.completed.border,
         ),
         modifier = modifier.size(40.dp),
     ) {
@@ -226,7 +230,7 @@ internal fun IconChip(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (selected) LocalTastileStatusTokens.current.done.onContainer else LocalContentColor.current,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -304,7 +308,7 @@ internal fun QuickCreateHeader(
             Surface(
                 onClick = onClose,
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
+                color = LocalTastileCardRoleTokens.current.neutral.container,
                 modifier = Modifier
                     .size(24.dp)
                     .then(if (closeTestTag != null) Modifier.testTag(closeTestTag) else Modifier),
@@ -313,7 +317,7 @@ internal fun QuickCreateHeader(
                     Icon(
                         Icons.Outlined.Close,
                         contentDescription = "Cancel",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = LocalContentColor.current,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -327,7 +331,7 @@ internal fun QuickCreateHeader(
                     Text(
                         text = placeholder,
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = LocalContentColor.current,
                     )
                 },
                 textStyle = MaterialTheme.typography.titleLarge,
@@ -431,7 +435,7 @@ internal fun LocalPickerField(
         onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = androidx.compose.foundation.BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border),
     ) {
         Row(
             modifier = Modifier
@@ -443,7 +447,7 @@ internal fun LocalPickerField(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
                 Text(
                     text = value,
@@ -453,7 +457,7 @@ internal fun LocalPickerField(
             Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         }
