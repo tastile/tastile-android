@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.BasicTextField
 // m2-allow: m3-component
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,9 +31,10 @@ import androidx.compose.ui.unit.dp
  * Mirrors `tastile-web/src/shared/styles/quick-create.css`'s
  * `.qc-underline-input--muted` rule used by the memo section:
  *  - No border, no box outline, no floating label.
- *  - Bottom underline 1dp in [MaterialTheme.colorScheme.outline] when
- *    unfocused, 2dp in [MaterialTheme.colorScheme.primary] when focused.
- *  - Placeholder text uses [MaterialTheme.colorScheme.onSurfaceVariant].
+ *  - Bottom underline 1dp in [LocalTastileCardRoleTokens.current.neutral.border]
+ *    when unfocused, 2dp in [LocalTastileCardRoleTokens.current.actionable.border]
+ *    when focused.
+ *  - Placeholder text uses [LocalContentColor.current].
  *
  * Multi-line (no `singleLine`); rendered value wraps naturally.
  * Mirrors web `Textarea autosize minRows={2} maxRows={6}` from `MemoSection.tsx`.
@@ -60,9 +64,9 @@ fun UnderlineTextArea(
     }
 
     val underlineColor = if (isFocused) {
-        MaterialTheme.colorScheme.primary
+        LocalTastileCardRoleTokens.current.actionable.border
     } else {
-        MaterialTheme.colorScheme.outline
+        LocalTastileCardRoleTokens.current.neutral.border
     }
     val underlineThickness = if (isFocused) 2.dp else 1.dp
 
@@ -84,14 +88,14 @@ fun UnderlineTextArea(
                 )
             }
             .then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
-        textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
-        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        textStyle = textStyle.copy(color = LocalContentColor.current),
+        cursorBrush = SolidColor(LocalTastileCardRoleTokens.current.actionable.border),
         interactionSource = interactionSource,
         decorationBox = { inner ->
             if (value.isEmpty()) {
                 androidx.compose.material3.Text(
                     text = placeholder,
-                    style = textStyle.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                    style = textStyle.copy(color = LocalContentColor.current),
                 )
             } else {
                 inner()
