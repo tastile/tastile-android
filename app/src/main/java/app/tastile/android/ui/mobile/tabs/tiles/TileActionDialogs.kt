@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -122,7 +123,7 @@ fun DeferTileDialog(
                         modifier = Modifier.testTag("defer-time"),
                     )
                 }
-                inputError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                inputError?.let { Text(it, color = LocalTastileStatusTokens.current.archived.icon) }
             }
         },
         confirmButton = {
