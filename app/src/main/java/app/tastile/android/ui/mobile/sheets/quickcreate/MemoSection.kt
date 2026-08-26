@@ -5,8 +5,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Description
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,7 +30,7 @@ fun MemoSection(
             Icon(
                 imageVector = Icons.Outlined.Description,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
