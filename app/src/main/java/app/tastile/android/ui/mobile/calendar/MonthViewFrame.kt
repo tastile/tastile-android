@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -73,7 +74,7 @@ fun MonthViewFrame(
         modifier = modifier
             .testTag("month-view-frame")
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(LocalTastileCardRoleTokens.current.neutral.container),
     ) {
         for (weekRow in 0 until GridConstants.MONTH_GRID_ROWS) {
             Row(
@@ -117,9 +118,9 @@ private fun MonthFrameCell(
     val inMonthCd = stringResource(R.string.month_day_in_month_cd)
     val outOfMonthCd = stringResource(R.string.month_day_out_of_month_cd)
     val numberColor = when {
-        isSelected -> MaterialTheme.colorScheme.primary
-        !inMonth -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-        else -> MaterialTheme.colorScheme.onSurface
+        isSelected -> LocalTastileCardRoleTokens.current.actionable.border
+        !inMonth -> LocalContentColor.current.copy(alpha = 0.45f)
+        else -> LocalContentColor.current
     }
     // Selection marker: a separate tiny Box layered on top of the cell so
     // a Compose semantics search for `month-view-frame-selected-cell`
@@ -138,7 +139,7 @@ private fun MonthFrameCell(
     // discoverable through this single tag.
     Box(
         modifier = modifier
-            .border(width = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+            .border(width = 0.5.dp, color = LocalTastileCardRoleTokens.current.completed.border)
             .clickable { onSelectDate(date) }
             .padding(horizontal = 6.dp, vertical = 6.dp)
             .testTag("month-view-frame-day-column"),
@@ -150,7 +151,7 @@ private fun MonthFrameCell(
         if (isSelected) {
             Box(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                    .background(LocalTastileCardRoleTokens.current.actionable.border.copy(alpha = 0.08f))
                     .testTag("month-view-frame-selected-cell"),
             )
         }
