@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.ui.dashboard.TimelineScale
 import java.time.LocalDate
 import java.time.YearMonth
@@ -46,13 +47,15 @@ class MobileTopBarTest {
         val avatar = rule.activity.getString(R.string.mobile_top_avatar)
 
         rule.setContent {
-            MobileTopBar(
-                title = "Execute",
-                scale = TimelineScale.Day,
-                onScaleChange = {},
-                onMenu = {},
-                onNotifications = {},
-            )
+            TastileTheme {
+                MobileTopBar(
+                    title = "Execute",
+                    scale = TimelineScale.Day,
+                    onScaleChange = {},
+                    onMenu = {},
+                    onNotifications = {},
+                )
+            }
         }
 
         rule.onNodeWithContentDescription(menu)
@@ -74,16 +77,18 @@ class MobileTopBarTest {
         val currentScale = mutableStateOf(TimelineScale.Day)
 
         rule.setContent {
-            MobileTopBar(
-                title = "Execute",
-                scale = currentScale.value,
-                onScaleChange = {
-                    selected.set(it.ordinal)
-                    currentScale.value = it
-                },
-                onMenu = {},
-                onNotifications = {},
-            )
+            TastileTheme {
+                MobileTopBar(
+                    title = "Execute",
+                    scale = currentScale.value,
+                    onScaleChange = {
+                        selected.set(it.ordinal)
+                        currentScale.value = it
+                    },
+                    onMenu = {},
+                    onNotifications = {},
+                )
+            }
         }
 
         rule.onNodeWithContentDescription("Scale: Day").performClick()
@@ -98,13 +103,15 @@ class MobileTopBarTest {
         val currentScale = mutableStateOf(TimelineScale.Day)
 
         rule.setContent {
-            MobileTopBar(
-                title = "Timeline",
-                scale = currentScale.value,
-                onScaleChange = { currentScale.value = it },
-                onMenu = {},
-                onNotifications = {},
-            )
+            TastileTheme {
+                MobileTopBar(
+                    title = "Timeline",
+                    scale = currentScale.value,
+                    onScaleChange = { currentScale.value = it },
+                    onMenu = {},
+                    onNotifications = {},
+                )
+            }
         }
 
         rule.onNodeWithContentDescription("Scale: Day").performClick()
@@ -143,11 +150,13 @@ class MobileTopBarTest {
         )
 
         rule.setContent {
-            MonthPickerDialog(
-                initialMonth = YearMonth.of(2026, 7),
-                onDismissRequest = {},
-                onMonthSelected = selected::set,
-            )
+            TastileTheme {
+                MonthPickerDialog(
+                    initialMonth = YearMonth.of(2026, 7),
+                    onDismissRequest = {},
+                    onMonthSelected = selected::set,
+                )
+            }
         }
 
         rule.onNodeWithContentDescription(augustDescription)
@@ -168,11 +177,13 @@ class MobileTopBarTest {
         )
 
         rule.setContent {
-            MonthPickerDialog(
-                initialMonth = YearMonth.of(2026, 7),
-                onDismissRequest = {},
-                onMonthSelected = selected::set,
-            )
+            TastileTheme {
+                MonthPickerDialog(
+                    initialMonth = YearMonth.of(2026, 7),
+                    onDismissRequest = {},
+                    onMonthSelected = selected::set,
+                )
+            }
         }
 
         rule.onNodeWithContentDescription(augustDescription)
