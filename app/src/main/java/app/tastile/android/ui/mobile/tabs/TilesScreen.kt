@@ -17,6 +17,8 @@ import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.HorizontalDivider
 // m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -32,6 +34,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaExtendedFloatingActionButton
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.model.Tile
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TilesTab
@@ -187,20 +190,20 @@ private fun ListBody(
             StatChip(
                 label = stringResource(R.string.tiles_stat_open, tilesCount),
                 value = "",
-                background = MaterialTheme.colorScheme.secondaryContainer,
-                foreground = MaterialTheme.colorScheme.onSecondaryContainer,
+                background = LocalTastileStatusTokens.current.done.container,
+                foreground = LocalTastileStatusTokens.current.done.onContainer,
             )
             StatChip(
                 label = stringResource(R.string.tiles_stat_estimated, tilesCount * 30),
                 value = "",
-                background = MaterialTheme.colorScheme.tertiaryContainer,
-                foreground = MaterialTheme.colorScheme.onTertiaryContainer,
+                background = LocalTastileStatusTokens.current.started.container,
+                foreground = LocalTastileStatusTokens.current.started.onContainer,
             )
             StatChip(
                 label = stringResource(R.string.tiles_stat_sections, grouped.size),
                 value = "",
-                background = MaterialTheme.colorScheme.surfaceVariant,
-                foreground = MaterialTheme.colorScheme.onSurfaceVariant,
+                background = LocalTastileStatusTokens.current.ready.container,
+                foreground = LocalTastileStatusTokens.current.ready.onContainer,
             )
         }
         TilesFilterBar(
@@ -234,7 +237,7 @@ private fun ListBody(
                 Text(
                     stringResource(R.string.empty_tiles_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
         } else {
