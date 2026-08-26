@@ -177,84 +177,96 @@ tasks.register("verifyDesignSystemImports") {
     group = "verification"
     description = "Disallow direct Material3 imports and colorScheme references in M3-unified screens; forbid hardcoded RoundedCornerShape(N.dp) outside design-system"
     doLast {
-        val forbiddenPrefix = "import androidx.compose.material3."
-        val allowMarker = "// m2-allow:"
-        val offenders = designSystemGuardFiles.filter { f ->
-            if (!f.exists()) return@filter false
-            val lines = f.readText().lines()
-            // A file is an offender only when it contains a forbidden import
-            // whose immediately preceding non-blank line is NOT an m2-allow marker.
-            lines.withIndex().any { (idx, rawLine) ->
-                val trimmed = rawLine.trimStart()
-                if (!trimmed.startsWith(forbiddenPrefix)) return@any false
-                var i = idx - 1
-                while (i >= 0) {
-                    val prev = lines[i].trim()
-                    if (prev.isEmpty()) { i--; continue }
-                    return@any !prev.startsWith(allowMarker)
-                }
-                true
-            }
-        }
-        // Rule 2: forbid MaterialTheme.colorScheme references in ui/{dashboard, mobile, account}/
-        // unless preceded by an `// m2-allow:` marker (color references are forbidden; the
-        // existing allow-marker system is reused for symmetry).
-        val colorSchemeOffenders = mutableListOf<String>()
-        val uiConsumerRoots = listOf(
-            layout.projectDirectory.dir("src/main/java/app/tastile/android/ui/dashboard").asFile,
-            layout.projectDirectory.dir("src/main/java/app/tastile/android/ui/mobile").asFile,
-            layout.projectDirectory.dir("src/main/java/app/tastile/android/ui/account").asFile,
+        val violations = collectDesignSystemViolations(
+            designSystemGuardFiles = designSystemGuardFiles,
+            uiConsumerRoots = listOf(
+                layout.projectDirectory.dir("src/main/java/app/tastile/android/ui/dashboard").asFile,
+                layout.projectDirectory.dir("src/main/java/app/tastile/android/ui/mobile").asFile,
+                layout.projectDirectory.dir("src/main/java/app/tastile/android/ui/account").asFile,
+            ),
+            designSystemRoot = layout.projectDirectory
+                .dir("src/main/java/app/tastile/android/core/designsystem").asFile,
+            allKtRoot = layout.projectDirectory
+                .dir("src/main/java/app/tastile/android").asFile,
         )
-        uiConsumerRoots.forEach { root ->
-            root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
-                val lines = file.readText().lines()
-                lines.forEachIndexed { idx, line ->
-                    if (line.contains("MaterialTheme.colorScheme") &&
-                        (idx == 0 || !lines[idx - 1].trim().startsWith(allowMarker))) {
-                        colorSchemeOffenders += "${file.path}:${idx + 1}"
-                    }
+        check(violations.isEmpty()) { formatDesignSystemViolations(violations) }
+    }
+}
+
+/**
+ * Collect every guard violation across the three rules:
+ *  - Rule 1: forbidden Material3 imports (uses [designSystemGuardFiles] + the `// m2-allow:` marker)
+ *  - Rule 2: `MaterialTheme.colorScheme` references in [uiConsumerRoots] without `// m2-allow:` marker
+ *  - Rule 3: hardcoded `RoundedCornerShape(<non-zero-numeric>.dp)` outside [designSystemRoot]
+ *
+ * Exposed at top level so the unit test (`app/src/test/.../buildlogic/VerifyDesignSystemImportsGuardTest.kt`)
+ * can re-invoke the same algorithm against synthetic tmp dirs. The test re-implements the body to
+ * avoid coupling `:app:test` to the build script classloader (no `buildSrc/` infrastructure exists).
+ */
+fun collectDesignSystemViolations(
+    designSystemGuardFiles: List<File>,
+    uiConsumerRoots: List<File>,
+    designSystemRoot: File,
+    allKtRoot: File,
+): List<String> {
+    val allowMarker = "// m2-allow:"
+    val forbiddenPrefix = "import androidx.compose.material3."
+    val violations = mutableListOf<String>()
+
+    designSystemGuardFiles.filter { it.exists() }.forEach { file ->
+        val lines = file.readText().lines()
+        lines.forEachIndexed { idx, rawLine ->
+            val trimmed = rawLine.trimStart()
+            if (!trimmed.startsWith(forbiddenPrefix)) return@forEachIndexed
+            var i = idx - 1
+            var allowed = false
+            var foundPrev = false
+            while (i >= 0 && !foundPrev) {
+                val prev = lines[i].trim()
+                if (prev.isNotEmpty()) {
+                    if (prev.startsWith(allowMarker)) allowed = true
+                    foundPrev = true
                 }
+                i--
             }
+            if (!allowed) violations += "${file.path}:${idx + 1}: forbidden Material3 import"
         }
-        // Rule 3: forbid hardcoded RoundedCornerShape(<non-zero-numeric>.dp) outside
-        // core/designsystem/. Allowed: RoundedCornerShape(0.dp), percent-typed,
-        // and RoundedCornerShape(LocalTastileShapeTokens.current.*).
-        val hardcodedShapeOffenders = mutableListOf<String>()
-        val designSystemRoot = layout.projectDirectory
-            .dir("src/main/java/app/tastile/android/core/designsystem").asFile
-        layout.projectDirectory.dir("src/main/java/app/tastile/android").asFile.walkTopDown()
-            .filter { it.extension == "kt" && !it.startsWith(designSystemRoot) }
-            .forEach { file ->
-                file.readText().lines().forEachIndexed { idx, line ->
-                    val match = Regex("""RoundedCornerShape\(\s*(\d+(?:\.\d+)?)\.dp\s*\)""").find(line)
-                    if (match != null && match.groupValues[1].toDouble() != 0.0) {
-                        hardcodedShapeOffenders += "${file.path}:${idx + 1}"
-                    }
-                }
-            }
-        check(offenders.isEmpty() && colorSchemeOffenders.isEmpty() && hardcodedShapeOffenders.isEmpty()) {
-            buildString {
-                if (offenders.isNotEmpty()) {
-                    appendLine("Direct Material3 imports are not allowed in guarded screens:")
-                    offenders.forEach { appendLine("  - $it.path") }
-                }
-                if (colorSchemeOffenders.isNotEmpty()) {
-                    appendLine(
-                        "Forbidden MaterialTheme.colorScheme references in ui/{dashboard,mobile,account}/. " +
-                            "Use LocalTastileCardRoleTokens.current / LocalTastileStatusTokens.current instead."
-                    )
-                    colorSchemeOffenders.forEach { appendLine("  - $it") }
-                }
-                if (hardcodedShapeOffenders.isNotEmpty()) {
-                    appendLine(
-                        "Forbidden hardcoded RoundedCornerShape(<non-zero-numeric>.dp) outside core/designsystem/. " +
-                            "Use RoundedCornerShape(LocalTastileShapeTokens.current.<key>) instead."
-                    )
-                    hardcodedShapeOffenders.forEach { appendLine("  - $it") }
+    }
+
+    uiConsumerRoots.forEach { root ->
+        root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+            val lines = file.readText().lines()
+            lines.forEachIndexed { idx, line ->
+                if (line.contains("MaterialTheme.colorScheme") &&
+                    (idx == 0 || !lines[idx - 1].trim().startsWith(allowMarker))) {
+                    violations += "${file.path}:${idx + 1}: forbidden MaterialTheme.colorScheme reference"
                 }
             }
         }
     }
+
+    allKtRoot.walkTopDown()
+        .filter { it.extension == "kt" && !it.startsWith(designSystemRoot) }
+        .forEach { file ->
+            file.readText().lines().forEachIndexed { idx, line ->
+                val match = Regex("""RoundedCornerShape\(\s*(\d+(?:\.\d+)?)\.dp\s*\)""").find(line)
+                if (match != null && match.groupValues[1].toDouble() != 0.0) {
+                    violations += "${file.path}:${idx + 1}: hardcoded RoundedCornerShape(<non-zero-numeric>.dp)"
+                }
+            }
+        }
+
+    return violations
+}
+
+fun formatDesignSystemViolations(violations: List<String>): String = buildString {
+    if (violations.isEmpty()) return@buildString
+    appendLine("verifyDesignSystemImports found ${violations.size} violation(s):")
+    violations.forEach { appendLine("  - $it") }
+    appendLine()
+    appendLine("Use LocalTastileCardRoleTokens.current / LocalTastileStatusTokens.current instead of MaterialTheme.colorScheme.")
+    appendLine("Use RoundedCornerShape(LocalTastileShapeTokens.current.<key>) instead of hardcoded <n>.dp shapes.")
+    appendLine("Direct Material3 imports require an immediately-preceding `// m2-allow:` marker line.")
 }
 
 tasks.register("verifyNoEmbeddedServerSecrets") {
