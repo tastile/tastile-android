@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Add
 import app.tastile.android.core.designsystem.component.NiaFloatingActionButton
 // m2-allow: primitive
 import androidx.compose.material3.Icon
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,10 +29,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.calendar.DayView
@@ -207,8 +208,8 @@ fun TimelineScreen(
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
                 .padding(end = 16.dp, bottom = 16.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+            containerColor = LocalTastileCardRoleTokens.current.actionable.container,
+            contentColor = LocalContentColor.current,
             shape = CircleShape,
         ) {
             Icon(
