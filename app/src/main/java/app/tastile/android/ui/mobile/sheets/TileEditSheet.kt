@@ -22,7 +22,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.CircularProgressIndicator
 // m2-allow: m3-component
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -170,10 +173,10 @@ fun TileEditSheet(
                 Text(
                     text = tile?.lifecycle ?: "—",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
                 error?.let { message ->
-                    Text(message, color = MaterialTheme.colorScheme.error)
+                    Text(message, color = LocalTastileStatusTokens.current.archived.icon)
                 }
                 if (detailLoading && detail == null) {
                     CircularProgressIndicator(
@@ -225,7 +228,7 @@ fun TileEditSheet(
                         Text(
                             text = stringResource(R.string.tile_occurrence_label, tileEdit.placementId),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = LocalContentColor.current,
                         )
                     }
                     val active = draft.activePanel
