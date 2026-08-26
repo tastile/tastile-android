@@ -18,6 +18,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Icon
 // m2-allow: primitive
 import androidx.compose.material3.Text
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -84,7 +85,7 @@ private fun ScheduleRow(
             )
         },
         modifier = Modifier.clickable(onClick = onClick),
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
     )
 }
 
