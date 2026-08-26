@@ -16,6 +16,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -318,7 +320,7 @@ private fun DayViewScaffold(
 private fun DayGutter(startHour: Int, endHour: Int, pxPerHour: Dp, totalHeight: Dp) {
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall.copy(
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = LocalContentColor.current,
     )
     val padRight = 6.dp
     val measurements = rememberGutterMeasurements(textMeasurer, labelStyle, startHour, endHour)
