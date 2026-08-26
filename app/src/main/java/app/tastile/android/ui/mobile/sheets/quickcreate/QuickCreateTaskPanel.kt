@@ -36,6 +36,8 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 // m2-allow: m3-component
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -185,7 +187,7 @@ private fun DurationRow(currentMin: Int?, onChange: (Int) -> Unit) {
             Icon(
                 imageVector = Icons.Outlined.Timer,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
@@ -193,7 +195,7 @@ private fun DurationRow(currentMin: Int?, onChange: (Int) -> Unit) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = LocalContentColor.current,
             )
         },
         trailing = {
@@ -273,7 +275,7 @@ private fun SplitPolicyRow(current: String, onChange: (String) -> Unit) {
             Icon(
                 imageVector = Icons.Outlined.CalendarMonth,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
