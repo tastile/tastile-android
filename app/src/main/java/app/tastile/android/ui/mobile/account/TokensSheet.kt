@@ -23,6 +23,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 // m2-allow: m3-component
 import androidx.compose.material3.ListItemDefaults
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
@@ -49,6 +51,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.user.AccountTokenView
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
@@ -106,14 +110,14 @@ private fun TokensBody(viewModel: AccountViewModel) {
         Text(
             text = stringResource(R.string.account_tokens_description),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
 
         state.error?.let { msg ->
             Text(
                 text = msg,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                color = LocalTastileStatusTokens.current.archived.icon,
             )
         }
 
@@ -154,7 +158,7 @@ private fun TokensBody(viewModel: AccountViewModel) {
                 Text(
                     text = stringResource(R.string.preferences_account_loading),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
             state.tokens.isEmpty() -> TokensEmptyState()
@@ -178,10 +182,10 @@ private fun SectionHeader(title: String) {
             Text(
                 title,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
     )
 }
 
@@ -236,7 +240,7 @@ private fun CreatedTokenDisclosure(
             Text(
                 text = stringResource(R.string.account_tokens_new_token_heading),
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = LocalContentColor.current,
             )
             Row {
                 IconButton(
@@ -248,14 +252,14 @@ private fun CreatedTokenDisclosure(
                     Icon(
                         imageVector = Icons.Outlined.ContentCopy,
                         contentDescription = stringResource(R.string.account_tokens_copy),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = LocalTastileCardRoleTokens.current.actionable.container,
                     )
                 }
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = stringResource(R.string.common_dismiss_cd),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = LocalContentColor.current,
                     )
                 }
             }
@@ -263,12 +267,12 @@ private fun CreatedTokenDisclosure(
         Text(
             text = displayName.ifBlank { secret.take(8) },
             style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = LocalContentColor.current,
         )
         Text(
             text = secret,
             style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
     }
 }
@@ -284,20 +288,20 @@ private fun TokensEmptyState() {
         Icon(
             imageVector = Icons.Outlined.Key,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = LocalContentColor.current,
             modifier = Modifier.size(48.dp),
         )
         Box(Modifier.size(12.dp))
         Text(
             text = stringResource(R.string.account_tokens_empty),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = LocalContentColor.current,
         )
         Box(Modifier.size(4.dp))
         Text(
             text = "",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
     }
 }
@@ -330,11 +334,11 @@ private fun TokenRow(
                         }
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             },
             leadingContent = { Icon(Icons.Outlined.Key, contentDescription = null) },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
             modifier = Modifier
                 .weight(1f)
                 .clickable(enabled = false) {},
@@ -343,8 +347,8 @@ private fun TokenRow(
             Icon(
                 imageVector = Icons.Outlined.Delete,
                 contentDescription = stringResource(R.string.account_tokens_revoke),
-                tint = if (token.isRevoked) MaterialTheme.colorScheme.onSurfaceVariant
-                else MaterialTheme.colorScheme.error,
+                tint = if (token.isRevoked) LocalContentColor.current
+                else LocalTastileStatusTokens.current.archived.icon,
             )
         }
     }
