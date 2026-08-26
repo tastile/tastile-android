@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
@@ -29,6 +31,9 @@ import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.repository.CalendarProjectionBlockResponse
 import app.tastile.android.data.repository.CalendarProjectionResponse
 import java.time.Instant
@@ -70,7 +75,7 @@ fun MonthCalendarScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(LocalTastileCardRoleTokens.current.neutral.container)
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -145,10 +150,10 @@ private fun MonthDayCell(
         modifier = modifier
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.22f),
+                color = LocalTastileCardRoleTokens.current.neutral.border.copy(alpha = 0.22f),
                 shape = RoundedCornerShape(0.dp)
             ),
-        color = if (cell.inCurrentMonth) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        color = if (cell.inCurrentMonth) LocalTastileCardRoleTokens.current.neutral.container else LocalTastileStatusTokens.current.ready.container.copy(alpha = 0.3f),
         shape = RoundedCornerShape(0.dp)
     ) {
         Column(
@@ -159,16 +164,16 @@ private fun MonthDayCell(
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 val dayTextColor = when {
-                    isToday -> MaterialTheme.colorScheme.onPrimary
-                    cell.inCurrentMonth -> MaterialTheme.colorScheme.onSurface
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    isToday -> LocalContentColor.current
+                    cell.inCurrentMonth -> LocalContentColor.current
+                    else -> LocalContentColor.current
                 }
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .size(24.dp)
                         .clip(CircleShape)
-                        .background(if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0f)),
+                        .background(if (isToday) LocalTastileCardRoleTokens.current.actionable.border else LocalTastileCardRoleTokens.current.neutral.container.copy(alpha = 0f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(cell.date.dayOfMonth.toString())
@@ -179,7 +184,7 @@ private fun MonthDayCell(
                     text = title,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                        .background(LocalTastileCardRoleTokens.current.actionable.border.copy(alpha = 0.12f), RoundedCornerShape(LocalTastileShapeTokens.current.xs))
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
