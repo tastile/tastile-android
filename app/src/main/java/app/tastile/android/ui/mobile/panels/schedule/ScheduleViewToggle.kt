@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -20,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 
 /**
  * Two-button "segmented control" that swaps the Schedule right-pane
@@ -38,9 +41,9 @@ fun ScheduleViewToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
             .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
+                LocalTastileStatusTokens.current.ready.container.copy(alpha = 0.20f),
             )
             .padding(2.dp),
     ) {
@@ -68,9 +71,9 @@ private fun ScheduleSegmentButton(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
             .background(
-                if (selected) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                if (selected) LocalTastileStatusTokens.current.ready.container.copy(alpha = 0.55f)
                 else Color.Transparent,
             )
             .clickable { onClick() }
@@ -81,7 +84,7 @@ private fun ScheduleSegmentButton(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (selected) LocalContentColor.current else LocalContentColor.current,
         )
     }
 }
