@@ -61,9 +61,9 @@ fun TastileTileCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onToggleExpanded() }
-                .padding(horizontal = spacing.m, vertical = 10.dp),
+                .padding(horizontal = spacing.m, vertical = spacing.s),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing.m),
         ) {
             TastileStatusCircle(lifecycle = lifecycle)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
