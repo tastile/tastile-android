@@ -39,8 +39,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 // m2-allow: state-holder
 import androidx.compose.material3.ListItemDefaults
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: m3-component
@@ -73,6 +73,7 @@ import app.tastile.android.core.designsystem.component.NiaListItem
 import app.tastile.android.core.designsystem.component.NiaSegmentedButton
 import app.tastile.android.core.designsystem.component.NiaSingleChoiceSegmentedButtonRow
 import app.tastile.android.core.designsystem.component.NiaSwitch
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.data.user.ThemeMode
 import app.tastile.android.notifications.ExecutionAlarmTestReceiver
@@ -219,7 +220,7 @@ private fun ThemeSection(
             supportingContent = { Text(themeLabel(current)) },
             leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
         )
         NiaSingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             NiaSegmentedButton(
@@ -262,7 +263,7 @@ private fun LanguageSection(
             supportingContent = { Text(localeLabel(current)) },
             leadingContent = { Icon(Icons.Outlined.Language, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
         )
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -331,7 +332,7 @@ private fun SecurityLockSection(
                 .semantics(mergeDescendants = true) {
                     contentDescription = a11yLabel
                 },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
         )
         if (enabled) {
             Row(
@@ -350,7 +351,7 @@ private fun SecurityLockSection(
                         timeoutMinutes.coerceIn(TIMEOUT_MIN, TIMEOUT_MAX),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = LocalContentColor.current,
                 )
                 NiaButton(onClick = onIncrement) {
                     Text(stringResource(R.string.settings_security_lock_timeout_increase))
@@ -391,7 +392,7 @@ private fun NotificationsSection(
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = LocalContentColor.current,
                 )
                 Text(stringResource(R.string.mobile_top_notifications))
             }
