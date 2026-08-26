@@ -40,6 +40,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 // m2-allow: m3-component
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -218,7 +221,7 @@ private fun RepeatModeChipRow(
             Icon(
                 imageVector = Icons.Outlined.EventRepeat,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
@@ -244,9 +247,9 @@ private fun RepeatModeChip(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-    val border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    val containerColor = if (selected) LocalTastileCardRoleTokens.current.actionable.container else LocalTastileCardRoleTokens.current.neutral.container
+    val contentColor = if (selected) LocalContentColor.current else LocalContentColor.current
+    val border = if (selected) null else BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border)
     Surface(
         modifier = Modifier
             .clickable(onClick = onClick)
@@ -312,7 +315,7 @@ private fun WeekdayChipRow(weekdayMask: Int, onChange: (Int) -> Unit) {
         Text(
             text = stringResource(R.string.quickcreate_recurring_secondary_everyweekday),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Row(
             modifier = Modifier
@@ -324,9 +327,9 @@ private fun WeekdayChipRow(weekdayMask: Int, onChange: (Int) -> Unit) {
         ) {
             labels.forEachIndexed { index, label ->
                 val active = (weekdayMask shr index) and 1 == 1
-                val containerColor = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-                val contentColor = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                val border = if (active) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                val containerColor = if (active) LocalTastileCardRoleTokens.current.actionable.container else LocalTastileCardRoleTokens.current.neutral.container
+                val contentColor = if (active) LocalContentColor.current else LocalContentColor.current
+                val border = if (active) null else BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border)
                 Surface(
                     onClick = {
                         val nextMask = weekdayMask xor (1 shl index)
@@ -368,7 +371,7 @@ private fun IntervalValueUnitRow(
         Text(
             text = stringResource(R.string.quickcreate_recurring_secondary_everyndays),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Row(
             modifier = Modifier
@@ -399,9 +402,9 @@ private fun IntervalValueUnitRow(
                     app.tastile.android.ui.mobile.sheets.QuickCreateIntervalUnit.Day to R.string.quickcreate_recurring_interval_unit_day,
                 ).forEach { (unit, labelRes) ->
                     val selected = unit == intervalUnit
-                    val containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-                    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    val border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    val containerColor = if (selected) LocalTastileCardRoleTokens.current.actionable.container else LocalTastileCardRoleTokens.current.neutral.container
+                    val contentColor = if (selected) LocalContentColor.current else LocalContentColor.current
+                    val border = if (selected) null else BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border)
                     Surface(
                         onClick = { onUnitChange(unit) },
                         shape = RoundedCornerShape(50),
@@ -438,7 +441,7 @@ private fun RepeatUntilRow(
             Icon(
                 imageVector = Icons.Outlined.CalendarMonth,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
@@ -479,7 +482,7 @@ private fun DurationPerInstanceRow(currentMin: Int?, onChange: (Int) -> Unit) {
             Icon(
                 imageVector = Icons.Outlined.Schedule,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(24.dp),
             )
         },
@@ -523,9 +526,9 @@ private fun DurationPerInstanceRow(currentMin: Int?, onChange: (Int) -> Unit) {
             ) {
                 RecurringDurationPresets.forEach { preset ->
                     val selected = currentMin == preset
-                    val containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-                    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    val border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    val containerColor = if (selected) LocalTastileCardRoleTokens.current.actionable.container else LocalTastileCardRoleTokens.current.neutral.container
+                    val contentColor = if (selected) LocalContentColor.current else LocalContentColor.current
+                    val border = if (selected) null else BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border)
                     Surface(
                         onClick = {
                             isCustomMode = false
@@ -552,9 +555,9 @@ private fun DurationPerInstanceRow(currentMin: Int?, onChange: (Int) -> Unit) {
                 Surface(
                     onClick = { isCustomMode = true },
                     shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    color = LocalTastileCardRoleTokens.current.neutral.container,
+                    contentColor = LocalContentColor.current,
+                    border = BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border),
                     modifier = Modifier.testTag("recurring-duration-custom-trigger"),
                 ) {
                     Row(
