@@ -30,6 +30,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 // m2-allow: m3-component
 import androidx.compose.material3.IconButton
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
@@ -62,6 +64,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.model.Plan
 import app.tastile.android.data.model.Profile
 
@@ -95,7 +100,7 @@ fun AccountScreen(
             // Header
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
+                color = LocalTastileCardRoleTokens.current.neutral.container,
                 shadowElevation = 4.dp
             ) {
                 Text(
@@ -181,7 +186,7 @@ fun ProfileCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = LocalTastileStatusTokens.current.ready.container
         )
     ) {
         Column(
@@ -199,13 +204,13 @@ fun ProfileCard(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(LocalTastileCardRoleTokens.current.actionable.container),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = displayText.uppercase(),
                     style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = LocalContentColor.current,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -267,7 +272,7 @@ fun ProfileCard(
             Text(
                 text = email,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = LocalContentColor.current
             )
         }
     }
@@ -277,20 +282,15 @@ fun ProfileCard(
 fun PlanBadge(plan: String) {
     val isPro = plan == Plan.PRO.value
     val backgroundColor = if (isPro) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+        LocalTastileCardRoleTokens.current.actionable.container.copy(alpha = 0.2f)
     } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-    val textColor = if (isPro) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
+        LocalTastileStatusTokens.current.ready.container
     }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = backgroundColor,
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(LocalTastileShapeTokens.current.s)
     ) {
         Row(
             modifier = Modifier
@@ -303,7 +303,7 @@ fun PlanBadge(plan: String) {
                 Icon(
                     Icons.Default.Star,
                     contentDescription = null,
-                    tint = textColor
+                    tint = LocalContentColor.current
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
@@ -311,7 +311,7 @@ fun PlanBadge(plan: String) {
             Text(
                 text = if (isPro) stringResource(R.string.account_plan_pro) else stringResource(R.string.account_plan_free),
                 style = MaterialTheme.typography.titleMedium,
-                color = textColor,
+                color = LocalContentColor.current,
                 fontWeight = FontWeight.SemiBold
             )
         }
