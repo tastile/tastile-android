@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.dp
  * clearly display the column boundary, matching the web's CSS Grid
  * guide.
  *
- * Every row also enforces the panel-wide **56dp minimum height**
- * ([RowMinHeight]) and a uniform 8dp vertical gutter between rows
+ * Every row also enforces the panel-wide **48dp minimum height**
+ * ([RowMinHeight]) and a uniform 4dp vertical gutter between rows
  * ([RowVerticalSpacing], applied by [FormFieldColumn]) so the body
  * sits on a consistent vertical grid regardless of content height.
  */

@@ -38,8 +38,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -137,10 +135,10 @@ internal fun TimePanel(draft: QuickCreateDraftState, store: QuickCreateStateStor
             )
         }
         FormFieldLayout(icon = Icons.Outlined.Tag) {
-            OutlinedTextField(
-                draft.time.referenceLabel,
-                { value -> store.updateTime(draft.time.copy(referenceLabel = value)) },
-                label = { Text(stringResource(R.string.quickcreate_panel_reference_label)) },
+            UnderlineTextField(
+                value = draft.time.referenceLabel,
+                onValueChange = { value -> store.updateTime(draft.time.copy(referenceLabel = value)) },
+                placeholder = stringResource(R.string.quickcreate_panel_reference_label),
                 modifier = Modifier.fillMaxWidth().testTag("quick-create-reference-label"),
             )
         }

@@ -30,7 +30,7 @@ internal fun QuickCreateSubpanel(
     projects: List<QuickCreateProject>,
     knownTags: List<String>,
 ) {
-    // `FormFieldColumn` already applies the 8dp row gap (`RowVerticalSpacing`),
+    // `FormFieldColumn` already applies the 4dp row gap (`RowVerticalSpacing`),
     // so no explicit arrangement is needed — identical grid rhythm to the
     // main panels. The outer 16dp horizontal padding is applied by the sheet.
     FormFieldColumn(
@@ -38,7 +38,7 @@ internal fun QuickCreateSubpanel(
             .testTag("quick-create-subpanel-${panel.name}")
             .fillMaxHeight()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
+            .padding(vertical = 2.dp),
     ) {
         when (panel) {
             QuickCreatePanel.Intent -> IntentPanel(store)

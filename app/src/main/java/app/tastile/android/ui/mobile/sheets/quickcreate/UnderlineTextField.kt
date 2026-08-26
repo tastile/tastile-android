@@ -93,7 +93,7 @@ fun UnderlineTextField(
                 )
             }
             .let { m -> if (testTag != null) m.testTag(testTag) else m }
-            .padding(vertical = 8.dp),
+            .padding(vertical = 4.dp),
         textStyle = textStyle.copy(color = LocalContentColor.current),
         cursorBrush = SolidColor(LocalTastileCardRoleTokens.current.actionable.border),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),

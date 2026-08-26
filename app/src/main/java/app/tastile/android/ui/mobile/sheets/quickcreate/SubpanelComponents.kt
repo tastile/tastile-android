@@ -94,12 +94,12 @@ internal fun JsonObject.string(key: String, fallback: String = ""): String =
 @Composable
 internal fun LocalSectionHeader(title: String, subtitle: String? = null) {
     // The icon column is reserved structurally by `FormFieldLayout` (24dp
-    // icon + 16dp gap) so the title text begins at the standard 56dp
+    // icon + 16dp gap) so the title text begins at the standard 48dp
     // content offset. The outer 16dp horizontal padding is applied by
     // `FormFieldRow`, which owns the column reservation for the sheet
     // body.
     FormFieldLayout(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
+        Column(Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 0.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
@@ -112,7 +112,7 @@ internal fun LocalSectionHeader(title: String, subtitle: String? = null) {
                     color = LocalContentColor.current,
                 )
             }
-            HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(top = 2.dp))
         }
     }
 }
@@ -354,9 +354,7 @@ internal fun QuickCreateHeader(
     )
     if (padded) {
         androidx.compose.foundation.layout.Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) { formRow }
     } else {
         formRow
@@ -440,7 +438,7 @@ internal fun LocalPickerField(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
+                .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {

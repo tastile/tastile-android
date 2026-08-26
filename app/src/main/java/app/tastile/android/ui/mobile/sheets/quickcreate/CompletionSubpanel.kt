@@ -49,8 +49,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -593,10 +591,10 @@ internal fun addCompletionTerm(draft: QuickCreateDraftState, store: QuickCreateS
 ) {
     val value = term.valueObject()
     FormFieldLayout(icon = Icons.Outlined.Key) {
-        OutlinedTextField(
+        UnderlineTextField(
             value = value.string(idKey),
             onValueChange = { input -> onChange(term.withValue(idKey, input)) },
-            label = { Text(stringResource(R.string.quickcreate_panel_field_id_label)) },
+            placeholder = stringResource(R.string.quickcreate_panel_field_id_label),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("condition-$path-$kind-id"),
@@ -614,10 +612,10 @@ internal fun addCompletionTerm(draft: QuickCreateDraftState, store: QuickCreateS
         )
     }
     FormFieldLayout(icon = Icons.Outlined.TextFields) {
-        OutlinedTextField(
+        UnderlineTextField(
             value = value.string("value"),
             onValueChange = { input -> onChange(term.withValue("value", scalarValue(input))) },
-            label = { Text(stringResource(R.string.quickcreate_panel_field_value_label)) },
+            placeholder = stringResource(R.string.quickcreate_panel_field_value_label),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("condition-$path-$kind-value"),
@@ -628,10 +626,10 @@ internal fun addCompletionTerm(draft: QuickCreateDraftState, store: QuickCreateS
 @Composable internal fun LifeTermFields(term: JsonObject, path: String, onChange: (JsonObject) -> Unit) {
     val value = term.valueObject()
     FormFieldLayout(icon = Icons.Outlined.Favorite) {
-        OutlinedTextField(
+        UnderlineTextField(
             value = value.string("target"),
             onValueChange = { input -> onChange(term.withValue("target", input)) },
-            label = { Text(stringResource(R.string.quickcreate_panel_field_target_label)) },
+            placeholder = stringResource(R.string.quickcreate_panel_field_target_label),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("condition-$path-life-target"),
@@ -737,13 +735,13 @@ private fun JsonEditor(label: String, value: JsonElement, tag: String? = null, o
     val encoded = Json.encodeToString(JsonElement.serializer(), value)
     var text by remember(encoded) { mutableStateOf(encoded) }
     FormFieldLayout(icon = Icons.Outlined.TextFields) {
-        OutlinedTextField(
+        UnderlineTextField(
             value = text,
             onValueChange = { candidate ->
                 text = candidate
                 runCatching { Json.parseToJsonElement(candidate) }.getOrNull()?.let(onValidValue)
             },
-            label = { Text(label) },
+            placeholder = label,
             modifier = Modifier.fillMaxWidth().then(if (tag == null) Modifier else Modifier.testTag(tag)),
         )
     }

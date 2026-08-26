@@ -71,7 +71,7 @@ internal fun PlacementRulesPanel(draft: QuickCreateDraftState, store: QuickCreat
             Surface(modifier = Modifier
                 .fillMaxWidth()
                 .testTag("quick-create-placement-rule-$index")) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.quick_create_rule_number, index + 1))
                     val effectIcons = remember {
                         mapOf(

@@ -30,8 +30,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,20 +65,20 @@ internal fun ReferencesPanel(draft: QuickCreateDraftState, store: QuickCreateSta
         val target = reference.target.jsonObjectOrEmpty()
         val pick = reference.pick.jsonObjectOrEmpty()
         FormFieldLayout(icon = Icons.Outlined.Key) {
-            OutlinedTextField(
+            UnderlineTextField(
                 value = reference.id,
                 onValueChange = { value -> updateReference(draft, store, index, reference.copy(id = value)) },
-                label = { Text(stringResource(R.string.quickcreate_panel_reference_record_id)) },
+                placeholder = stringResource(R.string.quickcreate_panel_reference_record_id),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("quick-create-reference-record-id-$index"),
             )
         }
         FormFieldLayout(icon = Icons.Outlined.Link) {
-            OutlinedTextField(
+            UnderlineTextField(
                 value = target.string("referenceId"),
                 onValueChange = { value -> updateReference(draft, store, index, reference.copy(target = target.with("referenceId", value.ifBlank { null }))) },
-                label = { Text(stringResource(R.string.quickcreate_panel_target_reference)) },
+                placeholder = stringResource(R.string.quickcreate_panel_target_reference),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("quick-create-reference-id-$index"),

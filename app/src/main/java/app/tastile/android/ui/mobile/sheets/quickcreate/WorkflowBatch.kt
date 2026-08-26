@@ -44,7 +44,7 @@ import app.tastile.android.ui.mobile.sheets.WorkflowKind
  * [WorkflowKind] in [WORKFLOW_ORDER]. Chips keep their natural sizing
  * (12dp horizontal padding, 18dp icon, 8dp gap); the row scrolls
  * horizontally when the four chips exceed the available width, and the
- * 56dp leading reservation in [ScrollableChipRow] keeps the first
+ * 48dp leading reservation in [ScrollableChipRow] keeps the first
  * chip's left edge aligned with the body's content start.
  *
  * The host panel can hand in a [scrollState] that lives *above* the
@@ -84,8 +84,12 @@ private fun WorkflowBatchChip(
     val config = WORKFLOW_CONFIG[kind] ?: return
     val label = stringResource(config.labelResId)
     val containerColor = if (selected) LocalTastileCardRoleTokens.current.actionable.container else LocalTastileCardRoleTokens.current.neutral.container
-    val contentColor = if (selected) LocalContentColor.current else LocalContentColor.current
-    val border = if (selected) null else BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border)
+    val contentColor = LocalContentColor.current
+    val borderStroke = BorderStroke(
+        1.dp,
+        if (selected) LocalTastileCardRoleTokens.current.actionable.border
+        else LocalTastileCardRoleTokens.current.completed.border,
+    )
 
     Surface(
         modifier = Modifier
@@ -94,11 +98,11 @@ private fun WorkflowBatchChip(
         shape = RoundedCornerShape(50),
         color = containerColor,
         contentColor = contentColor,
-        border = border,
+        border = borderStroke,
         shadowElevation = if (selected) 2.dp else 0.dp,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {

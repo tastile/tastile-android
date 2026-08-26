@@ -29,8 +29,6 @@ import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material3.FilterChip
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -102,10 +100,10 @@ internal fun MetaPanel(
     }
     var tagDraft by remember { mutableStateOf("") }
     FormFieldLayout(icon = Icons.Outlined.Tag) {
-        OutlinedTextField(
+        UnderlineTextField(
             value = tagDraft,
             onValueChange = { tagDraft = it },
-            label = { Text(stringResource(R.string.quickcreate_panel_meta_add_tag)) },
+            placeholder = stringResource(R.string.quickcreate_panel_meta_add_tag),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("meta-tag-input"),
@@ -126,10 +124,10 @@ internal fun MetaPanel(
         )
     }
     FormFieldLayout(icon = Icons.Outlined.Description) {
-        OutlinedTextField(
+        UnderlineTextField(
             value = draft.meta.memo,
             onValueChange = { value -> store.updateMeta(draft.meta.copy(memo = value)) },
-            label = { Text(stringResource(R.string.quickcreate_panel_meta_memo)) },
+            placeholder = stringResource(R.string.quickcreate_panel_meta_memo),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("meta-memo"),

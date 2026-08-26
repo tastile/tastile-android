@@ -101,8 +101,7 @@ fun QuickCreateDetailedComposition(
         modifier = Modifier
             .testTag("quick-create-detailed")
             .fillMaxHeight()
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
+            .verticalScroll(rememberScrollState()),
     ) {
         QuickCreateHeader(
             title = draft.identity.title,
@@ -199,7 +198,7 @@ fun QuickCreateDetailedComposition(
                 text = it,
                 color = LocalTastileStatusTokens.current.archived.icon,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(vertical = 12.dp),
+                modifier = Modifier.padding(vertical = 4.dp),
             )
         }
     }

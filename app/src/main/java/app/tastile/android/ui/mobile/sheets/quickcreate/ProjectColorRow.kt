@@ -23,8 +23,6 @@ import androidx.compose.material3.Icon
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
-// m2-allow: m3-component
 import androidx.compose.material3.Surface
 // m2-allow: m3-component
 import androidx.compose.material3.Text
@@ -259,13 +257,12 @@ private fun CustomColorDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    OutlinedTextField(
+                    UnderlineTextField(
                         value = hex,
                         onValueChange = { input ->
                             hex = input.filter { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' || it == '#' }
                         },
-                        label = { Text(stringResource(R.string.quickcreate_color_custom_hex)) },
-                        singleLine = true,
+                        placeholder = stringResource(R.string.quickcreate_color_custom_hex),
                         modifier = Modifier
                             .weight(1f)
                             .testTag("project-color-custom-hex"),

@@ -28,8 +28,6 @@ import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Star
 // m2-allow: primitive
 import androidx.compose.material3.Icon
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,11 +51,12 @@ internal fun IdentityPanel(draft: QuickCreateDraftState, store: QuickCreateState
     val identity = draft.identity
     LocalSectionHeader(title = stringResource(R.string.quick_create_identity_title))
     FormFieldLayout(icon = Icons.Outlined.Description) {
-        OutlinedTextField(
+        UnderlineTextArea(
             value = identity.description.orEmpty(),
             onValueChange = { store.updateIdentity(identity.copy(description = it.ifBlank { null })) },
-            label = { Text(stringResource(R.string.quick_create_description)) },
-            minLines = 3,
+            placeholder = stringResource(R.string.quick_create_description),
+            minLines = 2,
+            maxLines = 6,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("quick-create-description"),

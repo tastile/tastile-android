@@ -49,9 +49,9 @@ private val RowHorizontalPadding: Dp = 16.dp
 /**
  * Minimum height for every row in the form family.
  *
- * Mirrors M3 `ListItem`'s single-line default (`minHeight = 56.dp`).
+ * Mirrors M3 `ListItem`'s single-line default (`minHeight = 48.dp`).
  * Even rows whose intrinsic content is shorter than this — a single
- * line of `labelLarge` text plus a 24dp icon — get a uniform 56dp
+ * line of `labelLarge` text plus a 24dp icon — get a uniform 48dp
  * hit-target row. This keeps the body's vertical rhythm consistent
  * across rows whose content height varies (one line vs. two lines,
  * compact chip vs. dense date trigger, etc.) and matches the
@@ -59,21 +59,21 @@ private val RowHorizontalPadding: Dp = 16.dp
  *
  * Callers can opt into a different alignment inside the row via the
  * `verticalAlignment` parameter (e.g. `Alignment.Top` for a two-line
- * body). The 56dp minimum itself is not configurable from the
+ * body). The 48dp minimum itself is not configurable from the
  * outside; it is the panel-wide default.
  */
-internal val RowMinHeight: Dp = 56.dp
+internal val RowMinHeight: Dp = 48.dp
 
 /**
  * Vertical gap between consecutive rows in the form family.
  *
  * Mirrors the web's section rhythm (`py-3` / `space-y` in the
- * `create-tile` UI) and the 8dp spacing the subpanels already use.
+ * `create-tile` UI) and the 4dp spacing the subpanels already use.
  * `FormFieldColumn` applies this via `Arrangement.spacedBy`, so every
  * row — `FormRow`, `FormFieldRow`, `ScrollableChipRow` — sits on the
- * same vertical grid with a uniform 8dp gutter between rows.
+ * same vertical grid with a uniform 4dp gutter between rows.
  */
-internal val RowVerticalSpacing: Dp = 8.dp
+internal val RowVerticalSpacing: Dp = 4.dp
 
 /**
  * Canonical form row for QuickCreate panels.
@@ -87,7 +87,7 @@ internal val RowVerticalSpacing: Dp = 8.dp
  *      [leading] [content] [trailing]
  *    with the leading slot reserved at [IconColumnWidth] even when
  *    [leading] is null.
- *  - **Minimum height of 56dp**: every row gets a uniform vertical
+ *  - **Minimum height of 48dp**: every row gets a uniform vertical
  *    hit-target regardless of content size.
  *  - **Leading slot is always centered vertically** with the row
  *    content, matching M3 `ListItem` behavior.

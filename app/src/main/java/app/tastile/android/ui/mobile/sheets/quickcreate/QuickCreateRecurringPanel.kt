@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -32,8 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
 // m2-allow: m3-component
 import androidx.compose.material3.Surface
 // m2-allow: m3-component
@@ -380,14 +377,14 @@ private fun IntervalValueUnitRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            OutlinedTextField(
+            UnderlineTextField(
                 value = intervalValue.toString(),
                 onValueChange = { raw ->
-                    val n = raw.toIntOrNull() ?: return@OutlinedTextField
+                    val n = raw.toIntOrNull() ?: return@UnderlineTextField
                     onValueChange(n.coerceIn(1, 365))
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
+                placeholder = "",
+                keyboardType = KeyboardType.Number,
                 modifier = Modifier
                     .width(96.dp)
                     .testTag("recurring-interval-value"),
@@ -501,16 +498,15 @@ private fun DurationPerInstanceRow(currentMin: Int?, onChange: (Int) -> Unit) {
     )
     if (isCustomMode) {
         FormFieldLayout {
-            OutlinedTextField(
+            UnderlineTextField(
                 value = customValue,
                 onValueChange = {
                     customValue = it
                     val n = it.toIntOrNull()
                     if (n != null && n > 0) onChange(n)
                 },
-                label = { Text(stringResource(R.string.quickcreate_recurring_duration_custom) + " …") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
+                placeholder = stringResource(R.string.quickcreate_recurring_duration_custom) + " …",
+                keyboardType = KeyboardType.Number,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("recurring-duration-manual"),

@@ -246,19 +246,17 @@ private fun DurationRow(currentMin: Int?, onChange: (Int) -> Unit) {
     )
     if (isCustomMode) {
         FormFieldLayout {
-            OutlinedTextField(
+            UnderlineTextField(
                 value = customValue,
                 onValueChange = {
                     customValue = it
                     val n = it.toIntOrNull()
                     if (n != null && n > 0) onChange(n)
                 },
-                label = { Text(stringResource(R.string.quickcreate_task_duration_custom_minutes)) },
-                singleLine = true,
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                placeholder = stringResource(R.string.quickcreate_task_duration_custom_minutes),
+                keyboardType = KeyboardType.Number,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp)
                     .testTag("task-duration-manual"),
             )
         }

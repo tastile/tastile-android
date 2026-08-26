@@ -451,11 +451,12 @@ private fun TaskDefinitionEditorModal(
                     )
                 }
 
-                OutlinedTextField(
+                UnderlineTextArea(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text(stringResource(R.string.quickcreate_task_editor_note)) },
+                    placeholder = stringResource(R.string.quickcreate_task_editor_note),
                     minLines = 2,
+                    maxLines = 6,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("task-editor-$testIdSuffix-note"),
