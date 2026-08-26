@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -22,6 +24,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
 import app.tastile.android.data.model.Tile
 import app.tastile.android.ui.dashboard.ListViewMode
 
@@ -54,9 +58,9 @@ fun TilesSectionColumn(
     val atMax = effectiveLimit >= tiles.size
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface)
+            .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
+            .border(1.dp, LocalTastileCardRoleTokens.current.completed.border, RoundedCornerShape(LocalTastileShapeTokens.current.s))
+            .background(LocalTastileCardRoleTokens.current.neutral.container)
             .padding(8.dp)
             .testTag("tiles-section-$groupId"),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -78,26 +82,26 @@ fun TilesSectionColumn(
                     Text(
                         label,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = LocalContentColor.current,
                     )
                     Text(
                         stringResource(R.string.tile_section_meta, totalMinutes, tiles.size),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = LocalContentColor.current,
                     )
                 }
                 if (omitted > 0) {
                     Text(
                         text = pluralStringResource(R.plurals.dashboard_tiles_omitted_more, omitted, omitted),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = LocalContentColor.current,
                         modifier = Modifier.testTag("tiles-section-expand-$groupId"),
                     )
                 } else if (atMax) {
                     Text(
                         text = "▴",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = LocalContentColor.current,
                         modifier = Modifier.testTag("tiles-section-collapse-$groupId"),
                     )
                 }
