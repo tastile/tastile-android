@@ -41,6 +41,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 // m2-allow: primitive
 import androidx.compose.material3.LocalContentColor
+// m2-allow: theme-bridge
+import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: m3-component
