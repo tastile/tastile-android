@@ -21,7 +21,10 @@ import androidx.compose.material3.ListItem
 // m2-allow: m3-component
 import androidx.compose.material3.ListItemDefaults
 // m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+// m2-allow: primitive
 import androidx.compose.material3.Text
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -162,10 +165,10 @@ private fun SectionHeader(title: String) {
             Text(
                 title,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
     )
 }
 
@@ -181,7 +184,7 @@ private fun PreferencesListItem(
         leadingContent = { Icon(leading, contentDescription = null) },
         trailingContent = { Icon(trailing, contentDescription = null) },
         modifier = Modifier.clickable(onClick = onClick),
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
     )
 }
 
