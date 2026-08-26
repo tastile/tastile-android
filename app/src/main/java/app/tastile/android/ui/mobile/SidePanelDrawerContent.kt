@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import kotlinx.coroutines.launch
 
 private data class DrawerRoute(
@@ -135,7 +136,7 @@ fun SidePanelDrawerContent(
 
 @Composable
 private fun BrandHeader() {
-    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val isDark = LocalTastileCardRoleTokens.current.neutral.container.luminance() < 0.5f
     val markRes = if (isDark) R.drawable.ic_tastile_icon_dark else R.drawable.ic_tastile_icon
     Row(
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
