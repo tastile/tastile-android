@@ -25,13 +25,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 // m2-allow: m3-component
 import androidx.compose.material3.ListItemDefaults
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
-// m2-allow: m3-component
 import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.sheets.PanelSheet
@@ -119,12 +121,12 @@ private fun ProfileHeading() {
         Text(
             text = stringResource(R.string.preferences_account_profile_heading),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = LocalContentColor.current,
         )
         Text(
             text = stringResource(R.string.preferences_account_profile_guide),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
     }
 }
@@ -153,7 +155,7 @@ private fun AccountPanel(
                 Icon(
                     imageVector = Icons.Outlined.Refresh,
                     contentDescription = stringResource(R.string.preferences_account_refresh),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = LocalContentColor.current,
                 )
             }
         }
@@ -173,7 +175,7 @@ private fun AccountPanel(
                 Text(
                     text = stringResource(R.string.preferences_account_loading),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
             return
@@ -321,10 +323,10 @@ private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
             Text(
                 title,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
         modifier = modifier,
     )
 }
@@ -344,12 +346,12 @@ private fun AccountListItem(
                 Text(
                     it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                 )
             }
         },
         leadingContent = { Icon(leading, contentDescription = null) },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ListItemDefaults.colors(containerColor = LocalTastileCardRoleTokens.current.neutral.container),
         modifier = baseModifier,
     )
 }
