@@ -21,6 +21,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaListItem
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.ui.mobile.components.AppEmptyState
 
@@ -52,9 +54,9 @@ fun ProjectsList(
             modifier = Modifier.clickable { onSelect(null) },
             colors = ListItemDefaults.colors(
                 containerColor = if (selectedOwnerId == null) {
-                    MaterialTheme.colorScheme.secondaryContainer
+                    LocalTastileStatusTokens.current.done.container
                 } else {
-                    MaterialTheme.colorScheme.surface
+                    LocalTastileCardRoleTokens.current.neutral.container
                 },
             ),
         )
