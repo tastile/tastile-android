@@ -23,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.theme.LocalTastileSpacingTokens
 import app.tastile.android.data.model.TileLifecycle
 
@@ -45,7 +44,7 @@ fun TastileCompactTileRow(
     Row(
         modifier = baseModifier
             .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = spacing.s),
+            .padding(horizontal = spacing.m, vertical = spacing.s),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.s),
     ) {
