@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -64,7 +63,7 @@ fun WeekViewTile(
                     .fillMaxHeight()
                     .border(
                         width = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
+                        color = LocalTastileCardRoleTokens.current.completed.border,
                     )
                     .clickable { /* day-column tap is handled in the Frame */ }
                     .testTag("week-view-tile-event-column"),
