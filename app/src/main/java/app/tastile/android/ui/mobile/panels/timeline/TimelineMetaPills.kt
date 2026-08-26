@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -47,27 +48,27 @@ internal fun TimelineMetaPills(
         Text(
             text = "${model.blockCount} " + stringResource(R.string.panels_timeline_meta_blocks),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Text(
             text = "·",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Text(
             text = stringResource(R.string.panels_timeline_meta_minutes_value, model.totalWorkMin) + " " + stringResource(R.string.panels_timeline_meta_work),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Text(
             text = "·",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Text(
             text = "${model.totalBreakMin} " + stringResource(R.string.panels_timeline_meta_breaks),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
     }
 }
