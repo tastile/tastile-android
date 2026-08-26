@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.theme.LocalTastileSpacingTokens
 
 /**
@@ -37,7 +36,7 @@ fun TastileDashboardCardShell(
     NiaOutlinedCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = spacing.s)
             .testTag("dashboard_card_shell"),
     ) {
         Column {
