@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
@@ -29,6 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -120,10 +125,10 @@ internal fun EventChipContent(
     onEditEvent: (CoreTimelineItem) -> Unit,
 ) {
     val (bg, fg) = when (b.type.lowercase(Locale.ROOT)) {
-        "work" -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
-        "break" -> MaterialTheme.colorScheme.tertiary to MaterialTheme.colorScheme.onTertiary
-        "fixed" -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
-        else -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurface
+        "work" -> LocalTastileCardRoleTokens.current.actionable.container to LocalContentColor.current
+        "break" -> LocalTastileStatusTokens.current.started.container to LocalContentColor.current
+        "fixed" -> LocalTastileCardRoleTokens.current.completed.container to LocalContentColor.current
+        else -> LocalTastileStatusTokens.current.ready.container to LocalContentColor.current
     }
     val activeLabel = stringResource(R.string.calendar_event_status_active)
     val doneLabel = stringResource(R.string.calendar_event_status_done)
@@ -143,7 +148,7 @@ internal fun EventChipContent(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(LocalTastileShapeTokens.current.xs))
             .background(bg)
             .clickable {
                 onEditEvent(
@@ -160,7 +165,10 @@ internal fun EventChipContent(
             modifier = Modifier
                 .width(3.dp)
                 .fillMaxHeight()
-                .background(fg.copy(alpha = 0.85f), RoundedCornerShape(2.dp)),
+                .background(
+                    fg.copy(alpha = 0.85f),
+                    RoundedCornerShape(LocalTastileShapeTokens.current.xs),
+                ),
         )
         Column(
             modifier = Modifier.weight(1f).fillMaxHeight(),
