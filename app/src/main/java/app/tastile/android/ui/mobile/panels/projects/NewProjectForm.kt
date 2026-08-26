@@ -34,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.R
 import app.tastile.android.ui.mobile.components.AppPickerButton
@@ -151,7 +152,7 @@ fun NewProjectForm(
             Text(
                 text = errorText,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
+                color = LocalTastileStatusTokens.current.archived.icon,
             )
         }
     }
