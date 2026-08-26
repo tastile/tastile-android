@@ -27,6 +27,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.workspace.WorkspaceRepository
 import app.tastile.android.ui.mobile.panels.ProjectsViewModel
@@ -95,12 +96,14 @@ class QuickCreateSheetMobileTest {
         val submissionVm = newSubmissionViewModel()
 
         rule.setContent {
-            QuickCreateSheetMobile(
-                overlay = overlay,
-                dashboardViewModel = vm,
-                projectsViewModel = projectsVm,
-                submissionViewModel = submissionVm,
-            )
+            TastileTheme {
+                QuickCreateSheetMobile(
+                    overlay = overlay,
+                    dashboardViewModel = vm,
+                    projectsViewModel = projectsVm,
+                    submissionViewModel = submissionVm,
+                )
+            }
         }
         rule.waitForIdle()
         // The submit button (Create) and the close button are part of the
@@ -127,12 +130,14 @@ class QuickCreateSheetMobileTest {
         val submissionVm = newSubmissionViewModel()
 
         rule.setContent {
-            QuickCreateSheetMobile(
-                overlay = overlay,
-                dashboardViewModel = dashboardVm,
-                projectsViewModel = projectsVm,
-                submissionViewModel = submissionVm,
-            )
+            TastileTheme {
+                QuickCreateSheetMobile(
+                    overlay = overlay,
+                    dashboardViewModel = dashboardVm,
+                    projectsViewModel = projectsVm,
+                    submissionViewModel = submissionVm,
+                )
+            }
         }
 
         // Sheet chrome (close + submit) is only rendered while the overlay is

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.ui.mobile.Overlay
 import app.tastile.android.ui.mobile.OverlayViewModel
 import androidx.compose.ui.test.isEditable
@@ -25,7 +26,9 @@ class SearchOverlaySheetTest {
         val overlay = OverlayViewModel()
 
         rule.setContent {
-            SearchOverlaySheet(overlay = overlay)
+            TastileTheme {
+                SearchOverlaySheet(overlay = overlay)
+            }
         }
         rule.waitForIdle()
         rule.onNodeWithText("Start tile").assertDoesNotExist()
@@ -45,7 +48,9 @@ class SearchOverlaySheetTest {
         val overlay = OverlayViewModel()
 
         rule.setContent {
-            SearchOverlaySheet(overlay = overlay)
+            TastileTheme {
+                SearchOverlaySheet(overlay = overlay)
+            }
         }
         rule.runOnUiThread {
             overlay.show(Overlay.Search)
@@ -76,7 +81,9 @@ class SearchOverlaySheetTest {
         val overlay = OverlayViewModel() // starts Hidden
 
         rule.setContent {
-            SearchOverlaySheet(overlay = overlay)
+            TastileTheme {
+                SearchOverlaySheet(overlay = overlay)
+            }
         }
 
         rule.onNodeWithText("Search").assertDoesNotExist()

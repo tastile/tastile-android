@@ -28,6 +28,7 @@ import app.tastile.android.data.user.ProfileRepository
 import app.tastile.android.data.workspace.ReferenceOverlayStore
 import app.tastile.android.data.auth.TastileAuthState
 import app.tastile.android.data.tile.TileRepository
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.user.UserSettingsRepository
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -99,7 +100,9 @@ class TileEditSheetTest {
         coEvery { tileRepositories.last().getTileDetail("abc") } returns sampleDetail("abc", "Write spec")
 
         rule.setContent {
-            TileEditSheet(overlay = overlay, viewModel = vm)
+            TastileTheme {
+                TileEditSheet(overlay = overlay, viewModel = vm)
+            }
         }
         rule.waitForIdle()
         rule.onNodeWithText("Write spec").assertDoesNotExist()
@@ -120,7 +123,9 @@ class TileEditSheetTest {
         vm.selectTile("abc")
 
         rule.setContent {
-            TileEditSheet(overlay = overlay, viewModel = vm)
+            TastileTheme {
+                TileEditSheet(overlay = overlay, viewModel = vm)
+            }
         }
 
         rule.onNodeWithText("Write spec").assertDoesNotExist()
@@ -133,7 +138,7 @@ class TileEditSheetTest {
         vm.replaceTilesForTest(listOf(Tile(id = "abc", title = "Write spec", lifecycle = "Ready")))
         vm.selectTile("abc")
 
-        rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
+        rule.setContent { TastileTheme { TileEditSheet(overlay = overlay, viewModel = vm) } }
         rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "abc")) }
         rule.waitForIdle()
         rule.runOnUiThread { vm.setDeleteTileCandidate("abc") }
@@ -150,7 +155,7 @@ class TileEditSheetTest {
         vm.selectTile("abc")
         coEvery { tileRepositories.last().getTileDetail("abc") } returns sampleDetail("abc", "Write spec")
 
-        rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
+        rule.setContent { TastileTheme { TileEditSheet(overlay = overlay, viewModel = vm) } }
         rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "abc")) }
         rule.waitForIdle()
 
@@ -165,7 +170,7 @@ class TileEditSheetTest {
         vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Standup", lifecycle = "Ready")))
         vm.selectTile("tile-1")
 
-        rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
+        rule.setContent { TastileTheme { TileEditSheet(overlay = overlay, viewModel = vm) } }
         rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "tile-1", placementId = "placement-1")) }
         rule.waitForIdle()
 
@@ -226,7 +231,7 @@ class TileEditSheetTest {
         ).also { viewModels.add(it) }
 
         val overlay = OverlayViewModel()
-        rule.setContent { TileEditSheet(overlay = overlay, viewModel = vm) }
+        rule.setContent { TastileTheme { TileEditSheet(overlay = overlay, viewModel = vm) } }
         rule.waitForIdle()
         rule.runOnUiThread {
             vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")))

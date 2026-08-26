@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.notifications.NotificationItem
 import app.tastile.android.notifications.NotificationRepository
 import app.tastile.android.ui.mobile.Overlay
@@ -32,7 +33,9 @@ class NotificationsSheetTest {
         val overlay = OverlayViewModel()
 
         rule.setContent {
-            NotificationsSheet(overlay = overlay, repository = repo)
+            TastileTheme {
+                NotificationsSheet(overlay = overlay, repository = repo)
+            }
         }
         rule.runOnUiThread { overlay.show(Overlay.Notifications) }
         rule.waitForIdle()
@@ -48,7 +51,9 @@ class NotificationsSheetTest {
         val overlay = OverlayViewModel()
 
         rule.setContent {
-            NotificationsSheet(overlay = overlay, repository = repo)
+            TastileTheme {
+                NotificationsSheet(overlay = overlay, repository = repo)
+            }
         }
         rule.runOnUiThread { overlay.show(Overlay.Notifications) }
         rule.waitForIdle()

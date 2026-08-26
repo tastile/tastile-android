@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.ui.mobile.sheets.QuickCreateStateStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -39,7 +40,7 @@ class QuickCreateColorSwatchTest {
 
     private fun renderEventPanel(): QuickCreateStateStore {
         val store = QuickCreateStateStore()
-        rule.setContent { QuickCreatePanelContent(store, {}, projects = emptyList()) }
+        rule.setContent { TastileTheme { QuickCreatePanelContent(store, {}, projects = emptyList()) } }
         return store
     }
 
