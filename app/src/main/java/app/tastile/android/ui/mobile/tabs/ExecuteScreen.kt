@@ -37,6 +37,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 // m2-allow: m3-component
 import androidx.compose.material3.IconButton
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
@@ -80,6 +82,9 @@ import app.tastile.android.core.designsystem.component.MobileSpacing
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.model.projectLabels
@@ -273,7 +278,7 @@ fun ExecuteScreen(
                 )
                 HorizontalDivider(
                     thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
+                    color = LocalTastileCardRoleTokens.current.completed.border,
                 )
             }
 
@@ -281,7 +286,7 @@ fun ExecuteScreen(
                 item(key = "tasks-error", contentType = "error") {
                     Text(
                         text = message,
-                        color = MaterialTheme.colorScheme.error,
+                        color = LocalTastileStatusTokens.current.archived.icon,
                         modifier = Modifier
                             .padding(horizontal = TasksGrid.columnInset,
                                 vertical = TasksGrid.gutter),
@@ -292,7 +297,7 @@ fun ExecuteScreen(
                 item(key = "tasks-action-message", contentType = "action-message") {
                     Text(
                         text = message,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = LocalTastileCardRoleTokens.current.actionable.border,
                         modifier = Modifier
                             .padding(horizontal = TasksGrid.columnInset,
                                 vertical = TasksGrid.gutter),
@@ -533,18 +538,18 @@ private fun SectionSurface(
     testTag: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    val containerColor = LocalTastileCardRoleTokens.current.actionable.container
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = TasksGrid.sectionOuterPadding)
             .testTag(testTag),
         color = containerColor,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        contentColor = LocalContentColor.current,
         // M3 ListItemContainer uses 12dp corner radius. 16dp made the
         // section look like a floating card; 12dp reads as a list
         // container.
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(LocalTastileShapeTokens.current.m),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
@@ -898,7 +903,7 @@ private fun TaskRow(
             Text(
                 text = glyph,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         }
         Spacer(modifier = Modifier.width(TasksGrid.leadingContentGap))
@@ -922,7 +927,7 @@ private fun TaskRow(
                 Text(
                     text = metadata,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("tasks-row-meta-${tile.id}"),
@@ -1028,7 +1033,7 @@ private fun CompletedTaskRow(
             Text(
                 text = "✓",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         }
         Spacer(modifier = Modifier.width(TasksGrid.leadingContentGap))
@@ -1045,7 +1050,7 @@ private fun CompletedTaskRow(
                 Text(
                     text = metadata,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LocalContentColor.current,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("tasks-completed-row-meta-${tile.id}"),
@@ -1074,8 +1079,8 @@ private fun ProjectTabsRow(
         selectedTabIndex = selectedTabIndex,
         edgePadding = 0.dp,
         minTabWidth = 0.dp,
-        containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        containerColor = LocalTastileCardRoleTokens.current.neutral.container,
+        contentColor = LocalContentColor.current,
         modifier = Modifier
             .fillMaxWidth()
             .testTag("tasks-scope-tabs-row"),
@@ -1083,8 +1088,8 @@ private fun ProjectTabsRow(
         Tab(
             selected = selectedId == "starred",
             onClick = { onSelect("starred") },
-            selectedContentColor = MaterialTheme.colorScheme.primary,
-            unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContentColor = LocalTastileCardRoleTokens.current.actionable.border,
+            unselectedContentColor = LocalContentColor.current,
             modifier = Modifier.testTag("tasks-scope-tab-starred"),
         ) {
             Box(
@@ -1103,8 +1108,8 @@ private fun ProjectTabsRow(
             Tab(
                 selected = section.id == selectedId,
                 onClick = { onSelect(section.id) },
-                selectedContentColor = MaterialTheme.colorScheme.primary,
-                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                selectedContentColor = LocalTastileCardRoleTokens.current.actionable.border,
+                unselectedContentColor = LocalContentColor.current,
                 modifier = Modifier.testTag("tasks-scope-tab-${section.id}"),
             ) {
                 Box(
@@ -1123,8 +1128,8 @@ private fun ProjectTabsRow(
         Tab(
             selected = false,
             onClick = onNewListClick,
-            selectedContentColor = MaterialTheme.colorScheme.primary,
-            unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContentColor = LocalTastileCardRoleTokens.current.actionable.border,
+            unselectedContentColor = LocalContentColor.current,
             modifier = Modifier.testTag("tasks-scope-tab-new-list"),
         ) {
             Box(
