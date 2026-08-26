@@ -38,6 +38,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 // m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +61,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.ui.dashboard.TimelineScale
 import coil.compose.AsyncImage
 
@@ -75,7 +78,7 @@ fun MobileTopBar(
     showScale: Boolean = true,
     onTitleClick: (() -> Unit)? = null,
 ) {
-    val background = MaterialTheme.colorScheme.background
+    val background = LocalTastileCardRoleTokens.current.neutral.container
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -237,8 +240,8 @@ private fun CompactPickerButton(
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(50),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border),
+        color = LocalTastileCardRoleTokens.current.neutral.container,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -336,20 +339,20 @@ private fun AvatarCircle(
             modifier = modifier
                 .size(size)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
+                .background(LocalTastileCardRoleTokens.current.neutral.container),
         )
     } else {
         Box(
             modifier = modifier
                 .size(size)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
+                .background(LocalTastileCardRoleTokens.current.actionable.container),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = fallbackText.take(1).uppercase(),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                color = LocalContentColor.current,
             )
         }
     }
