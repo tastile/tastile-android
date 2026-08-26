@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOff
 // m2-allow: m3-component
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -24,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.projectLabel
 import app.tastile.android.ui.mobile.components.AppEmptyState
@@ -60,7 +62,7 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(LocalTastileShapeTokens.current.s))
                     .clickable {
                         checked.value = if (isChecked) checked.value - name else checked.value + name
                     }
@@ -76,7 +78,7 @@ fun ProjectsCheckboxSection(tiles: List<Tile>) {
                 Text(
                     text = name,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = LocalContentColor.current,
                 )
             }
         }
