@@ -17,6 +17,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: state-holder
 import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -54,7 +56,7 @@ fun ReferencePickerSheet(
                 references.forEach { ref ->
                     NiaListItem(
                         content = { Text(ref.label) },
-                        supportingContent = { Text(ref.id, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        supportingContent = { Text(ref.id, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current) },
                         leadingContent = { Icon(Icons.Outlined.Tag, contentDescription = null) },
                         modifier = Modifier.clickable { onSelect(ref) },
                         colors = ListItemDefaults.colors(),
