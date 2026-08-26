@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,7 +24,9 @@ class TimelineBlockListTest {
     @Test
     fun `TimelineBlockList renders empty state when no blocks`() {
         rule.setContent {
-            TimelineBlockList(blocks = emptyList(), onBlockClick = {})
+            TastileTheme {
+                TimelineBlockList(blocks = emptyList(), onBlockClick = {})
+            }
         }
 
         rule.onNodeWithText("No blocks", substring = true).assertIsDisplayed()
@@ -53,7 +56,9 @@ class TimelineBlockListTest {
         )
 
         rule.setContent {
-            TimelineBlockList(blocks = blocks, onBlockClick = {})
+            TastileTheme {
+                TimelineBlockList(blocks = blocks, onBlockClick = {})
+            }
         }
 
         rule.onNodeWithText("Focus block").assertIsDisplayed()
