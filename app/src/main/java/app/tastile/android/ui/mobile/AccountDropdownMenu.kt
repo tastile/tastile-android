@@ -19,6 +19,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,7 +72,7 @@ fun AccountDropdownMenu(
         Text(
             text = email.ifBlank { stringResource(R.string.shell_account_signed_in) },
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 8.dp)
