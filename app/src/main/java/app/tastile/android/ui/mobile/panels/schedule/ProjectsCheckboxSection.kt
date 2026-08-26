@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOff
 // m2-allow: m3-component
 import androidx.compose.material3.Checkbox
+// m2-allow: primitive
 import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
