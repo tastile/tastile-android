@@ -23,6 +23,7 @@ import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaFilledTonalButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaOutlinedCard
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.model.Plan
 
 @Composable
@@ -123,7 +124,7 @@ fun AccountDashboardScreen(viewModel: DashboardViewModel) {
             Text(
                 text = error.orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                color = LocalTastileStatusTokens.current.archived.icon,
             )
         }
     }
