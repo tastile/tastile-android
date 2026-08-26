@@ -12,6 +12,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.user.AppLocale
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.FixedTasksScope
 import app.tastile.android.ui.dashboard.ProjectSection
@@ -86,7 +87,11 @@ class TasksScreenTest {
         val sectionUnassigned = ProjectSection(id = "unassigned", label = "Unassigned", tiles = emptyList())
         val sectionProject = ProjectSection(id = "project:Lab", label = "Lab", tiles = emptyList())
         val vm = stubVm(sections = listOf(sectionAll, sectionStarred, sectionUnassigned, sectionProject))
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("tasks-scope-tabs-row").assertIsDisplayed()
         rule.onNodeWithTag("tasks-scope-tab-${"all"}").assertIsDisplayed()
@@ -100,7 +105,11 @@ class TasksScreenTest {
         val section = ProjectSection(id = "all", label = "All",
             tiles = emptyList())
         val vm = stubVm(visibleSection = section)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("tasks-scope-tab-${"all"}").assertIsDisplayed()
     }
@@ -109,7 +118,11 @@ class TasksScreenTest {
     fun `section bar exposes label, sort icon and chevron`() {
         val section = ProjectSection(id = "all", label = "All", tiles = emptyList())
         val vm = stubVm(visibleSection = section)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         // The scope-tabs LazyColumn item pushes the accordion below the
         // viewport on smaller test windows; assert the section bar and its
@@ -132,7 +145,11 @@ class TasksScreenTest {
             tiles = emptyList())
         val vm = stubVm(visibleSection = section,
             sortOrder = SortOrder.BY_TIME_DESC)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onAllNodesWithText("time_asc", substring = true).assertCountEquals(0)
         rule.onAllNodesWithText("time_desc", substring = true).assertCountEquals(0)
@@ -149,7 +166,11 @@ class TasksScreenTest {
             ),
         )
         val vm = stubVm(visibleSection = section)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onAllNodesWithTag("execute-tile-a").assertCountEquals(1)
         rule.onNodeWithTag("tasks-section-bar").performClick()
@@ -176,7 +197,11 @@ class TasksScreenTest {
             tiles = listOf(plain, scheduled),
         )
         val vm = stubVm(visibleSection = section)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onAllNodesWithTag("execute-tile-a").assertCountEquals(1)
         rule.onAllNodesWithTag("execute-tile-b").assertCountEquals(1)
@@ -191,7 +216,11 @@ class TasksScreenTest {
             visibleSection = sectionAll,
         )
         every { vm.projectSections } returns MutableStateFlow(listOf(sectionAll, sectionUnassigned))
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("tasks-scope-tab-${"unassigned"}").performClick()
         verify(exactly = 1) { vm.setSelectedSection("unassigned") }
@@ -208,7 +237,11 @@ class TasksScreenTest {
             ),
         )
         val vm = stubVm(visibleSection = section)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onAllNodesWithTag("execute-tile-a").assertCountEquals(1)
         rule.onAllNodesWithTag("execute-tile-b").assertCountEquals(1)
@@ -217,7 +250,11 @@ class TasksScreenTest {
     @Test
     fun `completed card renders even when no tiles are completed`() {
         val vm = stubVm(completedTiles = emptyList())
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("tasks-done-card").assertIsDisplayed()
         rule.onAllNodesWithTag("tasks-done-row-t1").assertCountEquals(0)
@@ -227,7 +264,11 @@ class TasksScreenTest {
     fun `tapping the completed card expands and renders done tiles`() {
         val doneTile = Tile(id = "d1", title = "Done", lifecycle = TileLifecycle.DONE.value)
         val vm = stubVm(completedTiles = listOf(doneTile))
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("tasks-done-card").performClick()
         rule.mainClock.advanceTimeBy(100)
@@ -238,7 +279,11 @@ class TasksScreenTest {
     fun `sort icon delegates to setSortOrder on the view model`() {
         val section = ProjectSection(id = "all", label = "All", tiles = emptyList())
         val vm = stubVm(visibleSection = section)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("tasks-sort-button").performClick()
         rule.onNodeWithTag("tasks-sort-option-${SortOrder.BY_TITLE.id}").performClick()
@@ -249,7 +294,11 @@ class TasksScreenTest {
     fun `empty section surfaces the empty state card`() {
         val section = ProjectSection(id = "all", label = "All", tiles = emptyList())
         val vm = stubVm(visibleSection = section)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("tasks-empty").assertIsDisplayed()
     }

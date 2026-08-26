@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.user.AppLocale
@@ -72,7 +73,9 @@ class TilesScreenTest {
     @Test
     fun `list tab renders the 12-control composition even when tiles are empty`() {
         rule.setContent {
-            TilesScreen(viewModel = stubVm(), overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = stubVm(), overlay = stubOverlay())
+            }
         }
         // header row + FAB
         rule.onNodeWithTag("tiles-header-row").assertIsDisplayed()
@@ -96,7 +99,9 @@ class TilesScreenTest {
     fun `tab switch invokes vm setActiveTilesTab`() {
         val vm = stubVm()
         rule.setContent {
-            TilesScreen(viewModel = vm, overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = vm, overlay = stubOverlay())
+            }
         }
         rule.onNodeWithTag("tiles-tab-timeline").performClick()
         verify { vm.setActiveTilesTab(TilesTab.TIMELINE) }
@@ -110,7 +115,9 @@ class TilesScreenTest {
     fun `timeline sub tab shows scale dropdown plus empty state`() {
         val vm = stubVm(activeTab = TilesTab.TIMELINE, timeline = emptyList())
         rule.setContent {
-            TilesScreen(viewModel = vm, overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = vm, overlay = stubOverlay())
+            }
         }
         rule.onNodeWithTag("tiles-timeline-scale").assertIsDisplayed()
     }
@@ -130,7 +137,9 @@ class TilesScreenTest {
         }
         val vm = stubVm(activeTab = TilesTab.TIMELINE, timeline = items)
         rule.setContent {
-            TilesScreen(viewModel = vm, overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = vm, overlay = stubOverlay())
+            }
         }
         rule.onAllNodesWithTag("timeline-block-ev-1").assertCountEquals(1)
         rule.onAllNodesWithTag("timeline-block-ev-2").assertCountEquals(1)
@@ -152,7 +161,9 @@ class TilesScreenTest {
         }
         val vm = stubVm(activeTab = TilesTab.CHANGES, timeline = items)
         rule.setContent {
-            TilesScreen(viewModel = vm, overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = vm, overlay = stubOverlay())
+            }
         }
         rule.onAllNodesWithTag("tile-change-ch-1-work_ended").assertCountEquals(1)
         rule.onAllNodesWithTag("tile-change-ch-120-work_ended").assertCountEquals(1)
@@ -163,7 +174,9 @@ class TilesScreenTest {
     fun `changes sub tab empty state renders when timeline empty`() {
         val vm = stubVm(activeTab = TilesTab.CHANGES, timeline = emptyList())
         rule.setContent {
-            TilesScreen(viewModel = vm, overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = vm, overlay = stubOverlay())
+            }
         }
         rule.onNodeWithTag("tiles-list-body").assertDoesNotExist()
     }
@@ -172,7 +185,9 @@ class TilesScreenTest {
     fun `search field change routes through vm setSearchTerm`() {
         val vm = stubVm()
         rule.setContent {
-            TilesScreen(viewModel = vm, overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = vm, overlay = stubOverlay())
+            }
         }
         rule.onNodeWithTag("tiles-filter-search").performTextInput("alpha")
         verify { vm.setSearchTerm("alpha") }
@@ -184,7 +199,9 @@ class TilesScreenTest {
         val vm = stubVm(tiles = listOf(tile))
         every { vm.requestDeleteTileId } returns MutableStateFlow("del-1")
         rule.setContent {
-            TilesScreen(viewModel = vm, overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = vm, overlay = stubOverlay())
+            }
         }
         rule.onNodeWithTag("tiles-delete-dialog").assertIsDisplayed()
         rule.onNodeWithTag("tiles-delete-dialog-confirm").performClick()
@@ -202,7 +219,9 @@ class TilesScreenTest {
         every { vm.groupedTiles } returns MutableStateFlow(listOf(section))
         every { vm.expandedSections } returns MutableStateFlow(emptySet())
         rule.setContent {
-            TilesScreen(viewModel = vm, overlay = stubOverlay())
+            TastileTheme {
+                TilesScreen(viewModel = vm, overlay = stubOverlay())
+            }
         }
         rule.onNodeWithTag("tiles-section-header-tap-started").performScrollTo().performClick()
         verify { vm.bumpSectionLimit("started", 12) }

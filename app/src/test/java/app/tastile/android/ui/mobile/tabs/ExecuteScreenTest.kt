@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -86,7 +87,11 @@ class ExecuteScreenTest {
             lifecycle = TileLifecycle.STARTED.value,
         )
         val vm = stubVm(listOf(active))
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onAllNodesWithText("Code review", substring = true, useUnmergedTree = true)
             .onFirst()
@@ -96,7 +101,11 @@ class ExecuteScreenTest {
     @Test
     fun `shows indeterminate progress while loading with no tiles`() {
         val vm = stubVm(tiles = emptyList(), loading = true)
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
         rule.onAllNodes(
             SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo.Indeterminate),
         ).onFirst().assertIsDisplayed()
@@ -110,7 +119,11 @@ class ExecuteScreenTest {
             lifecycle = TileLifecycle.READY.value,
         )
         val vm = stubVm(listOf(ready))
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onAllNodesWithText("▶").assertCountEquals(0)
     }
@@ -123,7 +136,11 @@ class ExecuteScreenTest {
         every { vm.executionControlStates } returns MutableStateFlow(
             mapOf("t1" to ExecutionControlState.Active)
         )
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("execute-pause-t1").performClick()
         rule.onNodeWithText("Complete").performClick()
@@ -143,7 +160,11 @@ class ExecuteScreenTest {
         val vm = stubVm(listOf(active))
         every { vm.executionControlStates } returns executionStates
 
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
         rule.onNodeWithTag("execute-pause-t1").performClick()
         verify(exactly = 1) { vm.pauseTile("t1") }
 
@@ -163,7 +184,11 @@ class ExecuteScreenTest {
         )
         every { vm.executionControlInFlightTileIds } returns MutableStateFlow(setOf("t1"))
 
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("execute-pause-t1").assertExists()
     }
@@ -181,7 +206,11 @@ class ExecuteScreenTest {
             visibleSection = sectionAll,
         )
         every { vm.projectSections } returns MutableStateFlow(listOf(sectionAll, sectionUnassigned))
-        rule.setContent { ExecuteScreen(viewModel = vm, overlay = stubOverlay()) }
+        rule.setContent {
+            TastileTheme {
+                ExecuteScreen(viewModel = vm, overlay = stubOverlay())
+            }
+        }
 
         rule.onNodeWithTag("tasks-scope-tab-${"unassigned"}").performClick()
         verify(exactly = 1) { vm.setSelectedSection("unassigned") }

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
@@ -82,11 +83,13 @@ class ProjectsScreenTest {
         val projectsVm = stubProjectsVm(workspaces = listOf(wsA, wsB))
 
         rule.setContent {
-            ProjectsScreen(
-                viewModel = dashVm,
-                overlay = stubOverlay(),
-                projectsViewModel = projectsVm,
-            )
+            TastileTheme {
+                ProjectsScreen(
+                    viewModel = dashVm,
+                    overlay = stubOverlay(),
+                    projectsViewModel = projectsVm,
+                )
+            }
         }
 
         rule.onNodeWithTag("projects-screen-body").assertIsDisplayed()
@@ -106,11 +109,13 @@ class ProjectsScreenTest {
         val projectsVm = stubProjectsVm(workspaces = emptyList(), loading = false)
 
         rule.setContent {
-            ProjectsScreen(
-                viewModel = dashVm,
-                overlay = stubOverlay(),
-                projectsViewModel = projectsVm,
-            )
+            TastileTheme {
+                ProjectsScreen(
+                    viewModel = dashVm,
+                    overlay = stubOverlay(),
+                    projectsViewModel = projectsVm,
+                )
+            }
         }
 
         rule.onNodeWithTag("projects-screen-body").assertIsDisplayed()

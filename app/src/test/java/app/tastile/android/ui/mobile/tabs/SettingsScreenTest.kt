@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.data.user.ThemeMode
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -38,7 +39,9 @@ class SettingsScreenTest {
     @Test
     fun `renders all 4 settings rows with icon and label`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm(), onBack = {})
+            TastileTheme {
+                SettingsScreen(viewModel = stubVm(), onBack = {})
+            }
         }
 
         rule.onAllNodesWithText("Theme", substring = true).onFirst().performScrollTo().assertIsDisplayed()
@@ -50,7 +53,9 @@ class SettingsScreenTest {
     @Test
     fun `locale value reflects current AppLocale`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm(locale = AppLocale.JA), onBack = {})
+            TastileTheme {
+                SettingsScreen(viewModel = stubVm(locale = AppLocale.JA), onBack = {})
+            }
         }
         // The dropdown TextField mirrors `localeLabel(current)` — for JA the
         // canonical name is "日本語" (locale-invariant across all values-*/
@@ -62,7 +67,9 @@ class SettingsScreenTest {
     @Test
     fun `row tap opens locale picker dialog`() {
         rule.setContent {
-            SettingsScreen(viewModel = stubVm(), onBack = {})
+            TastileTheme {
+                SettingsScreen(viewModel = stubVm(), onBack = {})
+            }
         }
         // The picker is an ExposedDropdownMenuBox. Click the TextField anchor
         // (tagged "language-dropdown-trigger"); clicks on a Text child of the
