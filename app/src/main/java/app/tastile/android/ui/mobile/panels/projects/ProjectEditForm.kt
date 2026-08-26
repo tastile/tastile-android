@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.api.Workspace
 import app.tastile.android.ui.mobile.components.AppPickerButton
 
@@ -104,7 +105,7 @@ fun ProjectEditForm(
                 enabled = !busy,
             )
         }
-        if (!errorText.isNullOrBlank()) Text(errorText, color = MaterialTheme.colorScheme.error)
+        if (!errorText.isNullOrBlank()) Text(errorText, color = LocalTastileStatusTokens.current.archived.icon)
     }
 }
 
