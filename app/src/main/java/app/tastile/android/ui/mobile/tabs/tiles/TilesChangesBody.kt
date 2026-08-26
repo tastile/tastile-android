@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: primitive
@@ -25,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.data.time.formatIsoDateTime
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -48,13 +52,13 @@ fun TilesChangesBody(
         Text(
             text = stringResource(R.string.dashboard_tiles_changes_section_title),
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         if (visible.isEmpty()) {
             Text(
                 text = stringResource(R.string.dashboard_tiles_changes_empty),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalContentColor.current,
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -70,9 +74,9 @@ fun TilesChangesBody(
 private fun ChangeRow(item: CoreTimelineItem, locale: AppLocale) {
     val ended = item.type.endsWith("_ended") || item.status == "done" || item.status == "completed"
     val dotColor = if (ended) {
-        MaterialTheme.colorScheme.tertiary
+        LocalTastileStatusTokens.current.started.icon
     } else {
-        MaterialTheme.colorScheme.primary
+        LocalTastileCardRoleTokens.current.actionable.border
     }
     Row(
         modifier = Modifier
@@ -91,18 +95,18 @@ private fun ChangeRow(item: CoreTimelineItem, locale: AppLocale) {
         Text(
             text = item.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = LocalContentColor.current,
             modifier = Modifier.weight(1f),
         )
         Text(
             text = item.type,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
         Text(
             text = formatIsoDateTime(item.startAt, locale),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LocalContentColor.current,
         )
     }
 }
