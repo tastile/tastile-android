@@ -23,6 +23,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 // m2-allow: primitive
 import androidx.compose.material3.Text
+// m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -80,9 +83,9 @@ private fun WorkflowBatchChip(
 ) {
     val config = WORKFLOW_CONFIG[kind] ?: return
     val label = stringResource(config.labelResId)
-    val containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-    val border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    val containerColor = if (selected) LocalTastileCardRoleTokens.current.actionable.container else LocalTastileCardRoleTokens.current.neutral.container
+    val contentColor = if (selected) LocalContentColor.current else LocalContentColor.current
+    val border = if (selected) null else BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border)
 
     Surface(
         modifier = Modifier
