@@ -22,7 +22,10 @@ import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.Surface
 // m2-allow: primitive
+import androidx.compose.material3.LocalContentColor
+// m2-allow: primitive
 import androidx.compose.material3.Text
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -206,7 +209,7 @@ private fun TimeTrigger(
             Icon(
                 imageVector = Icons.Outlined.ExpandMore,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = LocalContentColor.current,
                 modifier = Modifier.size(18.dp),
             )
         },
@@ -235,8 +238,8 @@ private fun FieldTrigger(
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = LocalTastileCardRoleTokens.current.neutral.container,
+        border = androidx.compose.foundation.BorderStroke(1.dp, LocalTastileCardRoleTokens.current.completed.border),
         modifier = modifier,
     ) {
         Row(
@@ -249,7 +252,7 @@ private fun FieldTrigger(
             Text(
                 text = value ?: placeholder,
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (value != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (value != null) LocalContentColor.current else LocalContentColor.current,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -262,7 +265,7 @@ private fun FieldTrigger(
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = LocalContentColor.current,
                         modifier = Modifier.size(16.dp),
                     )
                 }
