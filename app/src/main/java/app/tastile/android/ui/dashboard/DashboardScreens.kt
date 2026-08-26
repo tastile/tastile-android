@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 // m2-allow: primitive - statusIcon() returns an ImageVector; TastileDashboardCardShell header slot has no status icon wrapper, so the raw M3 Icon is required here.
@@ -34,7 +33,6 @@ import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.TastileCardActions
 import app.tastile.android.core.designsystem.component.TastileCardActionRow
-import app.tastile.android.core.designsystem.component.TastileCompactTileRow
 import app.tastile.android.core.designsystem.component.TastileDashboardCardShell
 import app.tastile.android.core.designsystem.component.TastileTileCard
 import app.tastile.android.data.model.TileLifecycle

@@ -14,8 +14,6 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
-// m2-allow: theme-bridge
-import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive

@@ -24,10 +24,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 // m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
 // m2-allow: m3-component
-import androidx.compose.material3.Card
-// m2-allow: m3-component
-import androidx.compose.material3.CardDefaults
-// m2-allow: m3-component
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem

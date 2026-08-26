@@ -14,8 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Inbox
 // m2-allow: primitive
-import androidx.compose.material3.HorizontalDivider
-// m2-allow: primitive
 import androidx.compose.material3.Icon
 // m2-allow: primitive
 import androidx.compose.material3.LocalContentColor
