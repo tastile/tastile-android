@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
+import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 
@@ -190,7 +191,7 @@ fun ActiveTileCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
+            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(LocalTastileShapeTokens.current.m)),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -334,7 +335,7 @@ fun LifecycleBadge(lifecycle: TileLifecycle) {
 
     Surface(
         color = color.copy(alpha = 0.2f),
-        shape = RoundedCornerShape(4.dp)
+        shape = RoundedCornerShape(LocalTastileShapeTokens.current.xs)
     ) {
         Text(
             text = text,
