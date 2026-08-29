@@ -18,7 +18,9 @@ import retrofit2.Response
 
 /**
  * Type-safe wrapper over the openapi-generator-produced Retrofit interfaces
- * (`ReadApi`, `SourceTileApi`) declared in `app/openapi/v1.json`.
+ * (`ReadApi`, `SourceTileApi`) declared in the canonical OpenAPI 3.1 spec
+ * at the cross-repo submodule `../../openapi/openapi.yaml` (resolved by
+ * `openapi.input` in `gradle.properties`).
  *
  * Why a wrapper:
  * 1. The generated methods return `retrofit2.Response<T>`. Callers want `T`

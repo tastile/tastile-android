@@ -249,7 +249,8 @@ class V1GeneratedApiClientTest {
     // Round-trip verification of those is deferred to the live integration
     // test against the `tastile-api` container. Here we assert the URL,
     // method, and Authorization header reach the wire correctly, which is
-    // enough to catch future drift in `app/openapi/v1.json`.
+    // enough to catch future drift in the canonical OpenAPI spec at
+    // the cross-repo submodule `../../openapi/openapi.yaml`.
 
     @Test
     fun `createSourceTile path is POST v1-source-tiles`() {

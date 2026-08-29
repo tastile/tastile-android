@@ -213,7 +213,9 @@ Missing (the user explicitly asked about these):
 ### "ownerScopes" / "by_state" — what the v1 API offers
 
 - `GET /v1/tiles?owner_ids=...&view_mode=by_state&range=7d&granularity=no_breaks,min_0m&...`
-  per `app/openapi/v1.json:487-575`. This endpoint exists and supports both
+  per the canonical OpenAPI YAML at `../../openapi/openapi.yaml` (the
+  cross-repo submodule; previously vendored as `app/openapi/v1.json:487-575`).
+  This endpoint exists and supports both
   `view_mode=by_state` (group tiles by lifecycle, the web default) and
   `view_mode=flat`. The default for Android
   `DashboardViewModel.kt:538` (`viewMode = "list"`) is **not** `by_state` —

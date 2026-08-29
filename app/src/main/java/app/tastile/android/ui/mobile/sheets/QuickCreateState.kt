@@ -268,8 +268,11 @@ data class QuickCreateMeta(
 /**
  * Schedule-authoring slice for the v1 source-tile wire.
  *
- * Mirrors `SourceScheduleDefinitionSchema` (see `app/openapi/v1.json` lines
- * 4066-4343). The four fields exposed in the Mobile QuickCreate panel today:
+ * Mirrors `SourceScheduleDefinitionSchema` in the canonical OpenAPI 3.1 spec
+ * at the cross-repo submodule `../../openapi/openapi.yaml` (resolved by
+ * `openapi.input` in `gradle.properties`; previously vendored as
+ * `app/openapi/v1.json`). The four fields exposed in the Mobile QuickCreate
+ * panel today:
  *  - [priority] (i32, 0..10) → `schedule.priority`
  *  - [splitPolicyKind] (i16, 0=unsplit / 1=split) → `schedule.split_policy.kind`
  *  - [splitPolicyMinSegmentMs] / [splitPolicyMaxSegmentMs] / [splitPolicyMaxSegments]

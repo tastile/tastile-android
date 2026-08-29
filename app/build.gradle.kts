@@ -287,20 +287,36 @@ tasks.named("check").configure {
 }
 
 // ---------------------------------------------------------------------------
-// OpenAPI auto-generation pipeline (tastile-core utoipa doc -> Retrofit client)
+// OpenAPI auto-generation pipeline (cross-repo canonical YAML -> Retrofit client)
 // ---------------------------------------------------------------------------
 //
-// Source of truth: app/openapi/v1.json (committed, refreshed by
-// `cd ../tastile-core/crates-v1 && cargo run -p api --bin dump_openapi`).
+// Source of truth: ../../openapi/openapi.yaml (the workspace-shell submodule at
+// tastile-root/openapi/). That YAML is regenerated from tastile-core's
+// `cargo run --bin dump_openapi` output and published to the submodule by the
+// core sync script; consumers (web, android, desktop) read from the submodule
+// path directly. The path is parameterised via the `openapi.input` Gradle
+// property (see gradle.properties) so CI / local overrides can pin a different
+// spec without editing this script.
+//
 // The generated Retrofit + Moshi client lives under app/build/generated/openapi/v1/
 // (gitignored via the project-root `build/` rule) and is wired into the
 // `main` Kotlin source set. Existing hand-rolled V1ApiClient stays as a facade
 // so the 15+ `mockk<V1ApiClient>()` tests remain untouched.
 
+val openapiInput: java.io.File =
+    file(
+        (project.findProperty("openapi.input") as? String)
+            ?: error(
+                "openapi.input is not set in gradle.properties; add " +
+                    "`openapi.input=../../openapi/openapi.yaml` (the path is " +
+                    "resolved relative to this module's projectDir, i.e. app/).",
+            ),
+    )
+
 tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateV1Api") {
     group = "openapi"
-    description = "Generate the v1 Kotlin client from app/openapi/v1.json"
-    inputSpec.set(file("openapi/v1.json").toURI().toString())
+    description = "Generate the v1 Kotlin client from the cross-repo OpenAPI submodule"
+    inputSpec.set(openapiInput.toURI().toString())
     outputDir.set(layout.buildDirectory.dir("generated/openapi/v1").get().asFile.absolutePath.replace('\\', '/'))
     generatorName.set("kotlin")
     library.set("jvm-retrofit2")
@@ -357,24 +373,36 @@ tasks.named("generateV1Api").configure {
 }
 
 // ---------------------------------------------------------------------------
-// Drift guard: verify that every operation in app/openapi/v1.json has a
-// corresponding method in the generated v1 client. Catches the case where
-// the openapi.json gains a new path but the generated sources are stale
-// (e.g., developer forgot to re-run `./gradlew :app:generateV1Api`).
+// Drift guard: verify that every operation in the canonical OpenAPI submodule
+// has a corresponding method in the generated v1 client. Catches the case
+// where the spec gains a new path but the generated sources are stale (e.g.,
+// developer bumped the submodule pointer but forgot to re-run
+// `./gradlew :app:generateV1Api`).
+//
+// The spec is YAML (OpenAPI 3.1). The same operationId regex works because
+// YAML and JSON share the `operationId: "<id>"` textual form.
 // ---------------------------------------------------------------------------
 
 tasks.register("verifyV1ApiCoverage") {
     group = "verification"
-    description = "Assert every operationId in app/openapi/v1.json has a generated method"
+    description = "Assert every operationId in the OpenAPI submodule has a generated method"
     dependsOn("generateV1Api")
     doLast {
-        val specFile = file("openapi/v1.json")
-        check(specFile.exists()) { "Missing openapi spec at $specFile" }
+        val specFile = openapiInput
+        check(specFile.exists()) {
+            "Missing OpenAPI spec at $specFile — set openapi.input in gradle.properties " +
+                "and run `git submodule update --init` at the workspace root."
+        }
 
         val specText = specFile.readText()
-        // operationId: "..." inside paths.*.* blocks. A simple regex is enough
-        // because the openapi.json is machine-generated and well-formed.
-        val operationIdRegex = Regex("\"operationId\"\\s*:\\s*\"([^\"]+)\"")
+        // operationId keys inside paths.*.* blocks. The regex must accept both
+        // the JSON form (`"operationId": "name"`) and the YAML form
+        // (`operationId: name`, unquoted, as emitted by `serde_yaml`). The
+        // OpenAPI spec is machine-generated and well-formed, so a single
+        // anchored pattern is enough. Use a negative lookbehind to skip
+        // accidental matches of substrings like `myOperationId`.
+        val operationIdRegex =
+            Regex("""(?:"operationId"|(?<![A-Za-z0-9_])operationId)\s*:\s*"?([A-Za-z_][\w]*)"?""")
         val operationIds = operationIdRegex.findAll(specText).map { it.groupValues[1] }.toList()
         check(operationIds.isNotEmpty()) { "No operationIds found in $specFile — is the spec valid?" }
 
@@ -396,7 +424,7 @@ tasks.register("verifyV1ApiCoverage") {
             .map { snakeToCamel(it) }
             .filter { it !in generatedMethodNames }
         check(missing.isEmpty()) {
-            "openapi.json lists operationIds that have no generated method:\n" +
+            "OpenAPI spec lists operationIds that have no generated method:\n" +
                 missing.joinToString("\n") { "  - $it" } +
                 "\n\nRe-run `./gradlew :app:generateV1Api` to refresh the client, " +
                 "or add a delegation method to V1GeneratedApiClient."

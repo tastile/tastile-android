@@ -21,7 +21,9 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 
 /**
  * Hilt module that wires the openapi-generator-produced Retrofit + Moshi
- * client for the v1 surface documented in `app/openapi/v1.json`.
+ * client for the v1 surface documented in the canonical OpenAPI spec at
+ * the cross-repo submodule `../../openapi/openapi.yaml` (resolved by
+ * `openapi.input` in `gradle.properties`).
  *
  * Provides:
  * - [V1Moshi] (Moshi with Kotlin reflect adapter — generated DTOs use

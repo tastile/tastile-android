@@ -144,7 +144,9 @@ test fixtures.
 ## 2. v1 schema fields (exhaustive)
 
 Drawn from `tastile-core/crates-v1/api/src/openapi.rs:700-915` and the
-generated `app/openapi/v1.json` lines 1378-4343.
+generated canonical OpenAPI YAML at `../../openapi/openapi.yaml` (the
+cross-repo submodule; previously vendored as `app/openapi/v1.json`
+lines 1378-4343).
 
 ### 2.1 `CreateSourceTilePayloadSchema` (top level)
 
@@ -547,7 +549,8 @@ Android (tastile-android) — current state:
   lines 23-156 (v1 typed payload shapes)
 - `app/src/main/java/app/tastile/android/data/command/V1CommandDispatcher.kt`
   lines 85-115 (dispatchTileCreate uses `POST /v1/tiles` directly)
-- `app/openapi/v1.json` lines 1378-4343 (in-repo OpenAPI mirror)
+- `../../openapi/openapi.yaml` (canonical OpenAPI 3.1 spec, cross-repo
+  submodule; previously vendored as `app/openapi/v1.json` lines 1378-4343)
 - `docs/v1-openapi-coverage.md` (gap between v1 endpoints and Android
   coverage)
 - `app/src/main/java/app/tastile/android/ui/mobile/components/picker/TimePickerSheet.kt`

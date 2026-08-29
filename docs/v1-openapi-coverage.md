@@ -1,26 +1,39 @@
 # v1 OpenAPI Coverage
 
 Tracks the delta between the v1 API contract (`tastile-core/v1/*.md`) and the
-utoipa-generated OpenAPI document (`tastile-core/crates-v1/api/src/openapi.rs`,
-emitted as `app/openapi/v1.json`). The Android client's auto-generation
-pipeline (`./gradlew :app:generateV1Api`) only covers the operations present
-in the OpenAPI document; everything else stays on the hand-rolled
-`V1ApiClient` (HttpURLConnection).
+utoipa-generated OpenAPI document (`tastile-core/crates-v1/api/src/openapi.rs`),
+emitted as the cross-repo canonical YAML at
+`../../openapi/openapi.yaml` (the workspace-shell submodule at
+`tastile-root/openapi/`). The Android client's auto-generation pipeline
+(`./gradlew :app:generateV1Api`) only covers the operations present in the
+OpenAPI document; everything else stays on the hand-rolled `V1ApiClient`
+(HttpURLConnection).
 
 ## How the pipeline works
 
-1. `cd ../tastile-core/crates-v1 && cargo run -p api --bin dump_openapi > ../tastile-android/app/openapi/v1.json`
-   — re-emits the spec from the canonical Rust utoipa doc. No DB needed.
-2. `./gradlew :app:generateV1Api` — runs openapi-generator (`org.openapi.generator`
-   v7.13.0) with `kotlin` / `jvm-retrofit2` to produce a Retrofit + Moshi
-   client into `app/build/generated/openapi/v1/`.
+1. Refresh the submodule pointer (publishes a new spec version produced
+   by `tastile-core`'s `dump_openapi` binary, serialized to YAML, and
+   committed to the submodule repo):
+
+   ```
+   git submodule update --init --remote ../openapi
+   ```
+
+   The path `../../openapi/openapi.yaml` (from `tastile-android/`) resolves
+   to that submodule. The `openapi.input` Gradle property in
+   `gradle.properties` controls the path so CI / local overrides can pin a
+   different spec without editing the build script.
+2. `./gradlew :app:generateV1Api` — runs openapi-generator
+   (`org.openapi.generator` v7.13.0) with `kotlin` / `jvm-retrofit2` to
+   produce a Retrofit + Moshi client into
+   `app/build/generated/openapi/v1/`.
 3. `./gradlew :app:verifyV1ApiCoverage` — drift guard; fails the build if
-   `app/openapi/v1.json` lists an operation whose `operationId` has no
+   the submodule YAML lists an operation whose `operationId` has no
    generated method (or no wrapper in `V1GeneratedApiClient`).
 
-The committed `app/openapi/v1.json` is the **input**. The generated sources
-under `app/build/generated/openapi/v1/` are the **output** and are gitignored
-via the project-root `build/` rule.
+The submodule YAML at `../../openapi/openapi.yaml` is the **input**. The
+generated sources under `app/build/generated/openapi/v1/` are the
+**output** and are gitignored via the project-root `build/` rule.
 
 ## Covered by openapi.json (10 operations, auto-generated)
 
@@ -188,9 +201,11 @@ handlers and re-running `dump_openapi` — this is core-side work tracked here.
 2. Update the `ApiDoc` `#[openapi(... paths(...))]` list at
    `tastile-core/crates-v1/api/src/openapi.rs` to include the newly annotated
    paths.
-3. Re-run `cargo run -p api --bin dump_openapi` and refresh
-   `app/openapi/v1.json` here.
-4. Re-run `./gradlew :app:generateV1Api` to regenerate the client. New
+3. Re-run `cargo run -p api --bin dump_openapi` and let the core sync
+   script publish the new YAML to the `openapi` submodule repo.
+4. Bump the submodule pointer in the workspace root
+   (`git submodule update --remote ../openapi`) and re-run
+   `./gradlew :app:generateV1Api` to regenerate the client. New
    `operationId`s must be added to `V1GeneratedApiClient` as wrapper methods,
    or `verifyV1ApiCoverage` will fail the build.
 
