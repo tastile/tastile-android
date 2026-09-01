@@ -43,8 +43,10 @@ app/src/main/java/app/tastile/android/core/designsystem/
 ├── theme/
 │   ├── TastileMotionTokens.kt        [NEW] MotionScheme + spring physics tokens
 │   ├── TastileShapes.kt              [MOD] large-increased / extra-large-increased / extra-extra-large tokens 追加
-│   ├── TastileSpacingTokens.kt       [MOD] 必要箇所のみ 8dp grid を反映
 │   └── Theme.kt                      [MOD] LocalTastileMotionScheme の CompositionLocalProvider 注入
+
+NOTE: TastileSpacingTokens.kt は本 scope では触らない。既存 8dp grid 体系は
+M3 Expressive と独立に維持。新画面・コンポーネントが必要とする場合は別タスクで再評価。
 ├── component/
 │   ├── LoadingWheel.kt               [REWRITE] LoadingIndicator (M3 Expressive) へ置換
 │   ├── TastileFabMenu.kt             [NEW] FAB Menu wrapper
@@ -165,11 +167,12 @@ val LocalTastileMotionScheme = staticCompositionLocalOf { TastileMotionDefaults.
 `TastileShapes.kt` に以下を追加：
 
 ```kotlin
+val LargeIncreased: CornerBasedShape = RoundedCornerShape(20.dp)
 val ExtraLargeIncreased: CornerBasedShape = RoundedCornerShape(32.dp)
 val ExtraExtraLarge: CornerBasedShape = RoundedCornerShape(48.dp)
 ```
 
-`designsystem/` 配下なので `RoundedCornerShape(<n>.dp)` guard の対象外。違反しない。
+3 token 全て M3 Expressive 仕様値（large-increased=20dp / extra-large-increased=32dp / extra-extra-large=48dp）に準拠。`designsystem/` 配下なので `RoundedCornerShape(<n>.dp)` guard の対象外。違反しない。
 
 ## 5. Data Flow / Token 伝播経路
 
@@ -290,7 +293,7 @@ ui/{dashboard,mobile,account}/   ← Local* 経由でのみアクセス（既存
 ### Phase 1: theme & token 拡張（単一 agent、順序保証）
 
 - Task 1.1: `TastileMotionTokens.kt` 新規作成
-- Task 1.2: `TastileShapes.kt` に ExtraLargeIncreased / ExtraExtraLarge 追加
+- Task 1.2: `TastileShapes.kt` に LargeIncreased / ExtraLargeIncreased / ExtraExtraLarge 追加
 - Task 1.3: `Theme.kt` の `CompositionLocalProvider` へ `LocalTastileMotionScheme` 注入
 - Task 1.4: `TastileMotionTokens` の JVM unit test
 
