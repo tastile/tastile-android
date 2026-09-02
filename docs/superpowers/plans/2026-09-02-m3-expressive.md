@@ -63,16 +63,26 @@ No overlap → safe to dispatch 3 sub-agents in parallel after Phase 0 completes
 
 ## Phase 0: Dependency Pin + Theme Injection (Sequential)
 
-### Task 0.1: Pin material3 to 1.5.0-alpha27
+### Task 0.1: Pin material3 to 1.5.0-alpha27 + add ExposedDropdownMenu extension-function imports
 
 **Files:**
 - Modify: `app/build.gradle.kts` line 579
+- Modify: `app/src/main/java/app/tastile/android/ui/dashboard/components/AutoCompleteTextField.kt` (add 1 import)
+- Modify: `app/src/main/java/app/tastile/android/ui/memo/MemoScreen.kt` (add 1 import)
+- Modify: `app/src/main/java/app/tastile/android/ui/mobile/tabs/SettingsScreen.kt` (add 1 import)
 
 **Interfaces:**
 - Consumes: existing `androidx.compose.material3:material3:1.5.0-alpha24`
-- Produces: `androidx.compose.material3:material3:1.5.0-alpha27` available transitively
+- Produces: `androidx.compose.material3:material3:1.5.0-alpha27` available transitively; `ExposedDropdownMenu` resolves as an extension function on `ExposedDropdownMenuBoxScope`
 
-- [ ] **Step 1: Read the existing dependency declaration**
+**Background (alpha24 → alpha27 breaking change):**
+In `1.5.0-alpha26`, `ExposedDropdownMenu` was moved from a member function to an extension function on `ExposedDropdownMenuBoxScope`. Existing call sites that resolved it via implicit member access now require an explicit import:
+```kotlin
+import androidx.compose.material3.ExposedDropdownMenuBoxScope.ExposedDropdownMenu
+```
+The "No value passed for parameter 'type'" error reported by an earlier pre-flight verify was a cascading compile error downstream of this unresolved reference — Kotlin type inference fails when a referenced symbol is unresolved, surfacing secondary errors that don't reflect a real API change. Adding the import resolves both the unresolved reference AND the cascading type errors.
+
+- [ ] **Step 1: Verify the existing dependency declaration**
 
 Open `app/build.gradle.kts` and confirm line 579 reads:
 ```
@@ -88,32 +98,47 @@ implementation("androidx.compose.material3:material3:1.5.0-alpha27")
 
 Save the file.
 
-- [ ] **Step 3: Verify Gradle resolves the dependency**
+- [ ] **Step 3: Add the ExposedDropdownMenu extension-function import**
+
+In each of the 3 files below, add the following import line directly after the existing `ExposedDropdownMenuBox` / `ExposedDropdownMenuDefaults` import block, **before** the `@OptIn(ExperimentalMaterial3Api::class)` annotation if present:
+
+```kotlin
+import androidx.compose.material3.ExposedDropdownMenuBoxScope.ExposedDropdownMenu
+```
+
+Files:
+- `app/src/main/java/app/tastile/android/ui/dashboard/components/AutoCompleteTextField.kt` — add after the `ExposedDropdownMenuAnchorType` import (line 13)
+- `app/src/main/java/app/tastile/android/ui/memo/MemoScreen.kt` — add after the existing `ExposedDropdownMenu*` imports
+- `app/src/main/java/app/tastile/android/ui/mobile/tabs/SettingsScreen.kt` — add after the existing `ExposedDropdownMenu*` imports
+
+If any file already has a `// m2-allow:` marker on the existing `ExposedDropdownMenu` import (none currently do — the file uses it as a member), do not add a marker to the new import; the extension import is the new normal usage pattern.
+
+- [ ] **Step 4: Run pre-flight verify**
 
 Run:
 ```
-cd app && ../gradlew :app:dependencies --configuration debugRuntimeClasspath 2>&1 | grep "androidx.compose.material3:material3:"
+cd app && ../gradlew :app:verifyDesignSystemImports :app:testDebugUnitTest 2>&1 | tail -50
 ```
 
-Expected: the resolved line shows `1.5.0-alpha27`. If it shows the old `1.5.0-alpha24`, the Gradle cache hasn't refreshed — run `../gradlew --refresh-dependencies :app:dependencies ...` once and re-check.
-
-- [ ] **Step 4: Run verify to confirm no compile breakage yet**
-
-Run:
-```
-cd app && ../gradlew :app:verifyDesignSystemImports :app:testDebugUnitTest
-```
-
-Expected: PASS. If FAIL, the most likely cause is API drift between alpha24 and alpha27 in `designsystem/` (this is a Phase 0 pre-flight — Phase 0.3 fixes the Theme, but if the breakage is in existing designsystem component code, escalate before continuing).
+Expected: PASS (no compile errors, all unit tests pass). If FAIL with new errors, the most likely cause is something not yet observed in this alpha range — escalate to controller before continuing.
 
 - [ ] **Step 5: Commit**
 
 ```
-git add app/build.gradle.kts
+git add app/build.gradle.kts \
+        app/src/main/java/app/tastile/android/ui/dashboard/components/AutoCompleteTextField.kt \
+        app/src/main/java/app/tastile/android/ui/memo/MemoScreen.kt \
+        app/src/main/java/app/tastile/android/ui/mobile/tabs/SettingsScreen.kt
 git commit -m "build(gradle): pin androidx.compose.material3 to 1.5.0-alpha27
 
-No code changes yet; pre-flight verify confirms no compile breakage
-against existing designsystem code under the new alpha.
+In material3:1.5.0-alpha26, ExposedDropdownMenu moved from a member
+function to an extension function on ExposedDropdownMenuBoxScope.
+Add the new import to the 3 files that call it; alpha27's other
+breaking changes (LocalMotionScheme removal, TimePicker renames) do
+not affect this codebase.
+
+Pre-flight verify: :app:verifyDesignSystemImports and
+:app:testDebugUnitTest both PASS.
 
 Co-Authored-By: Claude Code <noreply@anthropic.com>"
 ```
@@ -1876,138 +1901,158 @@ Do not commit. Report green to the orchestrator.
 
 ## Phase 3: Integration Verification (Sequential)
 
-### Task 3.1: Run gfxinfo to confirm motion physics frame rate
+> **Plan amendment (2026-09-03):** Tasks 3.1 + 3.2 below are **CARVED OUT** of
+> this plan's scope. They require an attached ADB device that was not
+> available on the development host executing Phase 0–3. Tasks 3.1 + 3.2 are
+> preserved below as struck-through sections (reference only) and will be
+> re-introduced under a follow-up "M3X device integration" plan that has
+> device-runner access. The remaining Phase 3 scope (Tasks 3.3 + 3.4) is
+> unaffected. The carve-out record lives at
+> `docs/superpowers/m3/phase-3-deferral.md`. With the carve-out, this plan's
+> completion criteria are: Phase 0 + Phase 1 + Phase 2 + Task 3.3 + Task 3.4.
 
-**Files:**
-- (No file changes — verification only)
 
-**Pre-condition:** Connected Android device or emulator running Android 12+ (API 31+) with developer options enabled.
 
-- [ ] **Step 1: Start gfxinfo collection**
+### ~~Task 3.1: Run gfxinfo to confirm motion physics frame rate~~ — **CARVED OUT 2026-09-03**
 
-Run:
-```
-adb shell setprop debug.hwui.profile true
-adb shell dumpsys gfxinfo app.tastile.android reset
-```
-
-- [ ] **Step 2: Build and install the debug APK**
-
-Run:
-```
-cd app && ../gradlew :app:installDebug
-adb shell am start -n app.tastile.android/.MainActivity
-```
-
-- [ ] **Step 3: Trigger the QuickCreate FAB**
-
-Manually navigate to `TimelineScreen` (or `TilesScreen`), tap the FAB. Wait 5 seconds. Tap system back.
-
-- [ ] **Step 4: Capture gfxinfo dump**
-
-Run:
-```
-adb shell dumpsys gfxinfo app.tastile.android framestats
-```
-
-Expected:
-- Average frame time on API 31+ ≤ 16.67ms (60 fps) during FAB rotation animation.
-- No jank flag (frames > 16.67ms but < 33.33ms) longer than 5% of total frames during animation.
-
-If the test device is below 60fps target, do NOT lower the threshold. Instead:
-- Note the device model and OS version.
-- Document as a known limitation in `docs/superpowers/m3/motion-perf.md`.
-- Open an issue tracking a `MotionScheme` with relaxed stiffness for low-end devices.
-
-- [ ] **Step 5: Disable gfxinfo profiling**
-
-```
-adb shell setprop debug.hwui.profile false
-```
-
-- [ ] **Step 6: Commit (only if docs were added)**
-
-If you added `docs/superpowers/m3/motion-perf.md`:
-
-```
-git add docs/superpowers/m3/motion-perf.md
-git commit -m "docs(superpowers): record motion physics frame rate baseline
-
-Captures the gfxinfo baseline for the QuickCreate FAB rotation under
-MotionScheme.expressive(). Threshold: 60fps target with ≤5% jank.
-
-Co-Authored-By: Claude Code <noreply@anthropic.com>"
-```
+> **Scope notice:** ~~This task is preserved below for reference only. It is
+> no longer part of the M3 Expressive plan's scope. See
+> `docs/superpowers/m3/phase-3-deferral.md` for the carve-out rationale and
+> the verbatim run commands that ship to the follow-up "M3X device
+> integration" plan.~~
+>
+> **Files:** ~~(No file changes — verification only)~~
+>
+> **Pre-condition:** ~~Connected Android device or emulator running Android 12+ (API 31+) with developer options enabled.~~
+>
+> - [ ] ~~**Step 1: Start gfxinfo collection**~~
+>
+> ~~Run:~~
+> ~~```
+> adb shell setprop debug.hwui.profile true
+> adb shell dumpsys gfxinfo app.tastile.android reset
+> ```~~
+>
+> - [ ] ~~**Step 2: Build and install the debug APK**~~
+>
+> ~~Run:~~
+> ~~```
+> cd app && ../gradlew :app:installDebug
+> adb shell am start -n app.tastile.android/.MainActivity
+> ```~~
+>
+> - [ ] ~~**Step 3: Trigger the QuickCreate FAB**~~
+>
+> ~~Manually navigate to `TimelineScreen` (or `TilesScreen`), tap the FAB. Wait 5 seconds. Tap system back.~~
+>
+> - [ ] ~~**Step 4: Capture gfxinfo dump**~~
+>
+> ~~Run:~~
+> ~~```
+> adb shell dumpsys gfxinfo app.tastile.android framestats
+> ```~~
+>
+> ~~Expected:~~
+> ~~- Average frame time on API 31+ ≤ 16.67ms (60 fps) during FAB rotation animation.~~
+> ~~- No jank flag (frames > 16.67ms but < 33.33ms) longer than 5% of total frames during animation.~~
+>
+> ~~If the test device is below 60fps target, do NOT lower the threshold. Instead:~~
+> ~~- Note the device model and OS version.~~
+> ~~- Document as a known limitation in `docs/superpowers/m3/motion-perf.md`.~~
+> ~~- Open an issue tracking a `MotionScheme` with relaxed stiffness for low-end devices.~~
+>
+> - [ ] ~~**Step 5: Disable gfxinfo profiling**~~
+>
+> ~~```
+> adb shell setprop debug.hwui.profile false
+> ```~~
+>
+> - [ ] ~~**Step 6: Commit (only if docs were added)**~~
+>
+> ~~If you added `docs/superpowers/m3/motion-perf.md`:~~
+>
+> ~~```
+> git add docs/superpowers/m3/motion-perf.md
+> git commit -m "docs(superpowers): record motion physics frame rate baseline
+>
+> Captures the gfxinfo baseline for the QuickCreate FAB rotation under
+> MotionScheme.expressive(). Threshold: 60fps target with ≤5% jank.
+>
+> Co-Authored-By: Claude Code <noreply@anthropic.com>"
+> ```~~
 
 ---
 
-### Task 3.2: Add instrumented QuickCreate smoke test
+### ~~Task 3.2: Add instrumented QuickCreate smoke test~~ — **CARVED OUT 2026-09-03**
 
-**Files:**
-- Create: `app/src/androidTest/java/app/tastile/android/ui/navigation/QuickCreateSmokeTest.kt`
-
-**Interfaces:**
-- Consumes: existing `MainActivityTestRule` in `app/src/androidTest/java/app/tastile/android/util/MainActivityTestRule.kt`, `createAndroidComposeRule`.
-- Produces: an instrumented test that opens Dashboard → TimelineScreen → taps `quick-create-fab` → asserts `QuickCreateSheetMobile` is shown.
-
-- [ ] **Step 1: Read existing navigation tests for the test harness**
-
-Open `app/src/androidTest/java/app/tastile/android/ui/navigation/SidePanelSheetNavigationTest.kt` to see the conventions for `createAndroidComposeRule` / `MainActivityTestRule`.
-
-- [ ] **Step 2: Create the smoke test file**
-
-```kotlin
-package app.tastile.android.ui.navigation
-
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
-import app.tastile.android.util.MainActivityTestRule
-import org.junit.Rule
-import org.junit.Test
-
-class QuickCreateSmokeTest {
-
-    @get:Rule
-    val rule = MainActivityTestRule(createAndroidComposeRule())
-
-    @Test
-    fun timelineQuickCreateFab_opensSheet() {
-        rule.composeTestRule.onNodeWithTag("quick-create-fab").performClick()
-        // QuickCreateSheetMobile renders its content; assert one of its core nodes
-        // (e.g. the close button or the Create button) is displayed.
-        rule.composeTestRule.onNodeWithTag("quick-create-close").assertIsDisplayed()
-    }
-}
-```
-
-- [ ] **Step 3: Run the smoke test on a connected device**
-
-Run:
-```
-cd app && ../gradlew :app:connectedDebugAndroidTest \
-    --tests "app.tastile.android.ui.navigation.QuickCreateSmokeTest"
-```
-
-Expected: PASS. If the test fails because `MainActivityTestRule` requires a different constructor signature, adjust the test to match the rule's actual API. If `createAndroidComposeRule` returns a different rule type, wrap it accordingly.
-
-- [ ] **Step 4: Commit**
-
-```
-git add app/src/androidTest/java/app/tastile/android/ui/navigation/QuickCreateSmokeTest.kt
-git commit -m "test(androidTest): add QuickCreate FAB smoke test
-
-Verifies the end-to-end path: TimelineScreen FAB → Overlay.QuickCreate
-→ QuickCreateSheetMobile. Uses the existing MainActivityTestRule
-harness and asserts the close button test tag rendered by the sheet.
-
-Run with:
-  ./gradlew :app:connectedDebugAndroidTest \
-    --tests \"app.tastile.android.ui.navigation.QuickCreateSmokeTest\"
-
-Co-Authored-By: Claude Code <noreply@anthropic.com>"
-```
+> **Scope notice:** ~~This task is preserved below for reference only. It is
+> no longer part of the M3 Expressive plan's scope. See
+> `docs/superpowers/m3/phase-3-deferral.md` for the carve-out rationale and
+> the verbatim run commands that ship to the follow-up "M3X device
+> integration" plan.~~
+>
+> **Files:** ~~Create: `app/src/androidTest/java/app/tastile/android/ui/navigation/QuickCreateSmokeTest.kt`~~
+>
+> **Interfaces:** ~~Consumes: existing `MainActivityTestRule` in `app/src/androidTest/java/app/tastile/android/util/MainActivityTestRule.kt`, `createAndroidComposeRule`. Produces: an instrumented test that opens Dashboard → TimelineScreen → taps `quick-create-fab` → asserts `QuickCreateSheetMobile` is shown.~~
+>
+> - [ ] ~~**Step 1: Read existing navigation tests for the test harness**~~
+>
+> ~~Open `app/src/androidTest/java/app/tastile/android/ui/navigation/SidePanelSheetNavigationTest.kt` to see the conventions for `createAndroidComposeRule` / `MainActivityTestRule`.~~
+>
+> - [ ] ~~**Step 2: Create the smoke test file**~~
+>
+> ~~```kotlin
+> package app.tastile.android.ui.navigation
+>
+> import androidx.compose.ui.test.assertIsDisplayed
+> import androidx.compose.ui.test.junit4.createAndroidComposeRule
+> import androidx.compose.ui.test.onNodeWithTag
+> import androidx.compose.ui.test.performClick
+> import app.tastile.android.util.MainActivityTestRule
+> import org.junit.Rule
+> import org.junit.Test
+>
+> class QuickCreateSmokeTest {
+>
+>     @get:Rule
+>     val rule = MainActivityTestRule(createAndroidComposeRule())
+>
+>     @Test
+>     fun timelineQuickCreateFab_opensSheet() {
+>         rule.composeTestRule.onNodeWithTag("quick-create-fab").performClick()
+>         // QuickCreateSheetMobile renders its content; assert one of its core nodes
+>         // (e.g. the close button or the Create button) is displayed.
+>         rule.composeTestRule.onNodeWithTag("quick-create-close").assertIsDisplayed()
+>     }
+> }
+> ```~~
+>
+> - [ ] ~~**Step 3: Run the smoke test on a connected device**~~
+>
+> ~~Run:~~
+> ~~```
+> cd app && ../gradlew :app:connectedDebugAndroidTest \
+>     --tests "app.tastile.android.ui.navigation.QuickCreateSmokeTest"
+> ```~~
+>
+> ~~Expected: PASS. If the test fails because `MainActivityTestRule` requires a different constructor signature, adjust the test to match the rule's actual API. If `createAndroidComposeRule` returns a different rule type, wrap it accordingly.~~
+>
+> - [ ] ~~**Step 4: Commit**~~
+>
+> ~~```
+> git add app/src/androidTest/java/app/tastile/android/ui/navigation/QuickCreateSmokeTest.kt
+> git commit -m "test(androidTest): add QuickCreate FAB smoke test
+>
+> Verifies the end-to-end path: TimelineScreen FAB → Overlay.QuickCreate
+> → QuickCreateSheetMobile. Uses the existing MainActivityTestRule
+> harness and asserts the close button test tag rendered by the sheet.
+>
+> Run with:
+>   ./gradlew :app:connectedDebugAndroidTest \
+>     --tests \"app.tastile.android.ui.navigation.QuickCreateSmokeTest\"
+>
+> Co-Authored-By: Claude Code <noreply@anthropic.com>"
+> ```~~
 
 ---
 
@@ -2102,14 +2147,20 @@ The following checks are performed by the plan author before handoff. If you (th
    - Goal 4 (TastileButtonGroup): Tasks 1c.* ✓
    - Goal 5 (1.5.0-alpha27 pin): Task 0.1 ✓
    - Goal 6 (shape tokens): Task 0.2 ✓
-   - Phase 3 integration: Tasks 3.1–3.4 ✓
+   - Phase 3 integration (post-carve-out): Tasks 3.3 + 3.4 ✓
+     (Tasks 3.1 + 3.2 carved out 2026-09-03 — see
+     `docs/superpowers/m3/phase-3-deferral.md`)
 
 2. **No placeholder strings:** scan for "TODO" / "TBD" / "fill in" / "similar to" — none.
 
 3. **Type consistency:**
    - `FabMenuItem.Action` defined in Task 1b.1, consumed by Tasks 1b.2 / 1b.3 / 2.1 / 2.2 ✓
    - `ButtonGroupSize` / `ButtonGroupItem` / `TastileButtonGroupTokens` defined in Task 1c.1, consumed by Task 1c.3 ✓
-   - `quick-create-fab` testTag set in Task 2.1, asserted in Task 3.2 ✓
+   - `quick-create-fab` testTag set in Task 2.1 ✓
+     (assertion that was to live in Task 3.2 is now carved out to M3X;
+     pre-existing `quick-create-close` testTag at
+     `QuickCreateSheetMobile.kt:157` remains reachable through that future
+     smoke test in M3X)
    - `quick-create-close` testTag already exists in `QuickCreateSheetMobile.kt:157` ✓
 
 4. **No file conflicts between parallel sub-agents (Phase 1):**
