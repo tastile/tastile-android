@@ -19,4 +19,7 @@ val TastileShapes: Shapes
         medium = RoundedCornerShape(LocalTastileShapeTokens.current.m),
         large = RoundedCornerShape(LocalTastileShapeTokens.current.large),
         extraLarge = RoundedCornerShape(LocalTastileShapeTokens.current.xl),
+        largeIncreased = RoundedCornerShape(LocalTastileShapeTokens.current.largeIncreased),
+        extraLargeIncreased = RoundedCornerShape(LocalTastileShapeTokens.current.extraLargeIncreased),
+        extraExtraLarge = RoundedCornerShape(LocalTastileShapeTokens.current.extraExtraLarge),
     )
