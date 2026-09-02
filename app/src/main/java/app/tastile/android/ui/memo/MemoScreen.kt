@@ -22,6 +22,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -113,14 +115,14 @@ fun MemoScreen(
                         expanded = expanded,
                         onExpandedChange = { expanded = it }
                     ) {
-                        // menuAnchor() (no args) was deprecated in M3 1.5.0-alpha24
-                        // in favor of menuAnchor(anchorState) which is not yet
-                        // available in our pinned M3 version. Track removal in
-                        // docs/plans/2026-07-23-m3-upgrade.md once the upgrade lands.
-                        val anchorModifier: Modifier = run {
-                            @Suppress("DEPRECATION")
-                            Modifier.menuAnchor()
-                        }
+                        // menuAnchor() (no args) was removed in M3 1.5.0-alpha27;
+                        // the deprecated overload no longer exists. The
+                        // read-only OutlinedTextField below uses the
+                        // PrimaryNotEditable anchor type.
+                        val anchorModifier: Modifier = Modifier.menuAnchor(
+                            type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                            enabled = true,
+                        )
                         OutlinedTextField(
                             value = selectedTile?.title ?: stringResource(R.string.memo_select_tile),
                             onValueChange = {},

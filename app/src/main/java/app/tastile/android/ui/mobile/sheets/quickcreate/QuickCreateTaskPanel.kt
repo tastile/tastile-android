@@ -24,6 +24,8 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.DropdownMenu
 // m2-allow: m3-component
 import androidx.compose.material3.DropdownMenuItem
+// m2-allow: m3-component
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
@@ -213,7 +215,10 @@ private fun DurationRow(currentMin: Int?, onChange: (Int) -> Unit) {
                     },
                     modifier = Modifier
                         .width(120.dp)
-                        .menuAnchor()
+                        .menuAnchor(
+                            type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                            enabled = true,
+                        )
                         .testTag("task-duration-select"),
                 )
                 DropdownMenu(

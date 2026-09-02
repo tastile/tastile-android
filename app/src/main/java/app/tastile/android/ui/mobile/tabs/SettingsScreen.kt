@@ -32,6 +32,8 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 // m2-allow: m3-component
 import androidx.compose.material3.ExposedDropdownMenuBox
 // m2-allow: m3-component
+import androidx.compose.material3.ExposedDropdownMenu
+// m2-allow: m3-component
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 // m2-allow: primitive
 import androidx.compose.material3.Icon
