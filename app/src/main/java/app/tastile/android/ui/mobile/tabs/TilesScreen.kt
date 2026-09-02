@@ -31,7 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
-import app.tastile.android.core.designsystem.component.NiaExtendedFloatingActionButton
+import app.tastile.android.core.designsystem.component.FabMenuItem
+import app.tastile.android.core.designsystem.component.TastileFabMenu
 import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.model.Tile
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -121,14 +122,30 @@ fun TilesScreen(
             }
         }
 
-        NiaExtendedFloatingActionButton(
-            onClick = { overlay.show(Overlay.QuickCreate) },
+        // Quick-create FAB: bottom-right + icon. Wired via TastileFabMenu
+        // (M3 Expressive FAB Menu wrapper). For Phase 2 we ship collapsed-only;
+        // clicks on the main FAB dispatch QuickCreate via onExpandedChange,
+        // matching the existing 1-tap QuickCreate UX. The Action's onClick is
+        // kept wired for Phase 3+ when the expanded menu is surfaced.
+        TastileFabMenu(
+            mainIcon = Icons.Outlined.Add,
+            mainLabel = stringResource(R.string.tile_new_fab),
+            expanded = false,
+            onExpandedChange = { newExpanded ->
+                // Collapsed ship: tap -> dispatch QuickCreate directly.
+                overlay.show(Overlay.QuickCreate)
+            },
+            items = listOf(
+                FabMenuItem.Action(
+                    icon = Icons.Outlined.Add,
+                    label = "",
+                    onClick = { overlay.show(Overlay.QuickCreate) },
+                ),
+            ),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(TILES_SPACING_MD)
                 .testTag("tiles-fab-new"),
-            text = { Text(stringResource(R.string.tile_new_fab)) },
-            icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
         )
     }
 
