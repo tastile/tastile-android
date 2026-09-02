@@ -157,3 +157,98 @@ integration verifications above.
 - **Whole-branch review (Task 23):** complete, APPROVED WITH NOTES,
   3 VERIFIED findings fixed (`328f625`), 4 PLAUSIBLE findings documented
   as deferred follow-ups
+
+## Device-attempt follow-up (2026-09-03)
+
+After the JVM-side work landed, a developer (XIG03, Android 15, API 35)
+attached the device and re-attempted Tasks 3.1 + 3.2 directly. Both
+tasks **remain unfinished** for new reasons, neither of which is in the
+M3 plan's scope:
+
+### Task 3.2 — new blocker: pre-existing `ExecutionAlarmRescheduleReceiver`
+crash on `MY_PACKAGE_REPLACED`
+
+```
+java.lang.IllegalStateException: The component was not created.
+    Check that you have added the HiltAndroidRule.
+    at dagger.hilt.android.internal.testing.TestApplicationComponentManager.generatedComponent(...)
+    at app.tastile.android.notifications.Hilt_ExecutionAlarmRescheduleReceiver.inject(...)
+    at app.tastile.android.notifications.ExecutionAlarmRescheduleReceiver.onReceive(...)
+```
+
+The receiver at `app/src/main/AndroidManifest.xml` is registered for
+`android.intent.action.MY_PACKAGE_REPLACED`. Every `adb install` of
+`app.tastile.android` re-fires that broadcast. The receiver attempts to
+call Hilt's generated `inject()` before the `HiltAndroidRule` has had a
+chance to initialize in the **test** process — but the same broadcast is
+delivered to the **production** process, where the Hilt graph is not
+yet built. This crashes the production app process before the
+instrumentation can hand off to the test runner, so
+`adb shell am instrument … TastileTestRunner` reports
+`Process crashed before executing the test(s)` regardless of which
+single class is targeted.
+
+Three workarounds were tried and all failed:
+
+1. `./gradlew :app:connectedDebugAndroidTest` — fails the same way
+   (install gate + receiver crash on install).
+2. Pre-install both APKs with `adb install -r -d` then re-run — Gradle
+   still re-installs the production APK on every run, retriggering the
+   receiver crash.
+3. `pm disable` the receiver — Android refuses:
+   `Shell cannot change component state for ComponentInfo{...} to 2`.
+
+**Required to unblock Task 3.2:** either (a) fix the receiver to defer
+Hilt work until `Application.onCreate()` returns, or (b) move the
+receiver off `MY_PACKAGE_REPLACED` so it does not fire during a
+re-install. Both fixes are out of scope for the M3 migration.
+
+### Task 3.1 — new blocker: auth gate blocks TimelineScreen
+
+The plan's gfxinfo path assumes the user can navigate to TimelineScreen
+on a fresh install and tap `quick-create-fab`. On this device, the cold
+launch lands on `LoginScreen` (`サインイン`) — no signed-in session exists
+because `pm clear` was issued to drain the broadcast queue. The
+`MainActivityAuthGateTest` baseline confirms this is the expected
+post-clear state. Without a real Cognito sign-in there is no path to
+TimelineScreen, and therefore no path to the FAB that the gfxinfo run
+is supposed to measure.
+
+`docs/superpowers/m3/gfxinfo/XIG03-Android-15-2026-09-03.txt` was
+captured anyway as a **toolchain-evidence artifact**, not a motion-
+physics verdict:
+
+- **Total frames rendered:** 5 (cold launch only)
+- **Janky frames:** 4 (80.00%)
+- **50th percentile:** 150ms, **90th percentile:** 1150ms
+
+These numbers are from the cold-launch auth-gate render and do **not**
+satisfy the plan's "average frame time on API 31+ ≤ 16.67ms during FAB
+rotation animation" acceptance criterion. The file is committed so
+that a follow-up runner with a signed-in session can re-capture
+in-place.
+
+**Required to unblock Task 3.1:** a signed-in session on the device
+(real Cognito creds) so the run can reach TimelineScreen → FAB → 5s
+animation. Out of scope for the M3 migration.
+
+### What was committed as evidence
+
+- `app/src/androidTest/java/app/tastile/android/ui/navigation/QuickCreateSmokeTest.kt`
+  — new instrumented smoke test, adapted to the actual
+  `MainActivityTestRule` API per plan §Step 3 authorization. Test
+  does **not** currently run green; it is committed as the agreed
+  shape so the follow-up unblock (receiver fix + signed-in session)
+  can land it without further authoring work.
+- `docs/superpowers/m3/gfxinfo/XIG03-Android-15-2026-09-03.txt` —
+  cold-launch gfxinfo capture (LoginScreen render only).
+
+### Re-deferred status
+
+- **Phase 3.1:** re-DEFERRED — pending (a) signed-in session on a
+  device or emulator, AND (b) the receiver-crash fix above. The
+  `docs/superpowers/m3/gfxinfo/` directory now exists with the
+  cold-launch capture to be overwritten once the unblock lands.
+- **Phase 3.2:** re-DEFERRED — pending (a) the receiver-crash fix
+  above, AND (b) a connected device. The new smoke test file is in
+  place and ready to run green once (a) lands.

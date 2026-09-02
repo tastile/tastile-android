@@ -118,11 +118,21 @@ ADB device and are out of scope for this baseline document. They will land
 separately when the device path is restored; once captured, link the
 artifacts here.
 
+**Device-attempt status (2026-09-03):** a XIG03 / Android 15 device was
+attached and the tasks were re-attempted. Both remain unfinished for
+**new** reasons outside the M3 plan's scope — a pre-existing
+`ExecutionAlarmRescheduleReceiver` crash on `MY_PACKAGE_REPLACED` blocks
+the instrumented run, and the auth gate blocks the gfxinfo run from
+reaching TimelineScreen. The cold-launch gfxinfo capture landed at
+[`docs/superpowers/m3/gfxinfo/XIG03-Android-15-2026-09-03.txt`](../gfxinfo/XIG03-Android-15-2026-09-03.txt)
+as a toolchain-evidence artifact (not a motion-physics verdict).
+
 **Formal deferral:** see
 [`docs/superpowers/m3/phase-3-deferral.md`](phase-3-deferral.md) for the
 plan amendment that records these as deferred pending device, quotes the
-verbatim acceptance criteria, and lists the evidence required to close
-them on a device-available runner.
+verbatim acceptance criteria, lists the evidence required to close
+them on a device-available runner, and documents the 2026-09-03 device
+attempt plus the two new blockers.
 
 ## Phase 3 evidence ledger
 
