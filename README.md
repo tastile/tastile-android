@@ -34,9 +34,12 @@ What the design system currently exposes from M3 Expressive:
   by callers that previously rolled their own segmented controls.
 
 Expressive alpha APIs are marked `@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)`
-at the design-system component that introduces them. The migration did not
-add any new `// m2-allow:` markers; the only remaining M2 escapes are the
-ones that pre-existed the migration.
+at the design-system component that introduces them. The migration's net
+`// m2-allow:` marker change is **+1** (three added by the alpha27 pin for
+`ExposedDropdownMenu` extension imports and the no-arg `Modifier.menuAnchor()`
+overload removal; two removed when `TimelineScreen.kt` swapped its direct
+M3 FAB imports for `TastileFabMenu`). Every added marker covers a single
+direct M3 import, not a permanent widening of the boundary.
 
 The M3 baseline is tracked at
 [`docs/superpowers/m3/before-reports/README.md`](docs/superpowers/m3/before-reports/README.md).

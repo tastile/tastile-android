@@ -11,9 +11,14 @@
 - `androidx.compose.material3:material3:1.5.0-alpha27` is the only M3 version
   in this repo. Bumping the alpha must follow the experiment notes in the plan
   and re-capture this baseline.
-- Pin location: `gradle/libs.versions.toml` (`material3 = "1.5.0-alpha27"`),
-  surfaced to `app/build.gradle.kts` and `:designsystem:build.gradle.kts` via
-  the version catalog.
+- Pin location: `app/build.gradle.kts:579` as a literal coordinate string
+  (`implementation("androidx.compose.material3:material3:1.5.0-alpha27")`).
+  There is **no** `gradle/libs.versions.toml` in this repo — coordinate strings
+  are inlined at the module that consumes them.
+- This repo is single-module: `settings.gradle.kts` includes only `:app` and
+  `:lint-rules` (no `:designsystem` Gradle module). The design system lives
+  inside `:app` at `app/src/main/java/app/tastile/android/core/designsystem/`
+  and reads the same `1.5.0-alpha27` coordinate via the `:app` build file.
 - API stability: `1.5.0-alpha` is an experimental release line. Every import
   that touches `androidx.compose.material3.*` symbols introduced in alpha is
   marked `@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)` at the
@@ -52,7 +57,22 @@
   credentials stay out of Android sources and the build script.
 - `verifyV1ApiCoverage` — unchanged; 22/22 v1 operations still wired.
 
-No new `// m2-allow:` markers were added by this migration. Run
+**Marker delta.** The migration's net `// m2-allow:` marker change is
+**+1** (three added, two removed):
+
+- **+3 added** in Phase 0 commit `275eeb1` (alpha27 pin) — one each in
+  `AutoCompleteTextField.kt`, `SettingsScreen.kt`, `QuickCreateTaskPanel.kt`.
+  Each marker covers a single direct `androidx.compose.material3.*` import
+  for the `ExposedDropdownMenu` extension import + no-arg
+  `Modifier.menuAnchor()` overload removal that alpha27 introduced. These
+  are minimal, single-line escapes, not boundary widenings.
+- **-2 removed** in Phase 2 commit `8085e77` — two `// m2-allow: primitive`
+  markers deleted from `TimelineScreen.kt` when `NiaFloatingActionButton`
+  was replaced by `TastileFabMenu`. The direct M3 imports those markers
+  guarded (`Icon`, `LocalContentColor`) became unused.
+
+Pre-existing marker count (pre-migration): 500. Post-migration: 501. To
+audit the post-merge state:
 
 ```bash
 git grep -n "// m2-allow:" app/src/main/java/app/tastile/android/ui/dashboard \
@@ -60,7 +80,9 @@ git grep -n "// m2-allow:" app/src/main/java/app/tastile/android/ui/dashboard \
                         app/src/main/java/app/tastile/android/ui/account
 ```
 
-post-merge to confirm only the pre-existing markers remain.
+The post-migration count should be 501; the +1 net should be attributable
+to the three Phase 0 files above. If you see more growth, it is a new
+escape that needs root-fixing under the `verifyDesignSystemImports` guard.
 
 ## Compose Compiler Reports — re-capture notice
 
@@ -106,3 +128,42 @@ artifacts here.
   (2 tests, green) commit the post-swap behavior at the screen boundary.
 - Phase 3 docs (this file): README "Material 3 Expressive" subsection added;
   alpha pin recorded; re-capture notice filed.
+
+## Deferred follow-ups (whole-branch review)
+
+The whole-branch review at the end of Phase 3 produced four non-blocking
+findings. They are tracked here for visibility but were intentionally left
+un-fixed in this migration to keep the scope tight:
+
+- **#3 — Phase-2 callback smell.** Both Phase 2 wiring sites
+  (`TimelineScreen.kt`, `TilesScreen.kt`) pass
+  `onExpandedChange = { newExpanded -> overlay.show(Overlay.QuickCreate) }`
+  — the lambda ignores its parameter and unconditionally fires `overlay.show`.
+  This works for the current collapsed-only single-item FAB but creates a
+  trap for any Phase-3+ PR that flips `expanded` to mutable state: when
+  the FAB expands to a real menu, `onExpandedChange(true)` would still fire
+  `overlay.show` and bypass the menu. Future fix: gate on `newExpanded`
+  (route only on the collapsed → expanded transition) or split the
+  dispatch site to the `FabMenuItem.Action.onClick` only.
+- **#4 — Commit hygiene.** `bf4b738` and `1da0bb1` share the identical
+  message `test(designsystem): pin TastileButtonGroup contracts` despite
+  materially different content (one adds the test file, the other adds
+  the `@RunWith(RobolectricTestRunner::class)` annotation). Future fix:
+  rewrite history with `git rebase -i` to either squash the two commits
+  or rename the second to `fix(test): add Robolectric runner to
+  TastileButtonGroupTest`. Not done here because rewriting `main` mid-
+  migration carries its own risk and the current state is unambiguous
+  to anyone reading `git show`.
+- **#6 — `fastSpatialSpec()` vs plan's `defaultSpatialSpec()`.**
+  `TastileFabMenu.kt:43` uses `MaterialTheme.motionScheme.fastSpatialSpec()`
+  rather than the plan's specified `defaultSpatialSpec()`. Both exist in
+  `material3:1.5.0-alpha27`. Cosmetic. Future fix: align to plan or update
+  the plan to match the implementation.
+- **#7 — `TastileButtonGroup` is unused by screens.** Phase 1c shipped a
+  new SegmentedButton wrapper, but Phase 2 did not migrate any consumer.
+  Pre-existing screens still use raw `androidx.compose.material3.SegmentedButton`
+  with `// m2-allow:` markers (`QuickCreateSheet.kt`, `QuickCreateTaskPanel.kt`,
+  `TileActionDialogs.kt`). This is **in-spec per the plan's Non-Goal**:
+  "既存 `ViewToggle` / `SegmentedButton` の全面置換（当面は残置。新規画面は
+  TastileButtonGroup を使う）". Future Phase-3+ work should fold raw M3
+  usages into `TastileButtonGroup`.
