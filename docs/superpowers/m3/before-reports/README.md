@@ -110,21 +110,19 @@ that file for the on-disk path before re-running.
 If a CI run is the only place these reports are captured, document the
 baseline path here once a CI artifact is published.
 
-## Device-blocked follow-ups (carved out of the M3 plan)
+## Device-blocked follow-ups (not in this baseline)
 
 Tasks 3.1 (`gfxinfo` capture on a running emulator) and 3.2 (instrumented
-`QuickCreateSmokeTest` via `connectedDebugAndroidTest`) require an
-attached ADB device and were **carved out of the M3 Expressive plan on
-2026-09-03**. They live under a separate follow-up plan ("M3X device
-integration") once an ADB device is available; once captured, link the
-artifacts there.
+`QuickCreateSmokeTest` via `connectedDebugAndroidTest`) require an attached
+ADB device and are out of scope for this baseline document. They will land
+separately when the device path is restored; once captured, link the
+artifacts here.
 
-**Formal carve-out:** see
+**Formal deferral:** see
 [`docs/superpowers/m3/phase-3-deferral.md`](phase-3-deferral.md) for the
-plan amendment that strikes through Tasks 3.1 + 3.2 in
-`docs/superpowers/plans/2026-09-02-m3-expressive.md`, quotes the
+plan amendment that records these as deferred pending device, quotes the
 verbatim acceptance criteria, and lists the evidence required to close
-them under M3X.
+them on a device-available runner.
 
 ## Phase 3 evidence ledger
 

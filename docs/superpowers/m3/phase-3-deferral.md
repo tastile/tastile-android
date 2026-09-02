@@ -1,47 +1,9 @@
-# Phase 3 Carve-Out Record
+# Phase 3 Device Deferral Addendum
 
 - **Date:** 2026-09-03
 - **Plan:** [`docs/superpowers/plans/2026-09-02-m3-expressive.md`](../plans/2026-09-02-m3-expressive.md)
 - **Baseline:** [`docs/superpowers/m3/before-reports/README.md`](before-reports/README.md)
-- **Status (post-carve-out):** Phase 3 Tasks 3.3 + 3.4 **complete and on plan scope**; Tasks 3.1 + 3.2 **CARVED OUT** of this plan (moved to follow-up "M3X device integration" plan).
-
-## Why this addendum exists
-
-The original plan at `docs/superpowers/plans/2026-09-02-m3-expressive.md`
-treated Phase 3 as a single sequential integration step without flagging a
-device dependency. The plan's whole-branch checklist thus reports "Phase 3
-integration: Tasks 3.1–3.4 ✓" without distinguishing which sub-tasks are
-device-gated.
-
-Two of the four Phase 3 sub-tasks require an attached ADB device:
-
-- **Task 3.1: Run gfxinfo to confirm motion physics frame rate** — `adb`
-  shell calls, debug-APK install via Gradle, manual UI exercise.
-- **Task 3.2: Add instrumented QuickCreate smoke test** —
-  `./gradlew :app:connectedDebugAndroidTest` requires a connected device
-  or running emulator.
-
-At the close of the JVM-side Phase 3 work on this Windows host, no ADB
-device was attached (`adb devices` returned an empty list). Therefore
-these two tasks cannot be executed here.
-
-## What "carve-out" means (vs. "defer")
-
-There are two ways to record a gap relative to a plan:
-
-- **Defer (not adopted here):** leave the plan tasks as unchecked
-  checkboxes and write a record elsewhere explaining why. The tasks
-  remain in the plan's scope; the plan is therefore not 完遂 until the
-  tasks run.
-- **Carve-out (adopted here):** amend the plan in-place — strike
-  through the device-gated tasks with a `CARVED OUT 2026-09-03` banner,
-  update the Self-Review Checklist, and move the work to a separate
-  follow-up plan ("M3X device integration"). The M3 Expressive plan's
-  scope is now strictly bounded by the carved-in tasks; 3.1 + 3.2 are
-  out of its scope, so the plan is 完遂 when the carved-in tasks
-  (Phases 0 + 1 + 2 + Phase 3.3 + Phase 3.4) are all complete.
-
-This record is the artifact side of that carve-out.
+- **Status:** Phase 3 Tasks 3.3 + 3.4 **complete**; Tasks 3.1 + 3.2 **deferred pending device**.
 
 ## Why this addendum exists
 
@@ -143,10 +105,10 @@ commit).
   output showing PASS (or the runner log explaining the rule-signature
   adjustment and the re-run PASS).
 
-## What is NOT deferred — this plan's scope after carve-out
+## What is NOT deferred
 
 Phase 3 Tasks 3.3 and 3.4 are complete on the JVM-side scope that this
-host can verify, and they remain on the plan:
+host can verify:
 
 - **Task 3.3 — README + M3 baseline docs.** Commits `012453c` and
   `328f625` cover the docs the plan asked for, including the post-
@@ -159,40 +121,28 @@ host can verify, and they remain on the plan:
   `app/src/`, `// m2-allow:` net migration delta +1 (documented). The
   pre-existing baselines (15 unit-test failures, 89 `MissingTranslation`
   lint failures) are not migration-caused and are tracked separately.
-  Step 1's `connectedDebugAndroidTest` portion is carved out under
-  Task 3.2 above rather than separately.
+  Step 1's `connectedDebugAndroidTest` portion is deferred under Task
+  3.2 above rather than separately.
 
-The 17 migration commits on `main` (`275eeb1` … `107716d`) implement
-the carve-out-surviving goals (Phase 0 + Phase 1 + Phase 2 + Phase 3.3 +
-Phase 3.4). Tasks 3.1 + 3.2 will land under a separate "M3X device
-integration" plan once an ADB device is available.
+The 16 migration commits on `main` (`275eeb1` … `328f625`) implement
+all 7 plan goals; the only remaining work is the two device-gated
+integration verifications above.
 
-## Follow-up plan ("M3X device integration") — required inputs
+## Deferral semantics
 
-When M3X is opened, copy the verbatim run commands and acceptance
-criteria above into the new plan. M3X's whole-branch checklist should
-add a single bullet:
-
-> - Goal N: Tasks 3.1 + 3.2 from `2026-09-02-m3-expressive` (carved-out
->   device integration) ✓
-
-Closing the M3X plan does **not** reopen this plan's already-completed
-status. It is independent work.
-
-## Tracking semantics
-
-- The plan's checkbox rows for Tasks 3.1 + 3.2 are struck-through and
-  carry a `CARVED OUT 2026-09-03` banner. Any audit reading the plan in
-  isolation will see the carve-out marker without needing this
-  addendum to interpret it.
+- The plan's checkbox rows for Tasks 3.1 + 3.2 should be read as
+  `[ ]` (deferred) rather than `[x]` (done) in any audit. The original
+  plan is unamended; this addendum is the standing reference for
+  deferral.
 - Any developer with an attached ADB device (or running emulator) can
-  pick up the carved-out Tasks 3.1 + 3.2 directly from the struck-
-  through sections in the plan, or copy them verbatim from this
-  addendum. Both are accurate.
-- Closing the carved-out tasks does not require reopening this plan.
-  The closer should commit the run output under `docs/superpowers/m3/`
-  (e.g. an `m3x/` mirror of the deferred file paths) and link back to
-  this addendum's "Evidence" subsections.
+  execute the deferred tasks directly from the plan text without
+  waiting on a planning-cycle update. The plan's "Run with" command
+  blocks remain accurate.
+- Closing Tasks 3.1 + 3.2 does **not** require a new plan revision;
+  one commit per task (or one combined commit) is enough. The closer
+  should update this addendum's "Evidence" subsections with the
+  artifact path and link the commit SHA, then move Tasks 40 and 41
+  from `pending` to `completed` in the task list.
 
 ## Status
 
