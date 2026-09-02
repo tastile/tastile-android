@@ -8,6 +8,41 @@ Android client for Tastile. The app is written in Kotlin with Jetpack Compose, u
 - Native bridge is partially integrated. Some mobile flows still read from daemon API directly while command execution/state projection is moving behind `tastile-core`.
 - This repository assumes `tastile-core` is cloned next to it as `../tastile-core` for Android artifact builds.
 
+## Material 3 Expressive
+
+The Compose UI is on the Material 3 Expressive track (`material3:1.5.0-alpha27`,
+pinned in `gradle/libs.versions.toml`). The design-system module is the
+only place that talks to alpha APIs directly; screen-level Compose stays on
+the stable design-system surface and is enforced by `verifyDesignSystemImports`.
+
+What the design system currently exposes from M3 Expressive:
+
+- **`LoadingWheel`** (`core/designsystem/component/LoadingWheel.kt`) — the
+  spinning indicator is now backed by M3 Expressive's `LoadingIndicator`.
+  Public signatures (`NiaLoadingWheel`, `NiaOverlayLoadingWheel`) are
+  unchanged, so existing call sites need no edits.
+- **`MotionScheme.expressive()` injection** (`TastileTheme.kt`) — every
+  screen receives `MaterialTheme(motionScheme = …)` automatically, so
+  alpha defaults flow through the standard M3 motion APIs without
+  per-screen opt-in.
+- **`TastileFabMenu`** (`core/designsystem/component/TastileFabMenu.kt`) —
+  M3 Expressive FAB Menu wrapper used by `TimelineScreen` and `TilesScreen`
+  for the QuickCreate action. Collapsed-state contract: tap on the main FAB
+  routes through `onExpandedChange`.
+- **`TastileButtonGroup`** (`core/designsystem/component/TastileButtonGroup.kt`) —
+  SegmentedButton wrapper with XS–XL sizes and a 48 dp touch target. Used
+  by callers that previously rolled their own segmented controls.
+
+Expressive alpha APIs are marked `@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)`
+at the design-system component that introduces them. The migration did not
+add any new `// m2-allow:` markers; the only remaining M2 escapes are the
+ones that pre-existed the migration.
+
+The M3 baseline is tracked at
+[`docs/superpowers/m3/before-reports/README.md`](docs/superpowers/m3/before-reports/README.md).
+After bumping the `material3` alpha, regenerate the Compose Compiler
+Reports under `app/build/compose-reports/` and re-capture that baseline.
+
 ## Repository Layout
 
 ```text
