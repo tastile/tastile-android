@@ -4,17 +4,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import app.tastile.android.core.designsystem.component.NiaFloatingActionButton
-// m2-allow: primitive
-import androidx.compose.material3.Icon
-// m2-allow: primitive
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material.icons.outlined.Add
+import app.tastile.android.core.designsystem.component.FabMenuItem
+import app.tastile.android.core.designsystem.component.TastileFabMenu
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,13 +18,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
-import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.TimelineScale
 import app.tastile.android.ui.mobile.Overlay
@@ -202,22 +197,34 @@ fun TimelineScreen(
         // scale (Day / Week / Month) so the entry point is always discoverable
         // regardless of which view the user is on. `navigationBarsPadding` keeps
         // it clear of the system gesture bar on Android 15.
-        NiaFloatingActionButton(
-            onClick = { overlay.show(Overlay.QuickCreate) },
+        //
+        // Wired via TastileFabMenu (M3 Expressive FAB Menu wrapper). For Phase 2
+        // we ship collapsed-only; clicks on the main FAB dispatch QuickCreate
+        // via onExpandedChange (the menu's own main-FAB onClick path),
+        // matching the existing 1-tap QuickCreate UX. The Action's onClick is
+        // kept wired for Phase 3+ when the expanded menu is surfaced.
+        TastileFabMenu(
+            mainIcon = Icons.Outlined.Add,
+            mainLabel = stringResource(R.string.fab_create),
+            expanded = false,
+            onExpandedChange = { newExpanded ->
+                // See the body block at task-2.1-brief.md §4 above. Collapsed
+                // ship: tap → dispatch QuickCreate directly.
+                overlay.show(Overlay.QuickCreate)
+            },
+            items = listOf(
+                FabMenuItem.Action(
+                    icon = Icons.Outlined.Add,
+                    label = "",
+                    onClick = { overlay.show(Overlay.QuickCreate) },
+                ),
+            ),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 16.dp, bottom = 16.dp),
-            containerColor = LocalTastileCardRoleTokens.current.actionable.container,
-            contentColor = LocalContentColor.current,
-            shape = CircleShape,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = stringResource(R.string.fab_create),
-                modifier = Modifier.size(24.dp),
-            )
-        }
+                .padding(end = 16.dp, bottom = 16.dp)
+                .testTag("quick-create-fab"),
+        )
     }
 }
 
