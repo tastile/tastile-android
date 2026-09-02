@@ -21,7 +21,10 @@ import app.tastile.android.core.designsystem.theme.TastileTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class TastileButtonGroupTest {
 
     @get:Rule
