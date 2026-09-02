@@ -162,11 +162,11 @@ integration verifications above.
 
 After the JVM-side work landed, a developer (XIG03, Android 15, API 35)
 attached the device and re-attempted Tasks 3.1 + 3.2 directly. Both
-tasks **remain unfinished** for new reasons, neither of which is in the
-M3 plan's scope:
+tasks **remain unfinished** for new reasons, none of which is in the
+M3 plan's scope.
 
 ### Task 3.2 — new blocker: pre-existing `ExecutionAlarmRescheduleReceiver`
-crash on `MY_PACKAGE_REPLACED`
+crash on ANY of its registered actions
 
 ```
 java.lang.IllegalStateException: The component was not created.
@@ -176,32 +176,74 @@ java.lang.IllegalStateException: The component was not created.
     at app.tastile.android.notifications.ExecutionAlarmRescheduleReceiver.onReceive(...)
 ```
 
-The receiver at `app/src/main/AndroidManifest.xml` is registered for
-`android.intent.action.MY_PACKAGE_REPLACED`. Every `adb install` of
-`app.tastile.android` re-fires that broadcast. The receiver attempts to
-call Hilt's generated `inject()` before the `HiltAndroidRule` has had a
-chance to initialize in the **test** process — but the same broadcast is
-delivered to the **production** process, where the Hilt graph is not
-yet built. This crashes the production app process before the
-instrumentation can hand off to the test runner, so
-`adb shell am instrument … TastileTestRunner` reports
-`Process crashed before executing the test(s)` regardless of which
-single class is targeted.
+The receiver at `app/src/main/AndroidManifest.xml` registers for five
+actions: `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_CHANGED`,
+`TIMEZONE_CHANGED`, and `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`.
+It is annotated `@AndroidEntryPoint`, and its Hilt-generated
+`Hilt_ExecutionAlarmRescheduleReceiver.onReceive()` calls `inject()`
+before delegating to user code. Whenever any of the five broadcasts is
+delivered to a process that has registered this receiver, the call
+chain walks down through `BroadcastReceiverComponentManager.generatedComponent`
+→ the process's `Application.generatedComponent`. In the test runner
+that Application is `HiltTestApplication` (via `TastileTestRunner`); in
+the production process it is `TastileApp`. Neither has its Hilt
+component initialized at the instant the system delivers the
+broadcast, so `Preconditions.checkState` throws and the process
+crashes.
 
-Three workarounds were tried and all failed:
+When `am instrument` is used to run `QuickCreateSmokeTest`, the test
+runner needs to host `MainActivity` from the production package,
+which forces the **production process** to start. logcat on the
+2026-09-03 attempt shows:
 
-1. `./gradlew :app:connectedDebugAndroidTest` — fails the same way
-   (install gate + receiver crash on install).
+```
+08:30:23.898  ActivityManager: Start proc 4560:app.tastile.android/u0a494
+    for added application app.tastile.android caller=android
+08:30:26.030  BroadcastQueue: BOOT_COMPLETED_BROADCAST_COMPLETION_LATENCY_REPORTED
+08:30:26.040  PID 4560: E AndroidRuntime: FATAL EXCEPTION: main
+08:30:26.040  PID 4560: E AndroidRuntime: Process: app.tastile.android, PID: 4560
+08:30:26.040  PID 4560: E AndroidRuntime: java.lang.RuntimeException:
+    Unable to start receiver ExecutionAlarmRescheduleReceiver
+```
+
+`am instrument` then reports `Process crashed before executing the
+test(s)` regardless of which single class is targeted.
+
+**The MY_PACKAGE_REPLACED framing was incomplete.** The 2026-09-03
+attempt showed the production process crashing on `BOOT_COMPLETED`,
+which the system had been queuing since device boot — the receiver
+crashes on ANY of its five subscribed actions, not just on package
+replace.
+
+**Workarounds attempted (all failed):**
+
+1. `./gradlew :app:connectedDebugAndroidTest` — install gate + receiver
+   crash on install.
 2. Pre-install both APKs with `adb install -r -d` then re-run — Gradle
-   still re-installs the production APK on every run, retriggering the
-   receiver crash.
+   still re-installs the production APK on every run.
 3. `pm disable` the receiver — Android refuses:
    `Shell cannot change component state for ComponentInfo{...} to 2`.
+4. `am instrument` directly — production process crashes on
+   `BOOT_COMPLETED` when the system starts it to host MainActivity.
+5. Add `app/src/androidTest/AndroidManifest.xml` with
+   `tools:node="remove"` on the receiver (commit `a10aa20`) — verified
+   by `aapt2 dump xmltree` on the built APK that the receiver is gone
+   from the test APK's binary manifest, but the **production** APK
+   still has it, so the production process crash is unaffected. The
+   test-only manifest change is kept as a forward-looking partial
+   unblock: once the production bug is fixed, the test APK will also
+   be clean.
 
-**Required to unblock Task 3.2:** either (a) fix the receiver to defer
-Hilt work until `Application.onCreate()` returns, or (b) move the
-receiver off `MY_PACKAGE_REPLACED` so it does not fire during a
-re-install. Both fixes are out of scope for the M3 migration.
+**Required to unblock Task 3.2:** a fix in production code, out of M3
+scope. The minimal change is one of:
+
+- Make the receiver tolerate Hilt-not-yet-initialized by removing
+  `@AndroidEntryPoint` and resolving `ExecutionAlarmScheduler` via a
+  non-Hilt singleton (or by deferring the work until the next
+  foreground launch via `goAsync` + a static flag).
+- Narrow the receiver's subscribed actions so it does not fire on
+  `BOOT_COMPLETED` (which the system queues for every package at
+  device boot and delivers to whatever process is started).
 
 ### Task 3.1 — new blocker: auth gate blocks TimelineScreen
 
@@ -238,17 +280,24 @@ animation. Out of scope for the M3 migration.
   — new instrumented smoke test, adapted to the actual
   `MainActivityTestRule` API per plan §Step 3 authorization. Test
   does **not** currently run green; it is committed as the agreed
-  shape so the follow-up unblock (receiver fix + signed-in session)
-  can land it without further authoring work.
+  shape so the follow-up unblock (production-receiver fix + signed-in
+  session) can land it without further authoring work.
+- `app/src/androidTest/AndroidManifest.xml` — test-only manifest that
+  uses `tools:node="remove"` to drop the
+  `ExecutionAlarmRescheduleReceiver` from the test APK's merged
+  manifest. Verified by `aapt2 dump xmltree` on the built APK that the
+  receiver is gone from the test APK's binary manifest. This is a
+  forward-looking partial unblock; the production manifest is
+  unchanged.
 - `docs/superpowers/m3/gfxinfo/XIG03-Android-15-2026-09-03.txt` —
   cold-launch gfxinfo capture (LoginScreen render only).
 
 ### Re-deferred status
 
 - **Phase 3.1:** re-DEFERRED — pending (a) signed-in session on a
-  device or emulator, AND (b) the receiver-crash fix above. The
+  device or emulator, AND (b) the production-receiver fix above. The
   `docs/superpowers/m3/gfxinfo/` directory now exists with the
   cold-launch capture to be overwritten once the unblock lands.
-- **Phase 3.2:** re-DEFERRED — pending (a) the receiver-crash fix
-  above, AND (b) a connected device. The new smoke test file is in
-  place and ready to run green once (a) lands.
+- **Phase 3.2:** re-DEFERRED — pending the production-receiver fix
+  above. The new smoke test file and the test-only manifest are in
+  place and ready to run green once that fix lands.
