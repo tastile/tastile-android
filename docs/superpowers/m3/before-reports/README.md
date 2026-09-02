@@ -118,6 +118,12 @@ ADB device and are out of scope for this baseline document. They will land
 separately when the device path is restored; once captured, link the
 artifacts here.
 
+**Formal deferral:** see
+[`docs/superpowers/m3/phase-3-deferral.md`](phase-3-deferral.md) for the
+plan amendment that records these as deferred pending device, quotes the
+verbatim acceptance criteria, and lists the evidence required to close
+them on a device-available runner.
+
 ## Phase 3 evidence ledger
 
 - Phase 0: `verifyDesignSystemImports` PASS, `verifyNoEmbeddedServerSecrets` PASS,
