@@ -210,4 +210,65 @@ class BetterAuthHttpClientTest {
         )
         assertNull(extracted)
     }
+
+    @Test
+    fun signInWithGoogleIdToken_postsCorrectBodyAndDecodesSession() = runTest {
+        val sessionToken = "test-session-token-abc123"
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "better-auth.session_token=$sessionToken; Path=/; HttpOnly; SameSite=Lax")
+                .setBody(
+                    """{"user":{"id":"google-user-1","email":"user@example.com"},"session":{"expiresAt":1700000000}}""",
+                ),
+        )
+
+        val session = client.signInWithGoogleIdToken(idToken = "fake-google-id-token")
+
+        val recorded = server.takeRequest()
+        assertEquals("POST", recorded.method)
+        assertEquals("/api/auth/sign-in/social", recorded.path)
+        val body = recorded.body.readUtf8()
+        // Body must include both the provider and the idToken wrapper.
+        assertTrue("body must include provider=google: $body", body.contains("\"provider\":\"google\""))
+        assertTrue("body must include idToken.token: $body", body.contains("\"token\":\"fake-google-id-token\""))
+        assertEquals(sessionToken, session.sessionToken)
+        assertEquals("google-user-1", session.userId)
+        assertEquals("user@example.com", session.email)
+        assertEquals(1_700_000_000L, session.expiresAtEpochSeconds)
+    }
+
+    @Test
+    fun signInWithGoogleIdToken_throwsOnMissingSessionCookie() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("""{"user":{"id":"u","email":"u@x"}}"""),
+        )
+
+        val ex = assertThrows(BetterAuthException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                client.signInWithGoogleIdToken(idToken = "any-token")
+            }
+        }
+        assertTrue(
+            "expected missing-cookie message, got: ${ex.message}",
+            ex.message!!.contains("missing session cookie"),
+        )
+    }
+
+    @Test
+    fun signInWithGoogleIdToken_throwsOnNon2xx() = runTest {
+        server.enqueue(MockResponse().setResponseCode(401).setBody("{}"))
+
+        val ex = assertThrows(BetterAuthException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                client.signInWithGoogleIdToken(idToken = "rejected-token")
+            }
+        }
+        assertTrue(
+            "expected 401 in message, got: ${ex.message}",
+            ex.message!!.contains("401"),
+        )
+    }
 }

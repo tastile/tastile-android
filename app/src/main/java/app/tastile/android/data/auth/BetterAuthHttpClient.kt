@@ -89,6 +89,19 @@ class BetterAuthHttpClient(
         decodeSession(sessionToken, response.body)
     }
 
+    suspend fun signInWithGoogleIdToken(idToken: String): BetterAuthSession = withContext(Dispatchers.IO) {
+        val body = buildJsonObject {
+            put("provider", JsonPrimitive("google"))
+            put("idToken", buildJsonObject {
+                put("token", JsonPrimitive(idToken))
+            })
+        }
+        val response = postJson(SIGN_IN_SOCIAL_PATH, body)
+        val sessionToken = extractSessionToken(response.cookies)
+            ?: throw BetterAuthException("Google sign-in response missing session cookie")
+        decodeSession(sessionToken, response.body)
+    }
+
     suspend fun signOut(sessionToken: String) = withContext(Dispatchers.IO) {
         // Fire and forget — a 401 here is acceptable (the session is already
         // gone client-side). Surface any non-2xx network errors so the
@@ -207,6 +220,7 @@ class BetterAuthHttpClient(
         private const val SESSION_COOKIE_NAME = "better-auth.session_token"
         private const val SIGN_IN_PATH = "/api/auth/sign-in/email"
         private const val SIGN_UP_PATH = "/api/auth/sign-up/email"
+        private const val SIGN_IN_SOCIAL_PATH = "/api/auth/sign-in/social"
         private const val SIGN_OUT_PATH = "/api/auth/sign-out"
         private const val SESSION_PATH = "/api/auth/session"
     }
