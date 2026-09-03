@@ -48,11 +48,25 @@ Reports under `app/build/compose-reports/` and re-capture that baseline.
 
 **Phase 3 device-side verifications (Tasks 3.1 + 3.2) remain deferred.**
 A 2026-09-03 attempt on a XIG03 / Android 15 device uncovered two
-pre-existing app bugs that block both the gfxinfo motion-physics run
-and the instrumented QuickCreate smoke test — neither is in the M3
-plan's scope. The cold-launch gfxinfo capture and the smoke-test file
-are checked in as evidence; full details and the follow-up unblock
-recipe live in
+pre-existing app blockers:
+
+- The instrumented run was blocked by `ExecutionAlarmRescheduleReceiver`
+  crashing on `BOOT_COMPLETED` (queued since device boot) because the
+  Hilt-generated wrapper calls `inject()` before
+  `Application.onCreate()` finishes initializing the graph. The
+  production receiver was rewritten to tolerate Hilt-not-yet-ready via
+  `EntryPointAccessors.fromApplication(...)` + try/catch. After the
+  fix, the instrumented test starts cleanly (verified via logcat
+  `TestRunner: started: timelineQuickCreateFab_opensSheet(...)`) but
+  hangs on `LoginScreen` because the auth gate is in front of
+  TimelineScreen and the FAB testTag is on TimelineScreen, not
+  LoginScreen.
+- The gfxinfo run still cannot reach TimelineScreen because the auth
+  gate intercepts cold launch.
+
+Neither blocker is in the M3 plan's scope. The cold-launch gfxinfo
+capture and the smoke-test file are checked in as evidence; full
+details and the follow-up unblock recipe live in
 [`docs/superpowers/m3/phase-3-deferral.md`](docs/superpowers/m3/phase-3-deferral.md).
 
 ## Repository Layout

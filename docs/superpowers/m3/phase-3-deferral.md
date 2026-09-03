@@ -294,10 +294,68 @@ animation. Out of scope for the M3 migration.
 
 ### Re-deferred status
 
-- **Phase 3.1:** re-DEFERRED — pending (a) signed-in session on a
-  device or emulator, AND (b) the production-receiver fix above. The
-  `docs/superpowers/m3/gfxinfo/` directory now exists with the
-  cold-launch capture to be overwritten once the unblock lands.
-- **Phase 3.2:** re-DEFERRED — pending the production-receiver fix
-  above. The new smoke test file and the test-only manifest are in
-  place and ready to run green once that fix lands.
+- **Phase 3.1:** re-DEFERRED — pending a signed-in session on a device
+  or emulator. The auth gate prevents any path from cold launch to
+  TimelineScreen → FAB → 5s animation. The production-receiver fix
+  below does not change this. The `docs/superpowers/m3/gfxinfo/`
+  directory now exists with the cold-launch capture to be overwritten
+  once the unblock lands.
+- **Phase 3.2:** test FILE and test-only manifest are committed (per
+  the prior block). Test GREEN-RUN still re-DEFERRED — pending a
+  signed-in session on a device or emulator. The production-receiver
+  fix below unblocked the test runner from crashing on
+  `BOOT_COMPLETED`; the test now starts cleanly but hangs on
+  `LoginScreen` waiting for `quick-create-fab` to render, which it
+  cannot until auth is signed in.
+
+### Production-receiver fix (2026-09-03, late)
+
+The 2026-09-03 device-attempt above identified
+`ExecutionAlarmRescheduleReceiver` as the second blocker alongside
+the auth gate. The user authorized a production-code fix to that
+receiver **specifically to let Task 3.2 land without bypassing
+auth**; the fix is out of M3 plan scope but is the only path that
+does not require bypassing the auth gate.
+
+The fix is committed as a separate change:
+
+- `app/src/main/java/app/tastile/android/notifications/ExecutionAlarmRescheduleReceiver.kt`:
+  removed `@AndroidEntryPoint` and the Hilt `@Inject` field. The
+  Hilt-generated wrapper calls `inject()` before delegating to user
+  `onReceive`, which crashes when the system delivers one of the
+  receiver's subscribed broadcasts (notably `BOOT_COMPLETED`,
+  queued since device boot) **before** `Application.onCreate()` has
+  finished initializing the Hilt graph. The fix uses
+  `EntryPointAccessors.fromApplication(...)` wrapped in a try/catch
+  on `IllegalStateException`. If Hilt is not ready, the broadcast is
+  dropped; the reschedule is retried on the next foreground launch
+  through the normal MainActivity path. No reschedule is lost: the
+  same five triggers remain subscribed.
+
+Verification on the 2026-09-03 device-attempt (XIG03 / Android 15 /
+API 35):
+
+- Before the fix: `am instrument` reports
+  `Process crashed before executing the test(s)`. logcat shows the
+  production process dying on `BOOT_COMPLETED` with
+  `Unable to start receiver ExecutionAlarmRescheduleReceiver`.
+- After the fix: `am instrument` starts the test cleanly.
+  logcat shows
+  `TestRunner: started: timelineQuickCreateFab_opensSheet(...)`
+  with no `Process crashed` line. The test then **hangs** waiting
+  for `quick-create-fab` to render — the auth gate shows
+  `LoginScreen` and the FAB testTag does not exist on that
+  surface. This is the expected state under the user's
+  "no auth bypass" choice.
+
+Net effect on Task 3.2:
+
+- Test file: committed (`9df0a5b`).
+- Test-only manifest with `tools:node="remove"` on the receiver:
+  committed (`a10aa20`).
+- Production-receiver fix: committed (this commit).
+- Green-run: still requires a signed-in session on a device or
+  emulator. The auth-gate unblock is out of M3 plan scope.
+
+The plan's "Run with" command (line 2009) remains accurate and can
+be executed as soon as the auth-gate unblock lands.
