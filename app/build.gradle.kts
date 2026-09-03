@@ -14,6 +14,7 @@ val releaseStorePassword = providers.gradleProperty("RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS")
 val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD")
 val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
+val googleAndroidClientId = providers.gradleProperty("GOOGLE_ANDROID_CLIENT_ID")
 val webBaseUrl = providers.gradleProperty("WEB_BASE_URL")
 val tastileCoreUrl = providers.gradleProperty("TASTILE_CORE_URL")
 val hasReleaseSigning =
@@ -59,6 +60,7 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         // requireGradleProperty guard so a partial config fails the build fast
         // instead of silently embedding the wrong environment.
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.orNull ?: ""}\"")
+        buildConfigField("String", "GOOGLE_ANDROID_CLIENT_ID", "\"${googleAndroidClientId.orNull ?: ""}\"")
         buildConfigField("String", "WEB_BASE_URL", "\"${webBaseUrl.orNull ?: ""}\"")
         buildConfigField("String", "TASTILE_CORE_URL", "\"${tastileCoreUrl.orNull ?: ""}\"")
     }
@@ -686,6 +688,7 @@ dependencies {
 gradle.projectsEvaluated {
     val requiredProps = listOf(
         "GOOGLE_WEB_CLIENT_ID",
+        "GOOGLE_ANDROID_CLIENT_ID",
         "WEB_BASE_URL",
         "TASTILE_CORE_URL",
     )
