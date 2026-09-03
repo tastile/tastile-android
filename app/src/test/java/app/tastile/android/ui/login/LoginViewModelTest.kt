@@ -3,6 +3,8 @@ package app.tastile.android.ui.login
 import android.content.Context
 import app.tastile.android.R
 import app.tastile.android.data.auth.AuthRepositoryContract
+import app.tastile.android.data.auth.GoogleSignInFailedException
+import app.tastile.android.data.auth.GoogleSignInUnavailableException
 import app.tastile.android.data.auth.TastileAuthState
 import io.mockk.every
 import io.mockk.mockk
@@ -24,6 +26,8 @@ class LoginViewModelTest {
     private val context = mockk<Context>(relaxed = true).also {
         every { it.getString(R.string.login_error_sign_in_failed) } returns "Sign-in failed"
         every { it.getString(R.string.login_error_sign_out_failed) } returns "Unable to sign out"
+        every { it.getString(R.string.login_error_google_unavailable) } returns "Google Sign-In isn't available on this device"
+        every { it.getString(R.string.login_error_google_failed) } returns "Unable to verify Google account"
     }
 
     @Before
@@ -115,11 +119,74 @@ class LoginViewModelTest {
         assertNull(viewModel.error.value)
     }
 
+    @Test
+    fun signInWithGoogle_launchesAuthRepo() {
+        var googleCalled = false
+        val repository = FakeAuthRepository(onSignInWithGoogle = { googleCalled = true })
+        val viewModel = LoginViewModel(repository, context)
+
+        viewModel.signInWithGoogle(context)
+
+        assertEquals(true, googleCalled)
+        assertNull(viewModel.error.value)
+        assertEquals(false, viewModel.isGoogleSigningIn.value)
+    }
+
+    @Test
+    fun signInWithGoogle_unavailableFallbackToWebHandoff() {
+        var googleCalled = false
+        var webHandoffProvider: String? = null
+        val repository = FakeAuthRepository(
+            onSignInWithGoogle = { googleCalled = true },
+            signInWithGoogleError = GoogleSignInUnavailableException(RuntimeException("no account")),
+            onSignInWithProvider = { provider -> webHandoffProvider = provider },
+        )
+        val viewModel = LoginViewModel(repository, context)
+
+        viewModel.signInWithGoogle(context)
+
+        assertEquals(true, googleCalled)
+        assertEquals("google", webHandoffProvider)
+        // Silent fallback — no error chip.
+        assertNull(viewModel.error.value)
+        assertEquals(false, viewModel.isGoogleSigningIn.value)
+    }
+
+    @Test
+    fun signInWithGoogle_serverErrorSurfacesAsChip() {
+        val repository = FakeAuthRepository(
+            signInWithGoogleError = RuntimeException("HTTP 401"),
+        )
+        val viewModel = LoginViewModel(repository, context)
+
+        viewModel.signInWithGoogle(context)
+
+        assertEquals("HTTP 401", viewModel.error.value)
+        assertEquals(false, viewModel.isGoogleSigningIn.value)
+    }
+
+    @Test
+    fun signInWithGoogle_failedExceptionSurfacesAsChip() {
+        val repository = FakeAuthRepository(
+            signInWithGoogleError = GoogleSignInFailedException("bad credential type"),
+        )
+        val viewModel = LoginViewModel(repository, context)
+
+        viewModel.signInWithGoogle(context)
+
+        assertEquals("bad credential type", viewModel.error.value)
+        assertEquals(false, viewModel.isGoogleSigningIn.value)
+    }
+
     private class FakeAuthRepository(
         private val signInError: Exception? = null,
         private val signOutError: Exception? = null,
         private val onSignIn: (String, String) -> Unit = { _, _ -> },
         private val onSignUp: (String, String, String) -> Unit = { _, _, _ -> },
+        private val onSignInWithGoogle: () -> Unit = {},
+        private val signInWithGoogleError: Throwable? = null,
+        private val onSignInWithProvider: (String) -> Unit = { _ -> },
+        private val signInWithProviderError: Throwable? = null,
     ) : AuthRepositoryContract {
         private val auth = MutableStateFlow<TastileAuthState>(TastileAuthState.Unauthenticated)
 
@@ -135,9 +202,15 @@ class LoginViewModelTest {
             signInError?.let { throw it }
         }
 
-        override suspend fun signInWithProvider(provider: String) = Unit
+        override suspend fun signInWithProvider(provider: String) {
+            onSignInWithProvider(provider)
+            signInWithProviderError?.let { throw it }
+        }
 
-        override suspend fun signInWithGoogle() = Unit
+        override suspend fun signInWithGoogle() {
+            onSignInWithGoogle()
+            signInWithGoogleError?.let { throw it }
+        }
 
         override suspend fun signOut() {
             signOutError?.let { throw it }

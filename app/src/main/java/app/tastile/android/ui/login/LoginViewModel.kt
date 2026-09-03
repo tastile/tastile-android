@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.R
 import app.tastile.android.data.auth.AuthRepositoryContract
+import app.tastile.android.data.auth.GoogleSignInUnavailableException
 import app.tastile.android.data.auth.TastileAuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -29,6 +30,8 @@ class LoginViewModel @Inject constructor(
     val email: StateFlow<String> = _email.asStateFlow()
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password.asStateFlow()
+    private val _isGoogleSigningIn = MutableStateFlow(false)
+    val isGoogleSigningIn: StateFlow<Boolean> = _isGoogleSigningIn.asStateFlow()
 
     fun onEmailChange(value: String) {
         _email.value = value
@@ -97,6 +100,35 @@ class LoginViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 _error.value = context.getString(R.string.login_error_sign_out_failed)
+            }
+        }
+    }
+
+    fun signInWithGoogle(@Suppress("UNUSED_PARAMETER") context: Context) {
+        if (_isGoogleSigningIn.value) return
+        viewModelScope.launch {
+            try {
+                _isGoogleSigningIn.value = true
+                _error.value = null
+                authRepository.signInWithGoogle()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: GoogleSignInUnavailableException) {
+                // No Google account on device / Play Services missing / user
+                // cancel. Fall back to the existing web OAuth handoff so the
+                // user still gets a path to Google sign-in.
+                try {
+                    authRepository.signInWithProvider("google")
+                } catch (fallback: Exception) {
+                    _error.value = this@LoginViewModel.context.getString(
+                        R.string.login_error_google_unavailable,
+                    )
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
+                    ?: this@LoginViewModel.context.getString(R.string.login_error_google_failed)
+            } finally {
+                _isGoogleSigningIn.value = false
             }
         }
     }
