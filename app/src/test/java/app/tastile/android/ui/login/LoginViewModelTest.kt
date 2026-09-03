@@ -1,6 +1,7 @@
 package app.tastile.android.ui.login
 
 import android.content.Context
+import android.net.Uri
 import app.tastile.android.R
 import app.tastile.android.data.auth.AuthRepositoryContract
 import app.tastile.android.data.auth.GoogleSignInFailedException
@@ -210,6 +211,14 @@ class LoginViewModelTest {
         override suspend fun signInWithGoogle() {
             onSignInWithGoogle()
             signInWithGoogleError?.let { throw it }
+        }
+
+        override fun completeAuthFromCallback(uri: Uri): Boolean {
+            // The LoginViewModel does not consume deep links; this method
+            // is owned by MainActivity. Tests assert AuthRepository wiring,
+            // not deep-link handoff — a no-op keeps the existing tests
+            // (which never build a callback URI) green.
+            return false
         }
 
         override suspend fun signOut() {
