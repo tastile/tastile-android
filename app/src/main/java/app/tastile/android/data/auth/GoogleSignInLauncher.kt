@@ -71,7 +71,7 @@ class CredentialManagerGoogleSignInLauncher @Inject constructor(
         val googleIdOption = GetGoogleIdOption.Builder()
             .setServerClientId(serverClientId)
             .setFilterByAuthorizedAccounts(false)
-            .setAutoSelectEnabled(true)
+            .setAutoSelectEnabled(false)
             .build()
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)

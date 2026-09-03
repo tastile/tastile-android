@@ -84,6 +84,35 @@ class ApiTokenCache @Inject constructor(
         cachedToken = null
     }
 
+    /**
+     * Installs a v1 API token minted outside the normal mint path. Used by
+     * the web OAuth handoff — the `/auth/callback` route hands the freshly
+     * minted token back to the app via a `tastile://auth/callback?v1_token=…`
+     * deep link, and [AuthRepository.completeAuthFromCallback] adopts it
+     * here so the first v1 call after sign-in skips the mint round-trip.
+     *
+     * The token is persisted under the same encrypted prefs key as a normal
+     * mint ([KEY_API_TOKEN]); [tokenId], [label], and [mintedAtEpochMillis]
+     * are optional metadata (the web route does not currently expose the
+     * token id, so callers pass `null`). Passing a blank token is a no-op so
+     * a route that forgets to mint one does not poison the cache.
+     */
+    fun adopt(
+        token: String,
+        tokenId: String? = null,
+        label: String? = null,
+        mintedAtEpochMillis: Long = System.currentTimeMillis(),
+    ) {
+        if (token.isBlank()) return
+        EncryptedTokenStorage.apiTokenPrefs(context).edit {
+            putString(KEY_API_TOKEN, token)
+            if (tokenId != null) putString(KEY_TOKEN_ID, tokenId)
+            if (label != null) putString(KEY_LABEL, label)
+            putString(KEY_MINTED_AT, mintedAtEpochMillis.toString())
+        }
+        cachedToken = token
+    }
+
     /** Clears both the in-memory cache and the encrypted prefs entry. */
     fun signOut() {
         cachedToken = null

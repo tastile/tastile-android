@@ -1,10 +1,12 @@
 package app.tastile.android
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.app.KeyguardManager
 import android.os.Bundle
 import android.os.Build
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
@@ -100,8 +102,45 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Cold-start deep link: MainActivity is launched by the system with
+        // the `tastile://auth/callback?...` intent when the app was not
+        // already running. Without this read the intent filter in the
+        // manifest is decoration — the URI is dropped on the floor.
+        handleAuthCallbackIntent(intent)
+
         observeSessionForCoreSync()
         requestSecurityUnlockIfNeeded()
+    }
+
+    /**
+     * Warm-return deep link: MainActivity is `singleTask`, so a second
+     * launch with a different intent fires `onNewIntent` instead of a fresh
+     * `onCreate`. We must read `intent.data` here so the OAuth handoff is
+     * picked up when the user returns to an already-running app.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Keep getIntent() in sync with the new intent so any later
+        // observeSessionForCoreSync / fragment lookups see the latest data.
+        setIntent(intent)
+        handleAuthCallbackIntent(intent)
+    }
+
+    /**
+     * Routes a [Intent.ACTION_VIEW] deep link to [AuthRepository]. Silently
+     * ignores intents that are not auth callbacks (the activity has multiple
+     * intent filters; the launcher MAIN/LAUNCHER filter is the common case).
+     */
+    private fun handleAuthCallbackIntent(intent: Intent?) {
+        val uri = intent?.data ?: return
+        if (intent.action != Intent.ACTION_VIEW) return
+        val accepted = runCatching { authRepository.completeAuthFromCallback(uri) }
+            .onFailure { error ->
+                Log.e(TAG, "completeAuthFromCallback threw", error)
+                false
+            }
+            .getOrDefault(false)
+        Log.i(TAG, "auth callback URI=${uri} accepted=$accepted")
     }
 
     override fun onStart() {
@@ -201,5 +240,9 @@ class MainActivity : ComponentActivity() {
         ) ?: return
         securityUnlockInProgress = true
         requestSecurityUnlock.launch(intent)
+    }
+
+    private companion object {
+        const val TAG = "MainActivity"
     }
 }

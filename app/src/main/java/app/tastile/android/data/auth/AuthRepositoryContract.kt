@@ -1,5 +1,6 @@
 package app.tastile.android.data.auth
 
+import android.net.Uri
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -40,6 +41,32 @@ interface AuthRepositoryContract {
      * social bridge lands in a follow-up PR.
      */
     suspend fun signInWithProvider(provider: String)
+
+    /**
+     * Completes a web OAuth handoff by parsing the [Uri] the system delivers
+     * to [app.tastile.android.MainActivity] when the `tastile://auth/callback`
+     * intent filter fires (cold start) or `onNewIntent` delivers (warm
+     * return).
+     *
+     * The URI carries the same bundle the web bridge route forwards after
+     * BetterAuth completes the social sign-in: `session` (BetterAuth bearer),
+     * `user_id`, optional `email` / `expires_at`, and `v1_token` (the long-
+     * lived API token, already minted server-side via the bridge secret).
+     *
+     * On success the call:
+     *   1. persists the session + identity to encrypted SharedPreferences,
+     *   2. adopts the v1 token into [ApiTokenCache] so the next v1 call
+     *      skips the `POST /api/mobile/api-token` mint round-trip,
+     *   3. flips [authState] to [TastileAuthState.Authenticated], which
+     *      triggers the auth gate in [app.tastile.android.ui.mobile.MobileNavGraph]
+     *      to render the dashboard.
+     *
+     * Returns `true` only when the URI carries a usable session + v1 token
+     * pair. Malformed URIs (missing fields, wrong host) return `false` and
+     * leave existing state untouched — callers should treat a `false`
+     * return as a no-op and let the user retry from the login screen.
+     */
+    fun completeAuthFromCallback(uri: Uri): Boolean
 
     /** Server-side revoke + on-device token wipe. Idempotent. */
     suspend fun signOut()
