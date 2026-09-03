@@ -7,6 +7,12 @@
     <string name="login_button_signin">Anmelden</string>
     <string name="login_button_signing_in">Anmeldung läuft…</string>
     <string name="login_button_continue_google">Mit Google fortfahren</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_button_continue_google_in_progress">Connecting to Google…</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_error_google_unavailable">Google Sign-In isn\'t available on this device</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_error_google_failed">Unable to verify Google account</string>
     <string name="login_signup_link">Konto erstellen</string>
     <string name="login_signup_button">Konto erstellen</string>
     <string name="login_logo_cd">Tastile-Logo</string>

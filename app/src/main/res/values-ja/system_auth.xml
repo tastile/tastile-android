@@ -7,6 +7,9 @@
     <string name="login_button_signin">サインイン</string>
     <string name="login_button_signing_in">サインイン中…</string>
     <string name="login_button_continue_google">Google で続ける</string>
+    <string name="login_button_continue_google_in_progress">Google に接続中…</string>
+    <string name="login_error_google_unavailable">この端末では Google サインインを利用できません</string>
+    <string name="login_error_google_failed">Google アカウントを確認できません</string>
     <string name="login_signup_link">アカウントを作成</string>
     <string name="login_signup_button">アカウントを作成</string>
     <string name="login_logo_cd">Tastile ロゴ</string>

@@ -7,6 +7,12 @@
     <string name="login_button_signin">登录</string>
     <string name="login_button_signing_in">正在登录…</string>
     <string name="login_button_continue_google">使用 Google 继续</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_button_continue_google_in_progress">Connecting to Google…</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_error_google_unavailable">Google Sign-In isn\'t available on this device</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_error_google_failed">Unable to verify Google account</string>
     <string name="login_signup_link">创建账户</string>
     <string name="login_signup_button">创建账户</string>
     <string name="login_logo_cd">Tastile 标志</string>

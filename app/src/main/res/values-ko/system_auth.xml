@@ -7,6 +7,12 @@
     <string name="login_button_signin">로그인</string>
     <string name="login_button_signing_in">로그인 중…</string>
     <string name="login_button_continue_google">Google로 계속하기</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_button_continue_google_in_progress">Connecting to Google…</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_error_google_unavailable">Google Sign-In isn\'t available on this device</string>
+    <!-- TODO(i18n): translate -->
+    <string name="login_error_google_failed">Unable to verify Google account</string>
     <string name="login_signup_link">계정 만들기</string>
     <string name="login_signup_button">계정 만들기</string>
     <string name="login_logo_cd">Tastile 로고</string>
