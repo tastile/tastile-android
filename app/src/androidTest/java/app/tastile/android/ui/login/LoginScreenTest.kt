@@ -23,7 +23,7 @@ import org.junit.Test
  * The "disabled while signing in" assertion that the brief originally
  * listed as a third test is intentionally omitted: there is no clean
  * Compose-side seam for driving [LoginViewModel.isGoogleSigningIn] from
- * `true` to `true` (the VM is private `hiltViewModel()` from
+ * `false` to `true` (the VM is private `hiltViewModel()` from
  * `LoginScreen` and the field is private with a `MutableStateFlow`
  * backing). Asserting the disabled visual from a test would require
  * either a fake VM seam in `LoginScreen` or a Compose rule that
