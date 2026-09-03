@@ -16,6 +16,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -45,7 +46,7 @@ class AuthRepositoryTest {
     fun unauthenticated_whenNoSessionIsPersisted() {
         val api = mockk<ApiTokenCache>(relaxed = true)
         val httpClient = mockk<BetterAuthHttpClient>()
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
 
         assertEquals(TastileAuthState.Unauthenticated, repo.authState.value)
     }
@@ -62,7 +63,7 @@ class AuthRepositoryTest {
             email = "alice@example.com",
             expiresAtEpochSeconds = null,
         )
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
 
         repo.signInWithEmail(email = "alice@example.com", password = "hunter2")
 
@@ -86,7 +87,7 @@ class AuthRepositoryTest {
             email = "alice@example.com",
             expiresAtEpochSeconds = null,
         )
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
 
         repo.signInWithEmail("alice@example.com", "hunter2")
         // After a second sign-in the v1 cache must be invalidated again
@@ -116,7 +117,7 @@ class AuthRepositoryTest {
             expiresAtEpochSeconds = 4102444800L,
         )
 
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
         repo.signUpWithEmail(email = "bob@example.com", password = "hunter2", name = "Bob")
 
         val state = repo.authState.value as TastileAuthState.Authenticated
@@ -136,7 +137,7 @@ class AuthRepositoryTest {
             email = "alice@example.com",
             expiresAtEpochSeconds = null,
         )
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
         repo.signInWithEmail("alice@example.com", "hunter2")
         // Sign out should best-effort server revoke + always wipe local.
         coEvery { httpClient.signOut("session-1") } returns Unit
@@ -161,7 +162,7 @@ class AuthRepositoryTest {
             expiresAtEpochSeconds = null,
         )
         coEvery { httpClient.signOut(any()) } throws BetterAuthException("http 401")
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
         repo.signInWithEmail("alice@example.com", "hunter2")
 
         repo.signOut()
@@ -183,7 +184,7 @@ class AuthRepositoryTest {
             .putString("email", "cold@example.com")
             .apply()
 
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
 
         assertEquals("user-cold-start", repo.currentUserId())
         assertEquals("cold@example.com", repo.currentEmail())
@@ -205,7 +206,7 @@ class AuthRepositoryTest {
             expiresAtEpochSeconds = null,
         )
 
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
 
         assertNull(repo.fallbackUserId)
         assertNull(repo.fallbackEmail)
@@ -220,13 +221,70 @@ class AuthRepositoryTest {
         val api = mockk<ApiTokenCache>(relaxed = true)
         val httpClient = mockk<BetterAuthHttpClient>(relaxed = true)
         // Use a Robolectric-friendly Context — `startActivity` is fine.
-        val repo = AuthRepository(context, httpClient, lazyOf(api))
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
 
         repo.signInWithProvider("Google")
         // The exact intent action is hard to assert under Robolectric
         // (it doesn't process the Activity start), so we just make sure
         // the call doesn't throw and that currentSession remains null.
         assertNull(repo.currentSessionToken())
+    }
+
+    @Test
+    fun signInWithGoogle_persistsSession() = runTest {
+        val api = mockk<ApiTokenCache>(relaxed = true)
+        val httpClient = mockk<BetterAuthHttpClient>()
+        val launcher = mockk<GoogleSignInLauncher>()
+        coEvery { launcher.getIdToken() } returns "fake-google-id-token"
+        val fakeSession = BetterAuthSession(
+            sessionToken = "t",
+            userId = "u",
+            email = "u@x",
+            expiresAtEpochSeconds = null,
+        )
+        coEvery { httpClient.signInWithGoogleIdToken("fake-google-id-token") } returns fakeSession
+
+        val repo = AuthRepository(context, httpClient, lazyOf(api), launcher)
+
+        repo.signInWithGoogle()
+
+        val state = repo.authState.value as TastileAuthState.Authenticated
+        assertEquals("u", state.userId)
+        assertEquals("u@x", state.email)
+        assertEquals("t", repo.currentSessionToken())
+        coVerify(exactly = 1) { api.invalidate() }
+        coVerify { launcher.getIdToken() }
+        coVerify { httpClient.signInWithGoogleIdToken("fake-google-id-token") }
+    }
+
+    @Test
+    fun signInWithGoogle_propagatesUnavailableException() = runTest {
+        val api = mockk<ApiTokenCache>(relaxed = true)
+        val httpClient = mockk<BetterAuthHttpClient>()
+        val launcher = mockk<GoogleSignInLauncher>()
+        coEvery { launcher.getIdToken() } throws GoogleSignInUnavailableException(RuntimeException("no account"))
+
+        val repo = AuthRepository(context, httpClient, lazyOf(api), launcher)
+
+        assertThrows(GoogleSignInUnavailableException::class.java) {
+            kotlinx.coroutines.runBlocking { repo.signInWithGoogle() }
+        }
+        coVerify(exactly = 0) { httpClient.signInWithGoogleIdToken(any()) }
+    }
+
+    @Test
+    fun signInWithGoogle_propagatesFailedException() = runTest {
+        val api = mockk<ApiTokenCache>(relaxed = true)
+        val httpClient = mockk<BetterAuthHttpClient>()
+        val launcher = mockk<GoogleSignInLauncher>()
+        coEvery { launcher.getIdToken() } throws GoogleSignInFailedException("bad token type")
+
+        val repo = AuthRepository(context, httpClient, lazyOf(api), launcher)
+
+        assertThrows(GoogleSignInFailedException::class.java) {
+            kotlinx.coroutines.runBlocking { repo.signInWithGoogle() }
+        }
+        coVerify(exactly = 0) { httpClient.signInWithGoogleIdToken(any()) }
     }
 }
 

@@ -137,6 +137,8 @@ class LoginViewModelTest {
 
         override suspend fun signInWithProvider(provider: String) = Unit
 
+        override suspend fun signInWithGoogle() = Unit
+
         override suspend fun signOut() {
             signOutError?.let { throw it }
         }

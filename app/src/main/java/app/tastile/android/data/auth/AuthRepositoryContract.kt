@@ -8,9 +8,10 @@ import kotlinx.coroutines.flow.StateFlow
  * is the only owner of the [EncryptedTokenStorage] session token + the
  * `ApiTokenCache` mint chain.
  *
- * Replaces the previous Cognito-PKCE contract. Social providers (Google /
- * Apple) still defer to the web login page until the native OAuth bridge
- * is implemented in a follow-up — see `LoginScreen.signInWithProvider`.
+ * Replaces the previous Cognito-PKCE contract. Native Google Sign-In is
+ * wired here via [signInWithGoogle]; Apple sign-in still defers to the
+ * web login page until the native OAuth bridge is implemented in a
+ * follow-up — see [signInWithProvider].
  */
 interface AuthRepositoryContract {
     val authState: StateFlow<TastileAuthState>
@@ -20,6 +21,17 @@ interface AuthRepositoryContract {
 
     /** Native email + password sign-up. Throws on validation / network failure. */
     suspend fun signUpWithEmail(email: String, password: String, name: String)
+
+    /**
+     * Native Google Sign-In via Credential Manager. Exchanges the Google
+     * idToken against BetterAuth's /api/auth/sign-in/social idToken branch,
+     * then persists the resulting session identically to email sign-in.
+     *
+     * Throws [GoogleSignInUnavailableException] when no Google account is
+     * available — callers should fall back to
+     * [signInWithProvider]("google") which opens the web OAuth handoff.
+     */
+    suspend fun signInWithGoogle()
 
     /**
      * Opens the web login page in the system browser for OAuth flows whose

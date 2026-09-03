@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import app.tastile.android.BuildConfig
+import app.tastile.android.data.auth.GoogleSignInLauncher
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ class AuthRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val httpClient: BetterAuthHttpClient,
     private val apiTokenCache: Lazy<ApiTokenCache>,
+    private val googleSignInLauncher: GoogleSignInLauncher,
 ) : CurrentUserProvider, AuthRepositoryContract {
 
     private val sessionPrefs = EncryptedTokenStorage.sessionTokenPrefs(context)
@@ -57,6 +59,12 @@ class AuthRepository @Inject constructor(
         context.startActivity(
             Intent(Intent.ACTION_VIEW, authUrl.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
+    }
+
+    override suspend fun signInWithGoogle() {
+        val idToken = googleSignInLauncher.getIdToken()
+        val session = httpClient.signInWithGoogleIdToken(idToken)
+        persistSession(session)
     }
 
     override suspend fun signOut() {
