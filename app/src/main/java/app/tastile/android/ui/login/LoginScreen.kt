@@ -15,11 +15,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -68,6 +73,7 @@ fun LoginScreen(
     val authState by viewModel.authState.collectAsStateWithLifecycle()
     val errorMessage by viewModel.error.collectAsStateWithLifecycle()
     val isSigningIn by viewModel.isSigningIn.collectAsStateWithLifecycle()
+    val isGoogleSigningIn by viewModel.isGoogleSigningIn.collectAsStateWithLifecycle()
     val email by viewModel.email.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
 
@@ -143,6 +149,41 @@ fun LoginScreen(
                     text = if (isSigningIn) stringResource(R.string.login_button_signing_in) else stringResource(R.string.login_button_signin),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(vertical = 6.dp),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Grid.blockGap))
+
+            // Subtle divider so the social button reads as a separate path
+            // instead of a fourth email-password control.
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+
+            Spacer(modifier = Modifier.height(Grid.blockGap))
+
+            OutlinedButton(
+                onClick = { viewModel.signInWithGoogle(context) },
+                enabled = !isSigningIn && !isGoogleSigningIn,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("login-google-button"),
+                shape = MaterialTheme.shapes.large,
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_google_g),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(Grid.inlineGap))
+                Text(
+                    text = if (isGoogleSigningIn) {
+                        stringResource(R.string.login_button_continue_google_in_progress)
+                    } else {
+                        stringResource(R.string.login_button_continue_google)
+                    },
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
 
