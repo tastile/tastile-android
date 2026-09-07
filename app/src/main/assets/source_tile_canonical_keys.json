@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tastile.dev/contracts/source_tile_canonical_keys.json",
+  "title": "SourceTileRead canonical wire key set",
+  "description": "Canonical JSON key list for SourceTileRead (data class app.tastile.android.data.api.SourceTileRead in app/src/main/java/app/tastile/android/data/api/V1Models.kt). WireShapeContractGate (Rule 12) compares the top-level key set of every test fixture under app/src/test/resources/wire_fixtures/source_tile/*.json against this list. Drift (extra / missing keys) fails :app:check so the wire contract cannot silently regress.",
+  "sourceOfTruth": "app/src/main/java/app/tastile/android/data/api/V1Models.kt::SourceTileRead",
+  "fields": [
+    {
+      "wire": "source_tile_id",
+      "kotlin": "sourceTileId",
+      "type": "String",
+      "required": true
+    },
+    {
+      "wire": "plan_id",
+      "kotlin": "planId",
+      "type": "String",
+      "required": true
+    },
+    {
+      "wire": "owner_id",
+      "kotlin": "ownerId",
+      "type": "String",
+      "required": true
+    },
+    {
+      "wire": "revision",
+      "kotlin": "revision",
+      "type": "Long",
+      "required": true
+    },
+    {
+      "wire": "title",
+      "kotlin": "title",
+      "type": "String",
+      "required": true
+    },
+    {
+      "wire": "description",
+      "kotlin": "description",
+      "type": "String?",
+      "required": false
+    },
+    {
+      "wire": "color",
+      "kotlin": "color",
+      "type": "String?",
+      "required": false
+    },
+    {
+      "wire": "icon",
+      "kotlin": "icon",
+      "type": "String?",
+      "required": false
+    },
+    {
+      "wire": "external_id",
+      "kotlin": "externalId",
+      "type": "String?",
+      "required": false
+    },
+    {
+      "wire": "plan_role",
+      "kotlin": "planRole",
+      "type": "Short",
+      "required": true
+    },
+    {
+      "wire": "schedule",
+      "kotlin": "schedule",
+      "type": "SourceSchedulePayload",
+      "required": true
+    },
+    {
+      "wire": "created_at",
+      "kotlin": "createdAt",
+      "type": "String",
+      "required": true
+    },
+    {
+      "wire": "updated_at",
+      "kotlin": "updatedAt",
+      "type": "String",
+      "required": true
+    }
+  ]
+}
