@@ -34,6 +34,13 @@ jobs:
       - name: Ensure Gradle wrapper is executable
         run: chmod +x ./gradlew
 
+      - name: Checkout OpenAPI spec submodule
+        uses: actions/checkout@v4
+        with:
+          repository: tastile/tastile-openapi
+          path: tastile-openapi
+          ref: main
+
       - name: Write gradle.properties from Secrets
         run: |
           cat >> gradle.properties <<EOF
@@ -41,6 +48,7 @@ jobs:
           GOOGLE_ANDROID_CLIENT_ID=${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}
           WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
           TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
+          openapi.input=../tastile-openapi/openapi.yaml
           EOF
 
       - name: Verify repository quality gates
