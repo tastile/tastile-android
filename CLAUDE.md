@@ -69,8 +69,24 @@ Auth and server-backed reads go through Cognito + daemon API. Command execution,
 
 ## Working Rules
 
-- Work on local `main`. Do not create feature branches, temporary branches, or worktrees.
+- Branch workflow follows ADR-0007. `main` is released / integrated state; the active
+  sprint lives on `release-<major>-<minor>-<patch>`. Implement one ticket per
+  branch, with the branch named after the GitHub Issue number only. No
+  feature/temporary branches, no worktrees. The `release-branch-workflow` Skill
+  is canonical reference.
 - Source code, identifiers, code comments, and Git/GitHub messages are English. Internal development docs are Japanese.
+
+## Recovery
+
+- After context loss, session expiry, or sandbox recreation, fresh agents run the
+  `recover-task` Skill (canonical: `../../.agents/skills/recover-task/SKILL.md`,
+  ADR-0008). They reconstruct from Issue / PR / commit graph plus the canonical
+  schemas under `../../.agent-loop/checkpoint.schema.json` and
+  `agent-result.schema.json`; they do not infer from prior conversation.
+- Commit-time isolation is provided by `.agent-loop/Invoke-PreCommitReview.ps1`
+  (snapshot / patch apply / fast gate / cross-agent reviewer); its snapshot is
+  the de-facto soft checkpoint when the commit boundary is the recovery
+  boundary.
 - Do not write new Python scripts in this repo. Use Kotlin, shell, or PowerShell as appropriate.
 - Search with `rg` / `rg --files`; prefer semantic navigation via the Kotlin language tooling already in `.tools/`.
 - Never commit: `local.properties`, `google-services.json`, keystores, `.env*` with real values, generated `app/src/main/jniLibs/`, or anything in `reference/`, `.build-logs/`, `.tools/`.

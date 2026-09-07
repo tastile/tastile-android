@@ -569,12 +569,12 @@ tasks.named("check").configure {
 dependencies {
     // appcompat 1.6.1+ required for AppCompatDelegate.setApplicationLocales
     // compat shim (the runtime-locale-switch path called by
-    // DashboardViewModel.setLocale). 1.6.1 covers the
+    // DashboardViewModel.setLocale). 1.8.0 covers the
     // `LocaleListCompat.forLanguageTags` API on minSdk=26+ devices.
-    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.appcompat:appcompat:1.8.0")
 
     // Compose
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    implementation(platform("androidx.compose:compose-bom:2026.08.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -583,26 +583,26 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.navigation:navigation-compose:2.9.8")
+    implementation("androidx.navigation:navigation-compose:2.10.0")
 
-    implementation("io.ktor:ktor-client-okhttp:3.5.1")
+    implementation("io.ktor:ktor-client-okhttp:3.5.2")
 
     // OpenAPI auto-generation pipeline (see `generateV1Api` task above).
     // The generator emits a Retrofit interface + Moshi-backed DTOs, plus an
     // `infrastructure/ApiClient.kt` that imports
     // `retrofit2.converter.scalars.ScalarsConverterFactory` to serialize
     // `String`/`Int`/`Boolean` path / query params that aren't declared via
-    // `@Query` annotations. Pin the same 2.11.0 line as the core Retrofit.
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
-    implementation("com.squareup.retrofit2:converter-scalars:2.11.0")
+    // `@Query` annotations. Pin the same 2.12.0 line as the core Retrofit.
+    implementation("com.squareup.retrofit2:retrofit:2.12.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.12.0")
+    implementation("com.squareup.retrofit2:converter-scalars:2.12.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation("com.squareup.moshi:moshi:1.15.1")
-    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
-    implementation("com.squareup.moshi:moshi-adapters:1.15.1")
-    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    implementation("com.squareup.moshi:moshi:1.15.2")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
+    implementation("com.squareup.moshi:moshi-adapters:1.15.2")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0")
 
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
@@ -644,12 +644,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test.ext:junit:1.3.0")
     testImplementation("androidx.compose.ui:ui-test-junit4")
-    // kotlinx-coroutines-test pinned at 1.9.0 to match the runtime
-    // kotlinx-coroutines version pulled in transitively by the Hilt+KSP
-    // toolchain; bumping to 1.11.0 surfaces a `kotlin.time.ExperimentalTime`
-    // opt-in requirement in test dispatchers. Track opt-in migration in
-    // docs/plans/2026-07-23-coroutines-1-11-migration.md.
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.robolectric:robolectric:4.16.1")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
