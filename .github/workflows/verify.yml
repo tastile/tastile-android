@@ -38,6 +38,7 @@ jobs:
         run: |
           cat >> gradle.properties <<EOF
           GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_ANDROID_CLIENT_ID=${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}
           WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
           TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
           EOF
