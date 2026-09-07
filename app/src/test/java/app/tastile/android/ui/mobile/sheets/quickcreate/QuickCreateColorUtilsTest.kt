@@ -44,8 +44,10 @@ class QuickCreateColorUtilsTest {
     @Test
     fun `eight-digit hex parses argb verbatim`() {
         val parsed = parseHexColor("#803b82f6")
-        // 0x803b82f6 = alpha 0x80, rgb 0x3b82f6
-        assertEquals(0x803b82f6, parsed.toArgb())
+        // 0x803b82f6 = alpha 0x80, rgb 0x3b82f6. `toArgb()` returns a signed
+        // Int — the literal must be compared as Int (or via `toInt()` on the
+        // unsigned Long form) to avoid an unsigned-vs-signed mismatch.
+        assertEquals(0x803b82f6L.toInt(), parsed.toArgb())
     }
 
     @Test

@@ -527,7 +527,11 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("test
             element = "BUNDLE"
             limit {
                 counter = "INSTRUCTION"
-                value = "coveredratio"
+                // JaCoCo's `Limit.value` is an enum (CounterValue). The previous
+                // String `"coveredratio"` (lowercase) triggered `No enum constant
+                // ICounter.CounterValue.coveredratio` — the canonical enum
+                // constant is `COVEREDRATIO`. Pass the uppercase form.
+                value = "COVEREDRATIO"
                 minimum = "0.80".toBigDecimal()
             }
         }
@@ -535,7 +539,7 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("test
             element = "BUNDLE"
             limit {
                 counter = "BRANCH"
-                value = "coveredratio"
+                value = "COVEREDRATIO"
                 minimum = "0.80".toBigDecimal()
             }
         }
@@ -543,7 +547,7 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("test
             element = "BUNDLE"
             limit {
                 counter = "LINE"
-                value = "coveredratio"
+                value = "COVEREDRATIO"
                 minimum = "0.80".toBigDecimal()
             }
         }
@@ -551,7 +555,7 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("test
             element = "BUNDLE"
             limit {
                 counter = "METHOD"
-                value = "coveredratio"
+                value = "COVEREDRATIO"
                 minimum = "0.80".toBigDecimal()
             }
         }
