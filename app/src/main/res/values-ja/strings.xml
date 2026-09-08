@@ -1,5 +1,6 @@
 <resources>
-    <!-- 2026-09-08: locale fallback. -->
+    <!-- 2026-09-08: locale fallback for values/strings.xml.
+         Real translations tracked separately. -->
     <string name="tasks_all_done">すべてのタスクが完了しました</string>
-    <string name="api_token_mint_failed">Sign-in refresh failed. Pull-to-refresh to retry.</string>
+    <string name="api_token_mint_failed">サインイン更新に失敗しました。プルしてリトライしてください。</string>
 </resources>
