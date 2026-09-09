@@ -6,6 +6,9 @@ on:
       - main
       - master
       - "codex/**"
+      # Release branch HEADs must be verified by CI: merges to
+      # release-* otherwise land without any Verify run (A01).
+      - "release-*"
   pull_request:
 
 permissions:
