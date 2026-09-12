@@ -15,6 +15,13 @@ on:
         type: choice
         options: [internal, beta, production]
 
+# A release is bound to a single tag + workflow_dispatch run; cancel stale
+# runs for the same ref so a re-run after a transient failure does not
+# double-upload AABs / Play Store assets.
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
