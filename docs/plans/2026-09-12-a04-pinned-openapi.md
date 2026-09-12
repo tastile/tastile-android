@@ -51,15 +51,15 @@ date: 2026-09-12
 
 - 1 commit = `fix(ci): pin OpenAPI spec to canonical v1.0.0 SHA`
 - ブランチ `7` → Draft PR → `release-0-6-0` base
-- CI: `./gradlew verify` が `:app:verifyV1ApiCoverage` まで到達 (22 operationIds / 22 methods)
+- CI: `./gradlew verify` が `:app:verifyV1ApiCoverage` まで到達 (21 operationIds / 21 methods — canonical OpenAPI v1.0.0 実数)
 - ローカル host 検証は不要 (CI が `ubuntu-latest + JDK 21 + Android SDK` を provision)
 
 ## 影響評価
 
 - 既存の main 追従は失われるが、これは **意図した fix** (A04 の主旨)。b0c781d 以降の
   `tastile-openapi` main 変更は本 release では採用せず、次 release で再評価する
-- Generate output (`app/build/generated/openapi/v1/`) は byte-identical になる
-  (path も input spec も固定)
+- Generate output (`app/build/generated/openapi/v1/`) は同一 pinned spec から再生成される
+  (input spec のみ固定であり、byte-for-byte 比較は A04 AC にないため未実施)
 - release.yml の validate 順序 (keystore → tag reachability → submodule checkout →
   verify → bundleRelease) は変えない
 
