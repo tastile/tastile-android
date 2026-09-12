@@ -1,100 +1,49 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Claude Code (claude.ai/code) 向け harness-specific adapter。
+canonical contract は `AGENTS.md` および workspace root の `../AGENTS.md`
+を参照すること。本ファイルは重複を避け、Claude Code 固有の anchor のみを
+保持する。
 
-## Canonical Contract
+## Canonical Contract (harness-specific)
 
-This is the `tastile-android` child repository of the Tastile workspace. The workspace contract is `../AGENTS.md` — read it first, then this repo's `README.md` (orientation) and `docs/architecture.md` (layer breakdown) before any non-trivial work.
+- Build / Verify / Architecture / Toolchain / Working Rules は `AGENTS.md` を
+  canonical として参照する。Codex と Claude Code 双方で同じ内容を読む
+  必要がある。
+- workspace-wide contract は `../AGENTS.md` を参照する (cross-repo change の前に
+  必ず読む)。
 
-Project-local Skills live in `.agents/skills/`. Claude Code-specific config (settings, hooks, skill adapters) lives in `.claude/`. Do not duplicate workspace-wide rules here.
+## Recovery Anchor (Claude Code 固有)
 
-## Build and Verify
+context 消失 / session expiry / sandbox recreation 時に発火する。
+canonical Skill: `../../.agents/skills/recover-task/SKILL.md` (workspace root)。
+本 repo の adapter: `.claude/skills/recover-task/SKILL.md` (canonical への pointer のみ)。
 
-All commands run from this repo root. JDK 17 or 21, Android SDK with API 35, NDK, and the Rust toolchain with `cargo-ndk` are required.
+## Skill Adapter Resolution
 
-| Goal | Command |
-| --- | --- |
-| Full verification suite (default pre-push gate) | `./gradlew verify` |
-| JVM unit tests only (no release keystore needed) | `./gradlew testDebugUnitTest` |
-| Single unit test class | `./gradlew testDebugUnitTest --tests "app.tastile.android.<package>.<ClassName>"` |
-| Single unit test method | `./gradlew testDebugUnitTest --tests "app.tastile.android.<package>.<ClassName>.<methodName>"` |
-| Debug APK + native libs (needs `../tastile-core`) | `./gradlew assembleDebug` |
-| Release build (fails fast without signing props) | `./gradlew bundleRelease` |
-| Instrumented tests (Hilt + Espresso) | `./gradlew connectedDebugAndroidTest` |
-| Lint only | `./gradlew lintDebug` |
+Claude Code の Skill は `.claude/skills/<name>/SKILL.md` から解決される。
+canonical Skill は `.agents/skills/<name>/SKILL.md` または workspace の
+`../../.agents/skills/<name>/SKILL.md`。
+adapter は pointer stub のみで workflow 本文を持たない。
+drift 検出は `scripts/ci/sync-skill-adapters.sh` で enforce (`:app:check` に配線)。
 
-`./gradlew verify` depends on `:app:check`, which itself depends on the project guard tasks `verifyDesignSystemImports` and `verifyNoEmbeddedServerSecrets` registered in `app/build.gradle.kts`.
+## `.claude/` 配下の責務 (harness-specific)
 
-## Build-Time Hard Requirements
+- `settings.json`: PreToolUse:Bash hook (`bun .claude/hooks/git-guard.mjs`) +
+  permissions.deny / ask (Build-Time Hard Requirements invariants mirror)。
+- `hooks/git-guard.mjs`: 破壊的 command の検出。
+- `skills/`: canonical Skill への pointer adapter。
 
-These guards fail the build rather than silently degrading — they exist to prevent environment drift from shipping to users.
+Build-Time Hard Requirements (BuildConfig 非空 / no `disable +=` /
+no embedded secrets / `m2-allow:` marker 必須) は Gradle 側で enforce
+(`verifyDesignSystemImports` / `verifyNoEmbeddedServerSecrets` /
+`verifySkillAdapterDrift`) されており、Claude Code harness は冗長に同じ
+invariant を permissions 経由で mirror している。
 
-- `gradle.projectsEvaluated` in `app/build.gradle.kts` requires every `BuildConfig.*` field listed in `app/build.gradle.kts` (Cognito client/region/hosted-ui/redirect/web-auth base, `TASTILE_CORE_URL`, `GOOGLE_WEB_CLIENT_ID`) to be non-blank. Set them in `gradle.properties` (CI), `~/.gradle/gradle.properties` (local dev), or `-PKEY=value`.
-- Release tasks (`assembleRelease`, `bundleRelease`) fail fast if `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` are not provided via the same paths. Never commit keystore or `google-services.json`.
-- `verifyDesignSystemImports`: direct `androidx.compose.material3.*` imports are forbidden in `app/src/main/java/app/tastile/android/ui/{dashboard,mobile,account}/` unless the immediately preceding non-blank line is `// m2-allow:`. M3 unified screens must go through the design system.
-- `verifyNoEmbeddedServerSecrets`: rejects `TASTILE_WEB_BRIDGE_SECRET` / `x-tastile-web-bridge-secret` from Android sources and the build script. Server-only bridge credentials must not enter Android artifacts.
-- The lint block in `app/build.gradle.kts` must not add `disable +=`. Every lint rule surfaces; unaddressable rules go in a tracking doc with a hard BLOCKED rationale.
-- Native artifact builds require `../tastile-core` to be a sibling checkout. If missing, the build fails with an explicit message rather than a cargo error cascade.
+## Cross-references
 
-## Architecture (Quick Map)
-
-Compose UI → ViewModels → Repositories → Cognito auth and/or `tastile-core` native bridge.
-
-- `ui/` — Compose screens, state holders, presentation helpers
-- `data/` — Auth repository, data models, repository interfaces
-- `domain/` — Domain layer (audit baseline recommends, treat as required)
-- `core/` — Native bridge, runtime persistence, DTO mapping for `tastile-core`
-- `sync/` — Session handoff and event synchronization into the core runtime
-- `notifications/` — Alarm scheduling, notification policy, delivery
-- `di/` — Hilt modules
-- `execution/` — Execution state projection
-
-Auth and server-backed reads go through Cognito + daemon API. Command execution, replay, and projected execution state are moving behind `tastile-core`; keep that boundary explicit until migration completes.
-
-## Toolchain
-
-- AGP 9.2.1, Kotlin 2.1.0, Compose Compiler plugin 2.1.0, Hilt 2.60.1, KSP 2.1.0-1.0.29
-- Compose BOM 2024.12.01, Navigation Compose 2.9.8
-- `minSdk` 26, `targetSdk` 35, `compileSdk` 37, `versionCode` 32, `versionName` 0.3.1
-- `kotlinx-datetime` is pinned at 0.6.1 and `kotlinx-coroutines-test` at 1.9.0 — bumping either surfaces an `ExperimentalTime` opt-in requirement. See `docs/plans/`.
-- Compose Compiler Reports land in `app/build/compose-reports/` and `app/build/compose-metrics/`; baseline at `docs/superpowers/m3/before-reports/`.
-
-## WSLC Dev Container
-
-`.wslc/` holds the Windows + WSL Container definitions; the version is auto-extracted from `app/build.gradle.kts`.
-
-- Build: `.wslc/wslc-build.ps1` (add `-NoCache` to bust caches)
-- Dev shell: `.wslc/wslc-dev.ps1` (add `-DeviceIp <ip>` for wireless ADB)
-- ADB inside container: `wslc exec tastile-android-dev adb devices`
-
-## Working Rules
-
-- Branch workflow follows ADR-0007. `main` is released / integrated state; the active
-  sprint lives on `release-<major>-<minor>-<patch>`. Implement one ticket per
-  branch, with the branch named after the GitHub Issue number only. No
-  feature/temporary branches, no worktrees. The `release-branch-workflow` Skill
-  is canonical reference.
-- Source code, identifiers, code comments, and Git/GitHub messages are English. Internal development docs are Japanese.
-
-## Recovery
-
-- After context loss, session expiry, or sandbox recreation, fresh agents run the
-  `recover-task` Skill (canonical: `../../.agents/skills/recover-task/SKILL.md`,
-  ADR-0008). They reconstruct from Issue / PR / commit graph plus the canonical
-  schemas under `../../.agent-loop/checkpoint.schema.json` and
-  `agent-result.schema.json`; they do not infer from prior conversation.
-- Commit-time isolation is provided by `.agent-loop/Invoke-PreCommitReview.ps1`
-  (snapshot / patch apply / fast gate / cross-agent reviewer); its snapshot is
-  the de-facto soft checkpoint when the commit boundary is the recovery
-  boundary.
-- Do not write new Python scripts in this repo. Use Kotlin, shell, or PowerShell as appropriate.
-- Search with `rg` / `rg --files`; prefer semantic navigation via the Kotlin language tooling already in `.tools/`.
-- Never commit: `local.properties`, `google-services.json`, keystores, `.env*` with real values, generated `app/src/main/jniLibs/`, or anything in `reference/`, `.build-logs/`, `.tools/`.
-- `reference/` clones are read-only; they must not become implicit build or runtime dependencies.
-- Before claiming "PASS / DONE / GREEN / ready to ship", run `./gradlew verify` from a clean state. If your change is in `:app` source, also run the unit-test target to catch regression coverage gaps.
-
-## Related Workspace Siblings
-
-- `../tastile-core/` — Rust core, produces Android native libs via `cargo-ndk`. Required for artifact builds.
-- `../tastile-web/` — Next.js sibling; shares Cognito config values with this repo.
-- `../AGENTS.md` — workspace contract. Read it before any cross-repo change.
+- `AGENTS.md` (canonical)
+- `../AGENTS.md` (workspace contract)
+- `.claude/skills/` (Claude Code adapter)
+- `.agents/skills/` (canonical Skills)
+- `scripts/ci/sync-skill-adapters.sh` (adapter drift 検出)
