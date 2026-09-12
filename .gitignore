@@ -31,6 +31,8 @@ keystore.properties
 release-keystore.*
 google-services.json
 *.hprof
+.env*
+.env.*
 # Vendored OpenAPI spec — replaced by the cross-repo submodule at
 # ../../openapi/openapi.yaml (gradle.properties: openapi.input). The build
 # pipeline regenerates the Kotlin client from the submodule on every
