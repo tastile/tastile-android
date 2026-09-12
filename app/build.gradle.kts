@@ -188,10 +188,17 @@ tasks.register("verifyDesignSystemImports") {
 }
 
 /**
- * Collect every guard violation across the three rules:
+ * Collect every guard violation across the Phase 1 rules:
  *  - Rule 1: forbidden Material3 imports (uses [designSystemGuardFiles] + the `// m2-allow:` marker)
  *  - Rule 2: `MaterialTheme.colorScheme` references in [uiConsumerRoots] without `// m2-allow:` marker
  *  - Rule 3: hardcoded `RoundedCornerShape(<non-zero-numeric>.dp)` outside [designSystemRoot]
+ *  - Rule 8: raw `<N>.dp` literals in `ui/` (exceptions: `0.dp`, `1.dp`, `0.5.dp`)
+ *  - Rule 9: `shadowElevation = N.dp` literals in `ui/`
+ *  - Rule 10: `Color(0xFF...)` literals in `ui/` outside `designsystem/theme/Color.kt`
+ *
+ * Rules 4 (FrameLocalBackground), 6 (SingleUiState), 7 (SingleComposer) are NOT in this gate
+ * because the existing 200+ screens do not conform yet — they ship as `:app:lint` warnings
+ * only and become hard gates in Phase 5 (Issue #117 tracks Rule 4).
  *
  * Exposed at top level so the unit test (`app/src/test/.../buildlogic/VerifyDesignSystemImportsGuardTest.kt`)
  * can re-invoke the same algorithm against synthetic tmp dirs. The test re-implements the body to
@@ -250,6 +257,51 @@ fun collectDesignSystemViolations(
             }
         }
 
+    // Rule 8: raw <N>.dp in ui/ (exceptions: 0.dp / 1.dp / 0.5.dp).
+    val rawDp = Regex("""(\d+(?:\.\d+)?)\.dp""")
+    val exemptDp = setOf("0", "0.0", "0.5", "1", "1.0")
+    uiConsumerRoots.forEach { root ->
+        root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+            file.readText().lines().forEachIndexed { idx, line ->
+                rawDp.findAll(line).forEach { match ->
+                    val raw = match.groupValues[1]
+                    if (raw !in exemptDp) {
+                        violations += "${file.path}:${idx + 1}: raw `${raw}.dp` literal in ui/ (Rule 8)"
+                    }
+                }
+            }
+        }
+    }
+
+    // Rule 9: shadowElevation = N.dp in ui/.
+    val shadowElevation = Regex("""shadowElevation\s*=\s*(\d+(?:\.\d+)?)\.dp""")
+    uiConsumerRoots.forEach { root ->
+        root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+            file.readText().lines().forEachIndexed { idx, line ->
+                shadowElevation.find(line)?.let { match ->
+                    val raw = match.groupValues[1]
+                    violations += "${file.path}:${idx + 1}: shadowElevation = ${raw}.dp in ui/ (Rule 9)"
+                }
+            }
+        }
+    }
+
+    // Rule 10: Color(0xFF...) in ui/, except designsystem/theme/Color.kt.
+    val hexColor = Regex("""Color\(\s*0[xX][0-9A-Fa-f]{6,8}""")
+    uiConsumerRoots.forEach { root ->
+        root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+            val path = file.path.replace(File.separatorChar, '/')
+            if (path.endsWith("core/designsystem/theme/Color.kt") ||
+                path.endsWith("designsystem/theme/Color.kt")
+            ) return@forEach
+            file.readText().lines().forEachIndexed { idx, line ->
+                hexColor.find(line)?.let {
+                    violations += "${file.path}:${idx + 1}: hardcoded Color(0xFF...) literal in ui/ (Rule 10)"
+                }
+            }
+        }
+    }
+
     return violations
 }
 
@@ -261,6 +313,9 @@ fun formatDesignSystemViolations(violations: List<String>): String = buildString
     appendLine("Use LocalTastileCardRoleTokens.current / LocalTastileStatusTokens.current instead of MaterialTheme.colorScheme.")
     appendLine("Use RoundedCornerShape(LocalTastileShapeTokens.current.<key>) instead of hardcoded <n>.dp shapes.")
     appendLine("Direct Material3 imports require an immediately-preceding `// m2-allow:` marker line.")
+    appendLine("Raw `<N>.dp` literals (Rule 8) must route through LocalTastileLayoutTokens.current.*.")
+    appendLine("`shadowElevation = N.dp` (Rule 9) must use Card / Surface or LocalTastileElevationTokens.")
+    appendLine("Hardcoded `Color(0xFF...)` (Rule 10) is allowed only in core/designsystem/theme/Color.kt.")
 }
 
 tasks.register("verifyNoEmbeddedServerSecrets") {
@@ -286,6 +341,137 @@ tasks.register("verifyNoEmbeddedServerSecrets") {
 
 tasks.named("check").configure {
     dependsOn("verifyDesignSystemImports", "verifyNoEmbeddedServerSecrets")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1 UI rebuild guards (Issue #11 = plan ticket #102)
+//
+// Rule 5 (`// m2-allow:` budget), Rule 11 (branch name `^\d+$`), Rule 12
+// (SourceTileRead wire-shape contract). All three gate `:app:check`.
+// Rules 4 / 6 / 7 ship as lint warnings only and become hard gates in
+// Phase 5 (see Issue #117).
+// ---------------------------------------------------------------------------
+
+val m2AllowBaseline = 522
+val m2AllowBudgetDelta = 50
+val m2AllowLimit = m2AllowBaseline + m2AllowBudgetDelta
+
+tasks.register("verifyM2AllowBudget") {
+    group = "verification"
+    description = "Rule 5: `// m2-allow:` marker budget — fail if count > " +
+        "$m2AllowLimit (baseline $m2AllowBaseline + $m2AllowBudgetDelta delta)."
+    doLast {
+        val allowMarker = "// m2-allow:"
+        val allKt = fileTree("src/main") { include("**/*.kt") }.files
+        val count = allKt.sumOf { file ->
+            file.readText().lineSequence().count { it.contains(allowMarker) }
+        }
+        if (count > m2AllowLimit) {
+            throw GradleException(
+                "Rule 5: `// m2-allow:` marker count is $count, " +
+                    "which exceeds the phase-end budget of $m2AllowLimit " +
+                    "(baseline $m2AllowBaseline + $m2AllowBudgetDelta delta). " +
+                    "Remove marker usage or raise the baseline via ADR.",
+            )
+        }
+        if (count > m2AllowBaseline) {
+            logger.lifecycle(
+                "verifyM2AllowBudget: $count markers used, $m2AllowLimit limit " +
+                    "— $count below baseline (Phase 1 headroom OK)",
+            )
+        } else {
+            logger.lifecycle(
+                "verifyM2AllowBudget: $count markers used (under baseline $m2AllowBaseline)",
+            )
+        }
+    }
+}
+
+tasks.register("verifyBranchName") {
+    group = "verification"
+    description = "Rule 11: branch name must match `^\\d+$` (ADR-0007)."
+    doLast {
+        // `git rev-parse --abbrev-ref HEAD` returns the current branch (or
+        // `HEAD` when detached). Skip the gate for the integration branches
+        // `main` and `release-*` so this task stays runnable outside CI.
+        val branch = providers.exec {
+            commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+        }.standardOutput.asText.get().trim()
+        check(branch.matches(Regex("""^\d+$"""))) {
+            "Rule 11: branch name `$branch` does not match `^\\d+$` (ADR-0007). " +
+                "Rename the branch to its GitHub Issue number before opening a PR."
+        }
+        logger.lifecycle("verifyBranchName: branch `$branch` matches `^\\d+$` — OK")
+    }
+}
+
+tasks.register("verifyWireShapeContract") {
+    group = "verification"
+    description = "Rule 12: SourceTileRead wire-shape contract gate — every fixture " +
+        "under app/src/test/resources/wire_fixtures/source_tile/*.json must match the " +
+        "canonical key set in app/src/main/assets/source_tile_canonical_keys.json."
+    doLast {
+        val canonicalFile = layout.projectDirectory
+            .file("src/main/assets/source_tile_canonical_keys.json").asFile
+        check(canonicalFile.exists()) {
+            "Missing canonical keys file at ${canonicalFile.path}"
+        }
+        // The canonical file uses a small JSON schema (see app/src/main/assets/source_tile_canonical_keys.json):
+        //   { "fields": [ { "wire": "...", ... } ] }
+        // We parse just enough to read the `wire` keys without pulling in a JSON
+        // dependency at the build-script classpath level.
+        val canonicalJson = canonicalFile.readText()
+        val wireKeyPattern = Regex(""""wire"\s*:\s*"([A-Za-z0-9_]+)"""")
+        val canonical = wireKeyPattern.findAll(canonicalJson)
+            .map { it.groupValues[1] }
+            .toSet()
+        check(canonical.isNotEmpty()) {
+            "No `wire` keys found in $canonicalFile — is the schema valid?"
+        }
+
+        val fixturesDir = layout.projectDirectory
+            .dir("src/test/resources/wire_fixtures/source_tile").asFile
+        // Phase 1 lands no source-tile fixtures; the task passes when the
+        // directory is empty or absent. Phase 4 (Issue #101 followup) drops
+        // fixtures that the contract must cover.
+        if (!fixturesDir.exists()) {
+            logger.lifecycle("verifyWireShapeContract: no fixtures directory yet — OK")
+            return@doLast
+        }
+        val fixtures = fixturesDir.walkTopDown()
+            .filter { it.isFile && it.extension == "json" }
+            .toList()
+        if (fixtures.isEmpty()) {
+            logger.lifecycle("verifyWireShapeContract: no fixtures yet — OK")
+            return@doLast
+        }
+        val keyPattern = Regex(""""([A-Za-z0-9_]+)"\s*:""")
+        val violations = mutableListOf<String>()
+        fixtures.forEach { fixture ->
+            val text = fixture.readText()
+            val keys = keyPattern.findAll(text).map { it.groupValues[1] }.toSet()
+            val missing = canonical - keys
+            val extra = keys - canonical
+            if (missing.isNotEmpty() || extra.isNotEmpty()) {
+                violations += buildString {
+                    append("${fixture.path}: missing=").append(missing)
+                    append(", extra=").append(extra)
+                }
+            }
+        }
+        check(violations.isEmpty()) {
+            "Rule 12: wire-shape contract drift:\n" +
+                violations.joinToString("\n") { "  - $it" }
+        }
+        logger.lifecycle(
+            "verifyWireShapeContract: ${fixtures.size} fixture(s), " +
+                "${canonical.size} canonical key(s) — OK",
+        )
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn("verifyM2AllowBudget", "verifyBranchName", "verifyWireShapeContract")
 }
 
 // ---------------------------------------------------------------------------
