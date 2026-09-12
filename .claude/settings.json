@@ -1,4 +1,37 @@
 {
+  "permissions": {
+    "deny": [
+      "Edit:app/src/main/jniLibs/**",
+      "Write:app/src/main/jniLibs/**",
+      "Edit:google-services.json",
+      "Write:google-services.json",
+      "Edit:local.properties",
+      "Write:local.properties",
+      "Edit:keystore.properties",
+      "Write:keystore.properties",
+      "Edit:*.jks",
+      "Write:*.jks",
+      "Edit:*.keystore",
+      "Write:*.keystore",
+      "Edit:release-keystore.*",
+      "Write:release-keystore.*",
+      "Edit:.env*",
+      "Write:.env*"
+    ],
+    "ask": [
+      "Bash:git switch*",
+      "Bash:git checkout*",
+      "Bash:git branch -d*",
+      "Bash:git branch -D*",
+      "Bash:git push --force*",
+      "Bash:git push origin main*",
+      "Bash:git tag v*",
+      "Bash:gh pr merge*",
+      "Bash:gh release create*",
+      "Bash:./gradlew bundleRelease*",
+      "Bash:./gradlew assembleRelease*"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {

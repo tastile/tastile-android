@@ -284,8 +284,29 @@ tasks.register("verifyNoEmbeddedServerSecrets") {
     }
 }
 
+tasks.register("verifySkillAdapterDrift") {
+    group = "verification"
+    description = "Detect drift between .claude/skills/ (Claude Code adapter stubs) and .agents/skills/ (canonical Skills)."
+    doLast {
+        val script = rootProject.file("scripts/ci/sync-skill-adapters.sh")
+        check(script.exists()) {
+            "scripts/ci/sync-skill-adapters.sh not found at ${script.path}; " +
+                "rebuild from git or restore from upstream."
+        }
+        val execResult = providers.exec {
+            commandLine("bash", script.absolutePath)
+        }
+        val output = execResult.standardOutput.asText.get()
+        val exitCode = execResult.exitCode
+        check(exitCode == 0) {
+            "Skill adapter drift detected:\n${output}"
+        }
+        logger.lifecycle(output.trim())
+    }
+}
+
 tasks.named("check").configure {
-    dependsOn("verifyDesignSystemImports", "verifyNoEmbeddedServerSecrets")
+    dependsOn("verifyDesignSystemImports", "verifyNoEmbeddedServerSecrets", "verifySkillAdapterDrift")
 }
 
 // ---------------------------------------------------------------------------
