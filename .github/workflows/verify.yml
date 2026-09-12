@@ -11,6 +11,13 @@ on:
       - "release-*"
   pull_request:
 
+# Cancel in-progress runs for the same ref when a new push lands.
+# Without this, a force-push or follow-up commit queues a second runner
+# while the first is still mid-`:app:verify`, wasting CI minutes.
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -55,6 +62,13 @@ jobs:
           TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
           openapi.input=../tastile-openapi/openapi.yaml
           EOF
+
+      - name: Run :app:lint explicitly
+        # :app:lint is part of `./gradlew verify` but is also a fast feedback
+        # signal for M3 / Compose design-system violations. Run it before
+        # the full verify so the runner surfaces lint failures with a clear
+        # step label rather than buried in the umbrella task.
+        run: ./gradlew :app:lintDebug
 
       - name: Verify repository quality gates
         run: ./gradlew verify
