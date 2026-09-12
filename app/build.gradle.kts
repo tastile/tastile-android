@@ -356,10 +356,21 @@ tasks.named("preBuild").configure { dependsOn("generateV1Api") }
 // DTOs decodable via `KotlinJsonAdapterFactory` (no moshi-codegen KSP on
 // the generated source directory), strip the annotation and its import
 // after each generation.
+//
+// Configuration-cache note: the directory is resolved at configuration time
+// into a local val above the doLast. Reading `layout.buildDirectory.*` directly
+// inside doLast makes the Kotlin compiler emit a non-static inner class that
+// captures the build script receiver via a synthetic `$$script_receiver_1`
+// field (a DefaultProject reference). Gradle's configuration cache rejects
+// that with "cannot serialize object of type DefaultProject" when storing the
+// task graph. The local-val form below ensures the doLast action only
+// captures a serializable `java.io.File`, breaking the chain to the script
+// receiver. See
+// https://docs.gradle.org/9.7.1/userguide/configuration_cache_requirements.html#config_cache:requirements:disallowed_types
 tasks.named("generateV1Api").configure {
+    val generatedModelsDir: File =
+        layout.buildDirectory.get().asFile.resolve("generated/openapi/v1/src/main/kotlin")
     doLast {
-        val generatedModelsDir =
-            layout.buildDirectory.get().asFile.resolve("generated/openapi/v1/src/main/kotlin")
         generatedModelsDir.walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .forEach { file ->
@@ -527,7 +538,11 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("test
             element = "BUNDLE"
             limit {
                 counter = "INSTRUCTION"
-                value = "coveredratio"
+                // JaCoCo's `Limit.value` is an enum (CounterValue). The previous
+                // String `"coveredratio"` (lowercase) triggered `No enum constant
+                // ICounter.CounterValue.coveredratio` — the canonical enum
+                // constant is `COVEREDRATIO`. Pass the uppercase form.
+                value = "COVEREDRATIO"
                 minimum = "0.80".toBigDecimal()
             }
         }
@@ -535,7 +550,7 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("test
             element = "BUNDLE"
             limit {
                 counter = "BRANCH"
-                value = "coveredratio"
+                value = "COVEREDRATIO"
                 minimum = "0.80".toBigDecimal()
             }
         }
@@ -543,7 +558,7 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("test
             element = "BUNDLE"
             limit {
                 counter = "LINE"
-                value = "coveredratio"
+                value = "COVEREDRATIO"
                 minimum = "0.80".toBigDecimal()
             }
         }
@@ -551,7 +566,7 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("test
             element = "BUNDLE"
             limit {
                 counter = "METHOD"
-                value = "coveredratio"
+                value = "COVEREDRATIO"
                 minimum = "0.80".toBigDecimal()
             }
         }

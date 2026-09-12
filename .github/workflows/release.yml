@@ -97,6 +97,13 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > /tmp/keystore.jks
           test -s /tmp/keystore.jks
 
+      - name: Checkout OpenAPI spec submodule
+        uses: actions/checkout@v4
+        with:
+          repository: tastile/tastile-openapi
+          path: tastile-openapi
+          ref: main
+
       - name: Write gradle.properties from Secrets
         run: |
           cat >> gradle.properties <<EOF
@@ -105,8 +112,10 @@ jobs:
           RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
           GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_ANDROID_CLIENT_ID=${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}
           WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
           TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
+          openapi.input=../tastile-openapi/openapi.yaml
           EOF
 
       - name: Verify repository quality gates
