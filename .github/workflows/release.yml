@@ -15,6 +15,13 @@ on:
         type: choice
         options: [internal, beta, production]
 
+# A release is bound to a single tag + workflow_dispatch run; cancel stale
+# runs for the same ref so a re-run after a transient failure does not
+# double-upload AABs / Play Store assets.
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -97,6 +104,15 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > /tmp/keystore.jks
           test -s /tmp/keystore.jks
 
+      - name: Checkout OpenAPI spec submodule
+        uses: actions/checkout@v4
+        with:
+          repository: tastile/tastile-openapi
+          path: tastile-openapi
+          # A04: pin to canonical v1.0.0 freeze (C07 confirmed, R01 status:ready).
+          # Do NOT change without an associated plan and the next release's SHA bump.
+          ref: b0c781dc18111645324e2abc38621b1564d4c518
+
       - name: Write gradle.properties from Secrets
         run: |
           cat >> gradle.properties <<EOF
@@ -105,8 +121,10 @@ jobs:
           RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
           GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_ANDROID_CLIENT_ID=${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}
           WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
           TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
+          openapi.input=../tastile-openapi/openapi.yaml
           EOF
 
       - name: Verify repository quality gates

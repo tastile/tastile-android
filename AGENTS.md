@@ -118,3 +118,22 @@ JDK 25 を別途用意する必要がある。優先順: `$KOTLIN_LSP_JAVA_HOME`
 - `../tastile-core/` — Rust core, produces Android native libs via `cargo-ndk`. Required for artifact builds.
 - `../tastile-web/` — Next.js sibling; shares Cognito config values with this repo.
 - `../AGENTS.md` — workspace contract. Read it before any cross-repo change.
+
+## Workflow (release sprint, projects, recovery)
+
+The child repo follows the workspace-wide workflow defined by
+`../AGENTS.md` and the ADRs referenced below. Each Skill has its canonical
+form at the workspace root and a Claude Code adapter under
+`.claude/skills/<name>/SKILL.md` in this repo.
+
+| Topic                | ADR              | Skill (root canonical)                                      | Adapter (this repo)                                      |
+| -------------------- | ---------------- | ----------------------------------------------------------- | -------------------------------------------------------- |
+| Release sprint / PR  | `docs/adr/0007-release-branch-and-ticket-workflow.md` (root) | `../../.agents/skills/release-branch-workflow/SKILL.md`    | `./.claude/skills/release-branch-workflow/SKILL.md`      |
+| Recovery / checkpoint| `docs/adr/0008-structured-recovery-checkpoint.md` (root)     | `../../.agents/skills/recover-task/SKILL.md`               | `./.claude/skills/recover-task/SKILL.md`                 |
+| Project work state   | `docs/adr/0009-github-projects-work-state.md` (root)         | `../../.agents/skills/project-board/SKILL.md`              | `./.claude/skills/project-board/SKILL.md`                |
+| SubAgent coordination| `docs/adr/0005-skills-and-mcp-extensions.md` (root)          | `../../.agents/skills/subagent-coordination/SKILL.md`      | (workspace only)                                         |
+
+`tastile-android` does not redefine `docs/adr/00NN-*`; its local
+`docs/adr/0001-kotlin-lsp-toolchain.md` and
+`docs/adr/0006-android-ui-skills-vendoring.md` remain authoritative on
+their subjects.

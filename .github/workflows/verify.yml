@@ -6,7 +6,17 @@ on:
       - main
       - master
       - "codex/**"
+      # Release branch HEADs must be verified by CI: merges to
+      # release-* otherwise land without any Verify run (A01).
+      - "release-*"
   pull_request:
+
+# Cancel in-progress runs for the same ref when a new push lands.
+# Without this, a force-push or follow-up commit queues a second runner
+# while the first is still mid-`:app:verify`, wasting CI minutes.
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -34,13 +44,31 @@ jobs:
       - name: Ensure Gradle wrapper is executable
         run: chmod +x ./gradlew
 
+      - name: Checkout OpenAPI spec submodule
+        uses: actions/checkout@v4
+        with:
+          repository: tastile/tastile-openapi
+          path: tastile-openapi
+          # A04: pin to canonical v1.0.0 freeze (C07 confirmed, R01 status:ready).
+          # Do NOT change without an associated plan and the next release's SHA bump.
+          ref: b0c781dc18111645324e2abc38621b1564d4c518
+
       - name: Write gradle.properties from Secrets
         run: |
           cat >> gradle.properties <<EOF
           GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_ANDROID_CLIENT_ID=${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}
           WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
           TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
+          openapi.input=../tastile-openapi/openapi.yaml
           EOF
+
+      - name: Run :app:lint explicitly
+        # :app:lint is part of `./gradlew verify` but is also a fast feedback
+        # signal for M3 / Compose design-system violations. Run it before
+        # the full verify so the runner surfaces lint failures with a clear
+        # step label rather than buried in the umbrella task.
+        run: ./gradlew :app:lintDebug
 
       - name: Verify repository quality gates
         run: ./gradlew verify

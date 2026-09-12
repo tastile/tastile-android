@@ -1,0 +1,94 @@
+name: Recovery drill
+
+# Weekly cron off-hours ensures the .agent-loop/ checkpoint and result schemas
+# stay green without flapping on contributor pushes. The drill fails closed
+# when Pester suites break or a schema drifts (ADR-0008).
+
+on:
+  schedule:
+    - cron: '17 3 * * 1' # 03:17 UTC Monday (12:17 JST Tuesday off-hours)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    name: Pester + checkpoint round-trip
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pin Ubuntu prerequisites
+        shell: pwsh
+        run: |
+          $required = @('pwsh', 'git', 'tar')
+          foreach ($tool in $required) {
+            $cmd = Get-Command $tool -ErrorAction SilentlyContinue
+            if (-not $cmd) { Write-Error "missing prerequisite: $tool"; exit 1 }
+            Write-Host "ok: $tool -> $($cmd.Source)"
+          }
+
+      - name: Run Pester suites under .agent-loop/tests
+        shell: pwsh
+        run: |
+          $suites = @(
+            '.agent-loop/tests/Invoke-PreCommitReview.Tests.ps1',
+            '.agent-loop/tests/Test-AgentAdapters.ps1',
+            '.agent-loop/tests/Test-ReviewSkills.ps1'
+          )
+          foreach ($suite in $suites) {
+            if (-not (Test-Path -LiteralPath $suite)) {
+              Write-Error "missing suite: $suite"
+              exit 1
+            }
+            Write-Host "==> $suite"
+            pwsh -NoProfile -File $suite
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "suite failed: $suite (exit $LASTEXITCODE)"
+              exit 1
+            }
+          }
+
+      - name: Workspace gate
+        shell: pwsh
+        run: pwsh -NoProfile -File .agent-loop/gate-root.ps1
+
+      - name: Synthetic checkpoint round-trip
+        shell: pwsh
+        run: |
+          $failures = 0
+          $checkpointSchema = Get-Content -Raw .agent-loop/checkpoint.schema.json
+          $agentResultSchema = Get-Content -Raw .agent-loop/agent-result.schema.json
+          $checkpointJson = Get-Content -Raw .agent-loop/checkpoint.schema.json | ConvertFrom-Json
+          $resultJson = Get-Content -Raw .agent-loop/agent-result.schema.json | ConvertFrom-Json
+          if ($null -eq $checkpointJson.'$id') { Write-Error 'checkpoint.schema.json missing $id'; $failures++ }
+          if ($null -eq $resultJson.'$id') { Write-Error 'agent-result.schema.json missing $id'; $failures++ }
+
+          # Build a minimal valid checkpoint against the schema, validate required keys exist.
+          $requiredCheckpointKeys = @(
+            'schema_version', 'issue_id', 'target_release', 'ticket_branch',
+            'base_sha', 'checkpoint_sha_or_snapshot', 'execution_generation',
+            'status', 'updated_at'
+          )
+          $props = @($checkpointJson.properties.PSObject.Properties.Name)
+          foreach ($key in $requiredCheckpointKeys) {
+            if ($props -notcontains $key) { Write-Error "checkpoint schema missing property: $key"; $failures++ }
+          }
+
+          $requiredResultKeys = @(
+            'schema_version', 'agent_id', 'role', 'issue_or_task_id',
+            'base_snapshot', 'execution_generation', 'result_commit_or_ref',
+            'summary', 'verdict', 'fencing_token'
+          )
+          $resultProps = @($resultJson.properties.PSObject.Properties.Name)
+          foreach ($key in $requiredResultKeys) {
+            if ($resultProps -notcontains $key) { Write-Error "agent-result schema missing property: $key"; $failures++ }
+          }
+
+          if ($failures -gt 0) {
+            Write-Error "synthetic round-trip found $failures regression(s)"
+            exit 1
+          }
+          Write-Host 'synthetic checkpoint round-trip PASS'
