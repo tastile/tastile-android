@@ -42,7 +42,9 @@ jobs:
         with:
           repository: tastile/tastile-openapi
           path: tastile-openapi
-          ref: main
+          # A04: pin to canonical v1.0.0 freeze (C07 confirmed, R01 status:ready).
+          # Do NOT change without an associated plan and the next release's SHA bump.
+          ref: b0c781dc18111645324e2abc38621b1564d4c518
 
       - name: Write gradle.properties from Secrets
         run: |
