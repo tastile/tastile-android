@@ -1,0 +1,39 @@
+# CODEOWNERS for tastile-android
+#
+# Format reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-repository-settings/about-code-owners
+# This file is consumed by GitHub branch protection rules; pair it with
+# `.github/workflows/verify.yml` as a required check.
+#
+# When merging a PR, the owners below receive an automatic review request.
+# Roles here mirror the Codex / Claude agent trio catalogued in
+# `.agents/skills/subagent-coordination/SKILL.md` and ADR-0005.
+
+# Default owners for everything not matched below.
+*                          @tastile/tastile-android-maintainers
+
+# Release / security critical paths.
+/.github/                  @tastile/tastile-android-maintainers
+/gradle.properties         @tastile/tastile-android-maintainers
+/local.properties.example  @tastile/tastile-android-maintainers
+/app/build.gradle.kts      @tastile/tastile-android-build-owners
+/build.gradle.kts          @tastile/tastile-android-build-owners
+/settings.gradle.kts       @tastile/tastile-android-build-owners
+/gradle/                   @tastile/tastile-android-build-owners
+
+# Compose UI / design system
+/app/src/main/java/app/tastile/android/ui/                  @tastile/tastile-android-ui-owners
+/app/src/main/java/app/tastile/android/core/designsystem/   @tastile/tastile-android-design-system-owners
+
+# Native bridge / sync / runtime
+/app/src/main/java/app/tastile/android/core/                @tastile/tastile-android-native-owners
+/app/src/main/java/app/tastile/android/sync/                @tastile/tastile-android-native-owners
+
+# Security, notifications, signing, secret handling.
+/SECURITY.md                                                 @tastile/tastile-android-security-owners
+/app/src/main/java/app/tastile/android/notifications/         @tastile/tastile-android-security-owners
+
+# ADR / design (workspace-level ADRs are normally owned at the workspace root;
+/ tastile-android/CLAUDE.md                              @tastile/tastile-android-maintainers
+/tastile-android/AGENTS.md                              @tastile/tastile-android-maintainers
+/docs/adr/                                              @tastile/tastile-android-maintainers
+/docs/operations/                                       @tastile/tastile-android-maintainers

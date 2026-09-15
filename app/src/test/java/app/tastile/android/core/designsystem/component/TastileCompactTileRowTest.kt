@@ -1,8 +1,10 @@
 package app.tastile.android.core.designsystem.component
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -56,7 +58,7 @@ class TastileCompactTileRowTest {
                 TastileCompactTileRow(
                     title = "Read inbox",
                     lifecycle = TileLifecycle.READY,
-                    trailing = { Box(Modifier.testTag("trailing_slot")) },
+                    trailing = { Box(Modifier.size(16.dp).testTag("trailing_slot")) },
                 )
             }
         }
