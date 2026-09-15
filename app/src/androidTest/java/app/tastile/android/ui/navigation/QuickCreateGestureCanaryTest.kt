@@ -146,7 +146,6 @@ class QuickCreateGestureCanaryTest {
             Log.i(TAG, "stage=done attempts=$attempt")
         }
     }
-    }
 
     private fun launchAndSubmit(click: (String) -> Unit) {
         Log.i(TAG, "stage=launch")
