@@ -117,20 +117,35 @@ class QuickCreateGestureCanaryTest {
 
     @Test
     fun platformClickOnClose_dismissesSheet() {
-        // Harness control: a platform tap on the SAME dragHandle row's
-        // close(X) must dismiss the sheet. GREEN proves tap delivery and
-        // coordinate math work end-to-end; if THIS were red too, the fault
-        // would be in the harness, not in the Create button's gesture path.
+        // Harness control: a platform tap on the same sheet's close(X) must
+        // dismiss the sheet. GREEN proves tap delivery and coordinate math
+        // work end-to-end; if THIS were red too, suspect the
+        // harness/environment, not the app.
+        //
+        // Bounded tap retry (max 3, disclosed): taps on ModalBottomSheet's
+        // dragHandle children have been observed to get lost intermittently
+        // (CI KVM lost a close tap that passes locally; the reverse happened
+        // on the physical device for Create). A real user taps again, so the
+        // CONTROL retries the ACTION. The load-bearing Create assertions
+        // below stay strict single-tap: if a Create tap is lost, that test
+        // goes RED by design, and the semantics control tells whether the
+        // fault is in wiring (both red) or input delivery (platform only).
         withEvidence("platform-close") {
             Log.i(TAG, "stage=launch")
             launchSheetWithValidDraft()
-            Log.i(TAG, "stage=click-close")
-            deviceClickOnNode("quick-create-close")
-            captureState("after-close-click")
-            Log.i(TAG, "stage=await-close")
-            awaitSheetClosed()
-            Log.i(TAG, "stage=done")
+            var attempt = 0
+            var closed = false
+            while (attempt < 3 && !closed) {
+                attempt++
+                Log.i(TAG, "stage=click-close attempt=$attempt")
+                deviceClickOnNode("quick-create-close")
+                if (attempt == 1) captureState("after-close-click")
+                closed = pollSheetClosed(timeoutMs = 20_000)
+            }
+            check(closed) { "sheet did not close after $attempt close tap(s)" }
+            Log.i(TAG, "stage=done attempts=$attempt")
         }
+    }
     }
 
     private fun launchAndSubmit(click: (String) -> Unit) {
@@ -229,15 +244,21 @@ class QuickCreateGestureCanaryTest {
 
     /** Success tears the sheet down (consume + overlay.dismiss). */
     private fun awaitSheetClosed() {
-        val deadline = System.currentTimeMillis() + 120_000
+        check(pollSheetClosed(timeoutMs = 120_000)) {
+            "sheet did not close after successful submit"
+        }
+    }
+
+    private fun pollSheetClosed(timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
             if (isGone("quick-create-handle-submit")) {
                 Log.i(TAG, "sheet closed")
-                return
+                return true
             }
             Thread.sleep(500)
         }
-        error("sheet did not close after successful submit")
+        return false
     }
 
     // ------------------------------------------------------------------
