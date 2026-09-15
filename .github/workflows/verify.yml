@@ -134,6 +134,17 @@ jobs:
           ls -la /dev/kvm
           grep -c -E 'vmx|svm' /proc/cpuinfo
 
+      # The emulator-runner action falls back to `-accel off` (software
+      # rendering: 15+ min boot, ANR dialogs that swallow taps) unless the
+      # runner user can write /dev/kvm. This is the documented prerequisite
+      # (reactivecircus/android-emulator-runner README: "Enable KVM").
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -la /dev/kvm
+
       - name: Run QuickCreate gesture canary on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -147,17 +158,16 @@ jobs:
             # APKs when it finishes, which would delete on-device screenshots.
             # NOTE: --tests is not supported for connectedAndroidTest tasks;
             # filter via the instrumentation runner argument instead.
+            # NOTE 2: keep the `am instrument` invocation on ONE line — the
+            # runner executes the script in a way that breaks backslash
+            # continuations (bare `am` help text = mangled args).
             adb logcat -c
             adb logcat -v time > "$GITHUB_WORKSPACE/logcat-canary.txt" &
             LOGCAT_PID=$!
             ./gradlew :app:installDebug :app:installDebugAndroidTest
-            adb shell am instrument -w \
-              -e class app.tastile.android.ui.navigation.QuickCreateGestureCanaryTest \
-              app.tastile.android.test/app.tastile.android.util.TastileTestRunner \
-              | tee "$GITHUB_WORKSPACE/instrument-canary.txt"
-            STATUS=${PIPESTATUS[0]}
-            adb pull /sdcard/Android/data/app.tastile.android/files/canary \
-              "$GITHUB_WORKSPACE/canary-evidence" || true
+            adb shell am instrument -w -e class app.tastile.android.ui.navigation.QuickCreateGestureCanaryTest app.tastile.android.test/app.tastile.android.util.TastileTestRunner > "$GITHUB_WORKSPACE/instrument-canary.txt" 2>&1
+            STATUS=$?
+            adb pull /sdcard/Android/data/app.tastile.android/files/canary "$GITHUB_WORKSPACE/canary-evidence" || true
             kill "$LOGCAT_PID" || true
             ./gradlew :app:uninstallAll
             exit "$STATUS"
