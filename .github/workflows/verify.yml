@@ -76,3 +76,101 @@ jobs:
 
       - name: Verify repository quality gates
         run: ./gradlew verify
+
+  # PR-required interaction canary (QuickCreate gesture arbitration).
+  #
+  # Runs ONLY the filtered canary class — not the whole androidTest suite —
+  # on a single API 35 emulator (ubuntu-latest + KVM, hardware-accelerated,
+  # same shape as android/platform-samples' build.yml). The canary sends
+  # true platform pointer input (UiAutomator click at display coordinates)
+  # so ModalBottomSheet drag-vs-tap arbitration is exercised; Compose
+  # semantics performClick() alone cannot catch that failure class.
+  #
+  # After this lands, mark `android-interaction-canary` as a required status
+  # check on the release branches: a PR that breaks the critical user journey
+  # must not merge even when `./gradlew verify` is green.
+  #
+  # Failure evidence uploaded on every run: connected-test reports +
+  # androidTest results + logcat + on-device canary screenshots/hierarchy.
+  android-interaction-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x ./gradlew
+
+      - name: Checkout OpenAPI spec submodule
+        uses: actions/checkout@v4
+        with:
+          repository: tastile/tastile-openapi
+          path: tastile-openapi
+          # Same canonical v1.0.0 freeze as the unit-tests job. Do NOT change
+          # without an associated plan and the next release's SHA bump.
+          ref: b0c781dc18111645324e2abc38621b1564d4c518
+
+      - name: Write gradle.properties from Secrets
+        run: |
+          cat >> gradle.properties <<EOF
+          GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_ANDROID_CLIENT_ID=${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}
+          WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
+          TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
+          openapi.input=../tastile-openapi/openapi.yaml
+          EOF
+
+      - name: Confirm KVM is available
+        run: |
+          ls -la /dev/kvm
+          grep -c -E 'vmx|svm' /proc/cpuinfo
+
+      - name: Run QuickCreate gesture canary on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: |
+            # Install FIRST so the evidence dir can be pulled while the app is
+            # still installed: :app:connectedDebugAndroidTest uninstalls both
+            # APKs when it finishes, which would delete on-device screenshots.
+            # NOTE: --tests is not supported for connectedAndroidTest tasks;
+            # filter via the instrumentation runner argument instead.
+            adb logcat -c
+            adb logcat -v time > "$GITHUB_WORKSPACE/logcat-canary.txt" &
+            LOGCAT_PID=$!
+            ./gradlew :app:installDebug :app:installDebugAndroidTest
+            adb shell am instrument -w \
+              -e class app.tastile.android.ui.navigation.QuickCreateGestureCanaryTest \
+              app.tastile.android.test/app.tastile.android.util.TastileTestRunner \
+              | tee "$GITHUB_WORKSPACE/instrument-canary.txt"
+            STATUS=${PIPESTATUS[0]}
+            adb pull /sdcard/Android/data/app.tastile.android/files/canary \
+              "$GITHUB_WORKSPACE/canary-evidence" || true
+            kill "$LOGCAT_PID" || true
+            ./gradlew :app:uninstallAll
+            exit "$STATUS"
+
+      - name: Upload canary evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interaction-canary-evidence
+          if-no-files-found: warn
+          path: |
+            logcat-canary.txt
+            instrument-canary.txt
+            canary-evidence/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/

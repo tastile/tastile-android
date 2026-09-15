@@ -677,10 +677,22 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    // QuickCreateGestureCanaryTest: true platform pointer input (UiDevice.click
+    // at display coordinates) to prove dragHandle-vs-Button gesture arbitration
+    // that Compose semantics performClick() bypasses by design.
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("io.mockk:mockk-android:1.14.11")
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.60.1")
+    // Hilt test codegen for the androidTest source set (generates
+    // Hilt_HiltTestActivity for QuickCreateGestureCanaryTest's host activity
+    // and wires @TestInstallIn modules). Without this, @AndroidEntryPoint
+    // classes in androidTest fail at runtime with ClassNotFoundException.
+    kspAndroidTest("com.google.dagger:hilt-compiler:2.60.1")
+    // HiltTestActivity lives in src/debug: its @AndroidEntryPoint wrapper is
+    // generated when compiling the debug variant.
+    kspDebug("com.google.dagger:hilt-compiler:2.60.1")
     androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.4.1")
 
     // Custom lint rules (M2-T4): WrapperParameterOrderDetector (L0 C1 + C2).
