@@ -51,16 +51,14 @@ branch 名 canonical pattern は次の正規表現に従う。
 ```
 
 `feature/*`、`fix-*`、`hotfix-*`、`wip-*` 等の prefix は禁止。`tastile-precommit-review`
-Skill と `.agent-loop/Invoke-PreCommitReview.ps1` が commit 時に spot check する
-(拡張は follow-up Enhancement)。
+Skill が commit 時に spot check する。
 
 ## PR body 必須 marker
 
 PR body に `Issue:` / `Target Release:` / `Branch:` / `Execution Generation:` の
 4 marker を必ず残す (canonical reference は
 [`.claude/skills/release-branch-workflow/SKILL.md`](../../.claude/skills/release-branch-workflow/SKILL.md)
-および workspace canonical
-[`/.agents/skills/release-branch-workflow/SKILL.md`](../../../.agents/skills/release-branch-workflow/SKILL.md))。
+および [`.agents/skills/github-delivery/SKILL.md`](../../.agents/skills/github-delivery/SKILL.md))。
 
 ## release PR (`release-x-y-z -> main`)
 
@@ -80,8 +78,9 @@ merge 後 contributor が `gpg` / `ssh-key` 署名付きで `v<version>` tag を
 
 ## 関連 ADR / 関連 Skill
 
-- [ADR-0007](../../../docs/adr/0007-release-branch-and-ticket-workflow.md) (root)
-- [`.agents/skills/release-branch-workflow/SKILL.md`](../../../.agents/skills/release-branch-workflow/SKILL.md) (root canonical)
-- [`.claude/skills/release-branch-workflow/SKILL.md`](../../.claude/skills/release-branch-workflow/SKILL.md) (child Claude adapter)
+- [ADR-0007](../adr/0007-release-branch-and-ticket-workflow.md)
+- [ADR-0012](../adr/0012-release-merge-authorization.md) (release PR merge 境界)
+- [`.agents/skills/github-delivery/SKILL.md`](../../.agents/skills/github-delivery/SKILL.md)
+- [`.claude/skills/release-branch-workflow/SKILL.md`](../../.claude/skills/release-branch-workflow/SKILL.md) (Claude adapter、workspace-root canonical への pointer)
 - [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
 - [`./release-plan.md`](./release-plan.md) (per-version 具体手順)
