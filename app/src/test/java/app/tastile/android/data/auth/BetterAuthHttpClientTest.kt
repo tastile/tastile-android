@@ -212,6 +212,71 @@ class BetterAuthHttpClientTest {
     }
 
     @Test
+    fun extractSessionToken_parsesSecurePrefixedCookieFromProductionHttps() {
+        // Production BetterAuth over HTTPS emits the session cookie with the
+        // RFC 6265bis `__Secure-` prefix when Secure=true. This pins the
+        // Android-side acceptance of the production contract.
+        val extracted = client.extractSessionToken(
+            listOf(
+                "__Secure-better-auth.session_token=l72K25yCv9AWb7u11Y9eafXCGFYcMBUm.O%2BIhuPIcXIDWD%2BLTy1VIWrbEi4cJsPtbF5pKXOXGdLA%3D; Max-Age=2592000; Path=/; HttpOnly; Secure; SameSite=Lax",
+            ),
+        )
+        assertEquals(
+            "l72K25yCv9AWb7u11Y9eafXCGFYcMBUm.O%2BIhuPIcXIDWD%2BLTy1VIWrbEi4cJsPtbF5pKXOXGdLA%3D",
+            extracted,
+        )
+    }
+
+    @Test
+    fun signIn_succeedsWithSecurePrefixedProductionCookie() = runTest {
+        // Full sign-in flow against a server that emits the production
+        // HTTPS-only `__Secure-` cookie name. Before this fix the client
+        // threw "Sign-in response missing session cookie".
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader(
+                    "Set-Cookie",
+                    "__Secure-better-auth.session_token=prod-token-xyz; Max-Age=2592000; Path=/; HttpOnly; Secure; SameSite=Lax",
+                )
+                .setBody(
+                    """{"user":{"id":"user-prod","email":"prod@example.com"},"session":{"expiresAt":4200000000,"token":"prod-token-xyz"}}""",
+                ),
+        )
+
+        val session = client.signIn(email = "prod@example.com", password = "pw")
+
+        assertEquals("prod-token-xyz", session.sessionToken)
+        assertEquals("user-prod", session.userId)
+        assertEquals("prod@example.com", session.email)
+        assertEquals(4200000000L, session.expiresAtEpochSeconds)
+    }
+
+    @Test
+    fun extractSessionToken_prefersPlainNameWhenBothPresent() {
+        // If a proxy echoes both names, the plain name (HTTP-friendly) wins
+        // to match web-side precedence in /api/auth/callback.
+        val extracted = client.extractSessionToken(
+            listOf(
+                "__Secure-better-auth.session_token=secure-token; Path=/; Secure",
+                "better-auth.session_token=plain-token; Path=/; HttpOnly",
+            ),
+        )
+        assertEquals("plain-token", extracted)
+    }
+
+    @Test
+    fun extractSessionToken_fallsBackToSecurePrefixWhenPlainMissing() {
+        val extracted = client.extractSessionToken(
+            listOf(
+                "foo=bar; Path=/",
+                "__Secure-better-auth.session_token=secure-only; Path=/; Secure",
+            ),
+        )
+        assertEquals("secure-only", extracted)
+    }
+
+    @Test
     fun signInWithGoogleIdToken_postsCorrectBodyAndDecodesSession() = runTest {
         val sessionToken = "test-session-token-abc123"
         server.enqueue(
