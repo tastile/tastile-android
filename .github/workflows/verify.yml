@@ -37,9 +37,13 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK (NDK 27.1.12297006)
-        uses: android-actions/setup-android@v3
+        # setup-android has no `ndk-version` input (it warns and ignores it);
+        # install the pinned NDK via `packages`. The obsolete `tools` package
+        # was removed upstream, so the action default
+        # (`tools platform-tools`) fails sdkmanager with exit 1.
+        uses: android-actions/setup-android@v4
         with:
-          ndk-version: 27.1.12297006
+          packages: 'platform-tools ndk;27.1.12297006'
 
       - name: Ensure Gradle wrapper is executable
         run: chmod +x ./gradlew
