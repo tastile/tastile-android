@@ -167,7 +167,9 @@ jobs:
             ./gradlew :app:installDebug :app:installDebugAndroidTest
             adb shell am instrument -w -e class app.tastile.android.ui.navigation.QuickCreateGestureCanaryTest app.tastile.android.test/app.tastile.android.util.TastileTestRunner > "$GITHUB_WORKSPACE/instrument-canary.txt" 2>&1; echo -n $? > "$GITHUB_WORKSPACE/instrument.status"
             adb pull /sdcard/Android/data/app.tastile.android/files/canary "$GITHUB_WORKSPACE/canary-evidence" || true
-            pkill -f "logcat -v time" || true
+            # Bracket trick: a plain "logcat -v time" pattern matches this
+            # very wrapper (`sh -c pkill -f ...`) and kills it (exit null).
+            pkill -f "[l]ogcat -v time" || true
             ./gradlew :app:uninstallAll
             exit $(cat "$GITHUB_WORKSPACE/instrument.status")
 
