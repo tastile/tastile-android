@@ -17,6 +17,7 @@ import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.data.timeline.TimelinePageKey
 import app.tastile.android.data.timeline.TimelinePageRepository
 import app.tastile.android.data.timeline.TimelinePageSnapshot
+import app.tastile.android.data.timeline.TimelineProjectionRequest
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ListGroupingMode
@@ -204,6 +205,8 @@ class TilesScreenTest {
                         items = items.toPersistentList(),
                     ),
                 )
+
+                override fun observeProjection(request: TimelineProjectionRequest) = flowOf(items)
 
                 override suspend fun purgeAccount(accountId: String) = Unit
             },

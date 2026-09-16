@@ -43,6 +43,44 @@ class TimelinePageRepositoryTest {
     }
 
     @Test
+    fun customProjection_usesOneMembershipAwareDaoFlow() = runTest {
+        val dao = FakeTimelineCacheDao()
+        val repository = DefaultTimelinePageRepository(dao)
+        val request = TimelineProjectionRequest(
+            accountId = "account-a",
+            ownerIds = listOf("owner-a"),
+            zoneId = zone,
+            scale = app.tastile.android.ui.dashboard.TimelineSubScale.CUSTOM,
+            anchor = day,
+            customStart = day,
+            customEnd = day.plusDays(2),
+        )
+        val item = item(id = "custom-item", title = "Custom")
+        val itemEntity = TimelineCacheMapper.toEntity(
+            "account-a",
+            request.scopeFingerprint,
+            item,
+        )
+        val result = async(start = CoroutineStart.UNDISPATCHED) {
+            repository.observeProjection(request).first()
+        }
+
+        dao.itemFlow.emit(listOf(itemEntity))
+        dao.membershipFlow.emit(
+            request.localDates.map { date ->
+                membership(
+                    itemId = item.id,
+                    localDate = date,
+                    scopeKey = request.scopeFingerprint,
+                )
+            },
+        )
+
+        assertEquals(listOf("custom-item"), result.await().map { it.id })
+        assertEquals(1, dao.itemObserveCount.get())
+    }
+
+    @Test
     fun unchangedRows_reuseSnapshotInstance() = runTest {
         val dao = FakeTimelineCacheDao()
         val repository = DefaultTimelinePageRepository(dao)

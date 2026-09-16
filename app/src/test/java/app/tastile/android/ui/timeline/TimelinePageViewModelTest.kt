@@ -4,6 +4,7 @@ import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.data.timeline.TimelinePageKey
 import app.tastile.android.data.timeline.TimelinePageRepository
 import app.tastile.android.data.timeline.TimelinePageSnapshot
+import app.tastile.android.data.timeline.TimelineProjectionRequest
 import app.tastile.android.data.timeline.TimelineRefreshDirection
 import app.tastile.android.data.timeline.timelineScopeFingerprint
 import app.tastile.android.ui.dashboard.TimelineScale
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -320,6 +322,9 @@ class TimelinePageViewModelTest {
                 }
             }
         }
+
+        override fun observeProjection(request: TimelineProjectionRequest): Flow<List<CoreTimelineItem>> =
+            flowOf(emptyList())
 
         override suspend fun purgeAccount(accountId: String) = Unit
 

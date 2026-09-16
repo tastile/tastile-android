@@ -20,7 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -407,13 +408,13 @@ private fun TimelinePagePager(
             )
         // Keep the snapshot identity observable at the pager renderer
         // boundary. Day/Week expose event titles directly; Month renders
-        // counts, so this semantics node gives every scale the same
-        // page-content assertion surface and catches cross-page wiring.
+        // counts, so this test-only property gives every scale the same
+        // page-content assertion surface without polluting accessibility.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .semantics(mergeDescendants = false) {
-                    contentDescription = timelineSnapshotSemantics(snapshot)
+                    timelineSnapshotTestIdentity = timelineSnapshotSemantics(snapshot)
                 },
         ) {
             pageContent(pageKey, snapshot)
@@ -437,6 +438,11 @@ private fun timelinePageTag(key: TimelinePageKey): String =
     "timeline-${key.scale.name.lowercase(Locale.ROOT)}-${key.normalizedAnchor}"
 
 /** Stable semantics identity for the exact snapshot rendered by one page. */
+internal val TimelineSnapshotTestIdentityKey =
+    SemanticsPropertyKey<String>("TastileTimelineSnapshotTestIdentity")
+
+internal var SemanticsPropertyReceiver.timelineSnapshotTestIdentity by TimelineSnapshotTestIdentityKey
+
 internal fun timelineSnapshotSemantics(snapshot: TimelinePageSnapshot): String =
     snapshot.items
         .joinToString(separator = "|", prefix = "timeline-snapshot:") { item ->

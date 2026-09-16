@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.data.timeline.TimelinePageRepository
-import app.tastile.android.data.timeline.TimelinePageSnapshot
 import app.tastile.android.data.timeline.TimelineProjectionRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -13,11 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -49,15 +46,6 @@ class TilesTimelineProjectionViewModel @Inject constructor(
         if (request.value != normalized) request.value = normalized
     }
 
-    private fun observeProjection(request: TimelineProjectionRequest): Flow<List<CoreTimelineItem>> {
-        val pageFlows = request.pageKeys().map(pageRepository::observePage)
-        if (pageFlows.isEmpty()) return flowOf(emptyList())
-        return combine(pageFlows) { snapshots: Array<TimelinePageSnapshot> ->
-            snapshots
-                .asSequence()
-                .flatMap { it.items.asSequence() }
-                .distinctBy { it.id }
-                .toList()
-        }.distinctUntilChanged()
-    }
+    private fun observeProjection(request: TimelineProjectionRequest): Flow<List<CoreTimelineItem>> =
+        pageRepository.observeProjection(request).distinctUntilChanged()
 }

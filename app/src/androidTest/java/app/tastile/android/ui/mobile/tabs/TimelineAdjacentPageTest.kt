@@ -1,8 +1,8 @@
 package app.tastile.android.ui.mobile.tabs
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import app.tastile.android.core.CoreTimelineItem
@@ -11,6 +11,7 @@ import app.tastile.android.data.tile.TileFilter
 import app.tastile.android.data.timeline.TimelinePageKey
 import app.tastile.android.data.timeline.TimelinePageRepository
 import app.tastile.android.data.timeline.TimelinePageSnapshot
+import app.tastile.android.data.timeline.TimelineProjectionRequest
 import app.tastile.android.data.timeline.TimelineRefreshDirection
 import app.tastile.android.data.timeline.timelineScopeFingerprint
 import app.tastile.android.ui.dashboard.DashboardViewModel
@@ -178,8 +179,11 @@ class TimelineAdjacentPageTest {
     }
 
     private fun assertSnapshotRendered(snapshot: TimelinePageSnapshot) {
-        compose.onNodeWithContentDescription(
-            timelineSnapshotSemantics(snapshot),
+        compose.onNode(
+            SemanticsMatcher.expectValue(
+                TimelineSnapshotTestIdentityKey,
+                timelineSnapshotSemantics(snapshot),
+            ),
             useUnmergedTree = true,
         ).assertExists()
     }
@@ -236,6 +240,9 @@ class TimelineAdjacentPageTest {
             snapshots += snapshot
             return flowOf(snapshot)
         }
+
+        override fun observeProjection(request: TimelineProjectionRequest): Flow<List<CoreTimelineItem>> =
+            flowOf(emptyList())
 
         override suspend fun purgeAccount(accountId: String) = Unit
 

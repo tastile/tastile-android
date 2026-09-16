@@ -57,10 +57,10 @@ class TilesTimelineProjectionViewModelTest {
         viewModel.setRequest(request)
         testScheduler.advanceUntilIdle()
 
-        val key = repository.observedKeys.single()
-        assertEquals(listOf("owner-a", "owner-b"), key.ownerIds)
-        assertEquals(request.normalized().scopeFingerprint, key.scopeFingerprint)
-        assertEquals("account-a", key.accountId)
+        val observedRequest = repository.observedRequests.single()
+        assertEquals(listOf("owner-a", "owner-b"), observedRequest.normalizedOwnerIds)
+        assertEquals(request.normalized().scopeFingerprint, observedRequest.scopeFingerprint)
+        assertEquals("account-a", observedRequest.accountId)
         collector.cancel()
     }
 
@@ -79,7 +79,7 @@ class TilesTimelineProjectionViewModelTest {
         )
         testScheduler.advanceUntilIdle()
 
-        assertTrue(repository.observedKeys.isEmpty())
+        assertTrue(repository.observedRequests.isEmpty())
     }
 
     @Test
@@ -111,17 +111,56 @@ class TilesTimelineProjectionViewModelTest {
         testScheduler.advanceUntilIdle()
 
         assertEquals(listOf("month-item"), values.last().map { it.id })
-        assertEquals(1, repository.observedKeys.size)
-        assertTrue(repository.observedKeys.single().visibleDates.size == 42)
+        assertEquals(1, repository.observedRequests.size)
+        assertTrue(repository.observedRequests.single().localDates.size == 42)
         collector.cancel()
     }
 
+    @Test
+    fun customRequestUsesOneRangeProjectionFlowForAllDates() = runTest {
+        val item = CoreTimelineItem(
+            id = "custom-item",
+            title = "Custom-local",
+            type = "placement",
+            status = "open",
+            startAt = "2026-09-17T09:00:00Z",
+            endAt = "2026-09-17T10:00:00Z",
+        )
+        repository.snapshotItems = listOf(item)
+        val viewModel = TilesTimelineProjectionViewModel(repository)
+        val values = mutableListOf<List<CoreTimelineItem>>()
+        val collector = backgroundScope.launch {
+            viewModel.items.collect { values += it }
+        }
+
+        viewModel.setRequest(
+            TimelineProjectionRequest(
+                accountId = "account-a",
+                ownerIds = emptyList(),
+                zoneId = ZoneId.of("America/New_York"),
+                scale = TimelineSubScale.CUSTOM,
+                anchor = LocalDate.of(2026, 9, 16),
+                customStart = LocalDate.of(2026, 9, 16),
+                customEnd = LocalDate.of(2026, 9, 18),
+            ),
+        )
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("custom-item"), values.last().map { it.id })
+        assertEquals(1, repository.observedRequests.size)
+        assertEquals(3, repository.observedRequests.single().localDates.size)
+    }
+
     private class RecordingPageRepository : TimelinePageRepository {
-        val observedKeys = mutableListOf<TimelinePageKey>()
+        val observedRequests = mutableListOf<TimelineProjectionRequest>()
         var snapshotItems: List<CoreTimelineItem> = emptyList()
 
+        override fun observeProjection(request: TimelineProjectionRequest): Flow<List<CoreTimelineItem>> {
+            observedRequests += request.normalized()
+            return flowOf(snapshotItems)
+        }
+
         override fun observePage(key: TimelinePageKey): Flow<TimelinePageSnapshot> {
-            observedKeys += key.normalized()
             return flowOf(
                 TimelinePageSnapshot(
                     key = key.normalized(),

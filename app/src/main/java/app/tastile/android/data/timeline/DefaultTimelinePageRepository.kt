@@ -1,5 +1,6 @@
 package app.tastile.android.data.timeline
 
+import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.data.timeline.local.TimelineCacheDao
 import app.tastile.android.data.timeline.local.TimelineCacheMapper
 import app.tastile.android.data.timeline.local.TimelineCoverageEntity
@@ -61,6 +62,38 @@ class DefaultTimelinePageRepository @Inject constructor(
         }
             .map(::internSnapshot)
             .distinctUntilChanged()
+    }
+
+    override fun observeProjection(request: TimelineProjectionRequest): Flow<List<CoreTimelineItem>> {
+        val normalizedRequest = request.normalized()
+        val localDates = normalizedRequest.localDates
+        if (localDates.isEmpty()) return kotlinx.coroutines.flow.flowOf(emptyList())
+
+        val rangeStart = localDates.first()
+            .atStartOfDay(normalizedRequest.zoneId)
+            .toInstant()
+            .toEpochMilli()
+        val rangeEnd = localDates.last()
+            .plusDays(1)
+            .atStartOfDay(normalizedRequest.zoneId)
+            .toInstant()
+            .toEpochMilli()
+
+        // This is intentionally one membership-aware Room observation for
+        // the entire request. In particular, CUSTOM must not create one Flow
+        // per day or multiply collectors with the selected range length.
+        return dao.observeRange(
+            accountId = normalizedRequest.accountId,
+            scopeKey = normalizedRequest.scopeFingerprint,
+            zoneId = normalizedRequest.zoneId.id,
+            localDates = localDates.map(LocalDate::toString),
+            rangeStartEpochMs = rangeStart,
+            rangeEndEpochMs = rangeEnd,
+        ).map { entities ->
+            entities
+                .mapNotNull { entity -> runCatching { TimelineCacheMapper.fromEntity(entity) }.getOrNull() }
+                .distinctBy { it.id }
+        }.distinctUntilChanged()
     }
 
     override suspend fun purgeAccount(accountId: String) {

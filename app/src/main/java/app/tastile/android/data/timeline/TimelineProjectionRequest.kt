@@ -28,6 +28,21 @@ data class TimelineProjectionRequest(
     val scopeFingerprint: String
         get() = timelineScopeFingerprint(normalizedOwnerIds)
 
+    /** Local membership dates covered by this projection, in render order. */
+    val localDates: List<LocalDate>
+        get() {
+            val pageScale = scale.toPageScaleOrNull()
+            if (pageScale != null) {
+                return timelinePageDates(pageScale, anchor)
+            }
+            val start = customStart ?: return emptyList()
+            val end = customEnd ?: return emptyList()
+            if (end.isBefore(start)) return emptyList()
+            return generateSequence(start) { date ->
+                date.takeIf { it.isBefore(end) }?.plusDays(1)
+            }.toList()
+        }
+
     fun normalized(): TimelineProjectionRequest {
         val pageScale = scale.toPageScaleOrNull()
         val normalizedAnchor = pageScale?.let { normalizeTimelineAnchor(it, anchor) } ?: anchor
@@ -53,12 +68,8 @@ data class TimelineProjectionRequest(
         val request = normalized()
         val pageScale = request.scale.toPageScaleOrNull()
         if (pageScale == null) {
-            val start = request.customStart ?: return emptyList()
-            val end = request.customEnd ?: return emptyList()
-            if (end.isBefore(start)) return emptyList()
-            return generateSequence(start) { date ->
-                date.takeIf { it.isBefore(end) }?.plusDays(1)
-            }.map { date -> request.pageKey(TimelineScale.Day, date) }.toList()
+            return request.localDates
+                .map { date -> request.pageKey(TimelineScale.Day, date) }
         }
         return listOf(request.pageKey(pageScale, request.anchor))
     }
