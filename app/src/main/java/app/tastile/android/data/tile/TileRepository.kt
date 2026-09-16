@@ -407,8 +407,12 @@ class TileRepository @Inject constructor(
 
     private fun TimelineItem.toCoreTimelineItem(rangeStart: Instant, rangeEnd: Instant): CoreTimelineItem? {
         val startInstant = parseIsoInstant(span.start) ?: return null
-        val endInstant = parseIsoInstant(span.end ?: span.start)
-        if (startInstant.isBefore(rangeStart) || !startInstant.isBefore(rangeEnd)) return null
+        val endInstant = parseIsoInstant(span.end ?: span.start) ?: return null
+        // Overlap semantics mirror GET /v1/timeline (span_start < end AND
+        // span_end > start). A start-only check drops overnight occurrences
+        // whose span starts the previous evening (e.g. sleep 23:00→07:00
+        // must render on the 00:00–07:00 day). (A05)
+        if (!endInstant.isAfter(rangeStart) || !startInstant.isBefore(rangeEnd)) return null
         return CoreTimelineItem(
             id = placementId,
             tileId = tileId,
@@ -418,7 +422,7 @@ class TileRepository @Inject constructor(
             type = role.toRoleName(),
             status = resolution.state.toStatusName(),
             startAt = startInstant.toString(),
-            endAt = endInstant?.toString() ?: startInstant.plusSeconds(60).toString(),
+            endAt = endInstant.toString(),
         )
     }
 
