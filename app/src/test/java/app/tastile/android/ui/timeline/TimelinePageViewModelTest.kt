@@ -20,7 +20,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -50,34 +52,34 @@ class TimelinePageViewModelTest {
     @Test
     fun visiblePages_observePreviousCurrentAndNextKeys() = runTest {
         val viewModel = viewModel()
-
-        assertEquals(
-            setOf(
-                currentKey.copy(anchor = LocalDate.of(2026, 9, 15)),
-                currentKey,
-                currentKey.copy(anchor = LocalDate.of(2026, 9, 17)),
-            ),
-            viewModel.uiState.value.pages.keys,
+        val expected = listOf(
+            currentKey.copy(anchor = LocalDate.of(2026, 9, 15)),
+            currentKey,
+            currentKey.copy(anchor = LocalDate.of(2026, 9, 17)),
         )
+
+        assertEquals(expected, viewModel.visiblePageKeys)
         assertEquals(3, repository.observedKeys.size)
+        assertEquals(expected, repository.observedKeys)
+        expected.forEach { key ->
+            assertTrue(viewModel.uiState.value.pages.containsKey(key))
+        }
     }
 
     @Test
     fun swipeDirection_requestsDirectionalPrefetch() = runTest {
         val viewModel = viewModel()
         refreshes.clear()
+        val expected = listOf(
+            currentKey,
+            currentKey.copy(anchor = LocalDate.of(2026, 9, 15)),
+            currentKey.copy(anchor = LocalDate.of(2026, 9, 17)),
+        )
 
         viewModel.onSwipe(TimelineRefreshDirection.Next)
 
         assertEquals(TimelineRefreshDirection.Next, refreshes.lastDirection)
-        assertEquals(
-            setOf(
-                currentKey.copy(anchor = LocalDate.of(2026, 9, 15)),
-                currentKey,
-                currentKey.copy(anchor = LocalDate.of(2026, 9, 17)),
-            ),
-            refreshes.lastKeys.toSet(),
-        )
+        assertEquals(expected, refreshes.lastKeys)
     }
 
     @Test
@@ -111,6 +113,38 @@ class TimelinePageViewModelTest {
 
         assertSame(stateSnapshot, viewModel.uiState.value.pages.getValue(currentKey))
         assertEquals("current", viewModel.uiState.value.pages.getValue(currentKey)?.items?.single()?.title)
+    }
+
+    @Test
+    fun cancelledOldFlowAfterAnchorAndScaleChange_doesNotUpdateState() = runTest {
+        val viewModel = viewModel()
+        val oldDayObservation = repository.observationFor(currentKey)
+
+        val movedDay = LocalDate.of(2026, 9, 20)
+        viewModel.setAnchor(movedDay)
+        val movedDayKey = currentKey.copy(anchor = movedDay)
+        oldDayObservation.emit(snapshot(currentKey, "stale-anchor"))
+
+        assertEquals(movedDayKey, viewModel.currentPageKey)
+        assertEquals(3, viewModel.uiState.value.pages.size)
+        assertFalse(viewModel.uiState.value.pages.values.any { page ->
+            page.items.any { item -> item.title == "stale-anchor" }
+        })
+
+        viewModel.setScale(TimelineScale.Week)
+        val oldWeekKey = viewModel.currentPageKey
+            ?: error("Week page key must be configured")
+        val oldWeekObservation = repository.observationFor(oldWeekKey)
+        val movedWeek = LocalDate.of(2026, 9, 28)
+        viewModel.setAnchor(movedWeek)
+        val movedWeekKey = oldWeekKey.copy(anchor = movedWeek).normalized()
+        oldWeekObservation.emit(snapshot(oldWeekKey, "stale-scale"))
+
+        assertEquals(movedWeekKey, viewModel.currentPageKey)
+        assertEquals(3, viewModel.uiState.value.pages.size)
+        assertFalse(viewModel.uiState.value.pages.values.any { page ->
+            page.items.any { item -> item.title == "stale-scale" }
+        })
     }
 
     private fun viewModel(): TimelinePageViewModel = TimelinePageViewModel(
@@ -157,13 +191,16 @@ class TimelinePageViewModelTest {
     private class FakeTimelinePageRepository : TimelinePageRepository {
         private val emissions = MutableSharedFlow<TimelinePageSnapshot>(extraBufferCapacity = 16)
         val observedKeys = mutableListOf<TimelinePageKey>()
+        private val observations = mutableListOf<Observation>()
 
         override fun observePage(key: TimelinePageKey): Flow<TimelinePageSnapshot> {
             val normalizedKey = key.normalized()
+            val observation = Observation(normalizedKey)
             observedKeys += normalizedKey
+            observations += observation
             return flow {
                 emit(TimelinePageSnapshot(key = normalizedKey))
-                emitAll(emissions)
+                emitAll(kotlinx.coroutines.flow.merge(emissions, observation.emissions))
             }
         }
 
@@ -171,6 +208,17 @@ class TimelinePageViewModelTest {
 
         fun emit(snapshot: TimelinePageSnapshot) {
             emissions.tryEmit(snapshot)
+        }
+
+        fun observationFor(key: TimelinePageKey): Observation =
+            observations.first { observation -> observation.key == key.normalized() }
+
+        class Observation(val key: TimelinePageKey) {
+            val emissions = MutableSharedFlow<TimelinePageSnapshot>(extraBufferCapacity = 2)
+
+            fun emit(snapshot: TimelinePageSnapshot) {
+                emissions.tryEmit(snapshot)
+            }
         }
     }
 }

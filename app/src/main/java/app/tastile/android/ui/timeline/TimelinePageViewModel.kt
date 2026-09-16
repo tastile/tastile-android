@@ -131,6 +131,9 @@ class TimelinePageViewModel private constructor(
     val visiblePageKeys: List<TimelinePageKey>
         get() = listOfNotNull(previousPageKey, currentPageKey, nextPageKey)
 
+    private fun refreshPageKeys(): List<TimelinePageKey> =
+        listOfNotNull(currentPageKey, previousPageKey, nextPageKey)
+
     val previousPage: TimelinePageSnapshot?
         get() = previousPageKey?.let { uiState.value.pages[it] }
 
@@ -242,7 +245,7 @@ class TimelinePageViewModel private constructor(
 
     /** Requests coverage refresh for current/adjacent pages in [direction]. */
     fun requestRefresh(direction: TimelineRefreshDirection = TimelineRefreshDirection.None) {
-        val keys = visiblePageKeys
+        val keys = refreshPageKeys()
         if (keys.isNotEmpty()) refreshRequester.requestRefresh(keys, direction)
     }
 
@@ -304,7 +307,7 @@ class TimelinePageViewModel private constructor(
                 }
             }
         }
-        refreshRequester.requestRefresh(keys, TimelineRefreshDirection.None)
+        refreshRequester.requestRefresh(refreshPageKeys(), TimelineRefreshDirection.None)
     }
 
     private fun shiftPage(key: TimelinePageKey, amount: Long): TimelinePageKey {
