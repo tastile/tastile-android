@@ -1,14 +1,19 @@
 package app.tastile.android.data.di
 
+import android.content.Context
+import androidx.room.Room
 import app.tastile.android.data.api.BetterAuthAccountApi
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.auth.ApiTokenCache
 import app.tastile.android.data.auth.AuthRepositoryContract
 import app.tastile.android.data.auth.BetterAuthHttpClient
 import app.tastile.android.data.command.V1CommandDispatcher
+import app.tastile.android.data.timeline.local.TimelineCacheDao
+import app.tastile.android.data.timeline.local.TimelineCacheDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -60,4 +65,19 @@ object ApiModule {
     @Singleton
     fun provideV1CommandDispatcher(v1ApiClient: V1ApiClient): V1CommandDispatcher =
         V1CommandDispatcher(v1ApiClient)
+
+    @Provides
+    @Singleton
+    fun provideTimelineCacheDatabase(
+        @ApplicationContext context: Context,
+    ): TimelineCacheDatabase = Room.databaseBuilder(
+        context,
+        TimelineCacheDatabase::class.java,
+        TimelineCacheDatabase.DATABASE_NAME,
+    ).build()
+
+    @Provides
+    @Singleton
+    fun provideTimelineCacheDao(database: TimelineCacheDatabase): TimelineCacheDao =
+        database.timelineCacheDao()
 }

@@ -581,6 +581,8 @@ tasks.named("check").configure {
     )
 }
 
+val roomVersion = "2.8.5"
+
 dependencies {
     // appcompat 1.6.1+ required for AppCompatDelegate.setApplicationLocales
     // compat shim (the runtime-locale-switch path called by
@@ -622,6 +624,11 @@ dependencies {
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
+    // Persistent timeline read model
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+
     // Date/Time
     // Pinned at 0.6.1: 0.8.0 promoted `kotlinx.datetime.Instant` arithmetic APIs to
     // `@ExperimentalTime`, which breaks `ExecutionAlarmPlanner` and
@@ -662,6 +669,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.robolectric:robolectric:4.16.1")
+    testImplementation("androidx.room:room-testing:$roomVersion")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
