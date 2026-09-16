@@ -8,6 +8,8 @@ import app.tastile.android.data.auth.ApiTokenCache
 import app.tastile.android.data.auth.AuthRepositoryContract
 import app.tastile.android.data.auth.BetterAuthHttpClient
 import app.tastile.android.data.command.V1CommandDispatcher
+import app.tastile.android.data.timeline.DefaultTimelinePageRepository
+import app.tastile.android.data.timeline.TimelinePageRepository
 import app.tastile.android.data.timeline.local.TimelineCacheDao
 import app.tastile.android.data.timeline.local.TimelineCacheDatabase
 import dagger.Module
@@ -80,4 +82,9 @@ object ApiModule {
     @Singleton
     fun provideTimelineCacheDao(database: TimelineCacheDatabase): TimelineCacheDao =
         database.timelineCacheDao()
+
+    @Provides
+    @Singleton
+    fun provideTimelinePageRepository(dao: TimelineCacheDao): TimelinePageRepository =
+        DefaultTimelinePageRepository(dao)
 }
