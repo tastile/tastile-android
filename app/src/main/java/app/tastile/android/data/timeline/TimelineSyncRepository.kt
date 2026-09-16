@@ -12,6 +12,8 @@ data class TimelineRefreshRequest(
     val staleAfter: Duration = DEFAULT_TIMELINE_STALE_AFTER,
     /** Optional generation used by callers that already own a request order. */
     val generation: Long? = null,
+    /** Optional subset of [key]'s dates used by range-level prefetch callers. */
+    val localDates: List<LocalDate>? = null,
 ) {
     init {
         require(staleAfter >= Duration.ZERO) { "staleAfter must not be negative" }
@@ -21,7 +23,7 @@ data class TimelineRefreshRequest(
         get() = key.normalized()
 
     internal val requestedDates: List<LocalDate>
-        get() = normalizedKey.visibleDates.toList()
+        get() = (localDates ?: normalizedKey.visibleDates.toList()).distinct().sorted()
 
     internal companion object {
         val DEFAULT_TIMELINE_STALE_AFTER: Duration = Duration.ofMinutes(15)

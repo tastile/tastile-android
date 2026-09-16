@@ -6,6 +6,7 @@ import app.tastile.android.data.timeline.local.TimelineCacheMapper
 import app.tastile.android.data.timeline.local.TimelineCoverageEntity
 import app.tastile.android.data.timeline.local.TimelineDayMembershipEntity
 import app.tastile.android.data.tile.TileRepository
+import app.tastile.android.data.tile.TimelineFetchResult
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -30,11 +31,11 @@ class DefaultTimelineSyncRepository @Inject constructor(
 ) : TimelineSyncRepository {
     private val generationCounter = AtomicLong(0L)
     private val inFlight = mutableListOf<InFlightRequest>()
+    private val inFlightFetches = mutableListOf<InFlightFetch>()
     private val inFlightLock = Any()
 
     override suspend fun refresh(request: TimelineRefreshRequest): TimelineRefreshResult {
-        val normalizedRequest = request.normalizedKey
-        val requestedDates = normalizedRequest.visibleDates.toList()
+        val requestedDates = request.requestedDates
         val context = RefreshContext.from(request)
         return coroutineScope {
             val existing = synchronized(inFlightLock) {
@@ -102,10 +103,11 @@ class DefaultTimelineSyncRepository @Inject constructor(
         }
 
         val ranges = mergeAdjacentRanges(candidateDates, key.zoneId)
+        val fetchContext = FetchContext.from(request)
         val parsedResponses = mutableListOf<ParsedTimelineItem>()
         for (range in ranges) {
             val fetched = try {
-                tileRepository.getTimeline(range.start, range.end, request.ownerIds)
+                fetchRange(fetchContext, range, key.zoneId)
             } catch (error: Exception) {
                 // Cancellation must propagate so a caller can stop a request;
                 // ordinary API/network failures are persisted as metadata.
@@ -195,6 +197,64 @@ class DefaultTimelineSyncRepository @Inject constructor(
             ranges = ranges,
             generation = generation,
         )
+    }
+
+    /**
+     * Claims the uncovered portions of [range] while sharing every already
+     * running fetch that intersects it. A request such as [16..22] therefore
+     * shares date 22 with a concurrent [22..28] request and only starts a
+     * second network range for [23..28].
+     */
+    private suspend fun fetchRange(
+        context: FetchContext,
+        range: TimelineUtcRange,
+        zone: ZoneId,
+    ): List<CoreTimelineItem> = coroutineScope {
+        val flights = synchronized(inFlightLock) {
+            val shared = inFlightFetches.filter { candidate ->
+                candidate.context == context &&
+                    candidate.localDates.any { it in range.localDates }
+            }
+            val coveredDates = shared
+                .asSequence()
+                .flatMap { it.localDates.asSequence() }
+                .toSet()
+            val uncoveredDates = range.localDates.filterNot { it in coveredDates }
+            val own = mergeAdjacentRanges(uncoveredDates, zone).map { uncoveredRange ->
+                InFlightFetch(
+                    context = context,
+                    localDates = uncoveredRange.localDates.toSet(),
+                    deferred = async(start = CoroutineStart.LAZY) {
+                        when (val result = tileRepository.getTimelineCanonical(
+                            uncoveredRange.start,
+                            uncoveredRange.end,
+                            context.ownerIds,
+                        )) {
+                            is TimelineFetchResult.Success -> result.items
+                            is TimelineFetchResult.Failure -> throw result.error
+                        }
+                    },
+                )
+            }
+            inFlightFetches += own
+            shared + own
+        }
+
+        try {
+            // Start all newly claimed ranges before awaiting any shared range;
+            // an uncovered tail should not wait behind a slow overlapping call.
+            flights.forEach { it.deferred.start() }
+            flights.flatMap { it.deferred.await() }
+        } finally {
+            // A waiter must not remove an unfinished flight owned by another
+            // refresh. Completed entries are safe to remove and will be
+            // removed by whichever waiter observes completion first.
+            synchronized(inFlightLock) {
+                inFlightFetches.removeAll { candidate ->
+                    candidate in flights && candidate.deferred.isCompleted
+                }
+            }
+        }
     }
 
     private fun parseItem(item: CoreTimelineItem): ParsedTimelineItem? {
@@ -311,9 +371,36 @@ class DefaultTimelineSyncRepository @Inject constructor(
         }
     }
 
+    private data class FetchContext(
+        val accountId: String,
+        val scopeKey: String,
+        val zoneId: ZoneId,
+        val ownerIds: List<String>,
+        val generation: Long?,
+    ) {
+        companion object {
+            fun from(request: TimelineRefreshRequest): FetchContext {
+                val key = request.normalizedKey
+                return FetchContext(
+                    accountId = key.accountId,
+                    scopeKey = key.scopeKey,
+                    zoneId = key.zoneId,
+                    ownerIds = request.ownerIds.filter(String::isNotBlank).distinct().sorted(),
+                    generation = request.generation,
+                )
+            }
+        }
+    }
+
     private data class InFlightRequest(
         val context: RefreshContext,
         val requestedDates: List<LocalDate>,
         val deferred: Deferred<TimelineRefreshResult>,
+    )
+
+    private data class InFlightFetch(
+        val context: FetchContext,
+        val localDates: Set<LocalDate>,
+        val deferred: Deferred<List<CoreTimelineItem>>,
     )
 }

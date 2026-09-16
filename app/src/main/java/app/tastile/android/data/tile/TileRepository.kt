@@ -33,6 +33,16 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Result of the canonical v1 timeline read. Unlike [getTimeline], this seam
+ * never synthesizes data from the tile list, so synchronization can preserve
+ * cached rows when the API is unavailable.
+ */
+sealed interface TimelineFetchResult {
+    data class Success(val items: List<CoreTimelineItem>) : TimelineFetchResult
+    data class Failure(val error: Exception) : TimelineFetchResult
+}
+
 @Singleton
 class TileRepository @Inject constructor(
     private val executionNotificationCoordinator: ExecutionNotificationCoordinator,
@@ -354,54 +364,64 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): List<CoreTimelineItem> {
-        readCloudTimeline(start, end, ownerIds)?.let { v1Items ->
-            if (v1Items.isNotEmpty()) {
+        return when (val result = getTimelineCanonical(start, end, ownerIds)) {
+            is TimelineFetchResult.Success -> result.items
+            is TimelineFetchResult.Failure -> {
+                // Preserve the existing non-sync caller behavior: callers
+                // that only need a best-effort timeline may use the tile-list
+                // projection when the canonical endpoint is unavailable.
+                if (latestCloudTiles.isEmpty()) {
+                    latestCloudTiles = readCloudTilesUnfiltered()
+                }
+                val fallback = buildTimelineFromTiles(latestCloudTiles, Instant.now())
                 latestReadDiagnostics = buildString {
                     append(latestReadDiagnostics)
-                    append(" timeline_source=v1")
-                    append(" timeline_count=${v1Items.size}")
+                    append(" timeline_source=cloud_fallback")
+                    append(" fallback_timeline_count=${fallback.size}")
                 }
-                return v1Items
+                fallback
             }
         }
-        if (latestCloudTiles.isEmpty()) {
-            latestCloudTiles = readCloudTilesUnfiltered()
-        }
-        val fallback = buildTimelineFromTiles(latestCloudTiles, Instant.now())
-        latestReadDiagnostics = buildString {
-            append(latestReadDiagnostics)
-            append(" timeline_source=cloud_fallback")
-            append(" fallback_timeline_count=${fallback.size}")
-        }
-        return fallback
     }
 
-    private suspend fun readCloudTimeline(
+    /**
+     * Reads only the canonical v1 timeline endpoint and preserves its result
+     * shape, including an authoritative successful empty list. Synchronizers
+     * must use this method instead of [getTimeline] so an API failure cannot
+     * be mistaken for a successful fallback response.
+     */
+    suspend fun getTimelineCanonical(
         start: Instant,
         end: Instant,
-        ownerIds: List<String>,
-    ): List<CoreTimelineItem>? {
+        ownerIds: List<String> = emptyList(),
+    ): TimelineFetchResult {
         val token = currentUserProvider.currentSessionToken()
-        if (token.isNullOrBlank()) return null
+        if (token.isNullOrBlank()) {
+            latestReadDiagnostics = buildString {
+                append(latestReadDiagnostics)
+                append(" timeline_source=v1_skipped")
+            }
+            return TimelineFetchResult.Failure(V1Error.Auth())
+        }
         return try {
             val response = v1ApiClient.getTimeline(start, end, ownerIds)
             val mapped = response.mapNotNull { it.toCoreTimelineItem(start, end) }
             android.util.Log.d("TileRepository", "v1 timeline: ${response.size} items, mapped=${mapped.size}")
-            mapped
-        } catch (e: V1Error) {
-            android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)
             latestReadDiagnostics = buildString {
                 append(latestReadDiagnostics)
-                append(" timeline_source=v1_unavailable")
+                append(" timeline_source=v1")
+                append(" timeline_count=${mapped.size}")
             }
-            null
+            TimelineFetchResult.Success(mapped)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)
             latestReadDiagnostics = buildString {
                 append(latestReadDiagnostics)
                 append(" timeline_source=v1_unavailable")
             }
-            null
+            TimelineFetchResult.Failure(e)
         }
     }
 

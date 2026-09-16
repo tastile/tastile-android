@@ -6,6 +6,7 @@ import app.tastile.android.data.timeline.local.TimelineCoverageEntity
 import app.tastile.android.data.timeline.local.TimelineDayMembershipEntity
 import app.tastile.android.data.timeline.local.TimelineItemEntity
 import app.tastile.android.data.tile.TileRepository
+import app.tastile.android.data.tile.TimelineFetchResult
 import app.tastile.android.ui.dashboard.TimelineScale
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -38,7 +39,8 @@ class TimelineSyncRepositoryTest {
             startAt = "2026-09-16T23:30:00Z",
             endAt = "2026-09-17T01:30:00Z",
         )
-        coEvery { tileRepository.getTimeline(any(), any(), any()) } returns listOf(item)
+        coEvery { tileRepository.getTimelineCanonical(any(), any(), any()) } returns
+            TimelineFetchResult.Success(listOf(item))
         val repository = DefaultTimelineSyncRepository(tileRepository, dao)
 
         val result = repository.refresh(request(scale = TimelineScale.Week))
@@ -66,7 +68,8 @@ class TimelineSyncRepositoryTest {
             items = listOf(itemEntity("old")),
         )
         val tileRepository = mockk<TileRepository>()
-        coEvery { tileRepository.getTimeline(any(), any(), any()) } returns emptyList()
+        coEvery { tileRepository.getTimelineCanonical(any(), any(), any()) } returns
+            TimelineFetchResult.Success(emptyList())
         val repository = DefaultTimelineSyncRepository(tileRepository, dao)
 
         val result = repository.refresh(request())
@@ -92,8 +95,8 @@ class TimelineSyncRepositoryTest {
             items = listOf(existingItem),
         )
         val tileRepository = mockk<TileRepository>()
-        coEvery { tileRepository.getTimeline(any(), any(), any()) } throws
-            IllegalStateException("network down")
+        coEvery { tileRepository.getTimelineCanonical(any(), any(), any()) } returns
+            TimelineFetchResult.Failure(IllegalStateException("network down"))
         val repository = DefaultTimelineSyncRepository(tileRepository, dao)
 
         val result = repository.refresh(request())
@@ -114,11 +117,11 @@ class TimelineSyncRepositoryTest {
         val fetchStarted = CompletableDeferred<Unit>()
         val releaseFetch = CompletableDeferred<Unit>()
         val fetchCount = AtomicInteger()
-        coEvery { tileRepository.getTimeline(any(), any(), any()) } coAnswers {
+        coEvery { tileRepository.getTimelineCanonical(any(), any(), any()) } coAnswers {
             fetchCount.incrementAndGet()
             fetchStarted.complete(Unit)
             releaseFetch.await()
-            emptyList()
+            TimelineFetchResult.Success(emptyList())
         }
         val repository = DefaultTimelineSyncRepository(tileRepository, dao)
 
@@ -141,12 +144,16 @@ class TimelineSyncRepositoryTest {
         val tileRepository = mockk<TileRepository>()
         val firstFetchStarted = CompletableDeferred<Unit>()
         val releaseFirstFetch = CompletableDeferred<Unit>()
-        coEvery { tileRepository.getTimeline(any(), any(), any()) } coAnswers {
+        coEvery { tileRepository.getTimelineCanonical(any(), any(), any()) } coAnswers {
             if (firstFetchStarted.complete(Unit)) {
                 releaseFirstFetch.await()
-                listOf(item("old-result", "2026-09-16T09:00:00Z", "2026-09-16T10:00:00Z"))
+                TimelineFetchResult.Success(
+                    listOf(item("old-result", "2026-09-16T09:00:00Z", "2026-09-16T10:00:00Z")),
+                )
             } else {
-                listOf(item("new-result", "2026-09-16T11:00:00Z", "2026-09-16T12:00:00Z"))
+                TimelineFetchResult.Success(
+                    listOf(item("new-result", "2026-09-16T11:00:00Z", "2026-09-16T12:00:00Z")),
+                )
             }
         }
         val repository = DefaultTimelineSyncRepository(tileRepository, dao)
@@ -166,13 +173,16 @@ class TimelineSyncRepositoryTest {
     fun overnightItem_isAssignedToEveryOverlappingLocalDate() = runTest {
         val dao = RecordingTimelineCacheDao()
         val tileRepository = mockk<TileRepository>()
-        coEvery { tileRepository.getTimeline(any(), any(), any()) } returns listOf(
-            item(
-                id = "cross-midnight",
-                startAt = "2026-09-16T23:30:00Z",
-                endAt = "2026-09-17T01:30:00Z",
-            ),
-        )
+        coEvery { tileRepository.getTimelineCanonical(any(), any(), any()) } returns
+            TimelineFetchResult.Success(
+                listOf(
+                    item(
+                        id = "cross-midnight",
+                        startAt = "2026-09-16T23:30:00Z",
+                        endAt = "2026-09-17T01:30:00Z",
+                    ),
+                ),
+            )
         val repository = DefaultTimelineSyncRepository(tileRepository, dao)
         val weekRequest = request(scale = TimelineScale.Week)
 
@@ -185,9 +195,44 @@ class TimelineSyncRepositoryTest {
         assertEquals(setOf("2026-09-16", "2026-09-17"), matchingDays)
     }
 
+    @Test
+    fun partiallyOverlappingRanges_shareBoundaryDateFetch() = runTest {
+        val dao = RecordingTimelineCacheDao()
+        val tileRepository = mockk<TileRepository>()
+        val firstFetchStarted = CompletableDeferred<Unit>()
+        val releaseFirstFetch = CompletableDeferred<Unit>()
+        val calls = mutableListOf<Pair<Instant, Instant>>()
+        coEvery { tileRepository.getTimelineCanonical(any(), any(), any()) } coAnswers {
+            calls += firstArg<Instant>() to secondArg<Instant>()
+            if (calls.size == 1) {
+                firstFetchStarted.complete(Unit)
+                releaseFirstFetch.await()
+            }
+            TimelineFetchResult.Success(emptyList())
+        }
+        val repository = DefaultTimelineSyncRepository(tileRepository, dao)
+        val firstDates = (0..6).map { firstDay.plusDays(it.toLong()) }
+        val secondDates = (6..12).map { firstDay.plusDays(it.toLong()) }
+
+        val first = async { repository.refresh(request(localDates = firstDates)) }
+        firstFetchStarted.await()
+        val second = async { repository.refresh(request(localDates = secondDates)) }
+        // Let the second refresh register its shared boundary flight before
+        // releasing the first response.
+        kotlinx.coroutines.yield()
+        releaseFirstFetch.complete(Unit)
+
+        assertEquals(TimelineRefreshStatus.Refreshed, first.await().status)
+        assertEquals(TimelineRefreshStatus.Refreshed, second.await().status)
+        assertEquals(2, calls.size)
+        assertEquals(Instant.parse("2026-09-16T00:00:00Z"), calls[0].first)
+        assertEquals(Instant.parse("2026-09-23T00:00:00Z"), calls[1].first)
+    }
+
     private fun request(
         scale: TimelineScale = TimelineScale.Day,
         generation: Long? = null,
+        localDates: List<LocalDate>? = null,
     ): TimelineRefreshRequest = TimelineRefreshRequest(
         key = TimelinePageKey(
             accountId = "account-a",
@@ -200,6 +245,7 @@ class TimelineSyncRepositoryTest {
         now = Instant.parse("2026-09-16T12:00:00Z"),
         staleAfter = java.time.Duration.ofHours(1),
         generation = generation,
+        localDates = localDates,
     )
 
     private fun item(
