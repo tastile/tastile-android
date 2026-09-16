@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 
 @Dao
@@ -149,13 +150,35 @@ abstract class TimelineCacheDao {
         memberships: List<TimelineDayMembershipEntity>,
         coverage: List<TimelineCoverageEntity>,
     ) {
-        if (items.isNotEmpty()) upsertItems(items)
+        if (coverage.isEmpty()) return
+
+        // A late response must not replace a newer response for the same
+        // account/scope/zone/date. Filter the whole write set before touching
+        // any row so stale items and memberships cannot leak through a fresh
+        // coverage row.
+        val currentCoverage = loadCoverage(coverage)
+        val acceptedCoverage = coverage.filter { candidate ->
+            val current = currentCoverage[candidate.coverageKey()]
+            current == null || candidate.refreshGeneration >= current.refreshGeneration
+        }
+        if (acceptedCoverage.isEmpty()) return
+
+        val acceptedKeys = acceptedCoverage.mapTo(mutableSetOf()) { it.coverageKey() }
+        val acceptedMemberships = memberships.filter { it.membershipKey() in acceptedKeys }
+        val acceptedItemIds = acceptedMemberships
+            .mapTo(mutableSetOf()) { Triple(it.accountId, it.scopeKey, it.itemId) }
+        val acceptedItems = items.filter {
+            Triple(it.accountId, it.scopeKey, it.itemId) in acceptedItemIds
+        }
+
+        if (acceptedItems.isNotEmpty()) upsertItems(acceptedItems)
 
         coverage
+            .filter { it.coverageKey() in acceptedKeys }
             .map { Triple(it.accountId, it.scopeKey, it.zoneId) }
             .distinct()
             .forEach { (accountId, scopeKey, zoneId) ->
-                val localDates = coverage
+                val localDates = acceptedCoverage
                     .asSequence()
                     .filter {
                         it.accountId == accountId &&
@@ -170,8 +193,35 @@ abstract class TimelineCacheDao {
                 }
             }
 
-        if (memberships.isNotEmpty()) upsertMemberships(memberships)
-        if (coverage.isNotEmpty()) upsertCoverage(coverage)
+        if (acceptedMemberships.isNotEmpty()) upsertMemberships(acceptedMemberships)
+        if (acceptedCoverage.isNotEmpty()) upsertCoverage(acceptedCoverage)
+    }
+
+    /**
+     * Records a failed refresh without replacing or deleting cached timeline
+     * items and memberships. Existing coverage retains its successful fetch
+     * timestamp and contract version; only failure metadata and the refresh
+     * generation are advanced. Missing coverage rows are inserted so a
+     * failed first fetch is observable as metadata rather than an empty
+     * successful day.
+     */
+    @Transaction
+    open suspend fun recordFailures(failures: List<TimelineCoverageEntity>) {
+        if (failures.isEmpty()) return
+
+        val currentCoverage = loadCoverage(failures)
+        val updates = failures.mapNotNull { failure ->
+            val current = currentCoverage[failure.coverageKey()]
+            when {
+                current == null -> failure
+                failure.refreshGeneration >= current.refreshGeneration -> current.copy(
+                    lastFailureKind = failure.lastFailureKind,
+                    refreshGeneration = failure.refreshGeneration,
+                )
+                else -> null
+            }
+        }
+        if (updates.isNotEmpty()) upsertCoverage(updates)
     }
 
     @Query("DELETE FROM timeline_items WHERE accountId = :accountId")
@@ -189,4 +239,42 @@ abstract class TimelineCacheDao {
         deleteCoverageForAccount(accountId)
         deleteItemsForAccount(accountId)
     }
+
+    private suspend fun loadCoverage(
+        rows: List<TimelineCoverageEntity>,
+    ): Map<CoverageKey, TimelineCoverageEntity> = rows
+        .groupBy { Triple(it.accountId, it.scopeKey, it.zoneId) }
+        .values
+        .flatMap { group ->
+            val first = group.first()
+            val dates = group.map(TimelineCoverageEntity::localDate).distinct()
+            observeCoverageForDates(
+                accountId = first.accountId,
+                scopeKey = first.scopeKey,
+                zoneId = first.zoneId,
+                localDates = dates,
+            ).first()
+        }
+        .associateBy { it.coverageKey() }
+
+    private fun TimelineCoverageEntity.coverageKey(): CoverageKey = CoverageKey(
+        accountId = accountId,
+        scopeKey = scopeKey,
+        zoneId = zoneId,
+        localDate = localDate,
+    )
+
+    private fun TimelineDayMembershipEntity.membershipKey(): CoverageKey = CoverageKey(
+        accountId = accountId,
+        scopeKey = scopeKey,
+        zoneId = zoneId,
+        localDate = localDate,
+    )
+
+    private data class CoverageKey(
+        val accountId: String,
+        val scopeKey: String,
+        val zoneId: String,
+        val localDate: String,
+    )
 }

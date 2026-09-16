@@ -177,6 +177,68 @@ class TimelineCacheDaoTest {
         )
     }
 
+    @Test
+    fun recordFailures_updatesMetadataOnlyAndKeepsCachedRows() = runBlocking {
+        val day = "2026-09-16"
+        val item = timelineEntity("kept", "Kept")
+        val row = coverage(day, fetchedAtEpochMs = 100L)
+        dao.replaceDays(
+            items = listOf(item),
+            memberships = listOf(membership(day, item.itemId)),
+            coverage = listOf(row),
+        )
+
+        dao.recordFailures(
+            listOf(
+                row.copy(
+                    fetchedAtEpochMs = 999L,
+                    lastFailureKind = "network",
+                    lastAccessedAtEpochMs = 999L,
+                    refreshGeneration = 2L,
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf(item),
+            dao.observeRange(ACCOUNT_ID, SCOPE_KEY, ZONE_ID, listOf(day)).first(),
+        )
+        assertEquals(
+            row.copy(
+                lastFailureKind = "network",
+                refreshGeneration = 2L,
+            ),
+            dao.observeCoverage(ACCOUNT_ID, SCOPE_KEY, ZONE_ID, listOf(day)).first().single(),
+        )
+    }
+
+    @Test
+    fun replaceDays_ignoresOlderRefreshGeneration() = runBlocking {
+        val day = "2026-09-16"
+        val newer = timelineEntity("newer", "Newer")
+        val older = timelineEntity("older", "Older")
+        dao.replaceDays(
+            items = listOf(newer),
+            memberships = listOf(membership(day, newer.itemId)),
+            coverage = listOf(coverage(day, fetchedAtEpochMs = 200L).copy(refreshGeneration = 2L)),
+        )
+
+        dao.replaceDays(
+            items = listOf(older),
+            memberships = listOf(membership(day, older.itemId)),
+            coverage = listOf(coverage(day, fetchedAtEpochMs = 300L).copy(refreshGeneration = 1L)),
+        )
+
+        assertEquals(
+            listOf(newer),
+            dao.observeRange(ACCOUNT_ID, SCOPE_KEY, ZONE_ID, listOf(day)).first(),
+        )
+        assertEquals(
+            2L,
+            dao.observeCoverage(ACCOUNT_ID, SCOPE_KEY, ZONE_ID, listOf(day)).first().single().refreshGeneration,
+        )
+    }
+
     private fun timelineEntity(
         id: String,
         title: String,

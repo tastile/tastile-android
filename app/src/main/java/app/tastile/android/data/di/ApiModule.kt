@@ -9,15 +9,23 @@ import app.tastile.android.data.auth.AuthRepositoryContract
 import app.tastile.android.data.auth.BetterAuthHttpClient
 import app.tastile.android.data.command.V1CommandDispatcher
 import app.tastile.android.data.timeline.DefaultTimelinePageRepository
+import app.tastile.android.data.timeline.DefaultTimelineSyncRepository
 import app.tastile.android.data.timeline.TimelinePageRepository
+import app.tastile.android.data.timeline.TimelineApplicationScope
+import app.tastile.android.data.timeline.TimelineSyncRepository
 import app.tastile.android.data.timeline.local.TimelineCacheDao
 import app.tastile.android.data.timeline.local.TimelineCacheDatabase
+import app.tastile.android.data.tile.TileRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.time.Clock
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -87,4 +95,21 @@ object ApiModule {
     @Singleton
     fun provideTimelinePageRepository(dao: TimelineCacheDao): TimelinePageRepository =
         DefaultTimelinePageRepository(dao)
+
+    @Provides
+    @Singleton
+    fun provideTimelineSyncRepository(
+        tileRepository: TileRepository,
+        dao: TimelineCacheDao,
+    ): TimelineSyncRepository = DefaultTimelineSyncRepository(tileRepository, dao)
+
+    @Provides
+    @Singleton
+    @TimelineApplicationScope
+    fun provideTimelineApplicationScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Provides
+    @Singleton
+    fun provideTimelineClock(): Clock = Clock.systemUTC()
 }
