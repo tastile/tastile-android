@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -403,7 +405,19 @@ private fun TimelinePagePager(
                 key = pageKey,
                 items = persistentListOf(),
             )
-        pageContent(pageKey, snapshot)
+        // Keep the snapshot identity observable at the pager renderer
+        // boundary. Day/Week expose event titles directly; Month renders
+        // counts, so this semantics node gives every scale the same
+        // page-content assertion surface and catches cross-page wiring.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .semantics(mergeDescendants = false) {
+                    contentDescription = timelineSnapshotSemantics(snapshot)
+                },
+        ) {
+            pageContent(pageKey, snapshot)
+        }
     }
 }
 
@@ -421,6 +435,14 @@ private fun shiftTimelineAnchor(baseKey: TimelinePageKey, offset: Long): LocalDa
 
 private fun timelinePageTag(key: TimelinePageKey): String =
     "timeline-${key.scale.name.lowercase(Locale.ROOT)}-${key.normalizedAnchor}"
+
+/** Stable semantics identity for the exact snapshot rendered by one page. */
+internal fun timelineSnapshotSemantics(snapshot: TimelinePageSnapshot): String =
+    snapshot.items
+        .joinToString(separator = "|", prefix = "timeline-snapshot:") { item ->
+            "${item.id}:${item.title}"
+        }
+        .ifEmpty { "timeline-snapshot:empty" }
 
 /** Identity captured by a pager settle collector. */
 internal data class TimelinePagerSettleToken(

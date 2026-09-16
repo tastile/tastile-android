@@ -2,6 +2,7 @@ package app.tastile.android.ui.mobile.tabs
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import app.tastile.android.core.CoreTimelineItem
@@ -138,6 +139,9 @@ class TimelineAdjacentPageTest {
         compose.onNodeWithTag(previousTag, useUnmergedTree = true).assertExists()
         compose.onNodeWithTag(currentTag, useUnmergedTree = true).assertExists()
         compose.onNodeWithTag(nextTag, useUnmergedTree = true).assertExists()
+        assertSnapshotRendered(repository.snapshotFor(previous))
+        assertSnapshotRendered(repository.snapshotFor(current))
+        assertSnapshotRendered(repository.snapshotFor(next))
         assertNotEquals(
             repository.snapshotFor(current).items.single().title,
             repository.snapshotFor(next).items.single().title,
@@ -171,6 +175,13 @@ class TimelineAdjacentPageTest {
         assertEquals(next.anchor, pageViewModel.currentPageKey?.anchor)
         verify { dashboard.setSelectedDay(next.anchor) }
         compose.onNodeWithTag(nextTag, useUnmergedTree = true).assertExists()
+    }
+
+    private fun assertSnapshotRendered(snapshot: TimelinePageSnapshot) {
+        compose.onNodeWithContentDescription(
+            timelineSnapshotSemantics(snapshot),
+            useUnmergedTree = true,
+        ).assertExists()
     }
 
     private fun shiftAnchor(key: TimelinePageKey, amount: Long): TimelinePageKey {

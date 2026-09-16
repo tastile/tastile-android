@@ -69,8 +69,9 @@ fun TilesTimelineBody(
     vm: DashboardViewModel,
     locale: AppLocale,
     modifier: Modifier = Modifier,
+    projectionViewModel: TilesTimelineProjectionViewModel? = null,
 ) {
-    val timeline by vm.timeline.collectAsStateWithLifecycle()
+    val timeline = rememberTilesTimelineProjectionItems(vm, projectionViewModel)
     val scale by vm.timelineScale.collectAsStateWithLifecycle()
     val customStart by vm.customStartIso.collectAsStateWithLifecycle()
     val customEnd by vm.customEndIso.collectAsStateWithLifecycle()

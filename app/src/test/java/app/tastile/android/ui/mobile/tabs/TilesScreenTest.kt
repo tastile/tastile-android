@@ -14,6 +14,9 @@ import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.theme.TastileTheme
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
+import app.tastile.android.data.timeline.TimelinePageKey
+import app.tastile.android.data.timeline.TimelinePageRepository
+import app.tastile.android.data.timeline.TimelinePageSnapshot
 import app.tastile.android.data.user.AppLocale
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ListGroupingMode
@@ -23,10 +26,15 @@ import app.tastile.android.ui.dashboard.TileRange
 import app.tastile.android.ui.dashboard.TilesTab
 import app.tastile.android.ui.dashboard.TimelineSubScale
 import app.tastile.android.ui.mobile.OverlayViewModel
+import app.tastile.android.ui.mobile.tabs.tiles.TilesTimelineProjectionViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.collections.immutable.toPersistentList
+import java.time.LocalDate
+import java.time.ZoneId
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,6 +64,8 @@ class TilesScreenTest {
         every { vm.listViewMode } returns MutableStateFlow(ListViewMode.COMFORTABLE)
         every { vm.groupedTiles } returns MutableStateFlow(emptyList())
         every { vm.timeline } returns MutableStateFlow(timeline)
+        every { vm.timelineAccountId } returns "account-a"
+        every { vm.selectedDay } returns MutableStateFlow(LocalDate.of(2026, 7, 8))
         every { vm.timelineScale } returns MutableStateFlow(TimelineSubScale.DAY)
         every { vm.customStartIso } returns MutableStateFlow(null)
         every { vm.customEndIso } returns MutableStateFlow(null)
@@ -114,9 +124,10 @@ class TilesScreenTest {
     @Test
     fun `timeline sub tab shows scale dropdown plus empty state`() {
         val vm = stubVm(activeTab = TilesTab.TIMELINE, timeline = emptyList())
+        val projection = projectionVm()
         rule.setContent {
             TastileTheme {
-                TilesScreen(viewModel = vm, overlay = stubOverlay())
+                TilesScreen(viewModel = vm, overlay = stubOverlay(), timelineProjectionViewModel = projection)
             }
         }
         rule.onNodeWithTag("tiles-timeline-scale").assertIsDisplayed()
@@ -135,10 +146,11 @@ class TilesScreenTest {
                 endAt = "2026-07-08T0$it:30:00Z",
             )
         }
-        val vm = stubVm(activeTab = TilesTab.TIMELINE, timeline = items)
+        val vm = stubVm(activeTab = TilesTab.TIMELINE, timeline = emptyList())
+        val projection = projectionVm(items)
         rule.setContent {
             TastileTheme {
-                TilesScreen(viewModel = vm, overlay = stubOverlay())
+                TilesScreen(viewModel = vm, overlay = stubOverlay(), timelineProjectionViewModel = projection)
             }
         }
         rule.onAllNodesWithTag("timeline-block-ev-1").assertCountEquals(1)
@@ -159,10 +171,11 @@ class TilesScreenTest {
                 endAt = null,
             )
         }
-        val vm = stubVm(activeTab = TilesTab.CHANGES, timeline = items)
+        val vm = stubVm(activeTab = TilesTab.CHANGES, timeline = emptyList())
+        val projection = projectionVm(items)
         rule.setContent {
             TastileTheme {
-                TilesScreen(viewModel = vm, overlay = stubOverlay())
+                TilesScreen(viewModel = vm, overlay = stubOverlay(), timelineProjectionViewModel = projection)
             }
         }
         rule.onAllNodesWithTag("tile-change-ch-1-work_ended").assertCountEquals(1)
@@ -173,13 +186,28 @@ class TilesScreenTest {
     @Test
     fun `changes sub tab empty state renders when timeline empty`() {
         val vm = stubVm(activeTab = TilesTab.CHANGES, timeline = emptyList())
+        val projection = projectionVm()
         rule.setContent {
             TastileTheme {
-                TilesScreen(viewModel = vm, overlay = stubOverlay())
+                TilesScreen(viewModel = vm, overlay = stubOverlay(), timelineProjectionViewModel = projection)
             }
         }
         rule.onNodeWithTag("tiles-list-body").assertDoesNotExist()
     }
+
+    private fun projectionVm(items: List<CoreTimelineItem> = emptyList()): TilesTimelineProjectionViewModel =
+        TilesTimelineProjectionViewModel(
+            object : TimelinePageRepository {
+                override fun observePage(key: TimelinePageKey) = flowOf(
+                    TimelinePageSnapshot(
+                        key = key.normalized(),
+                        items = items.toPersistentList(),
+                    ),
+                )
+
+                override suspend fun purgeAccount(accountId: String) = Unit
+            },
+        )
 
     @Test
     fun `search field change routes through vm setSearchTerm`() {

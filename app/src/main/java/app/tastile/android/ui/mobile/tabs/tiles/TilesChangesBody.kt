@@ -24,7 +24,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
@@ -46,8 +45,9 @@ fun TilesChangesBody(
     vm: DashboardViewModel,
     locale: AppLocale,
     modifier: Modifier = Modifier,
+    projectionViewModel: TilesTimelineProjectionViewModel? = null,
 ) {
-    val timeline by vm.timeline.collectAsStateWithLifecycle()
+    val timeline = rememberTilesTimelineProjectionItems(vm, projectionViewModel)
     val visible = remember(timeline) { timeline.take(MAX_VISIBLE_CHANGES) }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
