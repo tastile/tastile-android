@@ -63,6 +63,8 @@ data class PlacedBlock(
     val endMinutes: Int,
     val laneIndex: Int,
     val laneCount: Int,
+    /** Canonical source id for source-backed placements (A05). */
+    val sourceTileId: String? = null,
 )
 
 /**
@@ -434,6 +436,7 @@ internal fun toDayBlocks(
             endMinutes = eMin,
             laneIndex = 0,
             laneCount = 1,
+            sourceTileId = item.sourceTileId,
         )
     }
     return assignLanes(filtered)
