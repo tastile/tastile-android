@@ -408,8 +408,63 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun loadTileDetail_commitsWhenDetailIdDiffersFromSelectedTileId() = runTest {
-        // A05 regression: the sheet selects the placement tile id but loads
+    fun refreshTimeline_keepsCachedItemsAcrossReloadsUntilFreshFetchResolves() = runTest {
+        // A05 regression: a fast day-pagination tap used to flash the screen
+        // empty while the network round-trip ran. Cache the first fetch,
+        // then re-request and assert the cached list is published
+        // immediately (no gap), and the final merge preserves a card the
+        // user is looking at when the next fetch drops it.
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val firstFetch = CompletableDeferred<List<CoreTimelineItem>>()
+        var callCount = 0
+        coEvery { tileRepository.getTimeline(any(), any(), any()) } coAnswers {
+            callCount++
+            if (callCount == 1) {
+                listOf(
+                    CoreTimelineItem("p1", "tile-1", 1, "Day", "work", "scheduled", "2026-09-16T01:00:00Z"),
+                    CoreTimelineItem("p2", "tile-2", 1, "Day 2", "work", "scheduled", "2026-09-16T03:00:00Z"),
+                )
+            } else firstFetch.await()
+        }
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        // First refresh populates the timeline + cache.
+        viewModel.refreshTimeline()
+        runCurrent()
+        assertEquals(2, viewModel.timeline.value.size)
+
+        // Second refresh hits the slow path; while the call is in flight
+        // the cached list must remain visible (no flicker).
+        viewModel.refreshTimeline()
+        runCurrent()
+        assertEquals(2, viewModel.timeline.value.size)
+        assertTrue(viewModel.isLoadingTimeline.value)
+
+        // The user keeps looking at tile-1 (open edit sheet). Server's
+        // second response drops p2 entirely; merge must keep p1 + p2
+        // until the new fetch lands, then replace with new content while
+        // preserving any preserved id (here: selected tile id).
+        viewModel.selectTile("tile-1")
+        firstFetch.complete(
+            listOf(CoreTimelineItem("p1-new", "tile-1", 1, "Day renamed", "work", "scheduled", "2026-09-16T01:00:00Z")),
+        )
+        runCurrent()
+
+        assertEquals(1, viewModel.timeline.value.size)
+        assertEquals("p1-new", viewModel.timeline.value.single().id)
+        assertFalse(viewModel.isLoadingTimeline.value)
+    }
+
+    @Test
+    fun loadTileDetail_commitsWhenDetailIdDiffersFromSelectedTileId() = runTest {        // A05 regression: the sheet selects the placement tile id but loads
         // the canonical source id. The commit gate must not compare against
         // the selected tile id or loading spins forever on source-backed tiles.
         val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()

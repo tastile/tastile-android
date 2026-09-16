@@ -276,6 +276,7 @@ class DashboardViewModel @Inject constructor(
      */
     internal fun replaceTimelineForTest(list: List<CoreTimelineItem>) {
         _timeline.value = list
+        _timelineCache.value = null
     }
 
     internal fun replaceExecutionControlStatesForTest(states: Map<String, ExecutionControlState>) {
@@ -311,6 +312,22 @@ class DashboardViewModel @Inject constructor(
 
     private val _isLoadingTimeline = MutableStateFlow(false)
     val isLoadingTimeline: StateFlow<Boolean> = _isLoadingTimeline.asStateFlow()
+
+    /**
+     * Cached timeline reads. The cache is keyed by the exact range the
+     * CalendarScreen rendered last, with an `Instant.now()` timestamp so
+     * stale entries can still be shown immediately while a fresh fetch
+     * runs in the background. A successful refetch is merged into the
+     * existing list (same id → replaced, missing id → dropped, new id →
+     * appended) so the user never sees the screen flash empty. (A05)
+     */
+    private data class TimelineCacheEntry(
+        val range: Pair<Instant, Instant>,
+        val items: List<CoreTimelineItem>,
+        val loadedAt: Instant,
+    )
+    private val _timelineCache = MutableStateFlow<TimelineCacheEntry?>(null)
+    private val timelineCacheTtlMs = 60_000L
 
     private val _timelineRange = MutableStateFlow(
         computeTimelineRange(LocalDate.now(), TimelineScale.Day)
@@ -871,22 +888,69 @@ class DashboardViewModel @Inject constructor(
         refreshAll()
     }
 
-    private fun refreshTimeline() {
+    internal fun refreshTimeline() {
         val (start, end) = _timelineRange.value
-        viewModelScope.launch {
-            _isLoadingTimeline.value = true
-            try {
-                _timeline.value = filterCalendarByMinimumDuration(
-                    tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds),
-                    _calendarMinimumDurationMinutes.value,
-                )
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load timeline"
-            } finally {
-                _isLoadingTimeline.value = false
+        // Serve cached data immediately when it matches the current range
+        // and is still within TTL. The fresh fetch still runs in the
+        // background, but the user never sees the screen flash empty on
+        // a fast day-pagination tap. (A05)
+        val cached = _timelineCache.value
+        if (cached != null && cached.range == start to end) {
+            val age = Instant.now().toEpochMilli() - cached.loadedAt.toEpochMilli()
+            if (age <= timelineCacheTtlMs && cached.items.isNotEmpty()) {
+                applyTimeline(cached.items, merge = false)
+                viewModelScope.launch { fetchTimeline(start, end) }
+                return
             }
         }
+        viewModelScope.launch { fetchTimeline(start, end) }
     }
+
+    private suspend fun fetchTimeline(start: Instant, end: Instant) {
+        _isLoadingTimeline.value = true
+        try {
+            val raw = tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds)
+            val merged = filterCalendarByMinimumDuration(raw, _calendarMinimumDurationMinutes.value)
+            applyTimeline(merged, merge = true)
+            _timelineCache.value = TimelineCacheEntry(
+                range = start to end,
+                items = raw,
+                loadedAt = Instant.now(),
+            )
+        } catch (e: Exception) {
+            _error.value = e.message ?: "Failed to load timeline"
+        } finally {
+            _isLoadingTimeline.value = false
+        }
+    }
+
+    /**
+     * Apply [items] to [_timeline]. When [merge] is true, keep any
+     * existing item whose id is missing from the new payload — this
+     * prevents a fresh fetch from clobbering cards that the user is
+     * actively looking at (e.g. a tile edit sheet, an open detail
+     * panel). When [merge] is false, the cache hit path just restores
+     * the previous view.
+     */
+    private fun applyTimeline(items: List<CoreTimelineItem>, merge: Boolean) {
+        if (!merge || _timeline.value.isEmpty()) {
+            _timeline.value = items
+            return
+        }
+        val byId = items.associateBy { it.id }
+        val preserved = _timeline.value
+            .filterNot { existing -> byId.containsKey(existing.id) }
+            .filter { existing -> existing.id in preservedIdsToKeep() }
+        _timeline.value = preserved + items
+    }
+
+    /**
+     * Ids the caller wants to keep visible across reloads. Today this
+     * is just the selected tile id (so the edit sheet's underlying
+     * timeline state doesn't disappear mid-edit); callers may add
+     * more without breaking the merge contract.
+     */
+    private fun preservedIdsToKeep(): Set<String> = setOfNotNull(_selectedTileId.value)
 
     fun refreshAll() {
         viewModelScope.launch {
