@@ -415,14 +415,21 @@ internal fun toDayBlocks(
     day: LocalDate,
     zone: ZoneId,
 ): List<PlacedBlock> {
+    val dayStart = day.atStartOfDay(zone).toInstant()
+    val dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant()
     val filtered = items.mapNotNull { item ->
         val s = parseInstantOrNull(item.startAt) ?: return@mapNotNull null
         val e = parseInstantOrNull(item.endAt) ?: s
-        val sLocal = s.atZone(zone)
-        val eLocal = e.atZone(zone)
-        if (sLocal.toLocalDate() != day && eLocal.toLocalDate() != day) {
-            return@mapNotNull null
-        }
+        // The day window is [dayStart, dayEnd). An overnight placement
+        // (start=23:00 prev day, end=07:00 day) must render on both sides,
+        // so we use overlap semantics here too (A05). We then clamp the
+        // visible minutes to [00:00, 24:00) so the chip never spills
+        // past the grid.
+        if (!e.isAfter(dayStart) || !s.isBefore(dayEnd)) return@mapNotNull null
+        val visStart = if (s.isBefore(dayStart)) dayStart else s
+        val visEnd = if (e.isAfter(dayEnd)) dayEnd else e
+        val sLocal = visStart.atZone(zone)
+        val eLocal = visEnd.atZone(zone)
         val sMin = sLocal.hour * 60 + sLocal.minute
         val eMin = (eLocal.hour * 60 + eLocal.minute).coerceAtLeast(sMin + 15)
         PlacedBlock(
