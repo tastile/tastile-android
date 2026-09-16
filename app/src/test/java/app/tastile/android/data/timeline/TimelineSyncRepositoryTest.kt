@@ -243,6 +243,36 @@ class TimelineSyncRepositoryTest {
         )
     }
 
+    @Test
+    fun refresh_usesOwnerIdsInCanonicalApiRequestAndCacheScope() = runTest {
+        val dao = RecordingTimelineCacheDao()
+        val tileRepository = mockk<TileRepository>()
+        val apiOwners = mutableListOf<List<String>>()
+        coEvery { tileRepository.getTimelineCanonical(any(), any(), any()) } coAnswers {
+            apiOwners += thirdArg<List<String>>()
+            TimelineFetchResult.Success(emptyList())
+        }
+        val repository = DefaultTimelineSyncRepository(tileRepository, dao)
+        val owners = listOf(" owner-b ", "owner-a", "owner-b")
+        val key = TimelinePageKey.forScope(
+            accountId = "account-a",
+            ownerIds = owners,
+            zoneId = zone,
+            scale = TimelineScale.Day,
+            anchor = firstDay,
+        )
+        val request = TimelineRefreshRequest(
+            key = key,
+            ownerIds = owners,
+            now = Instant.parse("2026-09-16T12:00:00Z"),
+        )
+
+        repository.refresh(request)
+
+        assertEquals(listOf(listOf("owner-a", "owner-b")), apiOwners)
+        assertEquals(key.scopeFingerprint, dao.replaceCalls.single().coverage.single().scopeKey)
+    }
+
     private fun request(
         scale: TimelineScale = TimelineScale.Day,
         generation: Long? = null,

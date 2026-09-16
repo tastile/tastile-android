@@ -46,13 +46,13 @@ class DefaultTimelinePageRepository @Inject constructor(
         return combine(
             dao.observeRange(
                 accountId = normalizedKey.accountId,
-                scopeKey = normalizedKey.scopeKey,
+                scopeKey = normalizedKey.normalizedScopeFingerprint,
                 zoneId = normalizedKey.zoneId.id,
                 localDates = localDateStrings,
             ),
             dao.observeCoverage(
                 accountId = normalizedKey.accountId,
-                scopeKey = normalizedKey.scopeKey,
+                scopeKey = normalizedKey.normalizedScopeFingerprint,
                 zoneId = normalizedKey.zoneId.id,
                 localDates = localDateStrings,
             ),
@@ -79,7 +79,7 @@ class DefaultTimelinePageRepository @Inject constructor(
         val items = itemEntities
             .asSequence()
             .filter { entity ->
-                entity.accountId == key.accountId && entity.scopeKey == key.scopeKey
+                entity.accountId == key.accountId && entity.scopeKey == key.normalizedScopeFingerprint
             }
             .distinctBy { it.itemId }
             .mapNotNull { entity ->
@@ -89,7 +89,7 @@ class DefaultTimelinePageRepository @Inject constructor(
 
         val pageCoverageEntities = coverageEntities.filter { entity ->
             entity.accountId == key.accountId &&
-                entity.scopeKey == key.scopeKey &&
+                entity.scopeKey == key.normalizedScopeFingerprint &&
                 entity.zoneId == key.zoneId.id &&
                 entity.localDate in localDates.map(LocalDate::toString)
         }

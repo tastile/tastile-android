@@ -49,7 +49,14 @@ enum class CalendarViewMode {
     MONTH
 }
 
+/**
+ * Legacy aggregate calendar projection retained for compatibility with old
+ * dashboard callers. The active mobile timeline route is the page-local
+ * projection in `ui.mobile.tabs.TimelineScreen`; this screen has no production
+ * navigation entry and must not be wired back into the pager.
+ */
 @Composable
+@Deprecated("Use app.tastile.android.ui.mobile.tabs.TimelineScreen")
 fun TimelineScreen(
     viewModel: DashboardViewModel,
     mode: CalendarViewMode = CalendarViewMode.MONTH

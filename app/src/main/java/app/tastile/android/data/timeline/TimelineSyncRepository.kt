@@ -22,12 +22,16 @@ data class TimelineRefreshRequest(
     internal val normalizedKey: TimelinePageKey
         get() = key.normalized()
 
+    /** Owner scope in the canonical order used by API/cache coalescing. */
+    val normalizedOwnerIds: List<String>
+        get() = normalizeTimelineOwnerIds(ownerIds.ifEmpty { key.ownerIds })
+
     internal val requestedDates: List<LocalDate>
         get() = (localDates ?: normalizedKey.visibleDates.toList()).distinct().sorted()
 
     internal companion object {
         val DEFAULT_TIMELINE_STALE_AFTER: Duration = Duration.ofMinutes(15)
-        const val CACHE_CONTRACT_VERSION: Int = 1
+        const val CACHE_CONTRACT_VERSION: Int = TIMELINE_SCOPE_API_CONTRACT_VERSION
     }
 }
 

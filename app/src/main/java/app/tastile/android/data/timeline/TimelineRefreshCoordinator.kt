@@ -62,7 +62,7 @@ class TimelineRefreshCoordinator @Inject constructor(
             val decisions = normalizedKeys.mapIndexed { index, key ->
                 val coverage = dao.observeCoverage(
                     accountId = key.accountId,
-                    scopeKey = key.scopeKey,
+                    scopeKey = key.normalizedScopeFingerprint,
                     zoneId = key.zoneId.id,
                     localDates = key.visibleDates.map(LocalDate::toString),
                 ).first()
@@ -81,6 +81,7 @@ class TimelineRefreshCoordinator @Inject constructor(
                     syncRepository.refresh(
                         TimelineRefreshRequest(
                             key = decision.key,
+                            ownerIds = decision.key.normalizedOwnerIds,
                             now = now,
                         ),
                     )

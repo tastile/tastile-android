@@ -5,6 +5,7 @@ import app.tastile.android.data.timeline.TimelinePageKey
 import app.tastile.android.data.timeline.TimelinePageRepository
 import app.tastile.android.data.timeline.TimelinePageSnapshot
 import app.tastile.android.data.timeline.TimelineRefreshDirection
+import app.tastile.android.data.timeline.timelineScopeFingerprint
 import app.tastile.android.ui.dashboard.TimelineScale
 import java.time.LocalDate
 import java.time.ZoneId
@@ -106,6 +107,44 @@ class TimelinePageViewModelTest {
         assertEquals(2.25f, viewModel.uiState.value.zoomFor(TimelineScale.Day))
         assertEquals(week, viewModel.uiState.value.anchors[TimelineScale.Week])
         assertEquals(3.5f, viewModel.uiState.value.zoomFor(TimelineScale.Week))
+    }
+
+    @Test
+    fun context_propagatesNormalizedScopeAndOwnersToPageKeysAndRefreshes() = runTest {
+        val viewModel = TimelinePageViewModel(
+            pageRepository = repository,
+            refreshRequester = refreshes,
+        )
+
+        viewModel.setContext(
+            accountId = "account-a",
+            scopeFingerprint = timelineScopeFingerprint(listOf("owner-b", "owner-a")),
+            ownerIds = listOf(" owner-b ", "owner-a", "owner-b"),
+            zoneId = ZoneId.of("America/New_York"),
+            anchor = LocalDate.of(2026, 9, 16),
+            scale = TimelineScale.Day,
+        )
+
+        val current = checkNotNull(viewModel.currentPageKey)
+        assertEquals(listOf("owner-a", "owner-b"), current.ownerIds)
+        assertEquals(timelineScopeFingerprint(current.ownerIds), current.scopeFingerprint)
+        assertEquals(current, refreshes.lastKeys.first())
+        assertEquals(current.ownerIds, refreshes.lastKeys.first().ownerIds)
+    }
+
+    @Test
+    fun switchingScale_preservesMonthAnchorAndZoomAlongsideDayAndWeek() = runTest {
+        val viewModel = viewModel()
+        val month = LocalDate.of(2026, 11, 1)
+
+        viewModel.setScale(TimelineScale.Month)
+        viewModel.setAnchor(month)
+        viewModel.setZoom(4.25f)
+        viewModel.setScale(TimelineScale.Day)
+        viewModel.setScale(TimelineScale.Month)
+
+        assertEquals(month, viewModel.uiState.value.anchors[TimelineScale.Month])
+        assertEquals(4.25f, viewModel.uiState.value.zoomFor(TimelineScale.Month))
     }
 
     @Test

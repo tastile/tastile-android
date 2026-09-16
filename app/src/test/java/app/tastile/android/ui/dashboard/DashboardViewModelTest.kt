@@ -132,6 +132,42 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun refreshAll_doesNotReadTheLegacyGlobalTimeline() = runTest {
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.refreshAll()
+
+        coVerify(exactly = 0) { tileRepository.getTimeline(any(), any(), any()) }
+    }
+
+    @Test
+    fun ownerFilter_doesNotTriggerLegacyTimelineFetch() = runTest {
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.setOwnerFilter("11111111-1111-1111-1111-111111111111")
+
+        coVerify(exactly = 0) { tileRepository.getTimeline(any(), any(), any()) }
+    }
+
+    @Test
     fun groupedTiles_forStateMode_partitionsByLifecycle() = runTest {
         val viewModel = newViewModel()
         val ready = Tile(id = "r1", title = "R", lifecycle = "Ready")

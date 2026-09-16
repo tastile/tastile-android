@@ -85,7 +85,7 @@ class DefaultTimelineSyncRepository @Inject constructor(
 
         val coverage = dao.observeCoverage(
             accountId = key.accountId,
-            scopeKey = key.scopeKey,
+            scopeKey = key.normalizedScopeFingerprint,
             zoneId = key.zoneId.id,
             localDates = requestedDates.map(LocalDate::toString),
         ).first()
@@ -145,7 +145,7 @@ class DefaultTimelineSyncRepository @Inject constructor(
             .filter { item -> candidateDates.any { date -> overlaps(item, date, key.zoneId) } }
             .distinctBy { it.item.id }
         val itemEntities = parsedItems.map { parsed ->
-            TimelineCacheMapper.toEntity(key.accountId, key.scopeKey, parsed.item)
+            TimelineCacheMapper.toEntity(key.accountId, key.normalizedScopeFingerprint, parsed.item)
         }
         val memberships = parsedItems.flatMap { parsed ->
             candidateDates.filter { date ->
@@ -153,7 +153,7 @@ class DefaultTimelineSyncRepository @Inject constructor(
             }.map { date ->
                 TimelineDayMembershipEntity(
                     accountId = key.accountId,
-                    scopeKey = key.scopeKey,
+                    scopeKey = key.normalizedScopeFingerprint,
                     zoneId = key.zoneId.id,
                     localDate = date.toString(),
                     itemId = parsed.item.id,
@@ -164,7 +164,7 @@ class DefaultTimelineSyncRepository @Inject constructor(
         val coverageEntities = candidateDates.map { date ->
             TimelineCoverageEntity(
                 accountId = key.accountId,
-                scopeKey = key.scopeKey,
+                scopeKey = key.normalizedScopeFingerprint,
                 zoneId = key.zoneId.id,
                 localDate = date.toString(),
                 fetchedAtEpochMs = fetchedAt,
@@ -183,7 +183,7 @@ class DefaultTimelineSyncRepository @Inject constructor(
 
         val committedCoverage = dao.observeCoverage(
             accountId = key.accountId,
-            scopeKey = key.scopeKey,
+            scopeKey = key.normalizedScopeFingerprint,
             zoneId = key.zoneId.id,
             localDates = candidateDates.map(LocalDate::toString),
         ).first()
@@ -327,7 +327,7 @@ class DefaultTimelineSyncRepository @Inject constructor(
         val now = request.now.toEpochMilli()
         return TimelineCoverageEntity(
             accountId = key.accountId,
-            scopeKey = key.scopeKey,
+            scopeKey = key.normalizedScopeFingerprint,
             zoneId = key.zoneId.id,
             localDate = date.toString(),
             fetchedAtEpochMs = now,
@@ -352,7 +352,7 @@ class DefaultTimelineSyncRepository @Inject constructor(
 
     private data class RefreshContext(
         val accountId: String,
-        val scopeKey: String,
+        val scopeFingerprint: String,
         val zoneId: String,
         val ownerIds: List<String>,
         val generation: Long?,
@@ -362,9 +362,9 @@ class DefaultTimelineSyncRepository @Inject constructor(
                 val key = request.normalizedKey
                 return RefreshContext(
                     accountId = key.accountId,
-                    scopeKey = key.scopeKey,
+                    scopeFingerprint = key.normalizedScopeFingerprint,
                     zoneId = key.zoneId.id,
-                    ownerIds = request.ownerIds.filter(String::isNotBlank).distinct().sorted(),
+                    ownerIds = request.normalizedOwnerIds,
                     generation = request.generation,
                 )
             }
@@ -373,7 +373,7 @@ class DefaultTimelineSyncRepository @Inject constructor(
 
     private data class FetchContext(
         val accountId: String,
-        val scopeKey: String,
+        val scopeFingerprint: String,
         val zoneId: ZoneId,
         val ownerIds: List<String>,
     ) {
@@ -382,9 +382,9 @@ class DefaultTimelineSyncRepository @Inject constructor(
                 val key = request.normalizedKey
                 return FetchContext(
                     accountId = key.accountId,
-                    scopeKey = key.scopeKey,
+                    scopeFingerprint = key.normalizedScopeFingerprint,
                     zoneId = key.zoneId,
-                    ownerIds = request.ownerIds.filter(String::isNotBlank).distinct().sorted(),
+                    ownerIds = request.normalizedOwnerIds,
                 )
             }
         }

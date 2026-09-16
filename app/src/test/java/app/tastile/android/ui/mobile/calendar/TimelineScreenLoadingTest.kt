@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import app.tastile.android.core.CoreTimelineItem
@@ -16,8 +17,10 @@ import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.tabs.TimelineScreen
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -104,8 +107,12 @@ class TimelineScreenLoadingTest {
         // The Day pager (→ DayView → DayViewFrame) must be on screen even
         // while loading. If the screen-level loading-wheel gate comes back,
         // the pager is replaced by a spinner and this node disappears.
-        compose
-            .onNodeWithTag("day-view-frame-grid-lines", useUnmergedTree = true)
-            .assertIsDisplayed()
+        // The page-local pager keeps the current and both adjacent frames
+        // composed while the snapshots are empty/loading.
+        val frameNodes = compose
+            .onAllNodesWithTag("day-view-frame-grid-lines", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        assertEquals(3, frameNodes.size)
+        verify(exactly = 0) { vm.timeline }
     }
 }

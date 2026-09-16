@@ -11,6 +11,7 @@ import app.tastile.android.ui.dashboard.TimelineScale
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -155,6 +156,8 @@ class TimelinePageViewModel private constructor(
             anchors = uiState.value.anchors.toPersistentMap().putting(normalizedKey.scale, normalizedKey.anchor),
             pages = persistentMapOf(),
             isReadOnly = isReadOnly,
+            scopeFingerprint = normalizedKey.scopeFingerprint,
+            ownerIds = normalizedKey.normalizedOwnerIds.toPersistentList(),
         )
         restartPageObservations()
     }
@@ -167,7 +170,8 @@ class TimelinePageViewModel private constructor(
     /** Updates account/scope/zone context while retaining the selected scale. */
     fun setContext(
         accountId: String,
-        scopeKey: String,
+        scopeFingerprint: String,
+        ownerIds: List<String> = emptyList(),
         zoneId: java.time.ZoneId,
         anchor: java.time.LocalDate = uiState.value.currentAnchor,
         scale: TimelineScale = uiState.value.scale,
@@ -176,12 +180,34 @@ class TimelinePageViewModel private constructor(
         setPageKey(
             TimelinePageKey(
                 accountId = accountId,
-                scopeKey = scopeKey,
+                scopeFingerprint = scopeFingerprint,
                 zoneId = zoneId,
                 scale = scale,
                 anchor = anchor,
+                ownerIds = ownerIds,
             ),
             isReadOnly,
+        )
+    }
+
+    /** Compatibility entry point for hosts that still name the scope key. */
+    @Deprecated("Use scopeFingerprint and ownerIds")
+    fun setContext(
+        accountId: String,
+        scopeKey: String,
+        zoneId: java.time.ZoneId,
+        anchor: java.time.LocalDate = uiState.value.currentAnchor,
+        scale: TimelineScale = uiState.value.scale,
+        isReadOnly: Boolean = uiState.value.isReadOnly,
+    ) {
+        setContext(
+            accountId = accountId,
+            scopeFingerprint = scopeKey,
+            ownerIds = emptyList(),
+            zoneId = zoneId,
+            anchor = anchor,
+            scale = scale,
+            isReadOnly = isReadOnly,
         )
     }
 

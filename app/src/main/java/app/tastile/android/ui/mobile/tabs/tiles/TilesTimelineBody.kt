@@ -58,6 +58,10 @@ import app.tastile.android.ui.dashboard.TimelineSubScale
  * when scale = CUSTOM, and a vertical list of timestamped rows driven by
  * `DashboardViewModel.timeline`. Dot colour follows the web parity rule
  * "ended → success-green · otherwise → primary".
+ *
+ * This is a compact Tiles-tab activity projection. It is intentionally not
+ * the calendar pager: the calendar route reads page-local snapshots through
+ * [app.tastile.android.ui.timeline.TimelinePageViewModel].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

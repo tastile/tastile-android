@@ -6,6 +6,8 @@ import app.tastile.android.data.timeline.TimelinePageSnapshot
 import app.tastile.android.ui.dashboard.TimelineScale
 import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 
 /**
@@ -23,6 +25,10 @@ data class TimelinePageUiState(
     val isReadOnly: Boolean = false,
     /** The independently retained pinch zoom for each timeline scale. */
     val zooms: ImmutableMap<TimelineScale, Float> = defaultTimelineZooms(),
+    /** Scope identity used by the active page request. */
+    val scopeFingerprint: String? = null,
+    /** Normalized owner selection used by the active page request. */
+    val ownerIds: ImmutableList<String> = persistentListOf(),
 ) {
     /** Anchor of the currently selected scale. */
     val currentAnchor: LocalDate

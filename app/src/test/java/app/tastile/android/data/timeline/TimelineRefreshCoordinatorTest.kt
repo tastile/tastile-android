@@ -100,6 +100,31 @@ class TimelineRefreshCoordinatorTest {
         assertEquals(listOf(current), sync.requests.map { it.key })
     }
 
+    @Test
+    fun coordinator_propagatesCanonicalScopeFingerprintAndOwnerIds() = runTest {
+        val current = TimelinePageKey.forScope(
+            accountId = "account-a",
+            ownerIds = listOf(" owner-b ", "owner-a", "owner-b"),
+            zoneId = zone,
+            scale = TimelineScale.Day,
+            anchor = currentDate,
+        )
+        val sync = RecordingSyncRepository()
+        val coordinator = coordinator(
+            sync = sync,
+            dao = CoordinatorDao(emptyList()),
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
+
+        coordinator.requestRefresh(listOf(current), TimelineRefreshDirection.None)
+        advanceUntilIdle()
+
+        val request = sync.requests.single()
+        assertEquals(current.scopeFingerprint, request.key.scopeFingerprint)
+        assertEquals(listOf("owner-a", "owner-b"), request.ownerIds)
+        assertEquals(request.ownerIds, request.normalizedOwnerIds)
+    }
+
     private fun coordinator(
         sync: RecordingSyncRepository,
         dao: CoordinatorDao,

@@ -36,7 +36,8 @@ import app.tastile.android.ui.dashboard.DashboardViewModel
 /**
  * Recent-changes sub-tab body. Capped at [MAX_VISIBLE_CHANGES] rows
  * (matching web's constant). Each row shows the tile title, the event
- * type, and a locale-aware timestamp.
+ * type, and a locale-aware timestamp. This is a compact recent-change
+ * projection for the Tiles tab, not the page-local calendar timeline.
  */
 private const val MAX_VISIBLE_CHANGES = 120
 

@@ -25,6 +25,8 @@ import app.tastile.android.data.api.SourceTileDetailRead
 import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.time.formatIsoDateTime
+import app.tastile.android.data.timeline.normalizeTimelineOwnerIds
+import app.tastile.android.data.timeline.timelineScopeFingerprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -201,7 +203,6 @@ class DashboardViewModel @Inject constructor(
         _tileFilter.value = _tileFilter.value.copy(ownerIds = ownerIds.mapNotNull { id ->
             id.takeIf { it.isNotBlank() && isOwnerUuid(it) }
         }.distinct())
-        refreshTimeline()
     }
 
     private fun isOwnerUuid(id: String): Boolean =
@@ -310,12 +311,21 @@ class DashboardViewModel @Inject constructor(
     private val _timeline = MutableStateFlow<List<CoreTimelineItem>>(emptyList())
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
 
+    /**
+     * Stable account identity used to scope the local timeline read model.
+     * The page-scoped timeline owns its snapshots; this scalar remains on the
+     * dashboard only so the screen can select the correct account partition.
+     */
+    val timelineAccountId: String?
+        get() = authRepository.currentUserId()
+
     private val _isLoadingTimeline = MutableStateFlow(false)
     val isLoadingTimeline: StateFlow<Boolean> = _isLoadingTimeline.asStateFlow()
 
     /**
-     * Cached timeline reads. The cache is keyed by the exact range the
-     * CalendarScreen rendered last, with an `Instant.now()` timestamp so
+     * Legacy projection cache. The cache is keyed by the exact range and
+     * normalized owner scope the deprecated panel rendered last, with an
+     * `Instant.now()` timestamp so
      * stale entries can still be shown immediately while a fresh fetch
      * runs in the background. A successful refetch is merged into the
      * existing list (same id → replaced, missing id → dropped, new id →
@@ -323,16 +333,13 @@ class DashboardViewModel @Inject constructor(
      */
     private data class TimelineCacheEntry(
         val range: Pair<Instant, Instant>,
+        val scopeFingerprint: String,
+        val ownerIds: List<String>,
         val items: List<CoreTimelineItem>,
         val loadedAt: Instant,
     )
     private val _timelineCache = MutableStateFlow<TimelineCacheEntry?>(null)
     private val timelineCacheTtlMs = 60_000L
-
-    private val _timelineRange = MutableStateFlow(
-        computeTimelineRange(LocalDate.now(), TimelineScale.Day)
-    )
-    val timelineRange: StateFlow<Pair<Instant, Instant>> = _timelineRange.asStateFlow()
 
     private val _selectedDay = MutableStateFlow(java.time.LocalDate.now())
     val selectedDay: StateFlow<java.time.LocalDate> = _selectedDay.asStateFlow()
@@ -359,7 +366,6 @@ class DashboardViewModel @Inject constructor(
 
     fun setCalendarMinimumDuration(minutes: Int) {
         _calendarMinimumDurationMinutes.value = minutes.coerceAtLeast(0)
-        refreshTimeline()
     }
 
     fun moveCalendar(delta: Long) {
@@ -839,16 +845,6 @@ class DashboardViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(_selectedDay, _scale, _calendarMode) { d, s, m ->
-                calendarRange(d, s, m)
-            }
-                .distinctUntilChanged()
-                .collect { range ->
-                    _timelineRange.value = range
-                    refreshTimeline()
-                }
-        }
-        viewModelScope.launch {
             authRepository.authState.collect { state ->
                 if (state is TastileAuthState.Authenticated) {
                     // Fetch the Workspace list now that we have an auth token.
@@ -865,7 +861,6 @@ class DashboardViewModel @Inject constructor(
                     } catch (t: Throwable) {
                         android.util.Log.e("DashboardViewModel", "workspace fetch failed", t)
                     }
-                    refreshTimeline()
                 }
             }
         }
@@ -888,32 +883,48 @@ class DashboardViewModel @Inject constructor(
         refreshAll()
     }
 
+    /**
+     * Legacy projection refresh retained for the deprecated dashboard/panel
+     * surfaces. The active calendar route uses [TimelinePageViewModel] and no
+     * production caller invokes this method, so page snapshots cannot be
+     * fetched twice. New callers must send a page refresh intent instead.
+     */
+    @Deprecated("Use TimelinePageViewModel.requestRefresh")
     internal fun refreshTimeline() {
-        val (start, end) = _timelineRange.value
+        val (start, end) = calendarRange(_selectedDay.value, _scale.value, _calendarMode.value)
+        val ownerIds = normalizeTimelineOwnerIds(_tileFilter.value.ownerIds)
+        val scopeFingerprint = timelineScopeFingerprint(ownerIds)
         // Serve cached data immediately when it matches the current range
         // and is still within TTL. The fresh fetch still runs in the
         // background, but the user never sees the screen flash empty on
         // a fast day-pagination tap. (A05)
         val cached = _timelineCache.value
-        if (cached != null && cached.range == start to end) {
+        if (
+            cached != null &&
+            cached.range == start to end &&
+            cached.scopeFingerprint == scopeFingerprint &&
+            cached.ownerIds == ownerIds
+        ) {
             val age = Instant.now().toEpochMilli() - cached.loadedAt.toEpochMilli()
             if (age <= timelineCacheTtlMs && cached.items.isNotEmpty()) {
                 publishTimelineIfDifferent(cached.items)
-                viewModelScope.launch { fetchTimeline(start, end) }
+                viewModelScope.launch { fetchTimeline(start, end, ownerIds) }
                 return
             }
         }
-        viewModelScope.launch { fetchTimeline(start, end) }
+        viewModelScope.launch { fetchTimeline(start, end, ownerIds) }
     }
 
-    private suspend fun fetchTimeline(start: Instant, end: Instant) {
+    private suspend fun fetchTimeline(start: Instant, end: Instant, ownerIds: List<String>) {
         _isLoadingTimeline.value = true
         try {
-            val raw = tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds)
+            val raw = tileRepository.getTimeline(start, end, ownerIds)
             val filtered = filterCalendarByMinimumDuration(raw, _calendarMinimumDurationMinutes.value)
             publishTimelineIfDifferent(filtered)
             _timelineCache.value = TimelineCacheEntry(
                 range = start to end,
+                scopeFingerprint = timelineScopeFingerprint(ownerIds),
+                ownerIds = ownerIds,
                 items = filtered,
                 loadedAt = Instant.now(),
             )
@@ -951,13 +962,6 @@ class DashboardViewModel @Inject constructor(
                 if (userId != null) {
                     _profile.value = profileRepository.getProfile(userId)
                     _avatarUrl.value = _profile.value?.avatarUrl
-                    val (tlStart, tlEnd) = _timelineRange.value
-                    publishTimelineIfDifferent(
-                        filterCalendarByMinimumDuration(
-                            tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds),
-                            _calendarMinimumDurationMinutes.value,
-                        ),
-                    )
                 } else {
                     _timeline.value = emptyList()
                     _profile.value = null
