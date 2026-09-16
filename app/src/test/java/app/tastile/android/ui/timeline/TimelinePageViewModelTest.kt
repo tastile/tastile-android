@@ -8,12 +8,18 @@ import app.tastile.android.data.timeline.TimelineRefreshDirection
 import app.tastile.android.ui.dashboard.TimelineScale
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -147,11 +153,73 @@ class TimelinePageViewModelTest {
         })
     }
 
+    @Test
+    fun changingAnchorAndScale_cancelsPreviousPageCollectors() = runTest {
+        val viewModel = viewModel()
+        val initialObservations = repository.observationsSnapshot()
+        assertEquals(3, initialObservations.size)
+
+        viewModel.setAnchor(LocalDate.of(2026, 9, 20))
+        awaitCancellation(initialObservations)
+
+        val anchorObservations = repository.observationsSnapshot().drop(initialObservations.size)
+        assertEquals(3, anchorObservations.size)
+
+        viewModel.setScale(TimelineScale.Week)
+        awaitCancellation(anchorObservations)
+    }
+
+    @Test
+    fun nonCooperativeStaleUpstream_doesNotMutateStateAfterAnchorChange() = runTest {
+        repository.nonCooperativeUpstream = true
+        val viewModel = viewModel()
+        val oldObservations = repository.observationsSnapshot()
+        assertEquals(3, oldObservations.size)
+        awaitStaleReady(oldObservations)
+        repository.nonCooperativeUpstream = false
+
+        viewModel.setAnchor(LocalDate.of(2026, 9, 20))
+        val expectedState = viewModel.uiState.value
+
+        oldObservations.forEach { observation ->
+            observation.emitStale(snapshot(observation.key, "stale-upstream"))
+        }
+        awaitStaleDelivery(oldObservations)
+
+        assertSame(expectedState, viewModel.uiState.value)
+        assertEquals(LocalDate.of(2026, 9, 20), viewModel.currentPageKey?.anchor)
+    }
+
     private fun viewModel(): TimelinePageViewModel = TimelinePageViewModel(
         pageRepository = repository,
         refreshRequester = refreshes,
         initialKey = currentKey,
     )
+
+    private suspend fun awaitCancellation(
+        observations: List<FakeTimelinePageRepository.Observation>,
+    ) {
+        withTimeout(1_000) {
+            observations.forEach { observation -> observation.cancelled.await() }
+        }
+        assertTrue(observations.all { observation -> observation.cancelled.isCompleted })
+    }
+
+    private suspend fun awaitStaleReady(
+        observations: List<FakeTimelinePageRepository.Observation>,
+    ) {
+        withTimeout(1_000) {
+            observations.forEach { observation -> observation.staleReady.await() }
+        }
+    }
+
+    private suspend fun awaitStaleDelivery(
+        observations: List<FakeTimelinePageRepository.Observation>,
+    ) {
+        withTimeout(1_000) {
+            observations.forEach { observation -> observation.staleDelivered.await() }
+        }
+    }
 
     private fun snapshot(key: TimelinePageKey, title: String): TimelinePageSnapshot =
         TimelinePageSnapshot(
@@ -192,15 +260,25 @@ class TimelinePageViewModelTest {
         private val emissions = MutableSharedFlow<TimelinePageSnapshot>(extraBufferCapacity = 16)
         val observedKeys = mutableListOf<TimelinePageKey>()
         private val observations = mutableListOf<Observation>()
+        var nonCooperativeUpstream = false
 
         override fun observePage(key: TimelinePageKey): Flow<TimelinePageSnapshot> {
             val normalizedKey = key.normalized()
             val observation = Observation(normalizedKey)
+            val useNonCooperativeUpstream = nonCooperativeUpstream
             observedKeys += normalizedKey
             observations += observation
-            return flow {
-                emit(TimelinePageSnapshot(key = normalizedKey))
-                emitAll(kotlinx.coroutines.flow.merge(emissions, observation.emissions))
+            return if (useNonCooperativeUpstream) {
+                observation.nonCooperativeFlow()
+            } else {
+                flow {
+                    emit(TimelinePageSnapshot(key = normalizedKey))
+                    try {
+                        emitAll(kotlinx.coroutines.flow.merge(emissions, observation.emissions))
+                    } finally {
+                        observation.cancelled.complete(Unit)
+                    }
+                }
             }
         }
 
@@ -213,11 +291,39 @@ class TimelinePageViewModelTest {
         fun observationFor(key: TimelinePageKey): Observation =
             observations.first { observation -> observation.key == key.normalized() }
 
+        fun observationsSnapshot(): List<Observation> = observations.toList()
+
         class Observation(val key: TimelinePageKey) {
             val emissions = MutableSharedFlow<TimelinePageSnapshot>(extraBufferCapacity = 2)
+            val cancelled = CompletableDeferred<Unit>()
+            val staleReady = CompletableDeferred<Unit>()
+            val staleDelivered = CompletableDeferred<Unit>()
+            private var staleContinuation: Continuation<TimelinePageSnapshot>? = null
 
             fun emit(snapshot: TimelinePageSnapshot) {
                 emissions.tryEmit(snapshot)
+            }
+
+            fun nonCooperativeFlow(): Flow<TimelinePageSnapshot> = object : Flow<TimelinePageSnapshot> {
+                override suspend fun collect(collector: FlowCollector<TimelinePageSnapshot>) {
+                    collector.emit(TimelinePageSnapshot(key = key))
+                    collector.emit(awaitStale())
+                    staleDelivered.complete(Unit)
+                }
+            }
+
+            suspend fun awaitStale(): TimelinePageSnapshot =
+                suspendCoroutine { continuation ->
+                    staleContinuation = continuation
+                    staleReady.complete(Unit)
+                }
+
+            fun emitStale(snapshot: TimelinePageSnapshot) {
+                val continuation = checkNotNull(staleContinuation) {
+                    "Non-cooperative upstream is not awaiting stale emission"
+                }
+                staleContinuation = null
+                continuation.resume(snapshot)
             }
         }
     }
