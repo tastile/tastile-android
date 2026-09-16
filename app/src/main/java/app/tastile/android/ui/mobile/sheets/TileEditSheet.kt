@@ -100,12 +100,17 @@ fun TileEditSheet(
     if (current is Overlay.TileEdit) {
         val tileEdit = current as Overlay.TileEdit
         val tileId = tileEdit.tileId
+        // Source reads/writes address the canonical source id. Timeline
+        // occurrences carry a placement tile id that 404s against
+        // GET /v1/source-tiles/{id} (A05); prefer the timeline's
+        // source_tile_id whenever the entry point supplied one.
+        val detailId = tileEdit.sourceTileId ?: tileId
         // Trigger the v1 source-tile detail fetch whenever the sheet opens for
         // a new tile id. The repository's read path is suspended + fault-tolerant
         // (returns null on auth/network/server errors), so the UI only ever
         // renders a placeholder or the real payload — never a hard error.
-        LaunchedEffect(tileId) {
-            tileId?.let(viewModel::loadTileDetail)
+        LaunchedEffect(detailId) {
+            detailId?.let(viewModel::loadTileDetail)
         }
         // The QuickCreateStateStore is keyed by the (tileId, placementId) pair
         // so the same tile reopens with the same draft, but a different tile
@@ -113,11 +118,11 @@ fun TileEditSheet(
         val store = remember(tileId, tileEdit.placementId) {
             QuickCreateStateStore()
         }
-        LaunchedEffect(detail, tileId, tileEdit.placementId) {
+        LaunchedEffect(detail, detailId, tileEdit.placementId) {
             val currentDetail = detail
-            if (currentDetail != null && tileId != null) {
+            if (currentDetail != null && detailId != null) {
                 val existing = store.state.value
-                if (existing.editingTileId != tileId) {
+                if (existing.editingTileId != detailId) {
                     // Heuristic: recurring tiles set `schedule.generation.kind = 1`
                     // (Recurring) on the v1 wire; placement / event / task tiles
                     // leave it at 0 (OneTime) or 2 (DemandDriven). Pre-select the
@@ -130,7 +135,7 @@ fun TileEditSheet(
                         WorkflowKind.Event
                     }
                     store.hydrateForEdit(
-                        tileId = tileId,
+                        tileId = detailId,
                         placementId = tileEdit.placementId,
                         detail = currentDetail,
                         workflow = initialWorkflow,
@@ -185,7 +190,7 @@ fun TileEditSheet(
                 }
                 if (detail == null && !detailLoading && error == null) {
                     NiaTextButton(
-                        onClick = { tileId?.let(viewModel::loadTileDetail) },
+                        onClick = { detailId?.let(viewModel::loadTileDetail) },
                         text = { Text(stringResource(R.string.tile_edit_retry_loading)) },
                     )
                 }

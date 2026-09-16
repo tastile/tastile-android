@@ -96,7 +96,14 @@ data class CoreTimelineItem(
     val type: String,
     val status: String,
     val startAt: String,
-    val endAt: String? = null
+    val endAt: String? = null,
+    /**
+     * Canonical source id for source-backed placements. The tile editor
+     * addresses this id for source-tile reads/writes; tileId alone 404s
+     * for source-emitted occurrences (A05).
+     */
+    @SerialName("source_tile_id")
+    val sourceTileId: String? = null
 )
 
 @Serializable

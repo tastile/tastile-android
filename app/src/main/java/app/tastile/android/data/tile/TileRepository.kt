@@ -413,6 +413,7 @@ class TileRepository @Inject constructor(
             id = placementId,
             tileId = tileId,
             sourceKind = source.kind.toInt(),
+            sourceTileId = sourceTileId,
             title = content.title.ifBlank { "Untitled" },
             type = role.toRoleName(),
             status = resolution.state.toStatusName(),

@@ -74,11 +74,11 @@ fun TimelineScreen(
             when (val target = calendarEventTarget(item)) {
                 is CalendarEventTarget.RecurringTile -> {
                     viewModel.selectTile(target.tileId)
-                    overlay.show(Overlay.TileEdit(tileId = target.tileId))
+                    overlay.show(Overlay.TileEdit(tileId = target.tileId, sourceTileId = target.sourceTileId))
                 }
                 is CalendarEventTarget.Placement -> {
                     target.tileId?.let(viewModel::selectTile)
-                    overlay.show(Overlay.TileEdit(tileId = target.tileId, placementId = target.placementId))
+                    overlay.show(Overlay.TileEdit(tileId = target.tileId, placementId = target.placementId, sourceTileId = target.sourceTileId))
                 }
             }
         }
