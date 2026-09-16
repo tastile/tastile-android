@@ -53,14 +53,19 @@ class BetterAuthHttpClient(
     /** Parses a `Set-Cookie` value for the BetterAuth session token. */
     internal fun extractSessionToken(setCookieHeaders: List<String>?): String? {
         if (setCookieHeaders.isNullOrEmpty()) return null
-        for (header in setCookieHeaders) {
-            // BetterAuth emits the cookie with attributes like
-            //   better-auth.session_token=abc123; Path=/; HttpOnly; SameSite=Lax
-            // We only need the name=value pair.
-            val firstPair = header.substringBefore(';').trim()
-            if (firstPair.startsWith(SESSION_COOKIE_NAME + "=")) {
-                val value = firstPair.substring(SESSION_COOKIE_NAME.length + 1)
-                if (value.isNotBlank()) return value
+        // BetterAuth emits the cookie with attributes like
+        //   better-auth.session_token=abc123; Path=/; HttpOnly; SameSite=Lax
+        // Production serves HTTPS, so the name carries the `__Secure-`
+        // prefix (A02 option A: accept both, never weaken the contract).
+        // The secure variant wins across all headers before falling back
+        // to the plain name. We only need the name=value pair.
+        for (name in SESSION_COOKIE_NAMES) {
+            for (header in setCookieHeaders) {
+                val firstPair = header.substringBefore(';').trim()
+                if (firstPair.startsWith(name + "=")) {
+                    val value = firstPair.substring(name.length + 1)
+                    if (value.isNotBlank()) return value
+                }
             }
         }
         return null
@@ -217,7 +222,9 @@ class BetterAuthHttpClient(
     }
 
     companion object {
+        private const val SECURE_SESSION_COOKIE_NAME = "__Secure-better-auth.session_token"
         private const val SESSION_COOKIE_NAME = "better-auth.session_token"
+        private val SESSION_COOKIE_NAMES = listOf(SECURE_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME)
         private const val SIGN_IN_PATH = "/api/auth/sign-in/email"
         private const val SIGN_UP_PATH = "/api/auth/sign-up/email"
         private const val SIGN_IN_SOCIAL_PATH = "/api/auth/sign-in/social"
