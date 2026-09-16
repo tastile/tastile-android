@@ -376,7 +376,6 @@ class DefaultTimelineSyncRepository @Inject constructor(
         val scopeKey: String,
         val zoneId: ZoneId,
         val ownerIds: List<String>,
-        val generation: Long?,
     ) {
         companion object {
             fun from(request: TimelineRefreshRequest): FetchContext {
@@ -386,7 +385,6 @@ class DefaultTimelineSyncRepository @Inject constructor(
                     scopeKey = key.scopeKey,
                     zoneId = key.zoneId,
                     ownerIds = request.ownerIds.filter(String::isNotBlank).distinct().sorted(),
-                    generation = request.generation,
                 )
             }
         }

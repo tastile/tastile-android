@@ -160,12 +160,18 @@ class TimelineSyncRepositoryTest {
 
         val older = async { repository.refresh(request(generation = 1L)) }
         firstFetchStarted.await()
-        val newer = repository.refresh(request(generation = 2L))
+        val newer = async { repository.refresh(request(generation = 2L)) }
         releaseFirstFetch.complete(Unit)
-        older.await()
+        val newerResult = newer.await()
+        val olderResult = older.await()
 
-        assertEquals(TimelineRefreshStatus.Refreshed, newer.status)
-        assertEquals(listOf("new-result"), dao.items.map { it.itemId })
+        assertEquals(TimelineRefreshStatus.Refreshed, newerResult.status)
+        assertEquals(TimelineRefreshStatus.Superseded, olderResult.status)
+        assertEquals(2L, newerResult.generation)
+        assertEquals(1L, olderResult.generation)
+        // Both callers share one canonical response; the newer generation is
+        // still retained as the winning write metadata.
+        assertEquals(listOf("old-result"), dao.items.map { it.itemId })
         assertEquals(2L, dao.coverageFlow.value.single().refreshGeneration)
     }
 
@@ -214,9 +220,13 @@ class TimelineSyncRepositoryTest {
         val firstDates = (0..6).map { firstDay.plusDays(it.toLong()) }
         val secondDates = (6..12).map { firstDay.plusDays(it.toLong()) }
 
-        val first = async { repository.refresh(request(localDates = firstDates)) }
+        val first = async {
+            repository.refresh(request(generation = 1L, localDates = firstDates))
+        }
         firstFetchStarted.await()
-        val second = async { repository.refresh(request(localDates = secondDates)) }
+        val second = async {
+            repository.refresh(request(generation = 2L, localDates = secondDates))
+        }
         // Let the second refresh register its shared boundary flight before
         // releasing the first response.
         kotlinx.coroutines.yield()
@@ -227,6 +237,10 @@ class TimelineSyncRepositoryTest {
         assertEquals(2, calls.size)
         assertEquals(Instant.parse("2026-09-16T00:00:00Z"), calls[0].first)
         assertEquals(Instant.parse("2026-09-23T00:00:00Z"), calls[1].first)
+        assertEquals(
+            2L,
+            dao.coverageFlow.value.first { it.localDate == "2026-09-22" }.refreshGeneration,
+        )
     }
 
     private fun request(
