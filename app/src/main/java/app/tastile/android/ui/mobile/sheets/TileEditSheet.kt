@@ -104,13 +104,18 @@ fun TileEditSheet(
         // occurrences carry a placement tile id that 404s against
         // GET /v1/source-tiles/{id} (A05); prefer the timeline's
         // source_tile_id whenever the entry point supplied one.
+        // For placements without a source tile (legacy / v0 era), leave
+        // detailId null so the sheet renders the cached Tile without
+        // making a doomed server call.
         val detailId = tileEdit.sourceTileId ?: tileId
         // Trigger the v1 source-tile detail fetch whenever the sheet opens for
         // a new tile id. The repository's read path is suspended + fault-tolerant
         // (returns null on auth/network/server errors), so the UI only ever
         // renders a placeholder or the real payload — never a hard error.
-        LaunchedEffect(detailId) {
-            detailId?.let(viewModel::loadTileDetail)
+        if (detailId != null) {
+            LaunchedEffect(detailId) {
+                viewModel.loadTileDetail(detailId)
+            }
         }
         // The QuickCreateStateStore is keyed by the (tileId, placementId) pair
         // so the same tile reopens with the same draft, but a different tile
@@ -120,9 +125,10 @@ fun TileEditSheet(
         }
         LaunchedEffect(detail, detailId, tileEdit.placementId) {
             val currentDetail = detail
-            if (currentDetail != null && detailId != null) {
+            val resolvedId = detailId
+            if (currentDetail != null && resolvedId != null) {
                 val existing = store.state.value
-                if (existing.editingTileId != detailId) {
+                if (existing.editingTileId != resolvedId) {
                     // Heuristic: recurring tiles set `schedule.generation.kind = 1`
                     // (Recurring) on the v1 wire; placement / event / task tiles
                     // leave it at 0 (OneTime) or 2 (DemandDriven). Pre-select the
@@ -135,7 +141,7 @@ fun TileEditSheet(
                         WorkflowKind.Event
                     }
                     store.hydrateForEdit(
-                        tileId = detailId,
+                        tileId = resolvedId,
                         placementId = tileEdit.placementId,
                         detail = currentDetail,
                         workflow = initialWorkflow,
@@ -188,11 +194,16 @@ fun TileEditSheet(
                         modifier = Modifier.testTag("tile-edit-detail-loading"),
                     )
                 }
-                if (detail == null && !detailLoading && error == null) {
-                    NiaTextButton(
-                        onClick = { detailId?.let(viewModel::loadTileDetail) },
-                        text = { Text(stringResource(R.string.tile_edit_retry_loading)) },
-                    )
+                if (detail != null && !detailLoading && error == null) {
+                    // Only ask the server to retry when we actually had a
+                    // source id to load. Legacy / v0 placements have no
+                    // detail to fetch (A05).
+                    if (detailId != null) {
+                        NiaTextButton(
+                            onClick = { viewModel.loadTileDetail(detailId) },
+                            text = { Text(stringResource(R.string.tile_edit_retry_loading)) },
+                        )
+                    }
                 }
                 if (detail != null && tileId != null) {
                     EditableIdentityBlock(
