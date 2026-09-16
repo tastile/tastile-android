@@ -36,6 +36,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -460,6 +461,38 @@ class DashboardViewModelTest {
 
         assertEquals(1, viewModel.timeline.value.size)
         assertEquals("p1-new", viewModel.timeline.value.single().id)
+        assertFalse(viewModel.isLoadingTimeline.value)
+    }
+
+    @Test
+    fun refreshTimeline_skipsEmitWhenIdsUnchanged() = runTest {
+        // A05 follow-up: cache-hit and re-fetched list with the same ids
+        // must not emit a new reference, otherwise `remember(timeline, ...)`
+        // in the day view recomputes PlacedBlock and the screen flashes.
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.getTimeline(any(), any(), any()) } returns listOf(
+            CoreTimelineItem("p1", "tile-1", 1, "Day", "work", "scheduled", "2026-09-16T01:00:00Z"),
+        )
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.refreshTimeline()
+        runCurrent()
+        val first = viewModel.timeline.value
+        assertEquals(1, first.size)
+
+        viewModel.refreshTimeline()
+        runCurrent()
+        // Second refresh must reuse the same list reference because the
+        // ids are identical (publishTimelineIfDifference drops the emit).
+        assertSame(first, viewModel.timeline.value)
         assertFalse(viewModel.isLoadingTimeline.value)
     }
 

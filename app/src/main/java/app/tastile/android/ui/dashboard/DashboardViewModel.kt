@@ -898,7 +898,7 @@ class DashboardViewModel @Inject constructor(
         if (cached != null && cached.range == start to end) {
             val age = Instant.now().toEpochMilli() - cached.loadedAt.toEpochMilli()
             if (age <= timelineCacheTtlMs && cached.items.isNotEmpty()) {
-                applyTimeline(cached.items, merge = false)
+                publishTimelineIfDifferent(cached.items)
                 viewModelScope.launch { fetchTimeline(start, end) }
                 return
             }
@@ -910,11 +910,11 @@ class DashboardViewModel @Inject constructor(
         _isLoadingTimeline.value = true
         try {
             val raw = tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds)
-            val merged = filterCalendarByMinimumDuration(raw, _calendarMinimumDurationMinutes.value)
-            applyTimeline(merged, merge = true)
+            val filtered = filterCalendarByMinimumDuration(raw, _calendarMinimumDurationMinutes.value)
+            publishTimelineIfDifferent(filtered)
             _timelineCache.value = TimelineCacheEntry(
                 range = start to end,
-                items = raw,
+                items = filtered,
                 loadedAt = Instant.now(),
             )
         } catch (e: Exception) {
@@ -932,25 +932,13 @@ class DashboardViewModel @Inject constructor(
      * panel). When [merge] is false, the cache hit path just restores
      * the previous view.
      */
-    private fun applyTimeline(items: List<CoreTimelineItem>, merge: Boolean) {
-        if (!merge || _timeline.value.isEmpty()) {
-            _timeline.value = items
+    private fun publishTimelineIfDifferent(items: List<CoreTimelineItem>) {
+        val current = _timeline.value
+        if (current.size == items.size && current.zip(items).all { (a, b) -> a.id == b.id }) {
             return
         }
-        val byId = items.associateBy { it.id }
-        val preserved = _timeline.value
-            .filterNot { existing -> byId.containsKey(existing.id) }
-            .filter { existing -> existing.id in preservedIdsToKeep() }
-        _timeline.value = preserved + items
+        _timeline.value = items
     }
-
-    /**
-     * Ids the caller wants to keep visible across reloads. Today this
-     * is just the selected tile id (so the edit sheet's underlying
-     * timeline state doesn't disappear mid-edit); callers may add
-     * more without breaking the merge contract.
-     */
-    private fun preservedIdsToKeep(): Set<String> = setOfNotNull(_selectedTileId.value)
 
     fun refreshAll() {
         viewModelScope.launch {
@@ -964,9 +952,11 @@ class DashboardViewModel @Inject constructor(
                     _profile.value = profileRepository.getProfile(userId)
                     _avatarUrl.value = _profile.value?.avatarUrl
                     val (tlStart, tlEnd) = _timelineRange.value
-                    _timeline.value = filterCalendarByMinimumDuration(
-                        tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds),
-                        _calendarMinimumDurationMinutes.value,
+                    publishTimelineIfDifferent(
+                        filterCalendarByMinimumDuration(
+                            tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds),
+                            _calendarMinimumDurationMinutes.value,
+                        ),
                     )
                 } else {
                     _timeline.value = emptyList()
