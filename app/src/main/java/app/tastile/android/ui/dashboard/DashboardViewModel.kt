@@ -219,12 +219,21 @@ class DashboardViewModel @Inject constructor(
     private val _selectedTileDetailLoading = MutableStateFlow(false)
     val selectedTileDetailLoading: StateFlow<Boolean> = _selectedTileDetailLoading.asStateFlow()
 
+    /**
+     * The detail id of the in-flight (or last completed) [loadTileDetail]
+     * request. The edit sheet addresses the canonical source id while tile
+     * selection tracks the placement tile id (A05), so the commit gate keys
+     * on the requested detail id — never on [_selectedTileId].
+     */
+    private val _selectedTileDetailRequest = MutableStateFlow<String?>(null)
+
     fun selectTile(id: String) {
         _selectedTileId.value = id
     }
 
     fun clearSelectedTile() {
         _selectedTileId.value = null
+        _selectedTileDetailRequest.value = null
         _selectedTileDetail.value = null
         _selectedTileDetailLoading.value = false
     }
@@ -233,19 +242,21 @@ class DashboardViewModel @Inject constructor(
      * Fetches the v1 source-tile detail for [id] and stores it in
      * [selectedTileDetail] so [TileEditSheet] can render the real title,
      * description, schedule, etc. Clears any previous detail if [id] is blank
-     * or the fetch fails. No-op when [id] matches the currently selected id
-     * and a detail is already loaded.
+     * or the fetch fails. Late responses from a superseded request (fast
+     * re-select / dismiss race) are dropped via [_selectedTileDetailRequest].
      */
     fun loadTileDetail(id: String) {
         if (id.isBlank()) {
+            _selectedTileDetailRequest.value = null
             _selectedTileDetail.value = null
             _selectedTileDetailLoading.value = false
             return
         }
+        _selectedTileDetailRequest.value = id
         viewModelScope.launch {
             _selectedTileDetailLoading.value = true
             val detail = tileRepository.getTileDetail(id)
-            if (_selectedTileId.value == id) {
+            if (_selectedTileDetailRequest.value == id) {
                 _selectedTileDetail.value = detail
                 _selectedTileDetailLoading.value = false
             }

@@ -407,6 +407,29 @@ class DashboardViewModelTest {
         assertEquals(8, viewModel.sectionLimits.value["sec"])
     }
 
+    @Test
+    fun loadTileDetail_commitsWhenDetailIdDiffersFromSelectedTileId() = runTest {
+        // A05 regression: the sheet selects the placement tile id but loads
+        // the canonical source id. The commit gate must not compare against
+        // the selected tile id or loading spins forever on source-backed tiles.
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.selectTile("tile-1")
+        viewModel.loadTileDetail("source-1")
+        runCurrent()
+
+        assertFalse(viewModel.selectedTileDetailLoading.value)
+    }
+
     private data class Mocks(
         val authRepository: AuthRepository,
         val accessRepository: AccessRepository,
