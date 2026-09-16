@@ -366,12 +366,31 @@ class DashboardViewModelTest {
     @Test
     fun setOwnerFilter_updatesTileFilterAndClearsBackToAllProjects() = runTest {
         val viewModel = newViewModel()
+        val projectId = "11111111-1111-1111-1111-111111111111"
 
-        viewModel.setOwnerFilter("project-1")
-        assertEquals(listOf("project-1"), viewModel.tileFilter.value.ownerIds)
+        viewModel.setOwnerFilter(projectId)
+        assertEquals(listOf(projectId), viewModel.tileFilter.value.ownerIds)
 
         viewModel.setOwnerFilter(null)
         assertTrue(viewModel.tileFilter.value.ownerIds.isEmpty())
+    }
+
+    @Test
+    fun setOwnerFilters_dropsNonUuidIdsSoServerDefaultsToActorScope() = runTest {
+        val viewModel = newViewModel()
+
+        // The synthesized Personal entry carries the BetterAuth user id, which
+        // is not a UUID and would make the server return empty reads (A05).
+        viewModel.setOwnerFilters(listOf("better-auth-user-id", "   "))
+        assertTrue(viewModel.tileFilter.value.ownerIds.isEmpty())
+
+        viewModel.setOwnerFilters(
+            listOf("better-auth-user-id", "22222222-2222-2222-2222-222222222222"),
+        )
+        assertEquals(
+            listOf("22222222-2222-2222-2222-222222222222"),
+            viewModel.tileFilter.value.ownerIds,
+        )
     }
 
     @Test

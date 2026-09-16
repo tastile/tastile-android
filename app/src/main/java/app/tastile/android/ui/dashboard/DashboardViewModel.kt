@@ -193,9 +193,19 @@ class DashboardViewModel @Inject constructor(
 
     /** Applies Calendar's checked workspace tree as the v1 `owner_ids` selection. */
     fun setOwnerFilters(ownerIds: Collection<String>) {
-        _tileFilter.value = _tileFilter.value.copy(ownerIds = ownerIds.filter { it.isNotBlank() }.distinct())
+        // v1 owner_ids only address UUID owners. The synthesized Personal entry
+        // carries the BetterAuth user id, which the server's UUID parser drops
+        // to an empty set (=> empty timeline/tiles). Keep only UUIDs so an
+        // empty selection omits the param and the server defaults to the actor
+        // (Personal scope). (A05)
+        _tileFilter.value = _tileFilter.value.copy(ownerIds = ownerIds.mapNotNull { id ->
+            id.takeIf { it.isNotBlank() && isOwnerUuid(it) }
+        }.distinct())
         refreshTimeline()
     }
+
+    private fun isOwnerUuid(id: String): Boolean =
+        runCatching { java.util.UUID.fromString(id) }.isSuccess
 
     private val _selectedTileId = MutableStateFlow<String?>(null)
 
