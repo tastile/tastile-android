@@ -554,6 +554,79 @@ class DashboardViewModelTest {
         assertFalse(viewModel.selectedTileDetailLoading.value)
     }
 
+    @Test
+    fun selectTile_supplementsTruncatedVisibleListViaFetchTileById() = runTest {
+        // A05: the visible tile list is a truncated view_mode=list page, so a
+        // timeline tap outside the first page must resolve through the
+        // single-tile supplement instead of leaving selectedTile null (which
+        // hides the sheet's save/actions gates).
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.fetchTileById("tile-999") } returns Tile(id = "tile-999", title = "Break")
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.selectTile("tile-999")
+        runCurrent()
+
+        assertEquals("tile-999", viewModel.selectedTile.first()?.id)
+        coVerify(exactly = 1) { tileRepository.fetchTileById("tile-999") }
+    }
+
+    @Test
+    fun selectTile_prefersVisibleListAndSkipsSupplementOnHit() = runTest {
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val authStates = MutableStateFlow<TastileAuthState>(TastileAuthState.Unauthenticated)
+        every { authRepository.authState } returns authStates
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(listOf(Tile(id = "tile-1", title = "Walk")), null, null)
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+        authStates.value = TastileAuthState.Authenticated("user-1", "a@example.com")
+        runCurrent()
+
+        viewModel.selectTile("tile-1")
+        runCurrent()
+
+        assertEquals("tile-1", viewModel.selectedTile.first()?.id)
+        coVerify(exactly = 0) { tileRepository.fetchTileById(any()) }
+    }
+
+    @Test
+    fun clearSelectedTile_dropsSupplementOverride() = runTest {
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.fetchTileById("tile-999") } returns Tile(id = "tile-999", title = "Break")
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.selectTile("tile-999")
+        runCurrent()
+        assertEquals("tile-999", viewModel.selectedTile.first()?.id)
+
+        viewModel.clearSelectedTile()
+        runCurrent()
+        assertEquals(null, viewModel.selectedTile.first()?.id)
+    }
+
     private data class Mocks(
         val authRepository: AuthRepository,
         val accessRepository: AccessRepository,

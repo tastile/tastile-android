@@ -210,8 +210,16 @@ class DashboardViewModel @Inject constructor(
 
     private val _selectedTileId = MutableStateFlow<String?>(null)
 
-    val selectedTile: StateFlow<Tile?> = combine(tiles, _selectedTileId) { list, id ->
-        id?.let { tid -> list.firstOrNull { it.id == tid } }
+    /**
+     * Single-tile supplement for timeline taps outside the truncated visible
+     * list (A05). [selectedTile] prefers the visible list; the override fills
+     * the gap so the edit sheet's save/actions gates still resolve. Server
+     * data only — never synthesized.
+     */
+    private val _selectedTileOverride = MutableStateFlow<Tile?>(null)
+
+    val selectedTile: StateFlow<Tile?> = combine(tiles, _selectedTileId, _selectedTileOverride) { list, id, override ->
+        id?.let { tid -> list.firstOrNull { it.id == tid } ?: override?.takeIf { it.id == tid } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _selectedTileDetail = MutableStateFlow<SourceTileDetailRead?>(null)
@@ -230,10 +238,17 @@ class DashboardViewModel @Inject constructor(
 
     fun selectTile(id: String) {
         _selectedTileId.value = id
+        _selectedTileOverride.value = null
+        viewModelScope.launch {
+            if (_tiles.value.none { it.id == id }) {
+                _selectedTileOverride.value = tileRepository.fetchTileById(id)
+            }
+        }
     }
 
     fun clearSelectedTile() {
         _selectedTileId.value = null
+        _selectedTileOverride.value = null
         _selectedTileDetailRequest.value = null
         _selectedTileDetail.value = null
         _selectedTileDetailLoading.value = false

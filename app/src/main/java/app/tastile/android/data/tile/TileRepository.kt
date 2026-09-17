@@ -66,6 +66,28 @@ class TileRepository @Inject constructor(
     @Volatile
     private var latestCloudTiles: List<Tile> = emptyList()
 
+    /**
+     * Short-TTL read caches that keep timeline-tap navigation instant.
+     * Server reads are slow (measured ~1s detail / ~3.5s 500-list), and every
+     * sheet open otherwise pays both round-trips sequentially. Same 60s
+     * policy as the timeline range cache; mutations evict (see
+     * [evictDetailCaches]).
+     */
+    private data class CachedTiles(val fetchedAtMs: Long, val tiles: List<Tile>)
+    private data class CachedDetail(val fetchedAtMs: Long, val detail: SourceTileDetailRead)
+    @Volatile
+    private var wideTilesCache: CachedTiles? = null
+    private val tileDetailCache = java.util.concurrent.ConcurrentHashMap<String, CachedDetail>()
+
+    private fun isFresh(fetchedAtMs: Long, nowMs: Long = System.currentTimeMillis()): Boolean =
+        nowMs - fetchedAtMs <= 60_000L
+
+    /** Drops cached reads after a mutation so the next open revalidates. */
+    private fun evictDetailCaches() {
+        wideTilesCache = null
+        tileDetailCache.clear()
+    }
+
     suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): TilesResponse {
         // Use the BetterAuth session token as the cheap "is the user signed in"
         // check. The actual v1 call uses the minted token from ApiTokenCache.
@@ -118,6 +140,39 @@ class TileRepository @Inject constructor(
     }
 
     /**
+     * Resolves a single tile for timeline-tap selection (A05). The visible tile
+     * list is a truncated `view_mode=list` page, so taps outside the first page
+     * miss it. Falls back to a wider server-capped read (limit=500) without
+     * disturbing the visible list. Returns null when the tile is genuinely absent.
+     */
+    suspend fun fetchTileById(tileId: String): Tile? {
+        if (tileId.isBlank()) return null
+        getTileById(tileId)?.let {
+            android.util.Log.d("TileRepository", "fetchTileById cache-hit: $tileId")
+            return it
+        }
+        wideTilesCache?.takeIf { isFresh(it.fetchedAtMs) }?.tiles?.firstOrNull { it.id == tileId }?.let {
+            android.util.Log.d("TileRepository", "fetchTileById wide-cache-hit: $tileId")
+            return it
+        }
+        if (currentUserProvider.currentSessionToken().isNullOrBlank()) return null
+        return try {
+            val userId = currentUserProvider.currentUserId().orEmpty()
+            val wide = v1ApiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)).toTiles(userId = userId)
+            wideTilesCache = CachedTiles(System.currentTimeMillis(), wide)
+            val found = wide.firstOrNull { it.id == tileId }
+            android.util.Log.d("TileRepository", "fetchTileById wider-read: $tileId -> ${found != null}")
+            found
+        } catch (e: V1Error) {
+            android.util.Log.w("TileRepository", "v1 fetchTileById failed: ${e.message}", e)
+            null
+        } catch (e: Exception) {
+            android.util.Log.w("TileRepository", "v1 fetchTileById failed: ${e.message}", e)
+            null
+        }
+    }
+
+    /**
      * Fetches the full v1 source-tile detail (`GET /v1/source-tiles/{id}`) and
      * returns the typed [SourceTileDetailRead] payload. Returns `null` when the
      * v1 read fails for any reason (auth, network, server 4xx/5xx) so callers
@@ -126,10 +181,17 @@ class TileRepository @Inject constructor(
      */
     suspend fun getTileDetail(tileId: String): SourceTileDetailRead? {
         if (tileId.isBlank()) return null
+        tileDetailCache[tileId]?.takeIf { isFresh(it.fetchedAtMs) }?.let {
+            android.util.Log.d("TileRepository", "getTileDetail cache-hit: $tileId")
+            return it.detail
+        }
         val token = currentUserProvider.currentSessionToken()
         if (token.isNullOrBlank()) return null
         return try {
-            v1ApiClient.readSourceTile(tileId)
+            val detail = v1ApiClient.readSourceTile(tileId)
+            if (tileDetailCache.size >= 100) tileDetailCache.clear()
+            tileDetailCache[tileId] = CachedDetail(System.currentTimeMillis(), detail)
+            detail
         } catch (e: V1Error) {
             android.util.Log.w("TileRepository", "v1 readSourceTile failed: ${e.message}", e)
             null
@@ -322,6 +384,7 @@ class TileRepository @Inject constructor(
     suspend fun updateTile(tileId: String, payload: JsonObject) {
         val ack = v1CommandDispatcher.dispatchTileUpdate(tileId, payload)
             ?: throw IllegalStateException("Cloud command rejected: update tile")
+        evictDetailCaches()
         refreshCloudCacheAfterCommand(ack)
     }
 
@@ -474,6 +537,7 @@ class TileRepository @Inject constructor(
             endAt = endAtIso,
             ownerId = ownerId,
         ) ?: throw IllegalStateException("Cloud command rejected: reschedule tile")
+        evictDetailCaches()
         refreshCloudCacheAfterCommand(ack)
     }
 
@@ -495,6 +559,7 @@ class TileRepository @Inject constructor(
             endAt = endAtIso,
             ownerId = ownerId,
         ) ?: throw IllegalStateException("Cloud command rejected: reschedule placement")
+        evictDetailCaches()
         refreshCloudCacheAfterCommand(ack)
     }
 
