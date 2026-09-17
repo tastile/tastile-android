@@ -1056,6 +1056,28 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Placement-anchored execution start (A05). The tile-edit sheet calls this
+     * when the timeline occurrence already carries a placement id, bypassing the
+     * tile-start plan bootstrap that source-emitted tiles never satisfy.
+     */
+    fun startPlacementExecution(placementId: String, tileId: String? = null) {
+        val controlKey = tileId ?: placementId
+        if (!beginExecutionControl(controlKey)) return
+        viewModelScope.launch {
+            try {
+                tileRepository.startPlacementExecution(placementId, tileId)
+                _executionControlStates.value = _executionControlStates.value + (controlKey to ExecutionControlState.Active)
+                _lastActionMessage.value = "Execution started"
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to start execution"
+            } finally {
+                endExecutionControl(controlKey)
+            }
+        }
+    }
+
     fun finishExecution(tileId: String) {
         if (!beginExecutionControl(tileId)) return
         viewModelScope.launch {

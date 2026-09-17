@@ -319,6 +319,17 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
+    /**
+     * Starts an execution for a known placement id (A05). Timeline occurrences
+     * already carry the placement id, so the tile-edit sheet uses this instead
+     * of the tile-start plan bootstrap, which source-emitted tiles never satisfy.
+     */
+    suspend fun startPlacementExecution(placementId: String, tileId: String? = null) {
+        val ack = v1CommandDispatcher.dispatchPlacementExecutionStartById(placementId, tileId)
+            ?: throw IllegalStateException("Cloud command rejected: start execution")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
     suspend fun finishExecution(tileId: String) {
         val ack = v1CommandDispatcher.dispatchExecutionFinish(tileId)
             ?: throw IllegalStateException("Cloud command rejected: finish execution")

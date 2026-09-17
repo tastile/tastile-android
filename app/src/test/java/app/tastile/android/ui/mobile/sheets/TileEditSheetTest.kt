@@ -186,9 +186,55 @@ class TileEditSheetTest {
         coVerify(exactly = 0) { tileRepositories.last().deleteTile(any()) }
     }
 
+        @Test
+    fun `TileEditSheet Start on a placement routes to placement-anchored execution`() {
+        // A05: timeline occurrences carry the placement id, so the READY-state
+        // Start button must call startPlacementExecution (POST
+        // /v1/placements/{id}/executions) instead of the tile-start plan
+        // bootstrap that source-emitted tiles never satisfy.
+        val overlay = OverlayViewModel()
+        val vm = newDashboardViewModel()
+        vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Standup", lifecycle = "Ready")))
+        vm.selectTile("tile-1")
+        coEvery { tileRepositories.last().getTileDetail("tile-1") } returns sampleDetail("tile-1", "Standup")
+
+        rule.setContent { TastileTheme { TileEditSheet(overlay = overlay, viewModel = vm) } }
+        rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "tile-1", placementId = "placement-1")) }
+        rule.waitForIdle()
+
+        rule.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick) { action ->
+            action?.invoke()
+        }
+        rule.waitForIdle()
+
+        coVerify(exactly = 1) { tileRepositories.last().startPlacementExecution("placement-1", "tile-1") }
+        coVerify(exactly = 0) { tileRepositories.last().startTile(any()) }
+    }
+
     @Test
-    fun `TileEditSheet started tile shows Pause instead of Resume`() {
-        // The VM init subscribes to `combine(authState, _tileFilter)` and
+    fun `TileEditSheet shows local title instantly while detail is still loading`() {
+        // Local-first: the editor must not wait for the source-tile
+        // round-trip when the tiles row already carries the title.
+        // getTileDetail is left unstubbed (null) so detail never arrives.
+        val overlay = OverlayViewModel()
+        val vm = newDashboardViewModel()
+        vm.replaceTilesForTest(listOf(Tile(id = "tile-1", title = "Standup", lifecycle = "Ready")))
+        vm.selectTile("tile-1")
+
+        rule.setContent { TastileTheme { TileEditSheet(overlay = overlay, viewModel = vm) } }
+        rule.runOnUiThread { overlay.show(Overlay.TileEdit(tileId = "tile-1", placementId = "placement-1")) }
+        rule.waitForIdle()
+
+        rule.onNodeWithTag("tile-edit-title-input").assertIsDisplayed()
+        rule.onAllNodesWithText("Standup").assertCountEquals(2)
+        // Header save is the only save entry point and must be enabled
+        // from the local title without waiting for detail.
+        rule.onAllNodesWithTag("tile-edit-save-details").assertCountEquals(1)
+        rule.onNodeWithTag("tile-edit-save-details").assertIsDisplayed()
+    }
+
+    @Test
+    fun `TileEditSheet started tile shows Pause instead of Resume`() {        // The VM init subscribes to `combine(authState, _tileFilter)` and
         // resets `_executionControlStates` to empty when authState is
         // Unauthenticated. To make the assertion deterministic we instead
         // route this test through the Authenticated branch:

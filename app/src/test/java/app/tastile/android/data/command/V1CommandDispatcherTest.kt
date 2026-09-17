@@ -614,6 +614,44 @@ class V1CommandDispatcherTest {
     }
 
     @Test
+    fun dispatchPlacementExecutionStartById_postsDirectlyWithoutTileLookup() = runTest {
+        // A05: the tile-edit sheet already carries the placement id, so the
+        // dispatcher must not round-trip through listPlacements().
+        val apiClient = newApiClient()
+        coEvery {
+            apiClient.postCommand(
+                "/v1/placements/pl-9/executions",
+                app.tastile.android.data.api.StartExecutionPayload("pl-9"),
+                app.tastile.android.data.api.StartExecutionPayload.serializer(),
+                CommandResponse.serializer(),
+            )
+        } returns okResponse("ex-9")
+
+        assertNotNull(V1CommandDispatcher(apiClient).dispatchPlacementExecutionStartById("pl-9", "t-999"))
+
+        coVerify(exactly = 1) {
+            apiClient.postCommand(
+                "/v1/placements/pl-9/executions",
+                app.tastile.android.data.api.StartExecutionPayload("pl-9"),
+                app.tastile.android.data.api.StartExecutionPayload.serializer(),
+                CommandResponse.serializer(),
+            )
+        }
+        coVerify(exactly = 0) { apiClient.listPlacements() }
+    }
+
+    @Test
+    fun dispatchPlacementExecutionStartById_rejectsBlankPlacementId() = runTest {
+        val apiClient = newApiClient()
+
+        assertNull(V1CommandDispatcher(apiClient).dispatchPlacementExecutionStartById("  "))
+
+        coVerify(exactly = 0) {
+            apiClient.postCommand(any<String>(), any(), any<KSerializer<Any>>(), any<KSerializer<Any>>())
+        }
+    }
+
+    @Test
     fun dispatchExecutionFinish_postsFinishOnlyWithoutTileComplete() = runTest {
         val apiClient = newApiClient()
         coEvery { apiClient.getActiveTile() } returns app.tastile.android.data.api.ActiveTileView("t-123", "pl-1", "ex-1")
