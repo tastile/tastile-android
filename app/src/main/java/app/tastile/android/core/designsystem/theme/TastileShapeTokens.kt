@@ -8,6 +8,12 @@ import androidx.compose.ui.unit.dp
  * Rounded corner radius vocabulary. Bound to Material 3's small/medium/large/extraLarge
  * shape slots (xs -> extraSmall, s -> small, m -> medium, large -> large, xl -> extraLarge)
  * and to the M3 Expressive slots (largeIncreased, extraLargeIncreased, extraExtraLarge).
+ *
+ * Phase 1 (Issue #100, release:0-6-0) adds three semantic shape entries consumed by
+ * frame primitives in Issue #101:
+ *  - `bubbleLarge` – large round radius for FAB menu bubbles.
+ *  - `chipPill`    – pill shape for chips (huge radius, clamped at corner cap).
+ *  - `drawerWide`  – top-only large radius for wide modal drawer surfaces.
  */
 @Immutable
 data class TastileShapeTokens(
@@ -19,6 +25,9 @@ data class TastileShapeTokens(
     val largeIncreased: Dp = 20.dp,
     val extraLargeIncreased: Dp = 32.dp,
     val extraExtraLarge: Dp = 48.dp,
+    val bubbleLarge: Dp = 28.dp,
+    val chipPill: Dp = 100.dp,
+    val drawerWide: Dp = 24.dp,
 ) {
     companion object {
         val Default = TastileShapeTokens(
@@ -30,6 +39,9 @@ data class TastileShapeTokens(
             largeIncreased = 20.dp,
             extraLargeIncreased = 32.dp,
             extraExtraLarge = 48.dp,
+            bubbleLarge = 28.dp,
+            chipPill = 100.dp,
+            drawerWide = 24.dp,
         )
     }
 }

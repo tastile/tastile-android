@@ -19,6 +19,16 @@ data class TastileStatusColors(
  * Status tokens keyed by [app.tastile.android.data.model.TileLifecycle].
  * Defaults read from `MaterialTheme.colorScheme` so today's visuals are
  * preserved.
+ *
+ * Phase 1 (Issue #100, release:0-6-0) additionally exposes three
+ * container/onContainer pairs for status badges and inline messages:
+ *  - `successContainer` / `onSuccessContainer`  -> `secondaryContainer`
+ *  - `warningContainer` / `onWarningContainer`  -> `tertiaryContainer`
+ *  - `dangerContainer`  / `onDangerContainer`   -> `errorContainer`
+ *
+ * The container pairs bind to Material 3 color roles so dynamic color
+ * (Android 12+) and dark mode adjust automatically. Contrast is verified
+ * to meet WCAG AA (4.5:1) by `TastileStatusTokensContrastTest`.
  */
 @Immutable
 data class TastileStatusTokens(
@@ -26,6 +36,12 @@ data class TastileStatusTokens(
     val started: TastileStatusColors,
     val done: TastileStatusColors,
     val archived: TastileStatusColors,
+    val successContainer: Color,
+    val onSuccessContainer: Color,
+    val warningContainer: Color,
+    val onWarningContainer: Color,
+    val dangerContainer: Color,
+    val onDangerContainer: Color,
 ) {
     companion object {
         fun default(
@@ -51,6 +67,12 @@ data class TastileStatusTokens(
                 onContainer = scheme.onSurfaceVariant,
                 icon = scheme.outline,
             ),
+            successContainer = scheme.secondaryContainer,
+            onSuccessContainer = scheme.onSecondaryContainer,
+            warningContainer = scheme.tertiaryContainer,
+            onWarningContainer = scheme.onTertiaryContainer,
+            dangerContainer = scheme.errorContainer,
+            onDangerContainer = scheme.onErrorContainer,
         )
     }
 }
