@@ -11,7 +11,7 @@ on:
         type: string
       track:
         description: "Play track"
-        default: "internal"
+        default: "beta"
         type: choice
         options: [internal, beta, production]
 
@@ -82,6 +82,19 @@ jobs:
             VERSION="${GITHUB_REF_NAME#v}"
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release version against Android versionName
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          APP_VERSION="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          test -n "${APP_VERSION}"
+          if [ "${VERSION}" != "${APP_VERSION}" ]; then
+            echo "::error::Release version ${VERSION} does not match Android versionName ${APP_VERSION}"
+            exit 1
+          fi
+          echo "Release version ${VERSION} matches Android versionName."
 
       - name: Validate signing and Play credentials
         env:
@@ -161,7 +174,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: app.tastile.android
           releaseFiles: dist/app-release.aab
-          tracks: ${{ github.event.inputs.track || 'internal' }}
+          tracks: ${{ github.event.inputs.track || 'beta' }}
           status: completed
           mappingFile: dist/mapping.txt
 
