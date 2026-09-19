@@ -33,6 +33,16 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Result of the canonical v1 timeline read. Unlike [getTimeline], this seam
+ * never synthesizes data from the tile list, so synchronization can preserve
+ * cached rows when the API is unavailable.
+ */
+sealed interface TimelineFetchResult {
+    data class Success(val items: List<CoreTimelineItem>) : TimelineFetchResult
+    data class Failure(val error: Exception) : TimelineFetchResult
+}
+
 @Singleton
 class TileRepository @Inject constructor(
     private val executionNotificationCoordinator: ExecutionNotificationCoordinator,
@@ -55,6 +65,28 @@ class TileRepository @Inject constructor(
     private var latestReadDiagnostics: String = "source=unknown"
     @Volatile
     private var latestCloudTiles: List<Tile> = emptyList()
+
+    /**
+     * Short-TTL read caches that keep timeline-tap navigation instant.
+     * Server reads are slow (measured ~1s detail / ~3.5s 500-list), and every
+     * sheet open otherwise pays both round-trips sequentially. Same 60s
+     * policy as the timeline range cache; mutations evict (see
+     * [evictDetailCaches]).
+     */
+    private data class CachedTiles(val fetchedAtMs: Long, val tiles: List<Tile>)
+    private data class CachedDetail(val fetchedAtMs: Long, val detail: SourceTileDetailRead)
+    @Volatile
+    private var wideTilesCache: CachedTiles? = null
+    private val tileDetailCache = java.util.concurrent.ConcurrentHashMap<String, CachedDetail>()
+
+    private fun isFresh(fetchedAtMs: Long, nowMs: Long = System.currentTimeMillis()): Boolean =
+        nowMs - fetchedAtMs <= 60_000L
+
+    /** Drops cached reads after a mutation so the next open revalidates. */
+    private fun evictDetailCaches() {
+        wideTilesCache = null
+        tileDetailCache.clear()
+    }
 
     suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): TilesResponse {
         // Use the BetterAuth session token as the cheap "is the user signed in"
@@ -108,6 +140,39 @@ class TileRepository @Inject constructor(
     }
 
     /**
+     * Resolves a single tile for timeline-tap selection (A05). The visible tile
+     * list is a truncated `view_mode=list` page, so taps outside the first page
+     * miss it. Falls back to a wider server-capped read (limit=500) without
+     * disturbing the visible list. Returns null when the tile is genuinely absent.
+     */
+    suspend fun fetchTileById(tileId: String): Tile? {
+        if (tileId.isBlank()) return null
+        getTileById(tileId)?.let {
+            android.util.Log.d("TileRepository", "fetchTileById cache-hit: $tileId")
+            return it
+        }
+        wideTilesCache?.takeIf { isFresh(it.fetchedAtMs) }?.tiles?.firstOrNull { it.id == tileId }?.let {
+            android.util.Log.d("TileRepository", "fetchTileById wide-cache-hit: $tileId")
+            return it
+        }
+        if (currentUserProvider.currentSessionToken().isNullOrBlank()) return null
+        return try {
+            val userId = currentUserProvider.currentUserId().orEmpty()
+            val wide = v1ApiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)).toTiles(userId = userId)
+            wideTilesCache = CachedTiles(System.currentTimeMillis(), wide)
+            val found = wide.firstOrNull { it.id == tileId }
+            android.util.Log.d("TileRepository", "fetchTileById wider-read: $tileId -> ${found != null}")
+            found
+        } catch (e: V1Error) {
+            android.util.Log.w("TileRepository", "v1 fetchTileById failed: ${e.message}", e)
+            null
+        } catch (e: Exception) {
+            android.util.Log.w("TileRepository", "v1 fetchTileById failed: ${e.message}", e)
+            null
+        }
+    }
+
+    /**
      * Fetches the full v1 source-tile detail (`GET /v1/source-tiles/{id}`) and
      * returns the typed [SourceTileDetailRead] payload. Returns `null` when the
      * v1 read fails for any reason (auth, network, server 4xx/5xx) so callers
@@ -116,10 +181,17 @@ class TileRepository @Inject constructor(
      */
     suspend fun getTileDetail(tileId: String): SourceTileDetailRead? {
         if (tileId.isBlank()) return null
+        tileDetailCache[tileId]?.takeIf { isFresh(it.fetchedAtMs) }?.let {
+            android.util.Log.d("TileRepository", "getTileDetail cache-hit: $tileId")
+            return it.detail
+        }
         val token = currentUserProvider.currentSessionToken()
         if (token.isNullOrBlank()) return null
         return try {
-            v1ApiClient.readSourceTile(tileId)
+            val detail = v1ApiClient.readSourceTile(tileId)
+            if (tileDetailCache.size >= 100) tileDetailCache.clear()
+            tileDetailCache[tileId] = CachedDetail(System.currentTimeMillis(), detail)
+            detail
         } catch (e: V1Error) {
             android.util.Log.w("TileRepository", "v1 readSourceTile failed: ${e.message}", e)
             null
@@ -247,6 +319,17 @@ class TileRepository @Inject constructor(
         refreshCloudCacheAfterCommand(ack)
     }
 
+    /**
+     * Starts an execution for a known placement id (A05). Timeline occurrences
+     * already carry the placement id, so the tile-edit sheet uses this instead
+     * of the tile-start plan bootstrap, which source-emitted tiles never satisfy.
+     */
+    suspend fun startPlacementExecution(placementId: String, tileId: String? = null) {
+        val ack = v1CommandDispatcher.dispatchPlacementExecutionStartById(placementId, tileId)
+            ?: throw IllegalStateException("Cloud command rejected: start execution")
+        refreshCloudCacheAfterCommand(ack)
+    }
+
     suspend fun finishExecution(tileId: String) {
         val ack = v1CommandDispatcher.dispatchExecutionFinish(tileId)
             ?: throw IllegalStateException("Cloud command rejected: finish execution")
@@ -312,6 +395,7 @@ class TileRepository @Inject constructor(
     suspend fun updateTile(tileId: String, payload: JsonObject) {
         val ack = v1CommandDispatcher.dispatchTileUpdate(tileId, payload)
             ?: throw IllegalStateException("Cloud command rejected: update tile")
+        evictDetailCaches()
         refreshCloudCacheAfterCommand(ack)
     }
 
@@ -354,70 +438,85 @@ class TileRepository @Inject constructor(
     }
 
     suspend fun getTimeline(start: Instant, end: Instant, ownerIds: List<String> = emptyList()): List<CoreTimelineItem> {
-        readCloudTimeline(start, end, ownerIds)?.let { v1Items ->
-            if (v1Items.isNotEmpty()) {
+        return when (val result = getTimelineCanonical(start, end, ownerIds)) {
+            is TimelineFetchResult.Success -> result.items
+            is TimelineFetchResult.Failure -> {
+                // Preserve the existing non-sync caller behavior: callers
+                // that only need a best-effort timeline may use the tile-list
+                // projection when the canonical endpoint is unavailable.
+                if (latestCloudTiles.isEmpty()) {
+                    latestCloudTiles = readCloudTilesUnfiltered()
+                }
+                val fallback = buildTimelineFromTiles(latestCloudTiles, Instant.now())
                 latestReadDiagnostics = buildString {
                     append(latestReadDiagnostics)
-                    append(" timeline_source=v1")
-                    append(" timeline_count=${v1Items.size}")
+                    append(" timeline_source=cloud_fallback")
+                    append(" fallback_timeline_count=${fallback.size}")
                 }
-                return v1Items
+                fallback
             }
         }
-        if (latestCloudTiles.isEmpty()) {
-            latestCloudTiles = readCloudTilesUnfiltered()
-        }
-        val fallback = buildTimelineFromTiles(latestCloudTiles, Instant.now())
-        latestReadDiagnostics = buildString {
-            append(latestReadDiagnostics)
-            append(" timeline_source=cloud_fallback")
-            append(" fallback_timeline_count=${fallback.size}")
-        }
-        return fallback
     }
 
-    private suspend fun readCloudTimeline(
+    /**
+     * Reads only the canonical v1 timeline endpoint and preserves its result
+     * shape, including an authoritative successful empty list. Synchronizers
+     * must use this method instead of [getTimeline] so an API failure cannot
+     * be mistaken for a successful fallback response.
+     */
+    suspend fun getTimelineCanonical(
         start: Instant,
         end: Instant,
-        ownerIds: List<String>,
-    ): List<CoreTimelineItem>? {
+        ownerIds: List<String> = emptyList(),
+    ): TimelineFetchResult {
         val token = currentUserProvider.currentSessionToken()
-        if (token.isNullOrBlank()) return null
+        if (token.isNullOrBlank()) {
+            latestReadDiagnostics = buildString {
+                append(latestReadDiagnostics)
+                append(" timeline_source=v1_skipped")
+            }
+            return TimelineFetchResult.Failure(V1Error.Auth())
+        }
         return try {
             val response = v1ApiClient.getTimeline(start, end, ownerIds)
             val mapped = response.mapNotNull { it.toCoreTimelineItem(start, end) }
             android.util.Log.d("TileRepository", "v1 timeline: ${response.size} items, mapped=${mapped.size}")
-            mapped
-        } catch (e: V1Error) {
-            android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)
             latestReadDiagnostics = buildString {
                 append(latestReadDiagnostics)
-                append(" timeline_source=v1_unavailable")
+                append(" timeline_source=v1")
+                append(" timeline_count=${mapped.size}")
             }
-            null
+            TimelineFetchResult.Success(mapped)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.w("TileRepository", "v1 getTimeline failed: ${e.message}", e)
             latestReadDiagnostics = buildString {
                 append(latestReadDiagnostics)
                 append(" timeline_source=v1_unavailable")
             }
-            null
+            TimelineFetchResult.Failure(e)
         }
     }
 
     private fun TimelineItem.toCoreTimelineItem(rangeStart: Instant, rangeEnd: Instant): CoreTimelineItem? {
         val startInstant = parseIsoInstant(span.start) ?: return null
-        val endInstant = parseIsoInstant(span.end ?: span.start)
-        if (startInstant.isBefore(rangeStart) || !startInstant.isBefore(rangeEnd)) return null
+        val endInstant = parseIsoInstant(span.end ?: span.start) ?: return null
+        // Overlap semantics mirror GET /v1/timeline (span_start < end AND
+        // span_end > start). A start-only check drops overnight occurrences
+        // whose span starts the previous evening (e.g. sleep 23:00→07:00
+        // must render on the 00:00–07:00 day). (A05)
+        if (!endInstant.isAfter(rangeStart) || !startInstant.isBefore(rangeEnd)) return null
         return CoreTimelineItem(
             id = placementId,
             tileId = tileId,
             sourceKind = source.kind.toInt(),
+            sourceTileId = sourceTileId,
             title = content.title.ifBlank { "Untitled" },
             type = role.toRoleName(),
             status = resolution.state.toStatusName(),
             startAt = startInstant.toString(),
-            endAt = endInstant?.toString() ?: startInstant.plusSeconds(60).toString(),
+            endAt = endInstant.toString(),
         )
     }
 
@@ -449,6 +548,7 @@ class TileRepository @Inject constructor(
             endAt = endAtIso,
             ownerId = ownerId,
         ) ?: throw IllegalStateException("Cloud command rejected: reschedule tile")
+        evictDetailCaches()
         refreshCloudCacheAfterCommand(ack)
     }
 
@@ -470,6 +570,7 @@ class TileRepository @Inject constructor(
             endAt = endAtIso,
             ownerId = ownerId,
         ) ?: throw IllegalStateException("Cloud command rejected: reschedule placement")
+        evictDetailCaches()
         refreshCloudCacheAfterCommand(ack)
     }
 

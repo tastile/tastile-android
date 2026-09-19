@@ -36,6 +36,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -128,6 +129,42 @@ class DashboardViewModelTest {
         viewModel.refreshAll()
 
         assertEquals("source=none reason=unauthenticated", viewModel.statsDiagnostics.value)
+    }
+
+    @Test
+    fun refreshAll_doesNotReadTheLegacyGlobalTimeline() = runTest {
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.refreshAll()
+
+        coVerify(exactly = 0) { tileRepository.getTimeline(any(), any(), any()) }
+    }
+
+    @Test
+    fun ownerFilter_doesNotTriggerLegacyTimelineFetch() = runTest {
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.setOwnerFilter("11111111-1111-1111-1111-111111111111")
+
+        coVerify(exactly = 0) { tileRepository.getTimeline(any(), any(), any()) }
     }
 
     @Test
@@ -366,12 +403,31 @@ class DashboardViewModelTest {
     @Test
     fun setOwnerFilter_updatesTileFilterAndClearsBackToAllProjects() = runTest {
         val viewModel = newViewModel()
+        val projectId = "11111111-1111-1111-1111-111111111111"
 
-        viewModel.setOwnerFilter("project-1")
-        assertEquals(listOf("project-1"), viewModel.tileFilter.value.ownerIds)
+        viewModel.setOwnerFilter(projectId)
+        assertEquals(listOf(projectId), viewModel.tileFilter.value.ownerIds)
 
         viewModel.setOwnerFilter(null)
         assertTrue(viewModel.tileFilter.value.ownerIds.isEmpty())
+    }
+
+    @Test
+    fun setOwnerFilters_dropsNonUuidIdsSoServerDefaultsToActorScope() = runTest {
+        val viewModel = newViewModel()
+
+        // The synthesized Personal entry carries the BetterAuth user id, which
+        // is not a UUID and would make the server return empty reads (A05).
+        viewModel.setOwnerFilters(listOf("better-auth-user-id", "   "))
+        assertTrue(viewModel.tileFilter.value.ownerIds.isEmpty())
+
+        viewModel.setOwnerFilters(
+            listOf("better-auth-user-id", "22222222-2222-2222-2222-222222222222"),
+        )
+        assertEquals(
+            listOf("22222222-2222-2222-2222-222222222222"),
+            viewModel.tileFilter.value.ownerIds,
+        )
     }
 
     @Test
@@ -386,6 +442,189 @@ class DashboardViewModelTest {
         assertEquals(60, viewModel.sectionLimits.value["sec"])
         viewModel.bumpSectionLimit("sec", total)
         assertEquals(8, viewModel.sectionLimits.value["sec"])
+    }
+
+    @Test
+    fun refreshTimeline_keepsCachedItemsAcrossReloadsUntilFreshFetchResolves() = runTest {
+        // A05 regression: a fast day-pagination tap used to flash the screen
+        // empty while the network round-trip ran. Cache the first fetch,
+        // then re-request and assert the cached list is published
+        // immediately (no gap), and the final merge preserves a card the
+        // user is looking at when the next fetch drops it.
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val firstFetch = CompletableDeferred<List<CoreTimelineItem>>()
+        var callCount = 0
+        coEvery { tileRepository.getTimeline(any(), any(), any()) } coAnswers {
+            callCount++
+            if (callCount == 1) {
+                listOf(
+                    CoreTimelineItem("p1", "tile-1", 1, "Day", "work", "scheduled", "2026-09-16T01:00:00Z"),
+                    CoreTimelineItem("p2", "tile-2", 1, "Day 2", "work", "scheduled", "2026-09-16T03:00:00Z"),
+                )
+            } else firstFetch.await()
+        }
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        // First refresh populates the timeline + cache.
+        viewModel.refreshTimeline()
+        runCurrent()
+        assertEquals(2, viewModel.timeline.value.size)
+
+        // Second refresh hits the slow path; while the call is in flight
+        // the cached list must remain visible (no flicker).
+        viewModel.refreshTimeline()
+        runCurrent()
+        assertEquals(2, viewModel.timeline.value.size)
+        assertTrue(viewModel.isLoadingTimeline.value)
+
+        // The user keeps looking at tile-1 (open edit sheet). Server's
+        // second response drops p2 entirely; merge must keep p1 + p2
+        // until the new fetch lands, then replace with new content while
+        // preserving any preserved id (here: selected tile id).
+        viewModel.selectTile("tile-1")
+        firstFetch.complete(
+            listOf(CoreTimelineItem("p1-new", "tile-1", 1, "Day renamed", "work", "scheduled", "2026-09-16T01:00:00Z")),
+        )
+        runCurrent()
+
+        assertEquals(1, viewModel.timeline.value.size)
+        assertEquals("p1-new", viewModel.timeline.value.single().id)
+        assertFalse(viewModel.isLoadingTimeline.value)
+    }
+
+    @Test
+    fun refreshTimeline_skipsEmitWhenIdsUnchanged() = runTest {
+        // A05 follow-up: cache-hit and re-fetched list with the same ids
+        // must not emit a new reference, otherwise `remember(timeline, ...)`
+        // in the day view recomputes PlacedBlock and the screen flashes.
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.getTimeline(any(), any(), any()) } returns listOf(
+            CoreTimelineItem("p1", "tile-1", 1, "Day", "work", "scheduled", "2026-09-16T01:00:00Z"),
+        )
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.refreshTimeline()
+        runCurrent()
+        val first = viewModel.timeline.value
+        assertEquals(1, first.size)
+
+        viewModel.refreshTimeline()
+        runCurrent()
+        // Second refresh must reuse the same list reference because the
+        // ids are identical (publishTimelineIfDifference drops the emit).
+        assertSame(first, viewModel.timeline.value)
+        assertFalse(viewModel.isLoadingTimeline.value)
+    }
+
+    @Test
+    fun loadTileDetail_commitsWhenDetailIdDiffersFromSelectedTileId() = runTest {        // A05 regression: the sheet selects the placement tile id but loads
+        // the canonical source id. The commit gate must not compare against
+        // the selected tile id or loading spins forever on source-backed tiles.
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.selectTile("tile-1")
+        viewModel.loadTileDetail("source-1")
+        runCurrent()
+
+        assertFalse(viewModel.selectedTileDetailLoading.value)
+    }
+
+    @Test
+    fun selectTile_supplementsTruncatedVisibleListViaFetchTileById() = runTest {
+        // A05: the visible tile list is a truncated view_mode=list page, so a
+        // timeline tap outside the first page must resolve through the
+        // single-tile supplement instead of leaving selectedTile null (which
+        // hides the sheet's save/actions gates).
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.fetchTileById("tile-999") } returns Tile(id = "tile-999", title = "Break")
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.selectTile("tile-999")
+        runCurrent()
+
+        assertEquals("tile-999", viewModel.selectedTile.first()?.id)
+        coVerify(exactly = 1) { tileRepository.fetchTileById("tile-999") }
+    }
+
+    @Test
+    fun selectTile_prefersVisibleListAndSkipsSupplementOnHit() = runTest {
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        val authStates = MutableStateFlow<TastileAuthState>(TastileAuthState.Unauthenticated)
+        every { authRepository.authState } returns authStates
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(listOf(Tile(id = "tile-1", title = "Walk")), null, null)
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+        authStates.value = TastileAuthState.Authenticated("user-1", "a@example.com")
+        runCurrent()
+
+        viewModel.selectTile("tile-1")
+        runCurrent()
+
+        assertEquals("tile-1", viewModel.selectedTile.first()?.id)
+        coVerify(exactly = 0) { tileRepository.fetchTileById(any()) }
+    }
+
+    @Test
+    fun clearSelectedTile_dropsSupplementOverride() = runTest {
+        val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
+        coEvery { tileRepository.fetchTileById("tile-999") } returns Tile(id = "tile-999", title = "Break")
+        val viewModel = DashboardViewModel(
+            authRepository,
+            accessRepository,
+            profileRepository,
+            tileRepository,
+            userSettingsRepository,
+            referenceOverlayStore,
+        )
+        viewModels.add(viewModel)
+
+        viewModel.selectTile("tile-999")
+        runCurrent()
+        assertEquals("tile-999", viewModel.selectedTile.first()?.id)
+
+        viewModel.clearSelectedTile()
+        runCurrent()
+        assertEquals(null, viewModel.selectedTile.first()?.id)
     }
 
     private data class Mocks(
