@@ -9,14 +9,16 @@ plugins {
     jacoco
 }
 
-val releaseStoreFile = providers.gradleProperty("RELEASE_STORE_FILE")
-val releaseStorePassword = providers.gradleProperty("RELEASE_STORE_PASSWORD")
-val releaseKeyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS")
-val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD")
-val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
-val googleAndroidClientId = providers.gradleProperty("GOOGLE_ANDROID_CLIENT_ID")
-val webBaseUrl = providers.gradleProperty("WEB_BASE_URL")
-val tastileCoreUrl = providers.gradleProperty("TASTILE_CORE_URL")
+fun configuredValue(name: String) = providers.environmentVariable(name)
+
+val releaseStoreFile = configuredValue("RELEASE_STORE_FILE")
+val releaseStorePassword = configuredValue("RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = configuredValue("RELEASE_KEY_ALIAS")
+val releaseKeyPassword = configuredValue("RELEASE_KEY_PASSWORD")
+val googleWebClientId = configuredValue("GOOGLE_WEB_CLIENT_ID")
+val googleAndroidClientId = configuredValue("GOOGLE_ANDROID_CLIENT_ID")
+val webBaseUrl = configuredValue("WEB_BASE_URL")
+val tastileCoreUrl = configuredValue("TASTILE_CORE_URL")
 val hasReleaseSigning =
     releaseStoreFile.isPresent &&
         releaseStorePassword.isPresent &&
@@ -54,8 +56,7 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         testInstrumentationRunner = "app.tastile.android.util.TastileTestRunner"
 
         // R18 (android refactor 2026-07-22): no Kotlin-level fallback defaults.
-        // All production values must come from gradle.properties (committed
-        // blank for CI override) or `~/.gradle/gradle.properties` for local dev.
+        // All production values come from Infisical environment variables.
         // Empty strings are validated at the bottom of this file via the
         // requireGradleProperty guard so a partial config fails the build fast
         // instead of silently embedding the wrong environment.
@@ -143,8 +144,7 @@ kotlin {
 
 val releaseSigningInstructions = """
 Release signing is not configured.
-Add RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD
-to your user-level ~/.gradle/gradle.properties or pass them as -P properties when running release tasks.
+Authenticate with the tastile-android Infisical project and run release tasks through `infisical run`.
 """.trimIndent()
 
 gradle.taskGraph.whenReady {
@@ -702,11 +702,9 @@ dependencies {
 // R18 (android refactor 2026-07-22): fail-fast guard.
 // Every BuildConfig.* field that ships into runtime (web base URL,
 // TASTILE_CORE_URL, Google web client ID) MUST be supplied by
-// gradle.properties — empty strings cause silent auth breakage on a release build.
-// Set them in:
-//   - gradle.properties (CI / shared values), or
-//   - ~/.gradle/gradle.properties (local-dev override), or
-//   - -PKEY=value on the gradle command line.
+// Infisical environment variables — empty strings cause silent auth breakage
+// on a release build. Run local builds through `infisical run`; the release
+// workflow authenticates to Infisical with GitHub OIDC.
 gradle.projectsEvaluated {
     val requiredProps = listOf(
         "GOOGLE_WEB_CLIENT_ID",
@@ -715,12 +713,11 @@ gradle.projectsEvaluated {
         "TASTILE_CORE_URL",
     )
     requiredProps.forEach { name ->
-        val value = providers.gradleProperty(name).orNull
+        val value = configuredValue(name).orNull
         if (value.isNullOrBlank()) {
             throw GradleException(
-                "Missing required gradle property '$name'. Set it in gradle.properties " +
-                    "(or ~/.gradle/gradle.properties for local dev, or pass -P$name=… on " +
-                    "the gradle command line). See README for the contract."
+                "Missing required value '$name'. Authenticate with Infisical and run the build " +
+                    "through `infisical run`. See CONTRIBUTING.md for the contract."
             )
         }
     }

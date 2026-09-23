@@ -22,29 +22,23 @@ keytool -genkeypair -v \
 - 出力先: repo 外の安全な場所
 - **重要**: キーストアとパスワードを repo に置かないこと
 
-### 1.2 ユーザー環境の `~/.gradle/gradle.properties` に署名情報追加
-```properties
-RELEASE_STORE_FILE=/secure/path/tastile-upload-key.jks
-RELEASE_STORE_PASSWORD=<STORE_PASSWORD>
-RELEASE_KEY_ALIAS=tastile
-RELEASE_KEY_PASSWORD=<KEY_PASSWORD>
-```
+### 1.2 Infisical への署名情報登録
+署名キーストアと各パスワードは、専用の `tastile-android` Infisical project の `prod:/release` に保管する。ローカルやCIで Gradle property として複製しない。
 
 ### 1.3 `app/build.gradle.kts` の signingConfigs
-実装は `app/build.gradle.kts:11-42` に既にある。`RELEASE_STORE_FILE` /
+実装は `app/build.gradle.kts` にある。`RELEASE_STORE_FILE` /
 `RELEASE_STORE_PASSWORD` / `RELEASE_KEY_ALIAS` / `RELEASE_KEY_PASSWORD` が
-すべて `~/.gradle/gradle.properties` か `-PKEY=value` で供給された時のみ
-`signingConfigs.release` が生成され、`buildTypes.release.signingConfig`
-がそれを参照する。未設定で release 系 task を実行すると `gradle.taskGraph
-.whenReady` (line 147-155) が `GradleException` で fail-fast する。
+Infisical の環境変数として渡された時のみ `signingConfigs.release` が生成され、
+`buildTypes.release.signingConfig` がそれを参照する。未設定で release 系 task を
+実行すると `GradleException` で fail-fast する。
 
 加えて `gradle.projectsEvaluated` フック (line 472-491) が Cognito /
 `TASTILE_CORE_URL` / `GOOGLE_WEB_CLIENT_ID` の BuildConfig 7 種を
 blank 不許可で検証する。release task はこれらも揃って初めて通る。
 
-BuildConfig 文字列リテラルを compile 時に埋め込むため、CI の
-`.github/workflows/release.yml` は Secrets から `gradle.properties`
-へ書き出して起動する。
+BuildConfig 文字列リテラルを compile 時に埋め込む。CI の
+`.github/workflows/release.yml` は GitHub OIDC で Infisical から値を取得し、
+環境変数として Gradle に渡す。
 
 ### 1.4 AAB (Android App Bundle) ビルド
 ```bash

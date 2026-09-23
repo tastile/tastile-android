@@ -97,19 +97,18 @@ cargo install cargo-ndk
 
 1. Clone `tastile-android` and `tastile-core` as sibling directories.
 2. Ensure `JAVA_HOME` points to JDK 17 or 21.
-3. Run `./gradlew verify` to execute the JVM verification suite.
-4. Run `./gradlew assembleDebug` to build the debug APK and native libraries.
+3. Authenticate with the `tastile-android` Infisical project.
+4. Run `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew verify`.
 
 ## Build Modes
 
-- `./gradlew verify`
+- `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew verify`
   Runs the repository verification suite. This is the default pre-push command.
-- `./gradlew testDebugUnitTest`
+- `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew testDebugUnitTest`
   Runs Android unit tests without requiring a release keystore.
-- `./gradlew assembleDebug`
+- `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew assembleDebug`
   Builds the Android app and compiles native libraries from `../tastile-core`.
-- `./gradlew bundleRelease`
-  Requires release signing properties in `~/.gradle/gradle.properties` or `-P...` flags.
+- Release signing and Play upload are run only through the protected GitHub release workflow, which retrieves credentials from Infisical using GitHub OIDC.
 
 Release signing credentials must never be committed. The build fails fast if they are missing for release tasks.
 
@@ -123,7 +122,7 @@ Release signing credentials must never be committed. The build fails fast if the
 ## Notes
 
 - `app/src/main/jniLibs/` is generated output and should not be committed.
-- Cognito client values live in BuildConfig fields. Upload keys and machine-local settings belong in user-level Gradle properties instead.
+- Android runtime configuration and release credentials are retrieved from Infisical. Gradle properties and machine-local environment files are not secret stores.
 - If `tastile-core` is missing, native build tasks fail with an explicit message instead of a cargo error cascade.
 
 ## WSLC Development Container
