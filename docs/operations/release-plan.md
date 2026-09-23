@@ -23,7 +23,7 @@ keytool -genkeypair -v \
 - **重要**: キーストアとパスワードを repo に置かないこと
 
 ### 1.2 Infisical への署名情報登録
-署名キーストアと各パスワードは、専用の `tastile-android` Infisical project の `prod:/release` に保管する。ローカルやCIで Gradle property として複製しない。
+署名キーストアと各パスワードは、専用の `tastile-android` Infisical project の `prod:/` に保管する。ローカルやCIで Gradle property として複製しない。
 
 ### 1.3 `app/build.gradle.kts` の signingConfigs
 実装は `app/build.gradle.kts` にある。`RELEASE_STORE_FILE` /

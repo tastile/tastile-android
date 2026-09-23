@@ -11,7 +11,7 @@
 
 - Commit only publishable client configuration.
 - Store all secret values in Infisical. Do not copy them into `local.properties`, `gradle.properties`, or machine-local environment files.
-- Authenticate to `https://secrets.rebuildup.dev` with `infisical login`, then run local tasks through the dedicated `tastile-android` project at its root path: `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew verify`. Release signing and Play upload credentials live in the `prod` environment and are fetched only by the release workflow for the task that needs them.
+- Authenticate to `https://secrets.rebuildup.dev` with `infisical login`, then run local tasks through the dedicated `tastile-android` project at its root path: `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew verify`. Release signing and Play upload credentials live in the `prod` environment at the project root and are fetched only by the release workflow for the task that needs them.
 - Do not commit keystores, Infisical auth material, or machine-specific JVM paths.
 
 ## Code And Repository Standards

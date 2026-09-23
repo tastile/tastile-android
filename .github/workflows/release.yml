@@ -41,7 +41,7 @@ jobs:
         uses: ./.github/actions/infisical-secrets
         with:
           environment: prod
-          path: /release
+          path: /
 
       - uses: actions/setup-java@v4
         with:
@@ -162,7 +162,7 @@ jobs:
           domain: ${{ vars.INFISICAL_DOMAIN }}
           project-id: ${{ vars.INFISICAL_PROJECT_ID }}
           env-slug: prod
-          secret-path: /google-play
+          secret-path: /
           secret-name: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
 
       - name: Prepare Google Play credential input
