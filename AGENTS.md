@@ -65,8 +65,8 @@ All commands run from this repo root. JDK 17 or 21, Android SDK with API 35, NDK
 
 These guards fail the build rather than silently degrading — they exist to prevent environment drift from shipping to users.
 
-- `gradle.projectsEvaluated` in `app/build.gradle.kts` requires every `BuildConfig.*` field listed in `app/build.gradle.kts` (Cognito client/region/hosted-ui/redirect/web-auth base, `TASTILE_CORE_URL`, `GOOGLE_WEB_CLIENT_ID`) to be non-blank. Set them in `gradle.properties` (CI), `~/.gradle/gradle.properties` (local dev), or `-PKEY=value`.
-- Release tasks (`assembleRelease`, `bundleRelease`) fail fast if `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` are not provided via the same paths. Never commit keystore or `google-services.json`.
+- `gradle.projectsEvaluated` in `app/build.gradle.kts` requires each runtime configuration value to be non-blank. Read these values from the dedicated Infisical project through environment variables; local Gradle properties and `-P` overrides are not configuration sources.
+- Release tasks (`assembleRelease`, `bundleRelease`) require signing environment variables supplied by Infisical. Never commit keystores or `google-services.json`.
 - `verifyDesignSystemImports`: direct `androidx.compose.material3.*` imports are forbidden in `app/src/main/java/app/tastile/android/ui/{dashboard,mobile,account}/` unless the immediately preceding non-blank line is `// m2-allow:`. M3 unified screens must go through the design system.
 - `verifyNoEmbeddedServerSecrets`: rejects `TASTILE_WEB_BRIDGE_SECRET` / `x-tastile-web-bridge-secret` from Android sources and the build script. Server-only bridge credentials must not enter Android artifacts.
 - The lint block in `app/build.gradle.kts` must not add `disable +=`. Every lint rule surfaces; unaddressable rules go in a tracking doc with a hard BLOCKED rationale.

@@ -1,0 +1,32 @@
+name: Fetch Infisical secrets
+description: Fetch the selected environment and path using the repository's GitHub OIDC machine identity.
+inputs:
+  environment:
+    description: Infisical environment slug
+    required: true
+  path:
+    description: Infisical secret path
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Validate self-hosted Infisical configuration
+      shell: bash
+      env:
+        INFISICAL_DOMAIN: ${{ vars.INFISICAL_DOMAIN }}
+        INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+        INFISICAL_IDENTITY_ID: ${{ vars.INFISICAL_IDENTITY_ID }}
+      run: |
+        set -euo pipefail
+        test -n "$INFISICAL_DOMAIN" || { echo "INFISICAL_DOMAIN is required" >&2; exit 2; }
+        test -n "$INFISICAL_PROJECT_ID" || { echo "INFISICAL_PROJECT_ID is required" >&2; exit 2; }
+        test -n "$INFISICAL_IDENTITY_ID" || { echo "INFISICAL_IDENTITY_ID is required" >&2; exit 2; }
+    - name: Fetch secrets from Infisical
+      uses: Infisical/secrets-action@v1.0.9
+      with:
+        method: oidc
+        identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+        domain: ${{ vars.INFISICAL_DOMAIN }}
+        project-id: ${{ vars.INFISICAL_PROJECT_ID }}
+        env-slug: ${{ inputs.environment }}
+        secret-path: ${{ inputs.path }}

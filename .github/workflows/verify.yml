@@ -57,15 +57,15 @@ jobs:
           # Do NOT change without an associated plan and the next release's SHA bump.
           ref: b0c781dc18111645324e2abc38621b1564d4c518
 
-      - name: Write gradle.properties from Secrets
+      - name: Set verify-only environment configuration
         run: |
-          cat >> gradle.properties <<EOF
-          GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
-          GOOGLE_ANDROID_CLIENT_ID=${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}
-          WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
-          TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
-          openapi.input=../tastile-openapi/openapi.yaml
-          EOF
+          {
+            echo 'GOOGLE_WEB_CLIENT_ID=verify-google-web-client-id'
+            echo 'GOOGLE_ANDROID_CLIENT_ID=verify-google-android-client-id'
+            echo 'WEB_BASE_URL=https://localhost'
+            echo 'TASTILE_CORE_URL=http://127.0.0.1:0'
+          } >> "$GITHUB_ENV"
+          echo 'openapi.input=../tastile-openapi/openapi.yaml' >> gradle.properties
 
       - name: Run :app:lint explicitly
         # :app:lint is part of `./gradlew verify` but is also a fast feedback
@@ -119,15 +119,15 @@ jobs:
           # without an associated plan and the next release's SHA bump.
           ref: b0c781dc18111645324e2abc38621b1564d4c518
 
-      - name: Write gradle.properties from Secrets
+      - name: Set verify-only environment configuration
         run: |
-          cat >> gradle.properties <<EOF
-          GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
-          GOOGLE_ANDROID_CLIENT_ID=${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}
-          WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
-          TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
-          openapi.input=../tastile-openapi/openapi.yaml
-          EOF
+          {
+            echo 'GOOGLE_WEB_CLIENT_ID=verify-google-web-client-id'
+            echo 'GOOGLE_ANDROID_CLIENT_ID=verify-google-android-client-id'
+            echo 'WEB_BASE_URL=https://localhost'
+            echo 'TASTILE_CORE_URL=http://127.0.0.1:0'
+          } >> "$GITHUB_ENV"
+          echo 'openapi.input=../tastile-openapi/openapi.yaml' >> gradle.properties
 
       - name: Confirm KVM is available
         run: |
