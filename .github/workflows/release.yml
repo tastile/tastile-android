@@ -40,6 +40,9 @@ jobs:
       - name: Fetch Android release settings from Infisical
         uses: ./.github/actions/infisical-secrets
         with:
+          domain: ${{ vars.INFISICAL_DOMAIN }}
+          project-id: ${{ vars.INFISICAL_PROJECT_ID }}
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
           environment: prod
           path: /
 
