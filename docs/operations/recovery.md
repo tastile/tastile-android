@@ -31,7 +31,7 @@ fresh agent が次の手順を再帰的に走査する。
 6. checkpoint から workspace を再構成 (`git checkout <branch>` + `git reset --hard
    <base_sha>`)。
 7. `completed_steps` / `pending_validation` を再評価。
-8. `external_side_effects` の actual remote state を `gh` / `git` / `sops` で検証。
+8. `external_side_effects` の actual remote state を `gh` / `git` で検証。
 9. stale base / conflict を `git fetch` で比較。
 10. remaining plan を `next_steps` から再構成。
 11. safe な最小 verification (`git status` による state 確認 +
