@@ -118,3 +118,10 @@ JDK 25 を別途用意する必要がある。優先順: `$KOTLIN_LSP_JAVA_HOME`
 - `../tastile-core/` — Rust core, produces Android native libs via `cargo-ndk`. Required for artifact builds.
 - `../tastile-web/` — Next.js sibling; shares Cognito config values with this repo.
 - `../AGENTS.md` — workspace contract. Read it before any cross-repo change.
+
+
+## Constitution / operating profile
+
+- repository-local top-level contract: [`constitution/CONSTITUTION.md`](constitution/CONSTITUTION.md)
+- current Operating Model: [`organization/profiles/release-driven-solo.md`](organization/profiles/release-driven-solo.md)
+- cross-repo shared decisions remain owned by the Tastile workspace root; repository-local implementation and validation facts remain local.
