@@ -10,9 +10,9 @@
 ## Daily Commands
 
 ```bash
-infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew verify
-infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew testDebugUnitTest
-infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew assembleDebug
+pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task verify
+pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task testDebugUnitTest
+pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task assembleDebug
 ```
 
 ## Release Signing
