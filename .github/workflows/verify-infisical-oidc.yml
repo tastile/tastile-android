@@ -1,6 +1,9 @@
 name: Verify Infisical OIDC access
 
 on:
+  push:
+    branches:
+      - release-0-6-0
   workflow_dispatch:
 
 permissions:
@@ -23,7 +26,7 @@ jobs:
         uses: ./.github/actions/infisical-secrets
         with:
           domain: ${{ vars.INFISICAL_DOMAIN }}
-          project-id: ${{ vars.INFISICAL_PROJECT_ID_PROD }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG_PROD }}
           identity-id: ${{ vars.INFISICAL_IDENTITY_ID_PROD }}
           environment: prod
           path: /tastile/android
