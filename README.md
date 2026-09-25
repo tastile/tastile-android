@@ -98,16 +98,18 @@ cargo install cargo-ndk
 1. Clone `tastile-android` and `tastile-core` as sibling directories.
 2. Ensure `JAVA_HOME` points to JDK 17 or 21.
 3. Authenticate with the `tastile-android` Infisical project.
-4. Run `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew verify`.
+4. Run `pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task verify`.
 
 ## Build Modes
 
-- `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew verify`
+- `pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task verify`
   Runs the repository verification suite. This is the default pre-push command.
-- `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew testDebugUnitTest`
+- `pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task testDebugUnitTest`
   Runs Android unit tests without requiring a release keystore.
-- `infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew assembleDebug`
+- `pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task assembleDebug`
   Builds the Android app and compiles native libraries from `../tastile-core`.
+- `pwsh -NoProfile -File ..\scripts\restore-infisical-env.ps1 -Repository android -Environment development`
+  Restores the selected Infisical keys to an ignored, current-user-only `.env` and regenerates the blank `.env.example` schema.
 - Release signing and Play upload are run only through the protected GitHub release workflow, which retrieves credentials from Infisical using GitHub OIDC.
 
 Release signing credentials must never be committed. The build fails fast if they are missing for release tasks.

@@ -5,7 +5,7 @@ inputs:
     description: Self-hosted Infisical base URL.
     required: true
   project-slug:
-    description: Infisical project slug required by secrets-action v1.0.9.
+    description: Infisical project slug for the selected environment.
     required: true
   identity-id:
     description: GitHub OIDC machine identity ID.
@@ -16,6 +16,9 @@ inputs:
   path:
     description: Infisical secret path
     required: true
+  secret-name:
+    description: Optional single secret name to fetch instead of all secrets at the path.
+    required: false
 runs:
   using: composite
   steps:
@@ -39,3 +42,4 @@ runs:
         project-slug: ${{ inputs.project-slug }}
         env-slug: ${{ inputs.environment }}
         secret-path: ${{ inputs.path }}
+        secret-name: ${{ inputs.secret-name }}

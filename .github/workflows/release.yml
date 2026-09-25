@@ -41,10 +41,10 @@ jobs:
         uses: ./.github/actions/infisical-secrets
         with:
           domain: ${{ vars.INFISICAL_DOMAIN }}
-          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
-          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG_PROD }}
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID_PROD }}
           environment: prod
-          path: /
+          path: /tastile/android
 
       - uses: actions/setup-java@v4
         with:
@@ -152,20 +152,23 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - uses: actions/download-artifact@v4
         with:
           name: app-release
           path: dist/
 
       - name: Fetch Google Play credential from Infisical
-        uses: Infisical/secrets-action@v1.0.9
+        uses: ./.github/actions/infisical-secrets
         with:
-          method: oidc
-          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
           domain: ${{ vars.INFISICAL_DOMAIN }}
-          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
-          env-slug: prod
-          secret-path: /
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG_PROD }}
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID_PROD }}
+          environment: prod
+          path: /tastile/android
           secret-name: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
 
       - name: Prepare Google Play credential input
