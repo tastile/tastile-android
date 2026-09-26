@@ -6,9 +6,9 @@
 
 ## Prerequisites
 
-1. A debug build with `GOOGLE_ANDROID_CLIENT_ID` set in
-   `~/.gradle/gradle.properties` to the value registered in Google
-   Cloud Console as the `app.tastile.android` Android OAuth client.
+1. A debug build run through Infisical with `GOOGLE_ANDROID_CLIENT_ID`
+   set to the value registered in Google Cloud Console as the
+   `app.tastile.android` Android OAuth client.
 2. The matching `GOOGLE_ANDROID_CLIENT_ID` set on the Tastile web
    server's environment (so BetterAuth accepts the idToken).
 3. A device with Play Services and at least one Google account signed

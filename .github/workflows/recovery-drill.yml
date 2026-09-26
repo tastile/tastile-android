@@ -1,0 +1,54 @@
+name: Recovery drill
+
+# Weekly cron off-hours ensures the child-local .agent-loop/ checkpoint and
+# result schemas stay valid without flapping on contributor pushes. The drill
+# fails closed when a schema is missing or drifts (ADR-0008).
+
+on:
+  schedule:
+    - cron: '17 3 * * 1' # 03:17 UTC Monday (12:17 JST Tuesday off-hours)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    name: Checkpoint schema round-trip
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate checkpoint schemas
+        shell: pwsh
+        run: |
+          $failures = 0
+          $checkpointSchema = Get-Content -Raw .agent-loop/checkpoint.schema.json | ConvertFrom-Json
+          $resultSchema = Get-Content -Raw .agent-loop/agent-result.schema.json | ConvertFrom-Json
+
+          $requiredCheckpointKeys = @(
+            'schema_version', 'issue_id', 'target_release', 'ticket_branch',
+            'base_sha', 'checkpoint_sha_or_snapshot', 'execution_generation',
+            'status', 'completed_steps', 'next_steps', 'updated_at'
+          )
+          $props = @($checkpointSchema.properties.PSObject.Properties.Name)
+          foreach ($key in $requiredCheckpointKeys) {
+            if ($props -notcontains $key) { Write-Error "checkpoint schema missing property: $key"; $failures++ }
+          }
+
+          $requiredResultKeys = @(
+            'schema_version', 'agent_id', 'issue_or_task_id', 'target_release',
+            'base_snapshot', 'execution_generation', 'fencing_token',
+            'verdict', 'summary'
+          )
+          $resultProps = @($resultSchema.properties.PSObject.Properties.Name)
+          foreach ($key in $requiredResultKeys) {
+            if ($resultProps -notcontains $key) { Write-Error "agent-result schema missing property: $key"; $failures++ }
+          }
+
+          if ($failures -gt 0) {
+            Write-Error "synthetic round-trip found $failures regression(s)"
+            exit 1
+          }
+          Write-Host 'synthetic checkpoint round-trip PASS'

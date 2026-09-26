@@ -1,0 +1,81 @@
+# Dependabot configuration for tastile-android.
+#
+# Reference: https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/configuring-dependabot-security-updates
+#
+# Weekly cadence, grouped by ecosystem, with a target branch pinned to the
+# active release branch and to `main`. The release branch name is resolved at
+# runtime; update `target-branch` when the active release branch changes
+# (`.agents/skills/release-branch-workflow/SKILL.md`).
+version: 2
+
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    target-branch:
+      - main
+      - "release-0-4-0"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "deps/gradle"
+    groups:
+      android-gradle:
+        patterns:
+          - "androidx*"
+          - "com.android*"
+          - "com.google.android.material*"
+      kotlin-compose:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "androidx.compose*"
+      hilt-di:
+        patterns:
+          - "com.google.dagger*"
+          - "androidx.hilt*"
+    ignore:
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-datetime"
+        versions:
+          - "> 0.6.1" # pinned at 0.6.1 per tastile-android/AGENTS.md
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-coroutines-test"
+        versions:
+          - "> 1.9.0" # pinned at 1.9.0 per tastile-android/AGENTS.md
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    target-branch:
+      - main
+      - "release-0-4-0"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "ci/dependabot"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "docker"
+    directory: "/.wslc"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    target-branch:
+      - main
+      - "release-0-4-0"
+    commit-message:
+      prefix: "wslc"
+    labels:
+      - "deps/docker"

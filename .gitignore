@@ -3,6 +3,9 @@
 .kotlin/
 .tmp/
 local.properties
+.env
+.env.*
+!.env.example
 .idea/
 .cursor/
 .vscode/

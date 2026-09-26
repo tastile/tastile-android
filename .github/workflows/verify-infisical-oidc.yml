@@ -1,0 +1,52 @@
+name: Verify Infisical OIDC access
+
+on:
+  push:
+    branches:
+      - release-0-6-0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production-secrets:
+    environment: android-release
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Fetch production secrets through GitHub OIDC
+        uses: ./.github/actions/infisical-secrets
+        with:
+          domain: ${{ vars.INFISICAL_DOMAIN }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG_PROD }}
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID_PROD }}
+          environment: prod
+          path: /tastile/android
+
+      - name: Verify required release secrets are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            ANDROID_KEYSTORE_BASE64
+            ANDROID_KEYSTORE_PASSWORD
+            ANDROID_KEY_ALIAS
+            ANDROID_KEY_PASSWORD
+            GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+            GOOGLE_WEB_CLIENT_ID
+          )
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Infisical did not provide required production secret: ${name}" >&2
+              exit 1
+            fi
+            echo "Verified ${name} is available through GitHub OIDC."
+          done
