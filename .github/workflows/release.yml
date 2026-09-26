@@ -41,7 +41,7 @@ jobs:
         uses: ./.github/actions/infisical-secrets
         with:
           domain: ${{ vars.INFISICAL_DOMAIN }}
-          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG_PROD }}
+          project-id: ${{ vars.INFISICAL_PROJECT_ID_PROD }}
           identity-id: ${{ vars.INFISICAL_IDENTITY_ID_PROD }}
           environment: prod
           path: /tastile/android
@@ -108,10 +108,28 @@ jobs:
           test -n "$TASTILE_CORE_URL"
 
       - name: Decode keystore
+        # Map the four Infisical-fetched ANDROID_* secrets onto the
+        # RELEASE_* env var names that app/build.gradle.kts reads via
+        # configuredValue(). Fail-closed: every required source var is
+        # asserted non-empty before the JKS is consumed; values are
+        # never echoed (non-disclosure).
         run: |
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/keystore.jks
           test -s /tmp/keystore.jks
-          echo 'RELEASE_STORE_FILE=/tmp/keystore.jks' >> "$GITHUB_ENV"
+          # Defense-in-depth: source vars are validated by the upstream
+          # "Validate signing" step, but re-assert here so a missing
+          # env var fails before gradle reads an empty RELEASE_*.
+          # ${VAR:?msg} exits non-zero with only the var name surfaced;
+          # the value is never echoed.
+          : "${ANDROID_KEYSTORE_PASSWORD:?ANDROID_KEYSTORE_PASSWORD is required}"
+          : "${ANDROID_KEY_ALIAS:?ANDROID_KEY_ALIAS is required}"
+          : "${ANDROID_KEY_PASSWORD:?ANDROID_KEY_PASSWORD is required}"
+          {
+            echo 'RELEASE_STORE_FILE=/tmp/keystore.jks'
+            echo "RELEASE_STORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD}"
+            echo "RELEASE_KEY_ALIAS=${ANDROID_KEY_ALIAS}"
+            echo "RELEASE_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}"
+          } >> "$GITHUB_ENV"
 
       - name: Checkout OpenAPI spec submodule
         uses: actions/checkout@v4
@@ -165,7 +183,7 @@ jobs:
         uses: ./.github/actions/infisical-secrets
         with:
           domain: ${{ vars.INFISICAL_DOMAIN }}
-          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG_PROD }}
+          project-id: ${{ vars.INFISICAL_PROJECT_ID_PROD }}
           identity-id: ${{ vars.INFISICAL_IDENTITY_ID_PROD }}
           environment: prod
           path: /tastile/android
