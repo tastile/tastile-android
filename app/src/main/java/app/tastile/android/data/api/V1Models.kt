@@ -84,7 +84,14 @@ data class TimelineItem(
     val span: Span,
     val inside: PlacementInsideView? = null,
     val source: PlacementSourceView,
-    val resolution: ResolutionInfoView
+    val resolution: ResolutionInfoView,
+    /**
+     * Canonical source id when this placement was emitted from a
+     * `v1_source_tile` (TimelineItemRead.source_tile_id). Null for legacy
+     * placements. The edit sheet must address the source — never tile_id —
+     * for source-tile reads/writes.
+     */
+    @SerialName("source_tile_id") val sourceTileId: String? = null
 )
 
 // --- TileListView (GET /v1/tiles) -------------------------------------

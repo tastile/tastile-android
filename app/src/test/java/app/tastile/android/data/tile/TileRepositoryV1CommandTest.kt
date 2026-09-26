@@ -104,6 +104,89 @@ class TileRepositoryV1CommandTest {
             )
         )
 
+    // --- fetchTileById (A05 timeline-tap selection supplement) -------------
+
+    @Test
+    fun fetchTileById_returnsVisibleCacheHitWithoutWiderRead() = runTest {
+        val apiClient = mockk<V1ApiClient>(relaxed = true)
+        coEvery { apiClient.getTiles() } returns cloudTileListResponse("t-123")
+        val repository = newRepository(apiClient, mockk(relaxed = true))
+
+        val found = repository.fetchTileById("t-123")
+
+        assertNotNull(found)
+        assertEquals("t-123", found!!.id)
+        io.mockk.coVerify(exactly = 0) { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) }
+    }
+
+    @Test
+    fun fetchTileById_fallsBackToWiderReadOnVisibleMiss() = runTest {
+        val apiClient = mockk<V1ApiClient>(relaxed = true)
+        coEvery { apiClient.getTiles() } returns cloudTileListResponse("t-other")
+        coEvery { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-123")
+        val repository = newRepository(apiClient, mockk(relaxed = true))
+
+        val found = repository.fetchTileById("t-123")
+
+        assertNotNull(found)
+        assertEquals("t-123", found!!.id)
+        io.mockk.coVerify(exactly = 1) { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) }
+    }
+
+    @Test
+    fun fetchTileById_returnsNullWhenGenuinelyAbsent() = runTest {
+        val apiClient = mockk<V1ApiClient>(relaxed = true)
+        coEvery { apiClient.getTiles() } returns cloudTileListResponse("t-other")
+        coEvery { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-other")
+        val repository = newRepository(apiClient, mockk(relaxed = true))
+
+        assertNull(repository.fetchTileById("t-123"))
+    }
+
+    // --- read caches (sheet-open latency) ----------------------------------
+
+    @Test
+    fun fetchTileById_reusesWideListWithinTtl() = runTest {
+        val apiClient = mockk<V1ApiClient>(relaxed = true)
+        coEvery { apiClient.getTiles() } returns cloudTileListResponse("t-other")
+        coEvery { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-123")
+        val repository = newRepository(apiClient, mockk(relaxed = true))
+
+        assertNotNull(repository.fetchTileById("t-123"))
+        assertNotNull(repository.fetchTileById("t-123"))
+
+        // The 3.5s server-side wide read must happen once; the second tap
+        // resolves from the 60s cache.
+        io.mockk.coVerify(exactly = 1) { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) }
+    }
+
+    @Test
+    fun getTileDetail_reusesDetailWithinTtl() = runTest {
+        val apiClient = mockk<V1ApiClient>(relaxed = true)
+        val repository = newRepository(apiClient, mockk(relaxed = true))
+
+        assertNotNull(repository.getTileDetail("s-1"))
+        assertNotNull(repository.getTileDetail("s-1"))
+
+        io.mockk.coVerify(exactly = 1) { apiClient.readSourceTile("s-1") }
+    }
+
+    @Test
+    fun updateTile_evictsDetailCaches() = runTest {
+        val apiClient = mockk<V1ApiClient>(relaxed = true)
+        val dispatcher = mockk<V1CommandDispatcher>(relaxed = true)
+        coEvery { apiClient.getTiles() } returns cloudTileListResponse("t-123")
+        coEvery { dispatcher.dispatchTileUpdate(any(), any()) } returns okAck()
+        val repository = newRepository(apiClient, dispatcher)
+
+        assertNotNull(repository.getTileDetail("s-1"))
+        repository.updateTile("t-123", buildJsonObject { put("title", JsonPrimitive("New")) })
+        assertNotNull(repository.getTileDetail("s-1"))
+
+        // Post-mutation reopen must revalidate instead of serving stale detail.
+        io.mockk.coVerify(exactly = 2) { apiClient.readSourceTile("s-1") }
+    }
+
     // --- createTile (Step 4 territory, ensure still wired) -------------
 
     @Test

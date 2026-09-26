@@ -154,6 +154,7 @@ internal fun EventChipContent(
                 onEditEvent(
                     CoreTimelineItem(
                         b.id, b.tileId, b.sourceKind, b.title, b.type, b.status, "", null,
+                        sourceTileId = b.sourceTileId,
                     ),
                 )
             }

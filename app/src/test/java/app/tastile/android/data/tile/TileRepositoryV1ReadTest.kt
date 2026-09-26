@@ -5,6 +5,7 @@ import app.tastile.android.data.api.V1Error
 import app.tastile.android.data.api.V1ListTilesResponse
 import app.tastile.android.data.api.V1NumericConstants
 import app.tastile.android.data.api.TileListView
+import app.tastile.android.data.api.TileTemporalView
 import app.tastile.android.data.auth.CurrentUserProvider
 import app.tastile.android.data.command.V1CommandDispatcher
 import app.tastile.android.data.execution.EventRepository
@@ -15,6 +16,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -130,5 +132,82 @@ class TileRepositoryV1ReadTest {
         assertEquals("2026-07-08T09:00:00Z", response.nextActionableStartAt)
         assertTrue(repository.latestReadDiagnostics().contains("next_tile=t-1"))
         assertTrue(repository.latestReadDiagnostics().contains("next_at=2026-07-08T09:00:00Z"))
+    }
+
+    @Test
+    fun getTimeline_treatsCanonicalEmptyResponseAsAuthoritative() = runTest {
+        val apiClient = mockk<V1ApiClient>()
+        coEvery { apiClient.getTiles(any()) } returns V1ListTilesResponse(
+            tiles = listOf(
+                TileListView(
+                    id = "fallback-tile",
+                    title = "Should not be used",
+                    lifecycle = V1NumericConstants.LifecycleCode.READY,
+                    temporal = TileTemporalView(
+                        fixedStart = "2026-09-16T09:00:00Z",
+                        fixedEnd = "2026-09-16T10:00:00Z",
+                    ),
+                ),
+            ),
+        )
+        coEvery { apiClient.getTimeline(any(), any(), any()) } returns emptyList()
+        val repository = newRepository(apiClient)
+        val start = Instant.parse("2026-09-16T00:00:00Z")
+        val end = Instant.parse("2026-09-17T00:00:00Z")
+
+        // Seed the compatibility fallback so a successful empty canonical
+        // response cannot accidentally look equivalent to an empty fallback.
+        repository.getTiles()
+        val result = repository.getTimeline(start, end)
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 1) { apiClient.getTiles(TileFilter.DEFAULT) }
+        coVerify(exactly = 1) { apiClient.getTimeline(start, end, emptyList()) }
+    }
+
+    @Test
+    fun getTimelineCanonical_returnsTypedFailureWithoutFallback() = runTest {
+        val apiClient = mockk<V1ApiClient>()
+        val failure = V1Error.Network(IllegalStateException("offline"))
+        coEvery { apiClient.getTimeline(any(), any(), any()) } throws failure
+        val repository = newRepository(apiClient)
+        val start = Instant.parse("2026-09-16T00:00:00Z")
+        val end = Instant.parse("2026-09-17T00:00:00Z")
+
+        val result = repository.getTimelineCanonical(start, end)
+
+        assertTrue(result is TimelineFetchResult.Failure)
+        assertEquals(failure, (result as TimelineFetchResult.Failure).error)
+        coVerify(exactly = 0) { apiClient.getTiles(any()) }
+    }
+
+    @Test
+    fun getTimeline_keepsCompatibilityFallbackForCanonicalFailure() = runTest {
+        val apiClient = mockk<V1ApiClient>()
+        coEvery { apiClient.getTiles(any()) } returns V1ListTilesResponse(
+            tiles = listOf(
+                TileListView(
+                    id = "fallback-tile",
+                    title = "Cached fallback",
+                    lifecycle = V1NumericConstants.LifecycleCode.READY,
+                    temporal = TileTemporalView(
+                        fixedStart = "2026-09-16T09:00:00Z",
+                        fixedEnd = "2026-09-16T10:00:00Z",
+                    ),
+                ),
+            ),
+        )
+        coEvery { apiClient.getTimeline(any(), any(), any()) } throws
+            V1Error.Network(IllegalStateException("offline"))
+        val repository = newRepository(apiClient)
+        val start = Instant.parse("2026-09-16T00:00:00Z")
+        val end = Instant.parse("2026-09-17T00:00:00Z")
+
+        repository.getTiles()
+        val result = repository.getTimeline(start, end)
+
+        assertTrue(result.isEmpty())
+        assertTrue(repository.latestReadDiagnostics().contains("timeline_source=cloud_fallback"))
+        coVerify(exactly = 1) { apiClient.getTiles(TileFilter.DEFAULT) }
     }
 }
