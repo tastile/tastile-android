@@ -162,7 +162,7 @@ class VerifyDesignSystemImportsGuardTest {
                     if (!hexColor.containsMatchIn(line)) return@forEachIndexed
                     if (alphaMask.containsMatchIn(line)) return@forEachIndexed
                     val symbol = (idx downTo 0)
-                        .mapNotNull { declaration.matchEntire(lines[it]) }
+                        .mapNotNull { declaration.find(lines[it]) }
                         .map { it.groupValues[1] }
                         .firstOrNull()
                         ?: "<unknown>"
