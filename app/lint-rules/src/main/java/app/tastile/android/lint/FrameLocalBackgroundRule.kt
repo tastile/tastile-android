@@ -49,6 +49,7 @@ class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
 
                 val offending: List<String> = DECLARATION_PATTERN.findAll(text)
                     .mapNotNull { it.groups[1]?.value }
+                    .toList()
                     .distinct()
                     .filter { it.matches(FRAME_NAME_REGEX) }
                     .sorted()
