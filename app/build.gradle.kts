@@ -307,7 +307,7 @@ fun collectDesignSystemViolations(
     if (dpBaselineFile != null) {
         (rawDpByFile.keys - dpBaseline.keys).sorted().forEach { path ->
             val count = rawDpByFile.getValue(path)
-            violations += "$path: $count new raw \`<N>.dp\` literal(s) with no Rule 8 baseline entry. " +
+            violations += "$path: $count new raw `<N>.dp` literal(s) with no Rule 8 baseline entry. " +
                 "Route the new code through LocalTastileLayoutTokens; do not add debt."
         }
         dpBaseline.keys.sorted().forEach { path ->
@@ -315,21 +315,21 @@ fun collectDesignSystemViolations(
             val actual = rawDpByFile[path] ?: 0
             when {
                 actual > allowed ->
-                    violations += "$path: raw \`<N>.dp\` count rose from $allowed to $actual. " +
+                    violations += "$path: raw `<N>.dp` count rose from $allowed to $actual. " +
                         "Rule 8 is a ratchet; existing debt may shrink but never grow."
                 actual in 1 until allowed ->
-                    violations += "$path: raw \`<N>.dp\` count fell from $allowed to $actual. " +
+                    violations += "$path: raw `<N>.dp` count fell from $allowed to $actual. " +
                         "Lower the entry in ${dpBaselineFile.name} in the same change so the " +
                         "ratchet keeps decreasing."
                 actual == 0 && allowed > 0 ->
-                    violations += "$path: no raw \`<N>.dp\` literals remain but the Rule 8 " +
+                    violations += "$path: no raw `<N>.dp` literals remain but the Rule 8 " +
                         "baseline still allows $allowed. Drop the entry from " +
                         "${dpBaselineFile.name}."
             }
         }
     } else {
         rawDpByFile.forEach { (path, count) ->
-            violations += "$path: $count raw \`<N>.dp\` literal(s) (Rule 8; no baseline supplied)"
+            violations += "$path: $count raw `<N>.dp` literal(s) (Rule 8; no baseline supplied)"
         }
     }
 
