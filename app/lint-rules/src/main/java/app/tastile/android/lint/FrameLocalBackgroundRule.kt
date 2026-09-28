@@ -8,10 +8,10 @@ import com.android.tools.lint.detector.api.Issue
 import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Scope
 import com.android.tools.lint.detector.api.Severity
-import org.jetbrains.uast.UClass
 import com.intellij.psi.PsiElement
+import org.jetbrains.uast.UClass
 import org.jetbrains.uast.UElement
-import org.jetbrains.uast.UMethod
+import org.jetbrains.uast.UFile
 
 /**
  * Rule 4: any `@Composable fun` whose name ends in `Screen` / `Sheet` /
@@ -33,38 +33,40 @@ import org.jetbrains.uast.UMethod
  */
 class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
 
-    // Both types are needed. A frame composable is usually a top-level
-    // `fun FooScreen()`, which never appears in a UClass, so scanning classes
-    // alone silently missed the main case this rule exists for.
+    // The rule is a whole-file check: one compliant import clears every frame
+    // composable in the file, and the file text is what the check reads. Driving
+    // it from UFile also means a top-level `fun FooScreen()` — the main case —
+    // is reached reliably, which a UClass/UMethod scan did not guarantee.
     override fun getApplicableUastTypes(): List<Class<out UElement>> =
-        listOf(UClass::class.java, UMethod::class.java)
+        listOf(UFile::class.java)
 
     override fun createUastHandler(context: JavaContext): UElementHandler =
         object : UElementHandler() {
-
-            override fun visitClass(node: UClass) {
+            override fun visitFile(node: UFile) {
                 val fileText = node.sourcePsi?.containingFile?.text ?: return
                 reportFrameComposables(
                     context = context,
                     fileText = fileText,
-                    candidates = buildList {
-                        add(node.name to node.sourcePsi)
-                        node.methods.forEach { add(it.name to it.sourcePsi) }
-                    },
+                    candidates = frameCandidates(node),
                 )
             }
+        }
 
-            override fun visitMethod(node: UMethod) {
-                // Class members are already covered by visitClass; only top-level
-                // functions need handling here.
-                if (node.uastParent is UClass) return
-                val fileText = node.sourcePsi?.containingFile?.text ?: return
-                reportFrameComposables(
-                    context = context,
-                    fileText = fileText,
-                    candidates = listOf(node.name to node.sourcePsi),
-                )
+    /**
+     * Collects every named declaration in [file] that could be a frame
+     * composable: top-level functions, classes, class members, and members of
+     * nested classes. Names are resolved here so the reporter needs no named
+     * UAST interface — `UElement` does not carry one.
+     */
+    private fun frameCandidates(file: UFile): List<Pair<String?, PsiElement?>> =
+        buildList {
+            fun UClass.collect() {
+                add(name to sourcePsi)
+                methods.forEach { add(it.name to it.sourcePsi) }
+                classes.forEach { it.collect() }
             }
+            file.methods.forEach { add(it.name to it.sourcePsi) }
+            file.classes.forEach { it.collect() }
         }
 
     /**
