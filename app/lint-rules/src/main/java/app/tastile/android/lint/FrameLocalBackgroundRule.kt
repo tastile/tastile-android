@@ -9,9 +9,9 @@ import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Scope
 import com.android.tools.lint.detector.api.Severity
 import org.jetbrains.uast.UClass
+import com.intellij.psi.PsiElement
 import org.jetbrains.uast.UElement
 import org.jetbrains.uast.UMethod
-import org.jetbrains.uast.UNamedElement
 
 /**
  * Rule 4: any `@Composable fun` whose name ends in `Screen` / `Sheet` /
@@ -43,14 +43,27 @@ class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
         object : UElementHandler() {
 
             override fun visitClass(node: UClass) {
-                checkTargets(context, listOf(node) + node.methods.toList())
+                val fileText = node.sourcePsi?.containingFile?.text ?: return
+                reportFrameComposables(
+                    context = context,
+                    fileText = fileText,
+                    candidates = buildList {
+                        add(node.name to node.sourcePsi)
+                        node.methods.forEach { add(it.name to it.sourcePsi) }
+                    },
+                )
             }
 
             override fun visitMethod(node: UMethod) {
                 // Class members are already covered by visitClass; only top-level
                 // functions need handling here.
                 if (node.uastParent is UClass) return
-                checkTargets(context, listOf(node))
+                val fileText = node.sourcePsi?.containingFile?.text ?: return
+                reportFrameComposables(
+                    context = context,
+                    fileText = fileText,
+                    candidates = listOf(node.name to node.sourcePsi),
+                )
             }
         }
 
@@ -59,14 +72,16 @@ class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
      * file imports neither `LocalBackgroundTheme` nor `Surface`. The check is
      * per file, so one compliant import clears every frame composable in it.
      */
-    private fun checkTargets(
+    private fun reportFrameComposables(
         context: JavaContext,
-        candidates: List<out UNamedElement>,
+        fileText: String,
+        candidates: List<Pair<String?, PsiElement?>>,
     ) {
-        val targets = candidates.filter { it.name.orEmpty().matches(FRAME_NAME_REGEX) }
+        val targets = candidates.filter { (name, psi) ->
+            name.orEmpty().matches(FRAME_NAME_REGEX) && psi != null
+        }
         if (targets.isEmpty()) return
 
-        val fileText = targets.first().sourcePsi?.containingFile?.text ?: return
         val hasLocalBackgroundTheme = fileText.contains("LocalBackgroundTheme")
         // `\b` so an import like `import androidx.compose.material3.Surface`
         // (normally terminated by `\n` or `;`) still matches, while
@@ -74,16 +89,16 @@ class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
         val hasSurface = Regex("""import\s+(\S+\.)?Surface\b""").containsMatchIn(fileText)
         if (hasLocalBackgroundTheme || hasSurface) return
 
-        for (target in targets) {
+        for ((name, psi) in targets) {
             // Report against the PSI node: a UElement scope is ambiguous
             // between the PsiElement and UElement overloads of report(), and
             // getLocation is ambiguous for the same reason.
-            val psi = target.sourcePsi ?: continue
+            val target = psi ?: continue
             context.report(
                 ISSUE,
-                psi,
-                context.getLocation(psi),
-                "Rule 4: `${target.name}` is a Screen/Sheet/Frame/Dialog/Panel/Scaffold " +
+                target,
+                context.getLocation(target),
+                "Rule 4: `$name` is a Screen/Sheet/Frame/Dialog/Panel/Scaffold " +
                     "composable but the file does not import `LocalBackgroundTheme` " +
                     "or `Surface`. Add one of those imports so the tonal / elevation " +
                     "theme is applied.",
