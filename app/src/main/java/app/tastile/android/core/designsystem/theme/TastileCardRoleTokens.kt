@@ -13,11 +13,31 @@ data class TastileCardRoleColors(
     val border: Color,
 )
 
+/**
+ * Card role tokens consumed by project rows, list rows, and detail headers.
+ *
+ * Phase 1 (Issue #100, release:0-6-0) appends two role entries:
+ *  - `cardAccent`  – accent-tinted card surface; consumers in frame primitives
+ *    (Issue #101) read `LocalTintTheme` to override `iconTint` and adjust the
+ *    border to match. The default binds to `primaryContainer` / `primary`.
+ *  - `cardNeutral` – lower-emphasis neutral card; bound to
+ *    `surfaceContainer` / `outlineVariant`.
+ *
+ * New fields are appended with defaults so existing named and
+ * positional three-argument constructions continue to compile. Each default
+ * is derived from an existing field, so an omitted argument resolves to the
+ * role the previous three-field shape already exposed: [cardAccent] mirrors
+ * [actionable] and [cardNeutral] mirrors [neutral]. [default] is the only
+ * place `primaryContainer` / `surfaceContainer` are bound, and every in-repo
+ * caller reads the tokens through `LocalTastileCardRoleTokens`.
+ */
 @Immutable
 data class TastileCardRoleTokens(
     val neutral: TastileCardRoleColors,
     val actionable: TastileCardRoleColors,
     val completed: TastileCardRoleColors,
+    val cardAccent: TastileCardRoleColors = actionable,
+    val cardNeutral: TastileCardRoleColors = neutral,
 ) {
     companion object {
         fun default(
@@ -34,6 +54,14 @@ data class TastileCardRoleTokens(
             completed = TastileCardRoleColors(
                 container = scheme.surfaceContainerLowest,
                 border = scheme.outline,
+            ),
+            cardAccent = TastileCardRoleColors(
+                container = scheme.primaryContainer,
+                border = scheme.primary,
+            ),
+            cardNeutral = TastileCardRoleColors(
+                container = scheme.surfaceContainer,
+                border = scheme.outlineVariant,
             ),
         )
     }

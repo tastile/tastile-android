@@ -36,7 +36,7 @@ WIP cap: `In Progress` ≤ 3 ticket / owner (dry-run only; 強制降格は別 AD
 | --- | --- | --- |
 | Issue template → Project field 自動提案 | Issue 起票者 | `.github/ISSUE_TEMPLATE/{bug,feature,chore}.yml` |
 | Project field 不在の検出 | weekly cron | `.github/workflows/recovery-drill.yml` の拡張予定 |
-| PR close → Issue close + status Done | GitHub built-in | `resolves #<n>` |
+| ticket trunk landing 後の Issue 明示 close + status Done | 手動 (trunk landing 確認後) | ticket changes が `release-x-y-z` へ land してから close。non-default base では `resolves #<n>` だけに依存しない (ADR-0009) |
 | Release PR merge → board 同期 | manual | `release-branch-workflow` Skill |
 
 ## Issue 連動コマンド (例)
@@ -61,10 +61,11 @@ gh project link <project_id> --owner tastile --repo tastile-android
 
 ## 関連 ADR / 関連 Skill
 
-- [ADR-0009](../../../docs/adr/0009-github-projects-work-state.md) (root)
-- [ADR-0007](../../../docs/adr/0007-release-branch-and-ticket-workflow.md) (root)
-- [`.agents/skills/project-board/SKILL.md`](../../../.agents/skills/project-board/SKILL.md) (root canonical)
-- [`.claude/skills/project-board/SKILL.md`](../../.claude/skills/project-board/SKILL.md) (child Claude adapter)
+- [ADR-0009](../adr/0009-github-projects-work-state.md)
+- [ADR-0007](../adr/0007-release-branch-and-ticket-workflow.md)
+- [ADR-0014](../adr/0014-linear-profile-non-adoption.md) (Linear 不採用)
+- [`.agents/skills/github-delivery/SKILL.md`](../../.agents/skills/github-delivery/SKILL.md)
+- [`.claude/skills/project-board/SKILL.md`](../../.claude/skills/project-board/SKILL.md) (Claude adapter、workspace-root canonical への pointer)
 - [`.github/ISSUE_TEMPLATE/bug.yml`](../../.github/ISSUE_TEMPLATE/bug.yml)
 - [`.github/ISSUE_TEMPLATE/feature.yml`](../../.github/ISSUE_TEMPLATE/feature.yml)
 - [`.github/ISSUE_TEMPLATE/chore.yml`](../../.github/ISSUE_TEMPLATE/chore.yml)

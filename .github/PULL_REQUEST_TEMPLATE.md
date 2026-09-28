@@ -1,7 +1,6 @@
 <!--
 Release sprint workflow (ADR-0007) — 4 marker を必ず残す。
-`release-branch-workflow` Skill と `verify-tastile-change` Skill を
-pre-merge に発火する。
+`github-delivery` Skill と `quality-gate` Skill を pre-merge に発火する。
 -->
 
 ## Summary
@@ -40,10 +39,10 @@ pre-merge に発火する。
 
 ## Checks
 
-- [ ] `verify-tastile-change` Skill を発火した
+- [ ] `quality-gate` Skill を発火した
 - [ ] `tastile-precommit-review` Skill を発火した
 - [ ] 関連 ADR / Skill を更新した (この PR が workflow / canonical contract を変える場合)
-- [ ] `docs/HARNESS.md` §n を更新した (この PR が architecture / 手順を変える場合)
+- [ ] 関連 docs (`docs/operations/` / `docs/adr/`) を更新した (この PR が architecture / 手順を変える場合)
 - [ ] `SECURITY.md` の報告経路に影響する変更ではない
 
 ## Notes

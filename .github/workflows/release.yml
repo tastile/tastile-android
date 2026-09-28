@@ -11,20 +11,40 @@ on:
         type: string
       track:
         description: "Play track"
-        default: "internal"
+        default: "beta"
         type: choice
         options: [internal, beta, production]
 
+# A release is bound to a single tag + workflow_dispatch run; cancel stale
+# runs for the same ref so a re-run after a transient failure does not
+# double-upload AABs / Play Store assets.
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-aab:
+    environment: android-release
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch Android release settings from Infisical
+        uses: ./.github/actions/infisical-secrets
+        with:
+          domain: ${{ vars.INFISICAL_DOMAIN }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG_PROD }}
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID_PROD }}
+          environment: prod
+          path: /tastile/android
 
       - uses: actions/setup-java@v4
         with:
@@ -76,38 +96,65 @@ jobs:
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Validate signing and Play credentials
+      - name: Validate release version against Android versionName
         env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          PLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          test -n "$KEYSTORE_B64"
-          test -n "$STORE_PASSWORD"
-          test -n "$KEY_ALIAS"
-          test -n "$KEY_PASSWORD"
-          test -n "$PLAY_SERVICE_ACCOUNT"
+          set -euo pipefail
+          APP_VERSION="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          test -n "${APP_VERSION}"
+          if [ "${VERSION}" != "${APP_VERSION}" ]; then
+            echo "::error::Release version ${VERSION} does not match Android versionName ${APP_VERSION}"
+            exit 1
+          fi
+          echo "Release version ${VERSION} matches Android versionName."
+
+      - name: Validate signing and Android build configuration
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$GOOGLE_WEB_CLIENT_ID"
+          test -n "$GOOGLE_ANDROID_CLIENT_ID"
+          test -n "$WEB_BASE_URL"
+          test -n "$TASTILE_CORE_URL"
 
       - name: Decode keystore
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        # Map the four Infisical-fetched ANDROID_* secrets onto the
+        # RELEASE_* env var names that app/build.gradle.kts reads via
+        # configuredValue(). Fail-closed: every required source var is
+        # asserted non-empty before the JKS is consumed; values are
+        # never echoed (non-disclosure).
         run: |
-          echo "$KEYSTORE_B64" | base64 -d > /tmp/keystore.jks
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/keystore.jks
           test -s /tmp/keystore.jks
+          # Defense-in-depth: source vars are validated by the upstream
+          # "Validate signing" step, but re-assert here so a missing
+          # env var fails before gradle reads an empty RELEASE_*.
+          # ${VAR:?msg} exits non-zero with only the var name surfaced;
+          # the value is never echoed.
+          : "${ANDROID_KEYSTORE_PASSWORD:?ANDROID_KEYSTORE_PASSWORD is required}"
+          : "${ANDROID_KEY_ALIAS:?ANDROID_KEY_ALIAS is required}"
+          : "${ANDROID_KEY_PASSWORD:?ANDROID_KEY_PASSWORD is required}"
+          {
+            echo 'RELEASE_STORE_FILE=/tmp/keystore.jks'
+            echo "RELEASE_STORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD}"
+            echo "RELEASE_KEY_ALIAS=${ANDROID_KEY_ALIAS}"
+            echo "RELEASE_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}"
+          } >> "$GITHUB_ENV"
 
-      - name: Write gradle.properties from Secrets
-        run: |
-          cat >> gradle.properties <<EOF
-          RELEASE_STORE_FILE=/tmp/keystore.jks
-          RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
-          GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
-          WEB_BASE_URL=${{ secrets.WEB_BASE_URL }}
-          TASTILE_CORE_URL=${{ secrets.TASTILE_CORE_URL }}
-          EOF
+      - name: Checkout OpenAPI spec submodule
+        uses: actions/checkout@v4
+        with:
+          repository: tastile/tastile-openapi
+          path: tastile-openapi
+          # A04: pin to canonical v1.0.0 freeze (C07 confirmed, R01 status:ready).
+          # Do NOT change without an associated plan and the next release's SHA bump.
+          ref: b0c781dc18111645324e2abc38621b1564d4c518
+
+      - name: Set OpenAPI spec path
+        run: echo 'openapi.input=../tastile-openapi/openapi.yaml' >> gradle.properties
 
       - name: Verify repository quality gates
         run: ./gradlew verify
@@ -130,25 +177,55 @@ jobs:
 
   upload-play:
     needs: build-aab
+    environment: android-release
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - uses: actions/download-artifact@v4
         with:
           name: app-release
           path: dist/
 
+      - name: Fetch Google Play credential from Infisical
+        uses: ./.github/actions/infisical-secrets
+        with:
+          domain: ${{ vars.INFISICAL_DOMAIN }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG_PROD }}
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID_PROD }}
+          environment: prod
+          path: /tastile/android
+          secret-name: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+
+      - name: Prepare Google Play credential input
+        id: play-credential
+        shell: bash
+        run: |
+          {
+            echo 'json<<INFISICAL_PLAY_CREDENTIAL'
+            printf '%s\n' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+            echo 'INFISICAL_PLAY_CREDENTIAL'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          serviceAccountJsonPlainText: ${{ steps.play-credential.outputs.json }}
           packageName: app.tastile.android
           releaseFiles: dist/app-release.aab
-          tracks: ${{ github.event.inputs.track || 'internal' }}
+          tracks: ${{ github.event.inputs.track || 'beta' }}
           status: completed
           mappingFile: dist/mapping.txt
 
   upload-github-release:
     needs: build-aab
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,2 +1,5 @@
 <resources>
+    <!-- 2026-09-08: locale fallback. -->
+    <string name="tasks_all_done">All tasks completed</string>
+    <string name="api_token_mint_failed">Sign-in refresh failed. Pull-to-refresh to retry.</string>
 </resources>
