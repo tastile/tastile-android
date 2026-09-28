@@ -168,3 +168,9 @@ see also `parallel-orchestration`, `sandbox-runtime`, `quality-gate`,
 `engineering-decisions`, `security-maintenance`, `onboarding`,
 `correctness-assurance`, `policy-evaluation`, `design-refinement`,
 `writing-discipline`, `interaction-discipline`, `worktree-workflow`.
+
+## Constitution / operating profile
+
+- repository-local top-level contract: [`constitution/CONSTITUTION.md`](constitution/CONSTITUTION.md)
+- current Operating Model: [`organization/profiles/release-driven-solo.md`](organization/profiles/release-driven-solo.md)
+- cross-repo shared decisions remain owned by the Tastile workspace root; repository-local implementation and validation facts remain local.
