@@ -3,17 +3,16 @@ name: buildconfig-guard-check
 description: Use when adding a new `buildConfigField(...)` to `app/build.gradle.kts` or when reviewing such a change before commit.
 ---
 
-`app/build.gradle.kts` declares Cognito / API-URL / Google-Web-Client-Id values as `buildConfigField` strings on line 64-70. They are read at runtime as `BuildConfig.GOOGLE_WEB_CLIENT_ID`, `BuildConfig.COGNITO_CLIENT_ID`, etc. A separate `gradle.projectsEvaluated` block at line 472-491 enforces that every one of these fields is supplied by `gradle.properties` / `~/.gradle/gradle.properties` / `-PKEY=value` at configuration time; a blank value throws `GradleException` and fails the build fast.
+`app/build.gradle.kts` declares API URL and Google client ID values as `buildConfigField` strings. They are read at runtime as `BuildConfig.GOOGLE_WEB_CLIENT_ID`, `BuildConfig.WEB_BASE_URL`, etc. The `gradle.projectsEvaluated` block enforces that each required value is supplied as an environment variable, normally by `infisical run`; Gradle properties and `-P` overrides are not configuration sources.
 
-The reason for the guard: an empty BuildConfig string is silent at compile time, then breaks the corresponding auth / API call at runtime with a vague failure ("user not authenticated" / "404 from API"). Failing at build time gives the developer an actionable error pointing at the missing gradle property.
+The reason for the guard: an empty BuildConfig string is silent at compile time, then breaks the corresponding auth / API call at runtime with a vague failure ("user not authenticated" / "404 from API"). Failing at build time gives the developer an actionable error pointing to the missing environment variable.
 
 Use this Skill BEFORE adding a new buildConfigField. The flow:
 
 1. Decide whether the new value belongs in BuildConfig at all. BuildConfig is for values that:
    - Are referenced from Kotlin source as `BuildConfig.<NAME>`.
    - Vary between local dev / staging / production environments.
-   - Must NOT be in `BuildConfig.DEFAULT_VALUE` (the gradle.properties
-     fallback at line 41-46), since defaults defeat the fail-fast
+   - Must NOT have an inline fallback, since defaults defeat the fail-fast
      guard.
 
 2. After deciding the field belongs in BuildConfig, add it to the
@@ -26,7 +25,8 @@ Use this Skill BEFORE adding a new buildConfigField. The flow:
    `defaultConfig` block (line 64-70). Use the form:
 
    ```kotlin
-   buildConfigField("String", "<NAME>", "\"${<gradle-property>.orNull ?: ""}\"")
+   val value = providers.environmentVariable("<NAME>")
+   buildConfigField("String", "<NAME>", "\"${value.orNull ?: ""}\"")
    ```
 
    The `?: ""` keeps the same `""`-on-missing default as the existing
@@ -42,17 +42,12 @@ Use this Skill BEFORE adding a new buildConfigField. The flow:
 5. Validate:
 
    ```
-   ./gradlew :app:assembleDebug -P<NAME>=verify-value
+   infisical --domain=https://secrets.rebuildup.dev run --env=dev --path=/ -- ./gradlew :app:assembleDebug
    ```
 
-   should succeed, and:
-
-   ```
-   ./gradlew :app:assembleDebug
-   ```
-
-   without the property should fail with the message from
-   `gradle.projectsEvaluated` quoting the missing property name.
+   should succeed with the configured project value. Running Gradle without
+   Infisical should fail with the message from `gradle.projectsEvaluated`
+   quoting the missing environment variable.
 
 6. Update AGENTS.md "Build-Time Hard Requirements" with the new
    property name so the documentation stays in sync with the guard.

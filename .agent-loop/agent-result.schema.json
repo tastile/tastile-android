@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/tastile/tastile-android/blob/main/.agent-loop/agent-result.schema.json",
+  "title": "tastile-android agent result",
+  "description": "Immutable child-to-parent result envelope (ADR-0008). The parent integrates, rejects, or requests revision; stale generations are rejected via fencing_token.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent_id",
+    "issue_or_task_id",
+    "target_release",
+    "base_snapshot",
+    "execution_generation",
+    "fencing_token",
+    "verdict",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "agent_id": { "type": "string" },
+    "issue_or_task_id": { "type": "string" },
+    "target_release": { "type": "string" },
+    "base_snapshot": { "type": "string" },
+    "predecessor_snapshot": { "type": ["string", "null"] },
+    "execution_generation": { "type": "integer", "minimum": 1 },
+    "fencing_token": { "type": "string" },
+    "result_commit_or_ref": { "type": ["string", "null"] },
+    "draft_pr_identity": { "type": ["string", "null"] },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail", "blocked", "abandoned"]
+    },
+    "summary": { "type": "string" },
+    "validation_results": { "type": "array", "items": { "type": "string" } },
+    "artifacts": { "type": "array", "items": { "type": "string" } },
+    "known_issues": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

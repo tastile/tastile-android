@@ -1,30 +1,57 @@
 package app.tastile.android.ui.mobile.sheets
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.EmojiEmotions
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.Warning
 // m2-allow: m3-component
 import androidx.compose.material3.AlertDialog
 // m2-allow: experimental-annotation
 import androidx.compose.material3.ExperimentalMaterial3Api
-// m2-allow: m3-component
-import androidx.compose.material3.FilterChip
 // m2-allow: theme-bridge
 import androidx.compose.material3.MaterialTheme
-// m2-allow: m3-component
-import androidx.compose.material3.OutlinedTextField
 // m2-allow: primitive
 import androidx.compose.material3.Text
 // m2-allow: m3-component
 import androidx.compose.material3.CircularProgressIndicator
+// m2-allow: primitive
+import androidx.compose.material3.Icon
+// m2-allow: m3-component
+import androidx.compose.material3.IconButton
 // m2-allow: m3-component
 import androidx.compose.material3.HorizontalDivider
+// m2-allow: m3-component
+import androidx.compose.material3.Surface
 // m2-allow: primitive
 import androidx.compose.material3.LocalContentColor
 import app.tastile.android.core.designsystem.component.rememberNiaModalBottomSheetState
+import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,22 +59,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.component.NiaButton
-import app.tastile.android.core.designsystem.component.NiaOutlinedButton
 import app.tastile.android.core.designsystem.component.NiaTextButton
-import app.tastile.android.data.api.SourceTileDetailRead
 import app.tastile.android.data.model.TileLifecycle
 import app.tastile.android.ui.dashboard.DashboardViewModel
 import app.tastile.android.ui.dashboard.ExecutionControlState
 import app.tastile.android.ui.dashboard.TileUpdateField
 import app.tastile.android.ui.mobile.Overlay
+import app.tastile.android.ui.mobile.sheets.quickcreate.DetailsAffordanceButton
+import app.tastile.android.ui.mobile.sheets.quickcreate.FormRow
+import app.tastile.android.ui.mobile.sheets.quickcreate.QuickCreateHeader
+import app.tastile.android.ui.mobile.sheets.quickcreate.UnderlineTextArea
+import app.tastile.android.ui.mobile.sheets.quickcreate.UnderlineTextField
 import app.tastile.android.ui.mobile.OverlayViewModel
 import app.tastile.android.ui.mobile.sheets.WorkflowKind
 import app.tastile.android.ui.mobile.sheets.quickcreate.WorkflowBatch
@@ -79,7 +113,7 @@ import app.tastile.android.ui.mobile.tabs.tiles.PromptRequestDialog
  * affordance for the destructive / irreversible actions that the new
  * editable fields cannot substitute for.
  */
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TileEditSheet(
     overlay: OverlayViewModel,
@@ -100,12 +134,22 @@ fun TileEditSheet(
     if (current is Overlay.TileEdit) {
         val tileEdit = current as Overlay.TileEdit
         val tileId = tileEdit.tileId
+        // Source reads/writes address the canonical source id. Timeline
+        // occurrences carry a placement tile id that 404s against
+        // GET /v1/source-tiles/{id} (A05); prefer the timeline's
+        // source_tile_id whenever the entry point supplied one.
+        // For placements without a source tile (legacy / v0 era), leave
+        // detailId null so the sheet renders the cached Tile without
+        // making a doomed server call.
+        val detailId = tileEdit.sourceTileId ?: tileId
         // Trigger the v1 source-tile detail fetch whenever the sheet opens for
         // a new tile id. The repository's read path is suspended + fault-tolerant
         // (returns null on auth/network/server errors), so the UI only ever
         // renders a placeholder or the real payload — never a hard error.
-        LaunchedEffect(tileId) {
-            tileId?.let(viewModel::loadTileDetail)
+        if (detailId != null) {
+            LaunchedEffect(detailId) {
+                viewModel.loadTileDetail(detailId)
+            }
         }
         // The QuickCreateStateStore is keyed by the (tileId, placementId) pair
         // so the same tile reopens with the same draft, but a different tile
@@ -113,11 +157,24 @@ fun TileEditSheet(
         val store = remember(tileId, tileEdit.placementId) {
             QuickCreateStateStore()
         }
-        LaunchedEffect(detail, tileId, tileEdit.placementId) {
+        // Local-first seed (no network): the timeline/tiles rows already carry
+        // the title, so the editor shows it instantly instead of waiting for
+        // the source-tile detail round-trip. Runs once per tile while the
+        // draft is still pristine; detail hydration later overwrites only
+        // fields the user has not touched.
+        LaunchedEffect(tile?.id) {
+            val t = tile
+            val cur = store.state.value
+            if (t != null && cur.editingTileId == null && cur.identity.title.isBlank() && t.title.isNotBlank()) {
+                store.updateIdentity(cur.identity.copy(title = t.title))
+            }
+        }
+        LaunchedEffect(detail, detailId, tileEdit.placementId) {
             val currentDetail = detail
-            if (currentDetail != null && tileId != null) {
+            val resolvedId = detailId
+            if (currentDetail != null && resolvedId != null) {
                 val existing = store.state.value
-                if (existing.editingTileId != tileId) {
+                if (existing.editingTileId != resolvedId) {
                     // Heuristic: recurring tiles set `schedule.generation.kind = 1`
                     // (Recurring) on the v1 wire; placement / event / task tiles
                     // leave it at 0 (OneTime) or 2 (DemandDriven). Pre-select the
@@ -130,11 +187,31 @@ fun TileEditSheet(
                         WorkflowKind.Event
                     }
                     store.hydrateForEdit(
-                        tileId = tileId,
+                        tileId = resolvedId,
                         placementId = tileEdit.placementId,
                         detail = currentDetail,
                         workflow = initialWorkflow,
                     )
+                    // Local-first editing: the form is fully interactive before
+                    // the detail round-trip returns, so a first hydration must
+                    // not clobber fields the user already touched. Blank title /
+                    // description and store-default color / icon mean untouched.
+                    if (existing.editingTileId == null) {
+                        val hydrated = store.state.value.identity
+                        var restored = hydrated
+                        if (existing.identity.title.isNotBlank()) restored = restored.copy(title = existing.identity.title)
+                        val preDescription = existing.identity.description
+                        if (!preDescription.isNullOrBlank()) restored = restored.copy(description = preDescription)
+                        val preColor = existing.identity.visual.color
+                        if (!preColor.equals("#3b82f6", ignoreCase = true)) {
+                            restored = restored.copy(visual = restored.visual.copy(color = preColor))
+                        }
+                        val preIcon = existing.identity.visual.icon
+                        if (preIcon != "check-circle") {
+                            restored = restored.copy(visual = restored.visual.copy(icon = preIcon))
+                        }
+                        if (restored != hydrated) store.updateIdentity(restored)
+                    }
                 }
             }
         }
@@ -152,17 +229,62 @@ fun TileEditSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                    // A05: the edit form (identity + schedule + actions) is taller
+                    // than the sheet viewport, so the content must scroll —
+                    // otherwise the Actions row (Start/Complete/Delete) below
+                    // the fold is unreachable by touch.
+                    // Create-panel parity: no outer horizontal padding. Every
+                    // row owns its 16dp gutter (FormRow / padded loose rows),
+                    // so the icon track lines up with the header × centerline.
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 val headerTitle = tile?.title
                     ?: detail?.source?.title
                     ?: if (detailLoading) "Loading tile…" else "Tile"
-                Text(
-                    text = headerTitle,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.testTag("tile-edit-header-title"),
-                )
+                // Create-panel parity: cancel × on the left, save pill on the
+                // right. This header save is the only save entry point.
+                // Gutters mirror QuickCreateHandleRow: × at start=4dp puts its
+                // 48dp centerline on the body icon-track centerline (28dp),
+                // save pill at end=16dp.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, end = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(
+                        onClick = {
+                            viewModel.clearSelectedTile()
+                            overlay.dismiss()
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("tile-edit-cancel"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = stringResource(R.string.quick_create_close),
+                            tint = LocalContentColor.current,
+                        )
+                    }
+                    Text(
+                        text = headerTitle,
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("tile-edit-header-title"),
+                    )
+                    NiaButton(
+                        onClick = { confirmSave = true },
+                        enabled = draft.identity.title.isNotBlank(),
+                        modifier = Modifier.testTag("tile-edit-save-details"),
+                        text = { Text(stringResource(R.string.tile_edit_save_details)) },
+                    )
+                }
                 // Workflow batch — mirrors the peer workflow structure for
                 // consistent authors. Pre-selected via hydrateForEdit.
                 WorkflowBatch(
@@ -170,65 +292,175 @@ fun TileEditSheet(
                     onWorkflowChange = { kind -> store.setWorkflow(kind) },
                     modifier = Modifier.testTag("tile-edit-workflow-batch"),
                 )
-                Text(
-                    text = tile?.lifecycle ?: "—",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = LocalContentColor.current,
+                // Status rows use the same FormRow track as the form body so
+                // the whole sheet sits on one icon column.
+                FormRow(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = null,
+                            tint = LocalContentColor.current,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    },
+                    content = {
+                        Text(
+                            text = tile?.lifecycle ?: "—",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = LocalContentColor.current,
+                        )
+                    },
                 )
                 error?.let { message ->
-                    Text(message, color = LocalTastileStatusTokens.current.archived.icon)
+                    FormRow(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Warning,
+                                contentDescription = null,
+                                tint = LocalTastileStatusTokens.current.archived.icon,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        },
+                        content = {
+                            Text(message, color = LocalTastileStatusTokens.current.archived.icon)
+                        },
+                    )
                 }
                 if (detailLoading && detail == null) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.testTag("tile-edit-detail-loading"),
-                    )
-                }
-                if (detail == null && !detailLoading && error == null) {
-                    NiaTextButton(
-                        onClick = { tileId?.let(viewModel::loadTileDetail) },
-                        text = { Text(stringResource(R.string.tile_edit_retry_loading)) },
-                    )
-                }
-                if (detail != null && tileId != null) {
-                    EditableIdentityBlock(
-                        detail = detail!!,
-                        onTitleChange = { newTitle ->
-                            store.updateIdentity(draft.identity.copy(title = newTitle))
-                        },
-                        onDescriptionChange = { newDescription ->
-                            store.updateIdentity(draft.identity.copy(description = newDescription))
-                        },
-                        onColorChange = { newColor ->
-                            store.updateIdentity(
-                                draft.identity.copy(visual = draft.identity.visual.copy(color = newColor))
+                    FormRow(
+                        icon = {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .testTag("tile-edit-detail-loading"),
                             )
                         },
-                        onIconChange = { newIcon ->
-                            store.updateIdentity(
-                                draft.identity.copy(visual = draft.identity.visual.copy(icon = newIcon))
-                            )
-                        },
+                        content = { },
                     )
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        NiaOutlinedButton(
-                            onClick = { store.openSubpanel(QuickCreatePanel.Time) },
-                            text = { Text(stringResource(R.string.tile_edit_open_time)) },
-                            modifier = Modifier.testTag("tile-edit-open-time"),
-                        )
-                        NiaOutlinedButton(
-                            onClick = { store.openSubpanel(QuickCreatePanel.Schedule) },
-                            text = { Text(stringResource(R.string.tile_edit_open_schedule)) },
-                            modifier = Modifier.testTag("tile-edit-open-schedule"),
+                }
+                if (detail != null && !detailLoading && error == null) {
+                    // Only ask the server to retry when we actually had a
+                    // source id to load. Legacy / v0 placements have no
+                    // detail to fetch (A05).
+                    if (detailId != null) {
+                        FormRow(
+                            modifier = Modifier
+                                .clickable { viewModel.loadTileDetail(detailId) }
+                                .testTag("tile-edit-retry"),
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Refresh,
+                                    contentDescription = null,
+                                    tint = LocalContentColor.current,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            },
+                            content = {
+                                Text(
+                                    text = stringResource(R.string.tile_edit_retry_loading),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = LocalContentColor.current,
+                                )
+                            },
                         )
                     }
+                }
+                // Create-panel form system, driven by the edit draft store.
+                // Title renders instantly from local rows (seeded from the
+                // tiles list, no network); description / color / icon /
+                // schedule fill in from the source-tile detail when it
+                // arrives. Those detail-held fields exist only in the detail
+                // read — the list payloads do not carry them.
+                if (tile != null) {
+                    QuickCreateHeader(
+                        title = draft.identity.title,
+                        onTitleChange = { store.updateIdentity(draft.identity.copy(title = it)) },
+                        modifier = Modifier.testTag("tile-edit-header"),
+                        titleTestTag = "tile-edit-title-input",
+                        placeholder = stringResource(R.string.tile_edit_title_label),
+                    )
+                    FormRow(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Description,
+                                contentDescription = null,
+                                tint = LocalContentColor.current,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        },
+                        content = {
+                            UnderlineTextArea(
+                                value = draft.identity.description.orEmpty(),
+                                onValueChange = {
+                                    store.updateIdentity(
+                                        draft.identity.copy(description = it.takeIf { d -> d.isNotBlank() })
+                                    )
+                                },
+                                placeholder = stringResource(R.string.tile_edit_description_hint),
+                                testTag = "tile-edit-description-input",
+                            )
+                        },
+                    )
+                    FormRow(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Palette,
+                                contentDescription = null,
+                                tint = LocalContentColor.current,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        },
+                        content = {
+                            EditColorDots(
+                                selectedHex = draft.identity.visual.color,
+                                onSelect = { hex ->
+                                    store.updateIdentity(
+                                        draft.identity.copy(visual = draft.identity.visual.copy(color = hex))
+                                    )
+                                },
+                            )
+                        },
+                    )
+                    FormRow(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Outlined.EmojiEmotions,
+                                contentDescription = null,
+                                tint = LocalContentColor.current,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        },
+                        content = {
+                            UnderlineTextField(
+                                value = draft.identity.visual.icon,
+                                onValueChange = {
+                                    store.updateIdentity(
+                                        draft.identity.copy(visual = draft.identity.visual.copy(icon = it))
+                                    )
+                                },
+                                placeholder = stringResource(R.string.tile_edit_icon_label),
+                                testTag = "tile-edit-icon-input",
+                            )
+                        },
+                    )
+                    DetailsAffordanceButton(
+                        label = stringResource(R.string.tile_edit_open_time),
+                        onOpen = { store.openSubpanel(QuickCreatePanel.Time) },
+                        modifier = Modifier.testTag("tile-edit-open-time"),
+                        testTag = "tile-edit-open-time",
+                    )
+                    DetailsAffordanceButton(
+                        label = stringResource(R.string.tile_edit_open_schedule),
+                        onOpen = { store.openSubpanel(QuickCreatePanel.Schedule) },
+                        modifier = Modifier.testTag("tile-edit-open-schedule"),
+                        testTag = "tile-edit-open-schedule",
+                    )
                     if (tileEdit.placementId != null) {
                         Text(
                             text = stringResource(R.string.tile_occurrence_label, tileEdit.placementId),
                             style = MaterialTheme.typography.bodySmall,
                             color = LocalContentColor.current,
+                            modifier = Modifier.padding(horizontal = 16.dp),
                         )
                     }
                     val active = draft.activePanel
@@ -239,77 +471,92 @@ fun TileEditSheet(
                             modifier = Modifier.testTag("tile-edit-back"),
                         )
                     }
-                    NiaButton(
-                        onClick = { confirmSave = true },
-                        enabled = draft.identity.title.isNotBlank(),
-                        modifier = Modifier.testTag("tile-edit-save-details"),
-                        text = { Text(stringResource(R.string.tile_edit_save_details)) },
-                    )
                 }
                 tile?.let { selected ->
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    Text(stringResource(R.string.tile_edit_actions_header), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        stringResource(R.string.tile_edit_actions_header),
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
                     val lifecycle = TileLifecycle.fromString(selected.lifecycle)
                     if (lifecycle == TileLifecycle.READY) {
-                        NiaOutlinedButton(
-                            onClick = { viewModel.startTile(selected.id) },
-                            text = { Text(stringResource(R.string.tile_edit_start)) },
-                            modifier = Modifier.testTag("tile-edit-start"),
+                        EditActionRow(
+                            icon = Icons.Outlined.PlayArrow,
+                            label = stringResource(R.string.tile_edit_start),
+                            testTag = "tile-edit-start",
+                            onClick = {
+                                // A05: timeline occurrences already carry the placement id,
+                                // so start the execution directly. Source-emitted tiles never
+                                // satisfy the tile-start plan bootstrap; legacy tiles without
+                                // a placement keep the tile-start route.
+                                val placementId = tileEdit.placementId
+                                if (placementId != null) viewModel.startPlacementExecution(placementId, selected.id)
+                                else viewModel.startTile(selected.id)
+                            },
                         )
-                        NiaOutlinedButton(
+                        EditActionRow(
+                            icon = Icons.Outlined.Schedule,
+                            label = stringResource(R.string.tile_edit_defer),
+                            testTag = "tile-edit-defer",
                             onClick = { viewModel.setDeferTileCandidate(selected.id) },
-                            text = { Text(stringResource(R.string.tile_edit_defer)) },
-                            modifier = Modifier.testTag("tile-edit-defer"),
                         )
-                        NiaOutlinedButton(
+                        EditActionRow(
+                            icon = Icons.Outlined.Notifications,
+                            label = stringResource(R.string.tile_edit_request_prompt),
+                            testTag = "tile-edit-prompt",
                             onClick = { viewModel.setPromptTileCandidate(selected.id) },
-                            text = { Text(stringResource(R.string.tile_edit_request_prompt)) },
-                            modifier = Modifier.testTag("tile-edit-prompt"),
                         )
                     }
                     if (lifecycle == TileLifecycle.STARTED) {
-                        NiaOutlinedButton(
+                        EditActionRow(
+                            icon = Icons.Outlined.TaskAlt,
+                            label = stringResource(R.string.tile_edit_complete),
+                            testTag = "tile-edit-complete",
                             onClick = { viewModel.completeTile(selected.id) },
-                            text = { Text(stringResource(R.string.tile_edit_complete)) },
-                            modifier = Modifier.testTag("tile-edit-complete"),
                         )
                         when (executionStates[selected.id]) {
-                            ExecutionControlState.Active -> NiaOutlinedButton(
+                            ExecutionControlState.Active -> EditActionRow(
+                                icon = Icons.Outlined.Pause,
+                                label = stringResource(R.string.tile_edit_pause),
+                                testTag = "tile-edit-pause",
+                                enabled = selected.id !in executionControlsInFlight,
                                 onClick = { viewModel.pauseTile(selected.id) },
-                                enabled = selected.id !in executionControlsInFlight,
-                                text = { Text(stringResource(R.string.tile_edit_pause)) },
                             )
-                            ExecutionControlState.Paused -> NiaOutlinedButton(
+                            ExecutionControlState.Paused -> EditActionRow(
+                                icon = Icons.Outlined.PlayArrow,
+                                label = stringResource(R.string.tile_edit_resume),
+                                testTag = "tile-edit-resume",
+                                enabled = selected.id !in executionControlsInFlight,
                                 onClick = { viewModel.resumeTile(selected.id) },
-                                enabled = selected.id !in executionControlsInFlight,
-                                text = { Text(stringResource(R.string.tile_edit_resume)) },
                             )
-                            null -> NiaOutlinedButton(
-                                onClick = { confirmExecutionAction = true },
+                            null -> EditActionRow(
+                                icon = Icons.Outlined.PlayArrow,
+                                label = stringResource(R.string.tile_edit_start_execution),
+                                testTag = "tile-edit-start-execution",
                                 enabled = selected.id !in executionControlsInFlight,
-                                text = { Text(stringResource(R.string.tile_edit_start_execution)) },
+                                onClick = { confirmExecutionAction = true },
                             )
                         }
                         if (executionStates[selected.id] != null) {
-                            NiaOutlinedButton(
-                                onClick = { confirmExecutionAction = false },
+                            EditActionRow(
+                                icon = Icons.Outlined.CheckCircle,
+                                label = stringResource(R.string.tile_edit_finish_execution),
+                                testTag = "tile-edit-finish-execution",
                                 enabled = selected.id !in executionControlsInFlight,
-                                text = { Text(stringResource(R.string.tile_edit_finish_execution)) },
+                                onClick = { confirmExecutionAction = false },
                             )
                         }
                     }
-                    NiaOutlinedButton(
+                    EditActionRow(
+                        icon = Icons.Outlined.DeleteOutline,
+                        label = if (tileEdit.placementId != null) "Delete occurrence" else "Delete",
+                        testTag = "tile-edit-delete-or-occurrence",
                         onClick = {
                             val placementId = tileEdit.placementId
                             if (placementId != null) viewModel.setClosePlacementCandidate(placementId)
                             else viewModel.setDeleteTileCandidate(selected.id)
                         },
-                        text = {
-                            Text(
-                                if (tileEdit.placementId != null) "Delete occurrence" else "Delete",
-                            )
-                        },
-                        modifier = Modifier.testTag("tile-edit-delete-or-occurrence"),
                     )
                 }
             }
@@ -446,97 +693,100 @@ fun TileEditSheet(
 }
 
 /**
- * Editable identity block rendered at the top of the tile-edit sheet.
- *
- * Binds the v1 source-tile identity fields (title / description / color /
- * icon) to the local store so the user can edit them in place. Each field
- * is wired to a callback that mutates the store, so the same `Save changes`
- * flow that already exists can dispatch the v1 `update-tile` command.
+ * Single action row in the create-panel form system: leading icon track,
+ * body-large label, whole row tappable. Used for the edit-only lifecycle
+ * actions (Start / Defer / Complete / …) so they sit on the same icon
+ * column as the form rows above.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EditableIdentityBlock(
-    detail: SourceTileDetailRead,
-    onTitleChange: (String) -> Unit,
-    onDescriptionChange: (String?) -> Unit,
-    onColorChange: (String) -> Unit,
-    onIconChange: (String) -> Unit,
+private fun EditActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    testTag: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
 ) {
-    val source = detail.source
-    var title by remember(source.sourceTileId) { mutableStateOf(source.title) }
-    var description by remember(source.sourceTileId) { mutableStateOf(source.description.orEmpty()) }
-    var color by remember(source.sourceTileId) { mutableStateOf(source.color ?: "#3b82f6") }
-    var icon by remember(source.sourceTileId) { mutableStateOf(source.icon ?: "check-circle") }
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+    FormRow(
+        modifier = Modifier
+            .clickable(enabled = enabled, onClick = onClick)
+            .testTag(testTag),
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = LocalContentColor.current.copy(alpha = if (enabled) 1f else 0.38f),
+                modifier = Modifier.size(24.dp),
+            )
+        },
+        content = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = LocalContentColor.current.copy(alpha = if (enabled) 1f else 0.38f),
+            )
+        },
+    )
+}
+
+/**
+ * Color dot row mirroring the create panel's swatch set
+ * (`ProjectColorRow` web-parity Event colors). Dots instead of chips so the
+ * edit form reads as the same component family as QuickCreate.
+ */
+private val EditColorSwatches: List<String> = listOf(
+    "#3B82F6",
+    "#10B981",
+    "#A855F7",
+    "#F59E0B",
+    "#EF4444",
+    "#6B7280",
+)
+
+@Composable
+private fun EditColorDots(
+    selectedHex: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedTextField(
-            value = title,
-            onValueChange = {
-                title = it
-                onTitleChange(it)
-            },
-            label = { Text(stringResource(R.string.tile_edit_title_label)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("tile-edit-title-input"),
-            singleLine = true,
-        )
-        OutlinedTextField(
-            value = description,
-            onValueChange = {
-                description = it
-                onDescriptionChange(it.takeIf { d -> d.isNotBlank() })
-            },
-            label = { Text(stringResource(R.string.tile_edit_description_label)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("tile-edit-description-input"),
-            supportingText = { Text(stringResource(R.string.tile_edit_description_hint)) },
-        )
-        Text(stringResource(R.string.tile_edit_color_label), style = MaterialTheme.typography.labelLarge)
-        val colorPalette = listOf(
-            "#3b82f6" to stringResource(R.string.tile_edit_color_blue),
-            "#22c55e" to stringResource(R.string.tile_edit_color_green),
-            "#a855f7" to stringResource(R.string.tile_edit_color_purple),
-            "#f97316" to stringResource(R.string.tile_edit_color_orange),
-            "#ec4899" to stringResource(R.string.tile_edit_color_pink),
-            "#06b6d4" to stringResource(R.string.tile_edit_color_cyan),
-            "#eab308" to stringResource(R.string.tile_edit_color_yellow),
-            "#ef4444" to stringResource(R.string.tile_edit_color_red),
-            "#14b8a6" to stringResource(R.string.tile_edit_color_teal),
-            "#6b7280" to stringResource(R.string.tile_edit_color_gray),
-        )
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            colorPalette.forEach { (hex, label) ->
-                FilterChip(
-                    selected = color == hex,
-                    onClick = {
-                        color = hex
-                        onColorChange(hex)
-                    },
-                    label = { Text(label) },
-                    modifier = Modifier.testTag("tile-edit-color-$hex"),
-                )
+        EditColorSwatches.forEach { hex ->
+            val isSelected = hex.equals(selectedHex, ignoreCase = true)
+            Surface(
+                onClick = { onSelect(hex) },
+                shape = CircleShape,
+                color = Color.Transparent,
+                border = BorderStroke(
+                    if (isSelected) 2.dp else 1.dp,
+                    if (isSelected) LocalTastileCardRoleTokens.current.actionable.border
+                    else LocalTastileCardRoleTokens.current.completed.border,
+                ),
+                modifier = Modifier
+                    .size(24.dp)
+                    .testTag("tile-edit-color-$hex"),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(3.dp)
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(Color(android.graphics.Color.parseColor(hex))),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            Icons.Outlined.Check,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(12.dp),
+                        )
+                    }
+                }
             }
         }
-        OutlinedTextField(
-            value = icon,
-            onValueChange = {
-                icon = it
-                onIconChange(it)
-            },
-            label = { Text(stringResource(R.string.tile_edit_icon_label)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("tile-edit-icon-input"),
-            supportingText = { Text(stringResource(R.string.tile_edit_icon_hint)) },
-            singleLine = true,
-        )
     }
 }
 
@@ -560,6 +810,12 @@ private fun pushEdit(
     val draft = store.state.value
     val identity = draft.identity
     viewModel.updateTileField(tileId, TileUpdateField.TITLE, identity.title.trim())
+    // Detail-held fields (description / color / icon / span) exist only in the
+    // source-tile read, which may still be in flight when the user saves from
+    // the instant local title row. Sending store defaults for them would
+    // clobber server values, so they go out only after detail hydration
+    // (editingTileId is set exclusively by hydrateForEdit).
+    if (store.state.value.editingTileId == null) return
     viewModel.updateTileField(tileId, TileUpdateField.DESCRIPTION, identity.description)
     viewModel.updateTileField(
         tileId = tileId,

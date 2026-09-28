@@ -10,8 +10,9 @@
 ## Secrets And Local Configuration
 
 - Commit only publishable client configuration.
-- Store release signing credentials in `~/.gradle/gradle.properties`.
-- Do not commit `local.properties`, keystores, or machine-specific JVM paths.
+- Store all secret values in Infisical. Do not copy them into `local.properties`, `gradle.properties`, or machine-local environment files.
+- Authenticate to `https://secrets.rebuildup.dev` with `infisical login`, then run local tasks through `pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task verify`. This selects the configured environment project and `/tastile/android` path without creating a dotenv file. Release signing and Play upload credentials live in the `prod` environment at `/tastile/android` and are fetched only by the release workflow for the task that needs them.
+- Do not commit keystores, Infisical auth material, or machine-specific JVM paths.
 
 ## Code And Repository Standards
 

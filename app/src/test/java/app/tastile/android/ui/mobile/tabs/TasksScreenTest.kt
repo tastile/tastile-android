@@ -83,10 +83,13 @@ class TasksScreenTest {
     @Test
     fun `tabs render one entry per project section`() {
         val sectionAll = ProjectSection(id = "all", label = "All", tiles = emptyList())
-        val sectionStarred = ProjectSection(id = "starred", label = "Starred", tiles = emptyList())
         val sectionUnassigned = ProjectSection(id = "unassigned", label = "Unassigned", tiles = emptyList())
         val sectionProject = ProjectSection(id = "project:Lab", label = "Lab", tiles = emptyList())
-        val vm = stubVm(sections = listOf(sectionAll, sectionStarred, sectionUnassigned, sectionProject))
+        // The starred tab is hardcoded in the source layout (not a section),
+        // so sections MUST NOT contain an id of "starred" — including it would
+        // duplicate `tasks-scope-tab-starred` and trip onNodeWithTag's
+        // ambiguity check.
+        val vm = stubVm(sections = listOf(sectionAll, sectionUnassigned, sectionProject))
         rule.setContent {
             TastileTheme {
                 ExecuteScreen(viewModel = vm, overlay = stubOverlay())
@@ -95,7 +98,6 @@ class TasksScreenTest {
 
         rule.onNodeWithTag("tasks-scope-tabs-row").assertIsDisplayed()
         rule.onNodeWithTag("tasks-scope-tab-${"all"}").assertIsDisplayed()
-        rule.onNodeWithTag("tasks-scope-tab-${"starred"}").assertIsDisplayed()
         rule.onNodeWithTag("tasks-scope-tab-${"unassigned"}").assertIsDisplayed()
         rule.onNodeWithTag("tasks-scope-tab-project:Lab").assertIsDisplayed()
     }

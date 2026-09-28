@@ -60,4 +60,5 @@ object ApiModule {
     @Singleton
     fun provideV1CommandDispatcher(v1ApiClient: V1ApiClient): V1CommandDispatcher =
         V1CommandDispatcher(v1ApiClient)
+
 }

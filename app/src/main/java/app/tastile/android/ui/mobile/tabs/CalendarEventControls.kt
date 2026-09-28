@@ -2,18 +2,18 @@ package app.tastile.android.ui.mobile.tabs
 
 import app.tastile.android.core.CoreTimelineItem
 import app.tastile.android.data.api.Workspace
-
 /** Calendar routes edit requests by their v1 source, mirroring Web CalendarMain. */
 internal sealed interface CalendarEventTarget {
-    data class Placement(val placementId: String, val tileId: String?) : CalendarEventTarget
-    data class RecurringTile(val tileId: String) : CalendarEventTarget
+    data class Placement(val placementId: String, val tileId: String?, val sourceTileId: String? = null) : CalendarEventTarget
+
+    data class RecurringTile(val tileId: String, val sourceTileId: String? = null) : CalendarEventTarget
 }
 
 internal fun calendarEventTarget(item: CoreTimelineItem): CalendarEventTarget {
     return if (item.sourceKind == 1 && !item.tileId.isNullOrBlank()) {
-        CalendarEventTarget.RecurringTile(item.tileId)
+        CalendarEventTarget.RecurringTile(item.tileId, item.sourceTileId)
     } else {
-        CalendarEventTarget.Placement(item.id.substringBefore(':'), item.tileId)
+        CalendarEventTarget.Placement(item.id.substringBefore(':'), item.tileId, item.sourceTileId)
     }
 }
 

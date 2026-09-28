@@ -182,4 +182,25 @@ class DayViewTileTest {
         compose.onNodeWithTag("now-indicator-line").assertExists()
         compose.onNodeWithTag("now-indicator-line").assertIsDisplayed()
     }
+
+    @Test fun blocks_carrySourceTileIdFromTimelineItems() {
+        // A05 regression: the tap path rebuilds CoreTimelineItem from
+        // PlacedBlock, so the canonical source id must survive both hops or
+        // the edit sheet 404s against GET /v1/source-tiles/{tile_id}.
+        val zone = ZoneId.of("UTC")
+        val item = app.tastile.android.core.CoreTimelineItem(
+            id = "p1",
+            tileId = "tile-1",
+            sourceKind = 4,
+            title = "Source-backed",
+            type = "work",
+            status = "scheduled",
+            startAt = today.atTime(9, 0).atZone(zone).toInstant().toString(),
+            endAt = today.atTime(10, 0).atZone(zone).toInstant().toString(),
+            sourceTileId = "source-1",
+        )
+        val blocks = toDayBlocks(listOf(item), today, zone)
+        assertEquals(1, blocks.size)
+        assertEquals("source-1", blocks[0].sourceTileId)
+    }
 }

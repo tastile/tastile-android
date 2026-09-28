@@ -10,23 +10,14 @@
 ## Daily Commands
 
 ```bash
-./gradlew verify
-./gradlew testDebugUnitTest
-./gradlew assembleDebug
+pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task verify
+pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task testDebugUnitTest
+pwsh -NoProfile -File .\scripts\gradle-with-infisical.ps1 -Task assembleDebug
 ```
 
 ## Release Signing
 
-Store release signing values in `~/.gradle/gradle.properties`:
-
-```properties
-RELEASE_STORE_FILE=/absolute/path/to/upload-key.jks
-RELEASE_STORE_PASSWORD=...
-RELEASE_KEY_ALIAS=...
-RELEASE_KEY_PASSWORD=...
-```
-
-Release tasks fail fast when these values are missing.
+Release signing values and the keystore are stored in the dedicated Infisical project. GitHub Actions fetches them with OIDC for releases; do not copy them to local Gradle properties. Release tasks fail fast when the required Infisical environment variables are missing.
 
 ## AWS Cognito Configuration
 
