@@ -212,6 +212,28 @@ class BetterAuthHttpClientTest {
     }
 
     @Test
+    fun extractSessionToken_acceptsSecurePrefixedCookieFromHttpsProduction() {
+        // A02 option A: production serves HTTPS so BetterAuth prefixes the
+        // session cookie name. The client accepts both names (server contract
+        // unchanged); the secure variant wins when both are present.
+        assertEquals(
+            "secure-token",
+            client.extractSessionToken(
+                listOf("__Secure-better-auth.session_token=secure-token; Path=/; Secure; HttpOnly"),
+            ),
+        )
+        assertEquals(
+            "secure-token",
+            client.extractSessionToken(
+                listOf(
+                    "better-auth.session_token=plain-token; Path=/",
+                    "__Secure-better-auth.session_token=secure-token; Path=/; Secure",
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun signInWithGoogleIdToken_postsCorrectBodyAndDecodesSession() = runTest {
         val sessionToken = "test-session-token-abc123"
         server.enqueue(

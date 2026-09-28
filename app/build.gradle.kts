@@ -9,14 +9,16 @@ plugins {
     jacoco
 }
 
-val releaseStoreFile = providers.gradleProperty("RELEASE_STORE_FILE")
-val releaseStorePassword = providers.gradleProperty("RELEASE_STORE_PASSWORD")
-val releaseKeyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS")
-val releaseKeyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD")
-val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
-val googleAndroidClientId = providers.gradleProperty("GOOGLE_ANDROID_CLIENT_ID")
-val webBaseUrl = providers.gradleProperty("WEB_BASE_URL")
-val tastileCoreUrl = providers.gradleProperty("TASTILE_CORE_URL")
+fun configuredValue(name: String) = providers.environmentVariable(name)
+
+val releaseStoreFile = configuredValue("RELEASE_STORE_FILE")
+val releaseStorePassword = configuredValue("RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = configuredValue("RELEASE_KEY_ALIAS")
+val releaseKeyPassword = configuredValue("RELEASE_KEY_PASSWORD")
+val googleWebClientId = configuredValue("GOOGLE_WEB_CLIENT_ID")
+val googleAndroidClientId = configuredValue("GOOGLE_ANDROID_CLIENT_ID")
+val webBaseUrl = configuredValue("WEB_BASE_URL")
+val tastileCoreUrl = configuredValue("TASTILE_CORE_URL")
 val hasReleaseSigning =
     releaseStoreFile.isPresent &&
         releaseStorePassword.isPresent &&
@@ -46,7 +48,7 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         // Play has already accepted versionCode 31. Keep the checked-in
         // release baseline monotonic; CI must never re-upload that artifact.
         versionCode = 33
-        versionName = "0.4.0"
+        versionName = "0.6.0"
 
         // R17 (android-archdoc audit 2026-07-16): instrumented UI navigation tests.
         // The runner swaps the production Application for Hilt's HiltTestApplication
@@ -54,8 +56,7 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         testInstrumentationRunner = "app.tastile.android.util.TastileTestRunner"
 
         // R18 (android refactor 2026-07-22): no Kotlin-level fallback defaults.
-        // All production values must come from gradle.properties (committed
-        // blank for CI override) or `~/.gradle/gradle.properties` for local dev.
+        // All production values come from Infisical environment variables.
         // Empty strings are validated at the bottom of this file via the
         // requireGradleProperty guard so a partial config fails the build fast
         // instead of silently embedding the wrong environment.
@@ -143,8 +144,7 @@ kotlin {
 
 val releaseSigningInstructions = """
 Release signing is not configured.
-Add RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD
-to your user-level ~/.gradle/gradle.properties or pass them as -P properties when running release tasks.
+Authenticate with the tastile-android Infisical project and run release tasks through `infisical run`.
 """.trimIndent()
 
 gradle.taskGraph.whenReady {
@@ -581,6 +581,8 @@ tasks.named("check").configure {
     )
 }
 
+val roomVersion = "2.8.5"
+
 dependencies {
     // appcompat 1.6.1+ required for AppCompatDelegate.setApplicationLocales
     // compat shim (the runtime-locale-switch path called by
@@ -622,6 +624,12 @@ dependencies {
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
+    // Persistent timeline read model
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.5.1")
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+
     // Date/Time
     // Pinned at 0.6.1: 0.8.0 promoted `kotlinx.datetime.Instant` arithmetic APIs to
     // `@ExperimentalTime`, which breaks `ExecutionAlarmPlanner` and
@@ -662,6 +670,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.robolectric:robolectric:4.16.1")
+    testImplementation("androidx.room:room-testing:$roomVersion")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
@@ -677,24 +686,44 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    // QuickCreateGestureCanaryTest: true platform pointer input (UiDevice.click
+    // at display coordinates) to prove dragHandle-vs-Button gesture arbitration
+    // that Compose semantics performClick() bypasses by design.
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("io.mockk:mockk-android:1.14.11")
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.60.1")
+    // Hilt test codegen for the androidTest source set (generates
+    // Hilt_HiltTestActivity for QuickCreateGestureCanaryTest's host activity
+    // and wires @TestInstallIn modules). Without this, @AndroidEntryPoint
+    // classes in androidTest fail at runtime with ClassNotFoundException.
+    kspAndroidTest("com.google.dagger:hilt-compiler:2.60.1")
+    // HiltTestActivity lives in src/debug: its @AndroidEntryPoint wrapper is
+    // generated when compiling the debug variant.
+    kspDebug("com.google.dagger:hilt-compiler:2.60.1")
     androidTestImplementation("androidx.benchmark:benchmark-macro-junit4:1.4.1")
 
     // Custom lint rules (M2-T4): WrapperParameterOrderDetector (L0 C1 + C2).
     lintChecks(dependencyFactory.createProjectDependency(":lint-rules"))
 }
 
+// A failing unit test must report the frames that threw. The default short
+// format collapsed a message-less AssertionError to a single line and hid the
+// throw site, which is what made Issue #54 expensive to diagnose.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStackTraces = true
+    }
+}
+
 // R18 (android refactor 2026-07-22): fail-fast guard.
 // Every BuildConfig.* field that ships into runtime (web base URL,
 // TASTILE_CORE_URL, Google web client ID) MUST be supplied by
-// gradle.properties — empty strings cause silent auth breakage on a release build.
-// Set them in:
-//   - gradle.properties (CI / shared values), or
-//   - ~/.gradle/gradle.properties (local-dev override), or
-//   - -PKEY=value on the gradle command line.
+// Infisical environment variables — empty strings cause silent auth breakage
+// on a release build. Run local builds through `infisical run`; the release
+// workflow authenticates to Infisical with GitHub OIDC.
 gradle.projectsEvaluated {
     val requiredProps = listOf(
         "GOOGLE_WEB_CLIENT_ID",
@@ -703,12 +732,11 @@ gradle.projectsEvaluated {
         "TASTILE_CORE_URL",
     )
     requiredProps.forEach { name ->
-        val value = providers.gradleProperty(name).orNull
+        val value = configuredValue(name).orNull
         if (value.isNullOrBlank()) {
             throw GradleException(
-                "Missing required gradle property '$name'. Set it in gradle.properties " +
-                    "(or ~/.gradle/gradle.properties for local dev, or pass -P$name=… on " +
-                    "the gradle command line). See README for the contract."
+                "Missing required value '$name'. Authenticate with Infisical and run the build " +
+                    "through `infisical run`. See CONTRIBUTING.md for the contract."
             )
         }
     }

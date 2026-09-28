@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only host activity for instrumented interaction tests
+  (QuickCreateGestureCanaryTest). Declared here — NOT in the androidTest
+  manifest — so it merges into the app-under-test APK and launches in the
+  app process. Never ships in release (src/debug only).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="app.tastile.android.util.HiltTestActivity"
+            android:exported="true" />
+    </application>
+</manifest>

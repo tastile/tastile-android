@@ -1,0 +1,40 @@
+name: Release source check
+
+# Guards the public `main` branch: the only canonical delivery path into
+# `main` is a `release-x-y-z -> main` release PR (ADR-0007, ADR-0012).
+# Branch protection / rulesets cannot constrain the PR head pattern, so this
+# required check validates `base == main` => `head == release-*`.
+# Mark this check as required in the `protect-main-and-releases` ruleset.
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "release-*"
+
+permissions:
+  contents: read
+
+jobs:
+  release-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate release-only source branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          echo "base=$BASE_REF head=$HEAD_REF"
+          if [ "$BASE_REF" = "main" ]; then
+            case "$HEAD_REF" in
+              release-[0-9]*-[0-9]*-[0-9]*)
+                echo "OK: release PR head '$HEAD_REF' targets main."
+                ;;
+              *)
+                echo "::error::PRs targeting 'main' must come from a 'release-x-y-z' branch (ADR-0007). Got head='$HEAD_REF'."
+                exit 1
+                ;;
+            esac
+          else
+            echo "Base is '$BASE_REF', not main; no release-source constraint."
+          fi

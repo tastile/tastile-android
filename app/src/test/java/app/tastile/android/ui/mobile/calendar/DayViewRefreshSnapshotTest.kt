@@ -39,8 +39,9 @@ import java.time.Instant
  * UnconfinedTestDispatcher construction pattern, no Robolectric.
  *
  * Seeds the timeline via [DashboardViewModel.replaceTimelineForTest],
- * mocks [TileRepository.getTimeline] to throw, then triggers a refresh
- * via the same path the UI uses ([DashboardViewModel.setOwnerFilter])
+ * mocks [TileRepository.getTimeline] to throw, then explicitly triggers the
+ * deprecated compatibility refresh seam. The active page-local timeline no
+ * longer routes owner-filter changes through this global list.
  * and asserts:
  *   1. The pre-call list survives (old behavior, no flicker).
  *   2. `error` StateFlow captures the thrown message.
@@ -131,9 +132,9 @@ class DayViewRefreshSnapshotTest {
         val before = viewModel.timeline.value
         assertEquals(initial, before)
 
-        // Trigger the refresh path that the UI uses when the workspace
-        // filter changes (the most common entry-point per design §2).
-        viewModel.setOwnerFilter("project-x")
+        // Explicitly exercise the deprecated compatibility seam. Workspace
+        // filters are handled by TimelinePageViewModel in production.
+        viewModel.refreshTimeline()
         advanceUntilIdle()
 
         // Snapshot must be preserved — `_timeline.value` was only ever
@@ -179,11 +180,11 @@ class DayViewRefreshSnapshotTest {
         val viewModel = newViewModel(authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
         viewModel.replaceTimelineForTest(initial)
 
-        // First owner-filter change kicks the refresh; the second one
-        // observes the freshly fetched `refreshed` list.
-        viewModel.setOwnerFilter("project-x")
+        // Explicitly exercise the compatibility seam twice; owner-filter
+        // changes are page-local in production.
+        viewModel.refreshTimeline()
         advanceUntilIdle()
-        viewModel.setOwnerFilter("project-y")
+        viewModel.refreshTimeline()
         advanceUntilIdle()
 
         assertEquals(refreshed, viewModel.timeline.value)
