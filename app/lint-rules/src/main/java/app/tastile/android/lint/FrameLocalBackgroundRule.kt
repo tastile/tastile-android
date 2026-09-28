@@ -11,6 +11,7 @@ import com.android.tools.lint.detector.api.Severity
 import org.jetbrains.uast.UClass
 import org.jetbrains.uast.UElement
 import org.jetbrains.uast.UMethod
+import org.jetbrains.uast.UNamedElement
 
 /**
  * Rule 4: any `@Composable fun` whose name ends in `Screen` / `Sheet` /
@@ -60,7 +61,7 @@ class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
      */
     private fun checkTargets(
         context: JavaContext,
-        candidates: List<UElement>,
+        candidates: List<out UNamedElement>,
     ) {
         val targets = candidates.filter { it.name.orEmpty().matches(FRAME_NAME_REGEX) }
         if (targets.isEmpty()) return
