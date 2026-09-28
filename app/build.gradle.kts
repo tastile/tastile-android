@@ -468,7 +468,7 @@ tasks.register("verifySkillAdapterDrift") {
             commandLine("bash", script.absolutePath)
         }
         val output = result.standardOutput.asText.get()
-        check(result.exitValue == 0) { "Skill adapter drift detected:\n${output}" }
+        check(result.result.exitValue == 0) { "Skill adapter drift detected:\n${output}" }
         logger.lifecycle(output.trim())
     }
 }
