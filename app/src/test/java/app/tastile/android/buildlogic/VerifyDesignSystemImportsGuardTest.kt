@@ -251,9 +251,10 @@ class VerifyDesignSystemImportsGuardTest {
         val ui = tmp.newFolder("ui/dashboard")
         makeFile(ui, "Bad.kt", "val gap = 16.dp\n")
         val ex = assertThrows(Throwable::class.java) {
-            checkDesignSystemRules(ui, ui, listOf(ui), dpBaseline = mapOf("dashboard/Bad.kt" to 1))
+            // Baseline 0 for a file that now has one violation: the ratchet fails.
+            checkDesignSystemRules(ui, ui, listOf(ui), dpBaseline = mapOf("dashboard/Bad.kt" to 0))
         }
-        assert(ex.message!!.contains("count rose from 1 to 1") || ex.message!!.contains("no Rule 8 baseline entry"))
+        assert(ex.message!!.contains("count rose from 0 to 1"))
     }
 
     @Test fun `flags raw dp that follows an exempt value on the same line`() {
