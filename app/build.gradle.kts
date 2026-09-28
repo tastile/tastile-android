@@ -708,6 +708,16 @@ dependencies {
     lintChecks(dependencyFactory.createProjectDependency(":lint-rules"))
 }
 
+// A failing unit test must report the frames that threw. The default short
+// format collapsed a message-less AssertionError to a single line and hid the
+// throw site, which is what made Issue #54 expensive to diagnose.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStackTraces = true
+    }
+}
+
 // R18 (android refactor 2026-07-22): fail-fast guard.
 // Every BuildConfig.* field that ships into runtime (web base URL,
 // TASTILE_CORE_URL, Google web client ID) MUST be supplied by

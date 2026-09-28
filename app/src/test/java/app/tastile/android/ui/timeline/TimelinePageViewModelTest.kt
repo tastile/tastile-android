@@ -167,9 +167,12 @@ class TimelinePageViewModelTest {
         val viewModel = viewModel()
         val oldDayObservation = repository.observationFor(currentKey)
 
-        val movedDay = LocalDate.of(2026, 9, 20)
+        // Same reasoning as the Week half below: the destination must differ
+        // from the Day anchor that `setPageKey` seeded, so derive it instead of
+        // hard-coding a date that could collide with it.
+        val movedDay = currentKey.anchor.plusDays(4)
         viewModel.setAnchor(movedDay)
-        val movedDayKey = currentKey.copy(anchor = movedDay)
+        val movedDayKey = currentKey.copy(anchor = movedDay).normalized()
         oldDayObservation.emit(snapshot(currentKey, "stale-anchor"))
 
         assertEquals(movedDayKey, viewModel.currentPageKey)
@@ -182,7 +185,13 @@ class TimelinePageViewModelTest {
         val oldWeekKey = viewModel.currentPageKey
             ?: error("Week page key must be configured")
         val oldWeekObservation = repository.observationFor(oldWeekKey)
-        val movedWeek = LocalDate.of(2026, 9, 28)
+        // Derive the destination from the Week anchor that is actually active.
+        // A hard-coded date collides with `TimelinePageUiState.initial()`, which
+        // seeds every scale with `LocalDate.now()`: whenever "now" happened to
+        // already sit on `movedWeek`, `setAnchor` short-circuited, the old
+        // collector was never cancelled, and the stale emission reached the live
+        // page. That made this test fail only on the days CI happened to run.
+        val movedWeek = oldWeekKey.anchor.plusWeeks(2)
         viewModel.setAnchor(movedWeek)
         val movedWeekKey = oldWeekKey.copy(anchor = movedWeek).normalized()
         oldWeekObservation.emit(snapshot(oldWeekKey, "stale-scale"))
