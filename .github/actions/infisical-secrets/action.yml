@@ -34,7 +34,7 @@ runs:
         test -n "$INFISICAL_PROJECT_SLUG" || { echo "INFISICAL_PROJECT_SLUG is required" >&2; exit 2; }
         test -n "$INFISICAL_IDENTITY_ID" || { echo "INFISICAL_IDENTITY_ID is required" >&2; exit 2; }
     - name: Fetch secrets from Infisical
-      uses: Infisical/secrets-action@v1.0.9
+      uses: Infisical/secrets-action@8a06c1bdcd5b8635d510c52d4b57a92c1ccef785 # v1.0.9
       with:
         method: oidc
         identity-id: ${{ inputs.identity-id }}
