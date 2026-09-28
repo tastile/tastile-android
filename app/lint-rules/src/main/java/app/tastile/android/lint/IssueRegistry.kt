@@ -11,22 +11,15 @@ class IssueRegistry : IssueRegistry() {
         WrapperStabilityDetector.ISSUE,
         // Rule 4 — Screen/Sheet/Frame/Dialog/Panel/Scaffold must import LocalBackgroundTheme or Surface.
         FrameLocalBackgroundRule.ISSUE,
-        // Rule 5 — project-wide `// m2-allow:` budget (baseline 522, +50 headroom).
-        M2AllowBudgetRule.ISSUE,
         // Rule 6 — ViewModel must publish exactly one `val uiState: StateFlow<*>`.
         SingleUiStateRule.ISSUE,
-        // Rule 7 — tile mutation use-cases must route through `ui/tile/TileComposer.kt`.
-        SingleComposerRule.ISSUE,
-        // Rule 8 — raw `<N>.dp` literals forbidden in `ui/` (exceptions 0.dp / 1.dp / 0.5.dp).
-        NoRawDpInUiRule.ISSUE,
-        // Rule 9 — `shadowElevation = N.dp` forbidden in `ui/`.
-        ShadowElevationRule.ISSUE,
-        // Rule 10 — `Color(0xFF...)` literals forbidden in `ui/` (only `designsystem/theme/Color.kt` exempt).
-        HardcodedColorRule.ISSUE,
-        // Rule 11 — branch name must match `^\d+$` (ADR-0007); authoritative gate is `:app:verifyBranchName`.
-        BranchNameRule.ISSUE,
-        // Rule 12 — SourceTileRead wire-shape contract gate; authoritative gate is `:app:verifyWireShapeContract`.
-        WireShapeContractGate.ISSUE,
+        // Rules 5, 8, 9, 10, 11 and 12 are enforced by Gradle tasks in
+        // `app/build.gradle.kts` (`verifyM2AllowBudget`, `verifyDesignSystemImports`,
+        // `verifyBranchName`, `verifyWireShapeContract`) rather than by a lint
+        // detector. Those rules are project-wide budgets, branch metadata, or
+        // cross-file wire contracts, none of which lint 32 can express through
+        // the UAST-only `SourceCodeScanner`. Rule 7 ships with the Phase 4
+        // TileComposer work, when the use cases it inspects exist.
     )
     override val api = CURRENT_API
     override val minApi = 14

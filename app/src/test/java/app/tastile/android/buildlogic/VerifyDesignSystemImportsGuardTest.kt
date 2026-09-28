@@ -82,6 +82,51 @@ class VerifyDesignSystemImportsGuardTest {
                 }
             }
 
+        // Rule 8: raw <N>.dp in uiConsumerRoots (exceptions: 0.dp / 1.dp / 0.5.dp).
+        val rawDp = Regex("""(\d+(?:\.\d+)?)\.dp""")
+        val exemptDp = setOf("0", "0.0", "0.5", "1", "1.0")
+        uiConsumerRoots.forEach { root ->
+            root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+                file.readText().lines().forEachIndexed { idx, line ->
+                    rawDp.findAll(line).forEach { match ->
+                        val raw = match.groupValues[1]
+                        if (raw !in exemptDp) {
+                            violations += "${file.path}:${idx + 1}: raw `${raw}.dp` literal in ui/ (Rule 8)"
+                        }
+                    }
+                }
+            }
+        }
+
+        // Rule 9: shadowElevation = N.dp in uiConsumerRoots.
+        val shadowElevation = Regex("""shadowElevation\s*=\s*(\d+(?:\.\d+)?)\.dp""")
+        uiConsumerRoots.forEach { root ->
+            root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+                file.readText().lines().forEachIndexed { idx, line ->
+                    shadowElevation.find(line)?.let { match ->
+                        violations +=
+                            "${file.path}:${idx + 1}: shadowElevation = ${match.groupValues[1]}.dp in ui/ (Rule 9)"
+                    }
+                }
+            }
+        }
+
+        // Rule 10: Color(0xFF...) in uiConsumerRoots, except designsystem/theme/Color.kt.
+        val hexColor = Regex("""Color\(\s*0[xX][0-9A-Fa-f]{6,8}""")
+        uiConsumerRoots.forEach { root ->
+            root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+                val path = file.path.replace(File.separatorChar, '/')
+                if (path.endsWith("core/designsystem/theme/Color.kt") ||
+                    path.endsWith("designsystem/theme/Color.kt")
+                ) return@forEach
+                file.readText().lines().forEachIndexed { idx, line ->
+                    hexColor.find(line)?.let {
+                        violations += "${file.path}:${idx + 1}: hardcoded Color(0xFF...) literal in ui/ (Rule 10)"
+                    }
+                }
+            }
+        }
+
         if (violations.isNotEmpty()) {
             throw AssertionError(
                 "Guard violations:\n" + violations.joinToString("\n") { "  - $it" }
@@ -138,6 +183,116 @@ class VerifyDesignSystemImportsGuardTest {
         val src = tmp.newFolder("src")
         val other = tmp.newFolder("src/other")
         makeFile(other, "Ok.kt", "val x = RoundedCornerShape(LocalTastileShapeTokens.current.m)\n")
+        // No exception is the assertion: JUnit @Test passes if no throw.
+        checkDesignSystemRules(
+            srcRoot = src,
+            designSystemRoot = File(src, "designsystem"),
+            uiConsumerRoots = emptyList(),
+        )
+    }
+
+    // Rule 8 is the gate counterpart of the retired NoRawDpInUiRule detector. The
+    // detector took the first `.dp` match in a file and returned early when that
+    // value was exempt, so a file opening with `0.dp` hid every later violation.
+    // These cases pin the gate against the same defect.
+    @Test fun `flags raw dp in ui-consumer tree`() {
+        val src = tmp.newFolder("src")
+        val ui = tmp.newFolder("src/ui/dashboard")
+        makeFile(ui, "Bad.kt", "val gap = 16.dp\n")
+        val ex = assertThrows(Throwable::class.java) {
+            checkDesignSystemRules(
+                srcRoot = src,
+                designSystemRoot = File(src, "designsystem"),
+                uiConsumerRoots = listOf(ui),
+            )
+        }
+        assert(ex.message!!.contains("16.dp"))
+    }
+
+    @Test fun `flags raw dp that follows an exempt value on the same line`() {
+        val src = tmp.newFolder("src")
+        val ui = tmp.newFolder("src/ui/dashboard")
+        makeFile(ui, "Bad.kt", "val a = 0.dp; val b = 16.dp\n")
+        val ex = assertThrows(Throwable::class.java) {
+            checkDesignSystemRules(
+                srcRoot = src,
+                designSystemRoot = File(src, "designsystem"),
+                uiConsumerRoots = listOf(ui),
+            )
+        }
+        assert(ex.message!!.contains("16.dp"))
+    }
+
+    @Test fun `flags raw dp on a line after an exempt-only line`() {
+        val src = tmp.newFolder("src")
+        val ui = tmp.newFolder("src/ui/dashboard")
+        makeFile(ui, "Bad.kt", "val hairline = 0.5.dp\nval gap = 24.dp\n")
+        val ex = assertThrows(Throwable::class.java) {
+            checkDesignSystemRules(
+                srcRoot = src,
+                designSystemRoot = File(src, "designsystem"),
+                uiConsumerRoots = listOf(ui),
+            )
+        }
+        assert(ex.message!!.contains("24.dp"))
+    }
+
+    @Test fun `allows the documented raw dp exemptions`() {
+        val src = tmp.newFolder("src")
+        val ui = tmp.newFolder("src/ui/dashboard")
+        makeFile(ui, "Ok.kt", "val a = 0.dp\nval b = 0.5.dp\nval c = 1.dp\n")
+        // No exception is the assertion: JUnit @Test passes if no throw.
+        checkDesignSystemRules(
+            srcRoot = src,
+            designSystemRoot = File(src, "designsystem"),
+            uiConsumerRoots = listOf(ui),
+        )
+    }
+
+    @Test fun `allows raw dp outside the ui-consumer tree`() {
+        val src = tmp.newFolder("src")
+        val other = tmp.newFolder("src/other")
+        makeFile(other, "Ok.kt", "val gap = 16.dp\n")
+        // No exception is the assertion: JUnit @Test passes if no throw.
+        checkDesignSystemRules(
+            srcRoot = src,
+            designSystemRoot = File(src, "designsystem"),
+            uiConsumerRoots = emptyList(),
+        )
+    }
+
+    @Test fun `flags hardcoded shadowElevation dp in ui-consumer tree`() {
+        val src = tmp.newFolder("src")
+        val ui = tmp.newFolder("src/ui/dashboard")
+        makeFile(ui, "Bad.kt", "val shadowElevation = 3.dp\n")
+        val ex = assertThrows(Throwable::class.java) {
+            checkDesignSystemRules(
+                srcRoot = src,
+                designSystemRoot = File(src, "designsystem"),
+                uiConsumerRoots = listOf(ui),
+            )
+        }
+        assert(ex.message!!.contains("shadowElevation"))
+    }
+
+    @Test fun `flags hardcoded hex color in ui-consumer tree`() {
+        val src = tmp.newFolder("src")
+        val ui = tmp.newFolder("src/ui/dashboard")
+        makeFile(ui, "Bad.kt", "val brand = Color(0xFF4C6EF5)\n")
+        val ex = assertThrows(Throwable::class.java) {
+            checkDesignSystemRules(
+                srcRoot = src,
+                designSystemRoot = File(src, "designsystem"),
+                uiConsumerRoots = listOf(ui),
+            )
+        }
+        assert(ex.message!!.contains("hardcoded Color"))
+    }
+
+    @Test fun `allows hardcoded hex color in designsystem theme Color file`() {
+        val src = tmp.newFolder("src")
+        val theme = tmp.newFolder("src/core/designsystem/theme")
+        makeFile(theme, "Color.kt", "val brand = Color(0xFF4C6EF5)\n")
         // No exception is the assertion: JUnit @Test passes if no throw.
         checkDesignSystemRules(
             srcRoot = src,

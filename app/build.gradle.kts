@@ -490,6 +490,10 @@ tasks.register("verifyWireShapeContract") {
 
 tasks.named("check").configure {
     dependsOn("verifyM2AllowBudget", "verifyBranchName", "verifyWireShapeContract")
+    // `:lint-rules` unit tests were unreachable from `:app:check`, so they never
+    // ran in CI. That is how nine detectors against a removed lint API sat in
+    // the module un-compiled. Keep the detector tests inside the gate.
+    dependsOn(":lint-rules:test")
 }
 
 // ---------------------------------------------------------------------------
