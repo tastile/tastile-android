@@ -461,20 +461,27 @@ tasks.named("check").configure {
 // ---------------------------------------------------------------------------
 // Phase 1 UI rebuild guards (Issue #11 = plan ticket #102)
 //
-// Rule 5 (`// m2-allow:` budget), Rule 11 (branch name `^\d+$`), Rule 12
-// (SourceTileRead wire-shape contract). All three gate `:app:check`.
-// Rules 4 / 6 / 7 ship as lint warnings only and become hard gates in
-// Phase 5 (see Issue #117).
+// Rule 5 (`// m2-allow:` marker ratchet), Rule 8 (raw `.dp` debt ratchet),
+// Rule 9 (`shadowElevation = N.dp`, zero tolerance) and Rule 12 (SourceTileRead
+// wire-shape contract) all gate `:app:check`; Rule 8, 9 and 10 are enforced
+// inside `verifyDesignSystemImports` and Rule 10 additionally allows reasoned
+// path+symbol exemptions. Rule 11 (branch name `^\d+$`) gates `:app:check` too.
+// Rules 4 and 6 ship as UAST lint detectors in `:lint-rules`; Rule 7 ships with
+// the Phase 4 TileComposer work.
 // ---------------------------------------------------------------------------
 
-val m2AllowBaseline = 522
-val m2AllowBudgetDelta = 50
-val m2AllowLimit = m2AllowBaseline + m2AllowBudgetDelta
+// Rule 5 freezes the existing `// m2-allow:` debt rather than allowing more of it.
+// `m2AllowBaseline` is the count that actually exists in the tree today, so the
+// limit is the current count: any new marker fails, and removing markers is the
+// only way to create room. Lower the baseline in the same change that removes
+// markers so the ceiling keeps falling. A raise needs an ADR, not a build edit.
+val m2AllowBaseline = 610
+val m2AllowLimit = m2AllowBaseline
 
 tasks.register("verifyM2AllowBudget") {
     group = "verification"
-    description = "Rule 5: `// m2-allow:` marker budget — fail if count > " +
-        "$m2AllowLimit (baseline $m2AllowBaseline + $m2AllowBudgetDelta delta)."
+    description = "Rule 5: `// m2-allow:` marker ratchet — fail if the count exceeds the " +
+        "frozen baseline of $m2AllowBaseline."
     doLast {
         val allowMarker = "// m2-allow:"
         val allKt = fileTree("src/main") { include("**/*.kt") }.files
@@ -483,22 +490,16 @@ tasks.register("verifyM2AllowBudget") {
         }
         if (count > m2AllowLimit) {
             throw GradleException(
-                "Rule 5: `// m2-allow:` marker count is $count, " +
-                    "which exceeds the phase-end budget of $m2AllowLimit " +
-                    "(baseline $m2AllowBaseline + $m2AllowBudgetDelta delta). " +
-                    "Remove marker usage or raise the baseline via ADR.",
+                "Rule 5: `// m2-allow:` marker count is $count, which exceeds the frozen " +
+                    "baseline of $m2AllowBaseline. Existing debt may shrink but never grow; " +
+                    "remove marker usage rather than raising the baseline. Raising it " +
+                    "requires an ADR.",
             )
         }
-        if (count > m2AllowBaseline) {
-            logger.lifecycle(
-                "verifyM2AllowBudget: $count markers used, $m2AllowLimit limit " +
-                    "— $count below baseline (Phase 1 headroom OK)",
-            )
-        } else {
-            logger.lifecycle(
-                "verifyM2AllowBudget: $count markers used (under baseline $m2AllowBaseline)",
-            )
-        }
+        logger.lifecycle(
+            "verifyM2AllowBudget: $count markers used, $m2AllowLimit allowed " +
+                "(${m2AllowBaseline - count} below the frozen baseline)",
+        )
     }
 }
 
