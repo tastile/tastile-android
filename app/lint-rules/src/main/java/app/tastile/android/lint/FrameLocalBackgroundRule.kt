@@ -107,8 +107,12 @@ class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
     }
 
     companion object {
-        // Matches function names whose last suffix is Screen/Sheet/Frame/Dialog/Panel/Scaffold.
-        val FRAME_NAME_REGEX = Regex(""".*\b(Screen|Sheet|Frame|Dialog|Panel|Scaffold)$""")
+        // Matches function names ending in Screen/Sheet/Frame/Dialog/Panel/Scaffold.
+        // There is deliberately no `\b` before the suffix group: the suffix is
+        // part of the same camelCase word as the character in front of it, so
+        // "FooScreen" has no word boundary between "o" and "S" and a `\b` here
+        // made the pattern unmatchable. `matches()` already anchors both ends.
+        val FRAME_NAME_REGEX = Regex(""".*(Screen|Sheet|Frame|Dialog|Panel|Scaffold)$""")
 
         val ISSUE = Issue.create(
             id = "FrameLocalBackground",

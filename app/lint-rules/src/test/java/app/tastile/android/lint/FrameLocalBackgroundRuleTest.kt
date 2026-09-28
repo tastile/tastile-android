@@ -48,9 +48,23 @@ class FrameLocalBackgroundRuleTest : LintDetectorTest() {
             package app.tastile.android.ui.dashboard
             import androidx.compose.runtime.Composable
             @Composable
-            fun NotAFrame() {}
+            fun FrameLabelBadge() {}
             """.trimIndent()
         )).run().expectWarningCount(0)
+    }
+
+    fun testReportsWhenNameMerelyContainsTheSuffixWord() {
+        // The suffix test is the only criterion, so a name like `NotAFrame`
+        // still ends in "Frame" and is reported. Pinned here because the
+        // previous fixture used exactly that name and expected silence.
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.ui.dashboard
+            import androidx.compose.runtime.Composable
+            @Composable
+            fun NotAFrame() {}
+            """.trimIndent()
+        )).run().expectWarningCount(1)
     }
 
     fun testReportsAcrossAllFrameSuffixes() {
