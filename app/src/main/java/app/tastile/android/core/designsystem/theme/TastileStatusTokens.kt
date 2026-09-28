@@ -29,6 +29,16 @@ data class TastileStatusColors(
  * The container pairs bind to Material 3 color roles so dynamic color
  * (Android 12+) and dark mode adjust automatically. Contrast is verified
  * to meet WCAG AA (4.5:1) by `TastileStatusTokensContrastTest`.
+ *
+ * The six new fields are appended with defaults so existing named and
+ * positional four-argument constructions keep compiling. Each default is
+ * derived from an existing field, so a construction that omits them resolves
+ * to the same role the previous four-field shape already exposed:
+ *  - `success*` mirrors [done] (`secondaryContainer` / `onSecondaryContainer`)
+ *  - `warning*` mirrors [started] (`tertiaryContainer` / `onTertiaryContainer`)
+ *  - `danger*` has no pre-existing `errorContainer` binding, so it falls back to
+ *    [ready]. [default] is the only place the error roles are bound, and every
+ *    in-repo caller reads the tokens through `LocalTastileStatusTokens`.
  */
 @Immutable
 data class TastileStatusTokens(
@@ -36,12 +46,12 @@ data class TastileStatusTokens(
     val started: TastileStatusColors,
     val done: TastileStatusColors,
     val archived: TastileStatusColors,
-    val successContainer: Color,
-    val onSuccessContainer: Color,
-    val warningContainer: Color,
-    val onWarningContainer: Color,
-    val dangerContainer: Color,
-    val onDangerContainer: Color,
+    val successContainer: Color = done.container,
+    val onSuccessContainer: Color = done.onContainer,
+    val warningContainer: Color = started.container,
+    val onWarningContainer: Color = started.onContainer,
+    val dangerContainer: Color = ready.container,
+    val onDangerContainer: Color = ready.onContainer,
 ) {
     companion object {
         fun default(
