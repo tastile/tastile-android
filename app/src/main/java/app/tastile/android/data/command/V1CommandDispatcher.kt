@@ -331,6 +331,34 @@ class V1CommandDispatcher @Inject constructor(
         }.getOrNull()
     }
 
+    /**
+     * Starts an execution for a known placement id without a tile lookup (A05).
+     * The tile-edit sheet already carries the timeline occurrence's placement id,
+     * so source-backed placements start via `POST /v1/placements/{id}/executions`
+     * directly instead of going through the tile-start plan bootstrap, which
+     * source-emitted tiles never satisfy. [tileId] is only an execution-cache
+     * key so pause/continue/finish keep resolving after a placement-anchored start.
+     */
+    suspend fun dispatchPlacementExecutionStartById(placementId: String, tileId: String? = null): CoreCommandAck? {
+        if (placementId.isBlank()) return null
+        return runCatching {
+            val execution = v1ApiClient.postCommand(
+                path = "/v1/placements/$placementId/executions",
+                payload = StartExecutionPayload(placementId),
+                payloadSerializer = StartExecutionPayload.serializer(),
+                responseSerializer = CommandResponse.serializer(),
+            )
+            val executionId = execution.aggregate?.id
+                ?: throw IllegalStateException("execution.start response missing execution aggregate for placement $placementId")
+            executionIdsByTile[tileId ?: placementId] = executionId
+            execution.toCoreAck()
+        }.recover { error ->
+            if (error is IllegalStateException) throw error
+            logFailure("execution.start", error)
+            null
+        }.getOrNull()
+    }
+
     /** Finishes only the current execution; tile lifecycle is intentionally unchanged. */
     suspend fun dispatchExecutionFinish(tileId: String): CoreCommandAck? {
         return runCatching {
