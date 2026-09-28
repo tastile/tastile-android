@@ -1,6 +1,6 @@
 package app.tastile.android.lint
 
-import com.android.tools.lint.client.api.UElementHandler
+import com.android.tools.lint.detector.api.UElementHandler
 import com.android.tools.lint.detector.api.Category
 import com.android.tools.lint.detector.api.Detector
 import com.android.tools.lint.detector.api.Implementation
@@ -59,10 +59,14 @@ class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
                 if (hasLocalBg || hasSurface) return
 
                 for (target in methods) {
+                    // Resolve the location from the PSI node: passing the
+                    // UElement itself is ambiguous between the `PsiElement`,
+                    // `UElement`, and `Any?` overloads of getLocation.
+                    val psi = target.sourcePsi ?: continue
                     context.report(
                         ISSUE,
                         target,
-                        context.getLocation(target),
+                        context.getLocation(psi),
                         "Rule 4: `${target.name}` is a Screen/Sheet/Frame/Dialog/Panel/Scaffold " +
                             "composable but the file does not import `LocalBackgroundTheme` " +
                             "or `Surface`. Add one of those imports so the tonal / elevation " +

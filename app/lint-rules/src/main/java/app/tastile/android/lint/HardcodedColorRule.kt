@@ -1,6 +1,6 @@
 package app.tastile.android.lint
 
-import com.android.tools.lint.client.api.JavaContext
+import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Category
 import com.android.tools.lint.detector.api.Detector
 import com.android.tools.lint.detector.api.Implementation
@@ -23,7 +23,7 @@ import com.android.tools.lint.detector.api.SourceCodeScanner
  */
 class HardcodedColorRule : Detector(), SourceCodeScanner {
 
-    override fun visitSourceCode(context: JavaContext, source: com.android.tools.lint.client.api.SourceFile) {
+    override fun visitSourceCode(context: JavaContext, source: com.android.tools.lint.detector.api.SourceFile) {
         val path = source.relativePath.orEmpty()
         if (!path.contains("/ui/") && !path.startsWith("ui/")) return
 

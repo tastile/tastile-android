@@ -1,6 +1,6 @@
 package app.tastile.android.lint
 
-import com.android.tools.lint.client.api.JavaContext
+import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Category
 import com.android.tools.lint.detector.api.Detector
 import com.android.tools.lint.detector.api.Implementation
@@ -23,7 +23,7 @@ import com.android.tools.lint.detector.api.SourceCodeScanner
  */
 class BranchNameRule : Detector(), SourceCodeScanner {
 
-    override fun visitSourceCode(context: JavaContext, source: com.android.tools.lint.client.api.SourceFile) {
+    override fun visitSourceCode(context: JavaContext, source: com.android.tools.lint.detector.api.SourceFile) {
         // Branch names are not visible to a per-file scan; the Gradle task
         // `:app:verifyBranchName` (app/build.gradle.kts) owns the check.
         // This stub keeps the rule listed in IssueRegistry so unit tests

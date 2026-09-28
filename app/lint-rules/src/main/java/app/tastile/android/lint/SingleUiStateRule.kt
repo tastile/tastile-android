@@ -1,6 +1,6 @@
 package app.tastile.android.lint
 
-import com.android.tools.lint.client.api.UElementHandler
+import com.android.tools.lint.detector.api.UElementHandler
 import com.android.tools.lint.detector.api.Category
 import com.android.tools.lint.detector.api.Detector
 import com.android.tools.lint.detector.api.Implementation
@@ -39,7 +39,7 @@ class SingleUiStateRule : Detector(), Detector.UastScanner {
                     context.report(
                         ISSUE,
                         node,
-                        context.getLocation(node),
+                        context.getLocation(node.sourcePsi ?: return),
                         "Rule 6: ViewModel exposes ${uiStateProperties.size} `uiState` properties " +
                             "(expected exactly 1). Merge the redundant states into a single holder.",
                     )
@@ -54,7 +54,7 @@ class SingleUiStateRule : Detector(), Detector.UastScanner {
                     context.report(
                         ISSUE,
                         node,
-                        context.getLocation(node),
+                        context.getLocation(node.sourcePsi ?: return),
                         "Rule 6: ViewModel exposes no `uiState` property (expected exactly 1). " +
                             "Publish a single `val uiState: StateFlow<*>` so the UI has one " +
                             "hoisted read site.",
@@ -68,7 +68,7 @@ class SingleUiStateRule : Detector(), Detector.UastScanner {
                     context.report(
                         ISSUE,
                         node,
-                        context.getLocation(node),
+                        context.getLocation(node.sourcePsi ?: return),
                         "Rule 6: `uiState` must be `StateFlow<*>` " +
                             "(found `${rawType.substringAfter(':').substringBefore('=').trim()}`).",
                     )

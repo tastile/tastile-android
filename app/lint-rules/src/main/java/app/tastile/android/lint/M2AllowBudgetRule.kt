@@ -1,6 +1,6 @@
 package app.tastile.android.lint
 
-import com.android.tools.lint.client.api.JavaContext
+import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Category
 import com.android.tools.lint.detector.api.Detector
 import com.android.tools.lint.detector.api.Implementation
@@ -24,11 +24,7 @@ import com.android.tools.lint.detector.api.Severity
  */
 class M2AllowBudgetRule : Detector(), Detector.SourceCodeScanner {
 
-    override fun visitResource(context: JavaContext, resource: com.android.tools.lint.client.api.ResourceFile) {
-        // No-op: per-file text scan handled by visitSourceCode.
-    }
-
-    override fun visitSourceCode(context: JavaContext, source: com.android.tools.lint.client.api.SourceFile) {
+    override fun visitSourceCode(context: JavaContext, source: com.android.tools.lint.detector.api.SourceFile) {
         val text = source.readText()
         if (text.contains("// m2-allow:")) {
             // Per-line reporting would be noisy; the Gradle task owns the
