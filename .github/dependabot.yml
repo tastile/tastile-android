@@ -2,9 +2,11 @@
 #
 # Reference: https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/configuring-dependabot-security-updates
 #
-# Weekly cadence, grouped by ecosystem, with a target branch pinned to the
-# active release branch and to `main`. The release branch name is resolved at
-# runtime; update `target-branch` when the active release branch changes
+# Weekly cadence, grouped by ecosystem, with the target branch pinned to the
+# active release branch. `target-branch` takes a single branch name, not a list,
+# so `main` is reached through the release PR (`release-x-y-z -> main`) rather
+# than through a second Dependabot target. Update `target-branch` when the
+# active release branch changes
 # (`.agents/skills/release-branch-workflow/SKILL.md`).
 version: 2
 
@@ -16,9 +18,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
-    target-branch:
-      - main
-      - "release-0-6-0"
+    target-branch: "release-0-6-0"
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -53,9 +53,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
-    target-branch:
-      - main
-      - "release-0-6-0"
+    target-branch: "release-0-6-0"
     commit-message:
       prefix: "ci"
     labels:
@@ -72,9 +70,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
-    target-branch:
-      - main
-      - "release-0-6-0"
+    target-branch: "release-0-6-0"
     commit-message:
       prefix: "wslc"
     labels:
