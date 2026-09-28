@@ -19,6 +19,26 @@ data class TastileStatusColors(
  * Status tokens keyed by [app.tastile.android.data.model.TileLifecycle].
  * Defaults read from `MaterialTheme.colorScheme` so today's visuals are
  * preserved.
+ *
+ * Phase 1 (Issue #100, release:0-6-0) additionally exposes three
+ * container/onContainer pairs for status badges and inline messages:
+ *  - `successContainer` / `onSuccessContainer`  -> `secondaryContainer`
+ *  - `warningContainer` / `onWarningContainer`  -> `tertiaryContainer`
+ *  - `dangerContainer`  / `onDangerContainer`   -> `errorContainer`
+ *
+ * The container pairs bind to Material 3 color roles so dynamic color
+ * (Android 12+) and dark mode adjust automatically. Contrast is verified
+ * to meet WCAG AA (4.5:1) by `TastileStatusTokensContrastTest`.
+ *
+ * The six new fields are appended with defaults so existing named and
+ * positional four-argument constructions keep compiling. Each default is
+ * derived from an existing field, so a construction that omits them resolves
+ * to the same role the previous four-field shape already exposed:
+ *  - `success*` mirrors [done] (`secondaryContainer` / `onSecondaryContainer`)
+ *  - `warning*` mirrors [started] (`tertiaryContainer` / `onTertiaryContainer`)
+ *  - `danger*` has no pre-existing `errorContainer` binding, so it falls back to
+ *    [ready]. [default] is the only place the error roles are bound, and every
+ *    in-repo caller reads the tokens through `LocalTastileStatusTokens`.
  */
 @Immutable
 data class TastileStatusTokens(
@@ -26,6 +46,12 @@ data class TastileStatusTokens(
     val started: TastileStatusColors,
     val done: TastileStatusColors,
     val archived: TastileStatusColors,
+    val successContainer: Color = done.container,
+    val onSuccessContainer: Color = done.onContainer,
+    val warningContainer: Color = started.container,
+    val onWarningContainer: Color = started.onContainer,
+    val dangerContainer: Color = ready.container,
+    val onDangerContainer: Color = ready.onContainer,
 ) {
     companion object {
         fun default(
@@ -51,6 +77,12 @@ data class TastileStatusTokens(
                 onContainer = scheme.onSurfaceVariant,
                 icon = scheme.outline,
             ),
+            successContainer = scheme.secondaryContainer,
+            onSuccessContainer = scheme.onSecondaryContainer,
+            warningContainer = scheme.tertiaryContainer,
+            onWarningContainer = scheme.onTertiaryContainer,
+            dangerContainer = scheme.errorContainer,
+            onDangerContainer = scheme.onErrorContainer,
         )
     }
 }
