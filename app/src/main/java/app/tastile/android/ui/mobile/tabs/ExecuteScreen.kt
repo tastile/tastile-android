@@ -80,6 +80,7 @@ import app.tastile.android.core.designsystem.component.NiaLoadingWheel
 import app.tastile.android.core.designsystem.component.NiaTextButton
 import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileSurfaceElevationTokens
 import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
@@ -546,8 +547,8 @@ private fun SectionSurface(
         // section look like a floating card; 12dp reads as a list
         // container.
         shape = RoundedCornerShape(LocalTastileShapeTokens.current.m),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
+        tonalElevation = LocalTastileSurfaceElevationTokens.current.level0.tonalElevation,
+        shadowElevation = LocalTastileSurfaceElevationTokens.current.level0.shadowElevation,
     ) {
         Column(modifier = Modifier.fillMaxWidth(), content = content)
     }

@@ -1,0 +1,32 @@
+{
+  "$comment": [
+    "Rule 10 approved-color registry.",
+    "",
+    "Rule 10 forbids `Color(0xFF...)` literals under app/src/main/java/app/tastile/android/ui/",
+    "so that UI chrome routes through the design-system color layer. A small set of",
+    "semantic colors are deliberately fixed rather than theme-derived. Each is approved",
+    "here by `path` + `symbol` + `purpose`; line numbers are never used, and a whole",
+    "file can never be exempted.",
+    "",
+    "The enclosing symbol is resolved as the nearest preceding `val` / `var` / `fun`",
+    "declaration, so renaming or moving a symbol invalidates its entry. An entry that",
+    "no longer matches any literal fails the gate, so the registry cannot rot."
+  ],
+  "approved": [
+    {
+      "path": "ui/mobile/sheets/quickcreate/ColorUtils.kt",
+      "symbol": "DefaultTileColor",
+      "purpose": "Default source-tile color when no visual color has been authored. Mirrors the v1 default in tastile-web, so changing the literal would break cross-repo parity."
+    },
+    {
+      "path": "ui/mobile/sheets/quickcreate/ProjectColorRow.kt",
+      "symbol": "WebColorSwatches",
+      "purpose": "User-selectable project color palette (Event set), mirrored from tastile-web ProjectColorRow.tsx. These are the choices offered to the user, not UI chrome, so they must stay fixed across themes."
+    },
+    {
+      "path": "ui/mobile/tabs/tiles/TilesTimelineBody.kt",
+      "symbol": "StatusStartedGreen",
+      "purpose": "Status semantic color mirroring the legacy MobileTokens.Status.started success-green. Moves to TastileStatusTokens when the timeline status palette is migrated; tracked with the design-token follow-up."
+    }
+  ]
+}
