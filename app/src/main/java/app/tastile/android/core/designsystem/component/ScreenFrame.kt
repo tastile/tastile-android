@@ -32,13 +32,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 // m2-allow: primitive
 import androidx.compose.foundation.layout.union
-// m2-allow: primitive
+// m2-allow: material3
 import androidx.compose.material3.ExperimentalMaterial3Api
 // m2-allow: m3-component
 import androidx.compose.material3.FabPosition
 // m2-allow: primitive
 import androidx.compose.material3.FloatingActionButton
-// m2-allow: primitive
+// m2-allow: m3-component
 import androidx.compose.material3.MaterialTheme
 // m2-allow: m3-component
 import androidx.compose.material3.Scaffold
@@ -51,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import app.tastile.android.core.designsystem.theme.LocalBackgroundTheme
 import app.tastile.android.core.designsystem.theme.LocalTastileSpacingTokens
 import app.tastile.android.core.designsystem.theme.TastileTheme
@@ -82,9 +83,11 @@ import androidx.compose.material3.SnackbarHostState
  * @param floatingActionButtonPosition FAB anchor position.
  * @param snackbar Optional snackbar host. Accepts a [SnackbarHostState] for
  *   simple wiring or a composable for callers that need a custom host.
- * @param content Insets-aware screen content. Receives [PaddingValues]
- *   describing the non-overlapping insets from [topBar] /
- *   [floatingActionButton] / system insets.
+ * @param content Insets-aware screen content. [ScreenFrame] has already applied
+ *   the insets from [topBar] / [floatingActionButton] / system insets to its own
+ *   container, so the [PaddingValues] handed to this slot is exhausted (all zero)
+ *   and exists only so the signature matches Material 3's `Scaffold` content
+ *   contract. Applying it again would double the top and bottom insets.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,17 +120,14 @@ fun ScreenFrame(
         snackbarHost = snackbarHost,
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) { paddingValues ->
+        val consumedInsets = remember(paddingValues) { PaddingValues(0.dp) }
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    start = spacing.l,
-                    end = spacing.l,
-                    top = paddingValues.calculateTopPadding(),
-                    bottom = paddingValues.calculateBottomPadding(),
-                ),
+                .padding(paddingValues)
+                .padding(horizontal = spacing.l),
         ) {
-            content(paddingValues)
+            content(consumedInsets)
         }
     }
 }
@@ -159,12 +159,10 @@ private fun ScreenFramePreview() {
                 )
             },
             snackbar = SnackbarHostConfig.State(remember { SnackbarHostState() }),
-        ) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            ) {
+        ) {
+            // ScreenFrame already applied the insets, so the content slot does
+            // not take the exhausted PaddingValues.
+            Box(modifier = Modifier.fillMaxSize()) {
                 Text(
                     text = "ScreenFrame content area",
                     style = MaterialTheme.typography.bodyLarge,
@@ -190,12 +188,8 @@ private fun ScreenFrameWithFabPreview() {
                     Text("+")
                 }
             },
-        ) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            ) {
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 Text(
                     text = "Floating action button is anchored bottom-end.",
                     style = MaterialTheme.typography.bodyMedium,

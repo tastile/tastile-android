@@ -25,9 +25,17 @@ import androidx.compose.foundation.layout.Column
 // m2-allow: primitive
 import androidx.compose.foundation.layout.Row
 // m2-allow: primitive
+import androidx.compose.foundation.layout.fillMaxSize
+// m2-allow: primitive
 import androidx.compose.foundation.layout.fillMaxWidth
 // m2-allow: primitive
 import androidx.compose.foundation.layout.padding
+// m2-allow: primitive
+import androidx.compose.foundation.layout.weight
+// m2-allow: primitive
+import androidx.compose.foundation.rememberScrollState
+// m2-allow: primitive
+import androidx.compose.foundation.verticalScroll
 // m2-allow: m3-component
 import androidx.compose.material3.ExperimentalMaterial3Api
 // m2-allow: primitive
@@ -108,9 +116,9 @@ fun DrawerFrame(
     val spacing = LocalTastileSpacingTokens.current
 
     ModalDrawerSheet(modifier = modifier) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             // Brand header — defaults to a plain "Tastile" title; callers
-            // typically provide a logo via [brandHeader].
+            // typically provide a logo via [brandHeader]. Pinned to the top.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -135,25 +143,35 @@ fun DrawerFrame(
                     }
                 }
             }
-            // Drawer items.
-            items.forEach { item ->
-                NavigationDrawerItem(
-                    label = { Text(item.label) },
-                    selected = item.selected,
-                    onClick = { onSelect(item.key) },
-                    icon = item.icon?.let { icon ->
-                        {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    colors = NavigationDrawerItemDefaults.colors(),
-                    modifier = Modifier.padding(horizontal = spacing.xs),
-                )
+            // Drawer items. Scrollable so a short viewport, a large font
+            // scale, or a longer navigation set cannot push the lower items
+            // out of reach. The header above and the footer below stay
+            // pinned.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                items.forEach { item ->
+                    NavigationDrawerItem(
+                        label = { Text(item.label) },
+                        selected = item.selected,
+                        onClick = { onSelect(item.key) },
+                        icon = item.icon?.let { icon ->
+                            {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(),
+                        modifier = Modifier.padding(horizontal = spacing.xs),
+                    )
+                }
             }
-            // Footer slot (e.g. a Settings shortcut).
+            // Footer slot (e.g. a Settings shortcut), pinned to the bottom.
             if (footer != null) {
                 HorizontalDivider(
                     modifier = Modifier.padding(

@@ -17,6 +17,7 @@
 package app.tastile.android.core.designsystem.component
 
 // m2-allow: primitive
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 // m2-allow: primitive
 import androidx.compose.foundation.layout.Box
@@ -95,6 +96,10 @@ sealed interface ListState {
  * loading lifecycle so individual screens never have to wrap a list in
  * their own state-aware container.
  *
+ * The container paints `LocalBackgroundTheme.current.color`, so a [ListFrame]
+ * used without an enclosing surface still renders the theme background rather
+ * than a transparent hole.
+ *
  * Pull-to-refresh is exposed via [onRefresh] + `isRefreshing`. When both
  * are `null`, the underlying [PullToRefreshBox] is rendered without a
  * refresh handler (effectively a plain `LazyColumn` wrapper).
@@ -139,7 +144,11 @@ fun ListFrame(
     val spacing = LocalTastileSpacingTokens.current
     val pullState = rememberPullToRefreshState()
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(background),
+    ) {
         when (state) {
             ListState.Loading -> loading?.invoke() ?: DefaultLoadingPlaceholder()
             ListState.Empty -> empty?.invoke() ?: DefaultEmptyPlaceholder()

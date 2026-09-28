@@ -17,6 +17,7 @@
 package app.tastile.android.core.designsystem.component
 
 // m2-allow: primitive
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 // m2-allow: primitive
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 // m2-allow: primitive
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
 // m2-allow: primitive
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,9 +82,17 @@ fun DetailFrame(
     content: @Composable () -> Unit,
 ) {
     val spacing = LocalTastileSpacingTokens.current
+    val backgroundTheme = LocalBackgroundTheme.current
+    val backgroundColor = if (backgroundTheme.color == Color.Unspecified) {
+        MaterialTheme.colorScheme.surface
+    } else {
+        backgroundTheme.color
+    }
 
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(backgroundColor),
     ) {
         // Non-scrolling header pinned to the top of the detail surface.
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -118,10 +128,6 @@ fun DetailFrame(
             stickyActions()
         }
     }
-    // Reference `LocalBackgroundTheme.current.color` so the import is not
-    // pruned at compile time — frame primitives honor the theme bridge.
-    @Suppress("UNUSED_EXPRESSION")
-    LocalBackgroundTheme.current.color
 }
 
 @ThemePreviews
