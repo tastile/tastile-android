@@ -41,4 +41,30 @@ class SingleUiStateRuleTest : LintDetectorTest() {
             """.trimIndent()
         )).run().expectWarningCount(0)
     }
+
+    fun testReportsWhenViewModelExposesNoUiState() {
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.feature.foo
+            class FooViewModel {
+                val count: Int = 0
+            }
+            """.trimIndent()
+        )).run().expectWarningCount(1)
+    }
+
+    fun testReportsWhenViewModelExposesTwoUiStateProperties() {
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.feature.foo
+            import kotlinx.coroutines.flow.MutableStateFlow
+            import kotlinx.coroutines.flow.StateFlow
+            class FooViewModel {
+                val uiState: StateFlow<Int> = MutableStateFlow(0)
+                val other: StateFlow<Int> = MutableStateFlow(0)
+                private val uiStateMirror: StateFlow<Int> = MutableStateFlow(0)
+            }
+            """.trimIndent()
+        )).run().expectWarningCount(1)
+    }
 }

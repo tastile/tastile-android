@@ -61,4 +61,41 @@ class NoRawDpInUiRuleTest : LintDetectorTest() {
             """.trimIndent()
         )).run().expectWarningCount(0)
     }
+
+    fun testReportsRawDpAfterAnExemptLeadingValue() {
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.ui.dashboard
+            class Foo {
+                val padding = 0.dp
+                val gap = 16.dp
+            }
+            """.trimIndent()
+        )).run().expectWarningCount(1)
+    }
+
+    fun testReportsEveryNonExemptOccurrence() {
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.ui.dashboard
+            class Foo {
+                val hairline = 0.5.dp
+                val stroke = 1.dp
+                val padding = 16.dp
+                val margin = 24.dp
+            }
+            """.trimIndent()
+        )).run().expectWarningCount(2)
+    }
+
+    fun testReportsFractionalDpBelowOneThatIsNotExempt() {
+        lint().allowCompilationErrors().files(kotlin(
+            """
+            package app.tastile.android.ui.dashboard
+            class Foo {
+                val offset = 0.25.dp
+            }
+            """.trimIndent()
+        )).run().expectWarningCount(1)
+    }
 }

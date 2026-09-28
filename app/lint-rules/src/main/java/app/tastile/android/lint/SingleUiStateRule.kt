@@ -46,7 +46,22 @@ class SingleUiStateRule : Detector(), Detector.UastScanner {
                     return
                 }
 
-                val single = uiStateProperties.firstOrNull() ?: return
+                // "exactly one" includes zero. A ViewModel that publishes no
+                // `uiState` at all was passing silently, so the rule never
+                // checked the existence half of its own contract.
+                val single = uiStateProperties.firstOrNull()
+                if (single == null) {
+                    context.report(
+                        ISSUE,
+                        node,
+                        context.getLocation(node),
+                        "Rule 6: ViewModel exposes no `uiState` property (expected exactly 1). " +
+                            "Publish a single `val uiState: StateFlow<*>` so the UI has one " +
+                            "hoisted read site.",
+                    )
+                    return
+                }
+
                 val rawType = single.sourcePsi?.text ?: return
                 val isStateFlow = rawType.contains("StateFlow")
                 if (!isStateFlow) {

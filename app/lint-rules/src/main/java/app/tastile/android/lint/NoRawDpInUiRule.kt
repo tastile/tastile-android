@@ -31,19 +31,20 @@ class NoRawDpInUiRule : Detector(), SourceCodeScanner {
         if (!path.contains("/ui/") && !path.startsWith("ui/")) return
 
         val text = source.readText()
-        val matches = RAW_DP_PATTERN.findAll(text)
-        val firstBad = matches.firstOrNull() ?: return
-        val raw = firstBad.groupValues[1]
-        val numeric = raw.toDoubleOrNull() ?: return
-        if (numeric <= 1.0 || numeric == 0.5) return
-
-        context.report(
-            ISSUE,
-            context.getLocation(source),
-            "Rule 8: raw `${raw}.dp` literal in `ui/`. Route through " +
-                "`LocalTastileLayoutTokens.current.*` instead. " +
-                "(0.dp / 1.dp / 0.5.dp are exempt.)",
-        )
+        // Scan every occurrence: taking the first match and testing it for an
+        // exemption returned early, so a file that opened with an exempt `0.dp`
+        // never had its later `16.dp` inspected at all.
+        RAW_DP_PATTERN.findAll(text).forEach { match ->
+            val raw = match.groupValues[1]
+            if (raw in EXEMPT_RAW_DP) return@forEach
+            context.report(
+                ISSUE,
+                context.getLocation(source),
+                "Rule 8: raw `${raw}.dp` literal in `ui/`. Route through " +
+                    "`LocalTastileLayoutTokens.current.*` instead. " +
+                    "(0.dp / 1.dp / 0.5.dp are exempt.)",
+            )
+        }
     }
 
     companion object {
@@ -51,6 +52,11 @@ class NoRawDpInUiRule : Detector(), SourceCodeScanner {
         // optionally followed by `.digits`. `0.5` and `0`/`1` are filtered
         // by the numeric guard above.
         val RAW_DP_PATTERN = Regex("""(\d+(?:\.\d+)?)\.dp""")
+
+        // Exactly the documented exemptions. Compared as written text so that
+        // `0.25.dp` is a violation rather than slipping through a numeric
+        // "less than one" test.
+        val EXEMPT_RAW_DP = setOf("0", "0.0", "0.5", "1", "1.0")
 
         val ISSUE = Issue.create(
             id = "NoRawDpInUi",

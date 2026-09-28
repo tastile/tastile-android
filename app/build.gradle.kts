@@ -391,12 +391,25 @@ tasks.register("verifyBranchName") {
     group = "verification"
     description = "Rule 11: branch name must match `^\\d+$` (ADR-0007)."
     doLast {
-        // `git rev-parse --abbrev-ref HEAD` returns the current branch (or
-        // `HEAD` when detached). Skip the gate for the integration branches
-        // `main` and `release-*` so this task stays runnable outside CI.
-        val branch = providers.exec {
-            commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
-        }.standardOutput.asText.get().trim()
+        // GitHub Actions checks a `pull_request` out as a detached HEAD, so
+        // `git rev-parse --abbrev-ref HEAD` answers `HEAD` and every correctly
+        // named ticket branch failed the gate. Prefer the ref GitHub exports
+        // and only fall back to git for a local invocation.
+        val githubHeadRef = providers.environmentVariable("GITHUB_HEAD_REF").orNull?.trim()
+        val githubRefName = providers.environmentVariable("GITHUB_REF_NAME").orNull?.trim()
+        val branch = githubHeadRef?.takeIf { it.isNotEmpty() }
+            ?: githubRefName?.takeIf { it.isNotEmpty() }
+            ?: providers.exec {
+                commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+            }.standardOutput.asText.get().trim()
+
+        // The integration branches are not ticket branches, so the rule does
+        // not apply to them.
+        if (branch == "main" || branch.matches(Regex("""^release-[0-9]+-[0-9]+-[0-9]+$"""))) {
+            logger.lifecycle("verifyBranchName: `$branch` is an integration branch — skipped")
+            return@doLast
+        }
+
         check(branch.matches(Regex("""^\d+$"""))) {
             "Rule 11: branch name `$branch` does not match `^\\d+$` (ADR-0007). " +
                 "Rename the branch to its GitHub Issue number before opening a PR."
@@ -418,12 +431,17 @@ tasks.register("verifyWireShapeContract") {
         }
         // The canonical file uses a small JSON schema (see app/src/main/assets/source_tile_canonical_keys.json):
         //   { "fields": [ { "wire": "...", ... } ] }
-        // We parse just enough to read the `wire` keys without pulling in a JSON
-        // dependency at the build-script classpath level.
-        val canonicalJson = canonicalFile.readText()
-        val wireKeyPattern = Regex(""""wire"\s*:\s*"([A-Za-z0-9_]+)"""")
-        val canonical = wireKeyPattern.findAll(canonicalJson)
-            .map { it.groupValues[1] }
+        // Parse it with a real JSON reader rather than a regex: `SourceTileRead`
+        // is a nested payload, so a text scan cannot tell a top-level key from
+        // one inside `schedule` and would flag every nested key as `extra`.
+        val slurper = groovy.json.JsonSlurper()
+        @Suppress("UNCHECKED_CAST")
+        val canonicalJson = slurper.parse(canonicalFile) as Map<*, *>
+        val canonicalFields = canonicalJson["fields"] as? List<*>
+        checkNotNull(canonicalFields) { "`fields` missing from $canonicalFile" }
+        val canonical = canonicalFields
+            .filterIsInstance<Map<*, *>>()
+            .mapNotNull { it["wire"] as? String }
             .toSet()
         check(canonical.isNotEmpty()) {
             "No `wire` keys found in $canonicalFile — is the schema valid?"
@@ -431,9 +449,6 @@ tasks.register("verifyWireShapeContract") {
 
         val fixturesDir = layout.projectDirectory
             .dir("src/test/resources/wire_fixtures/source_tile").asFile
-        // Phase 1 lands no source-tile fixtures; the task passes when the
-        // directory is empty or absent. Phase 4 (Issue #101 followup) drops
-        // fixtures that the contract must cover.
         if (!fixturesDir.exists()) {
             logger.lifecycle("verifyWireShapeContract: no fixtures directory yet — OK")
             return@doLast
@@ -445,11 +460,14 @@ tasks.register("verifyWireShapeContract") {
             logger.lifecycle("verifyWireShapeContract: no fixtures yet — OK")
             return@doLast
         }
-        val keyPattern = Regex(""""([A-Za-z0-9_]+)"\s*:""")
         val violations = mutableListOf<String>()
         fixtures.forEach { fixture ->
-            val text = fixture.readText()
-            val keys = keyPattern.findAll(text).map { it.groupValues[1] }.toSet()
+            // Compare the **root** key set only. A regex over the raw text also
+            // matched keys inside `schedule`, so a correct nested fixture was
+            // rejected as `extra`.
+            @Suppress("UNCHECKED_CAST")
+            val parsed = slurper.parse(fixture) as Map<*, *>
+            val keys = parsed.keys.map { it.toString() }.toSet()
             val missing = canonical - keys
             val extra = keys - canonical
             if (missing.isNotEmpty() || extra.isNotEmpty()) {
