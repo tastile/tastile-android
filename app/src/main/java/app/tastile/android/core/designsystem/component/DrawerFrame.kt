@@ -31,8 +31,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 // m2-allow: primitive
 import androidx.compose.foundation.layout.padding
 // m2-allow: primitive
-import androidx.compose.foundation.layout.weight
-// m2-allow: primitive
 import androidx.compose.foundation.rememberScrollState
 // m2-allow: primitive
 import androidx.compose.foundation.verticalScroll
