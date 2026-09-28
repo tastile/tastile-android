@@ -169,7 +169,7 @@ val designSystemGuardFiles: List<File> =
 
 tasks.register("verifyDesignSystemImports") {
     group = "verification"
-    description = "Disallow direct Material3 imports and colorScheme references in M3-unified screens; forbid hardcoded RoundedCornerShape(N.dp) outside design-system"
+    description = "Disallow direct Material3 imports and colorScheme references in M3-unified screens; forbid hardcoded RoundedCornerShape(N.dp) outside design-system; ratchet raw dp debt; gate shadowElevation and hardcoded colors"
     doLast {
         val violations = collectDesignSystemViolations(
             designSystemGuardFiles = designSystemGuardFiles,
@@ -182,16 +182,34 @@ tasks.register("verifyDesignSystemImports") {
                 .dir("src/main/java/app/tastile/android/core/designsystem").asFile,
             allKtRoot = layout.projectDirectory
                 .dir("src/main/java/app/tastile/android").asFile,
+            dpBaselineFile = layout.projectDirectory
+                .file("src/main/assets/design_system_rule8_dp_baseline.json").asFile,
+            approvedColorsFile = layout.projectDirectory
+                .file("src/main/assets/design_system_rule10_approved_colors.json").asFile,
         )
         check(violations.isEmpty()) { formatDesignSystemViolations(violations) }
     }
 }
 
 /**
- * Collect every guard violation across the three rules:
+ * Collect every guard violation across the enforced rules:
  *  - Rule 1: forbidden Material3 imports (uses [designSystemGuardFiles] + the `// m2-allow:` marker)
  *  - Rule 2: `MaterialTheme.colorScheme` references in [uiConsumerRoots] without `// m2-allow:` marker
  *  - Rule 3: hardcoded `RoundedCornerShape(<non-zero-numeric>.dp)` outside [designSystemRoot]
+ *  - Rule 8: raw `<N>.dp` literals in `ui/`, as a **per-file ratchet** against
+ *    [dpBaselineFile]. A file's count may never rise, and must fall in the same
+ *    change that removes the violations, so the debt decreases monotonically.
+ *  - Rule 9: `shadowElevation = N.dp` literals in `ui/`. Zero-tolerance; there is
+ *    no legitimate existing debt.
+ *  - Rule 10: `Color(0xFF...)` literals in `ui/` outside `designsystem/theme/Color.kt`.
+ *    Semantic colors approved by `path` + `symbol` + `purpose` in
+ *    [approvedColorsFile] are allowed; every other literal fails. `0xFF000000`
+ *    on the left of a bitwise `or` is an alpha mask, not a color, and is allowed.
+ *
+ * Rules 4 (FrameLocalBackground) and 6 (SingleUiState) ship as UAST lint detectors
+ * in `:lint-rules` because the existing screens do not conform yet. Rule 7
+ * (SingleComposer) ships with the Phase 4 TileComposer work, once the use cases it
+ * inspects exist.
  *
  * Exposed at top level so the unit test (`app/src/test/.../buildlogic/VerifyDesignSystemImportsGuardTest.kt`)
  * can re-invoke the same algorithm against synthetic tmp dirs. The test re-implements the body to
@@ -202,6 +220,8 @@ fun collectDesignSystemViolations(
     uiConsumerRoots: List<File>,
     designSystemRoot: File,
     allKtRoot: File,
+    dpBaselineFile: File? = null,
+    approvedColorsFile: File? = null,
 ): List<String> {
     val allowMarker = "// m2-allow:"
     val forbiddenPrefix = "import androidx.compose.material3."
@@ -250,6 +270,151 @@ fun collectDesignSystemViolations(
             }
         }
 
+    // Rule 8: raw <N>.dp in ui/ (exceptions: 0.dp / 1.dp / 0.5.dp), enforced as a
+    // per-file ratchet. A repository-wide allowance would let new debt appear
+    // anywhere while a single file migrates, so the baseline is keyed by file and
+    // must move with the code.
+    val rawDp = Regex("""(\d+(?:\.\d+)?)\.dp""")
+    val exemptDp = setOf("0", "0.0", "0.5", "1", "1.0")
+    val uiPrefix = allKtRoot.path.replace(File.separatorChar, '/') + "/"
+    val rawDpByFile = linkedMapOf<String, Int>()
+    uiConsumerRoots.forEach { root ->
+        if (!root.exists()) return@forEach
+        root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+            val lines = file.readText().lines()
+            var count = 0
+            lines.forEach { line ->
+                rawDp.findAll(line).forEach { match ->
+                    if (match.groupValues[1] !in exemptDp) count++
+                }
+            }
+            if (count > 0) {
+                rawDpByFile[file.path.replace(File.separatorChar, '/').removePrefix(uiPrefix)] = count
+            }
+        }
+    }
+    val dpBaseline = if (dpBaselineFile != null && dpBaselineFile.exists()) {
+        val slurper = groovy.json.JsonSlurper()
+        @Suppress("UNCHECKED_CAST")
+        val parsed = slurper.parse(dpBaselineFile) as Map<*, *>
+        @Suppress("UNCHECKED_CAST")
+        (parsed["files"] as? Map<*, *> ?: emptyMap<String, Any>())
+            .mapNotNull { (k, v) -> (k as? String)?.let { it to (v as? Int ?: 0) } }
+            .toMap()
+    } else {
+        emptyMap()
+    }
+    if (dpBaselineFile != null) {
+        (rawDpByFile.keys - dpBaseline.keys).sorted().forEach { path ->
+            val count = rawDpByFile.getValue(path)
+            violations += "$path: $count new raw `<N>.dp` literal(s) with no Rule 8 baseline entry. " +
+                "Route the new code through LocalTastileLayoutTokens; do not add debt."
+        }
+        dpBaseline.keys.sorted().forEach { path ->
+            val allowed = dpBaseline.getValue(path)
+            val actual = rawDpByFile[path] ?: 0
+            when {
+                actual > allowed ->
+                    violations += "$path: raw `<N>.dp` count rose from $allowed to $actual. " +
+                        "Rule 8 is a ratchet; existing debt may shrink but never grow."
+                actual in 1 until allowed ->
+                    violations += "$path: raw `<N>.dp` count fell from $allowed to $actual. " +
+                        "Lower the entry in ${dpBaselineFile.name} in the same change so the " +
+                        "ratchet keeps decreasing."
+                actual == 0 && allowed > 0 ->
+                    violations += "$path: no raw `<N>.dp` literals remain but the Rule 8 " +
+                        "baseline still allows $allowed. Drop the entry from " +
+                        "${dpBaselineFile.name}."
+            }
+        }
+    } else {
+        rawDpByFile.forEach { (path, count) ->
+            violations += "$path: $count raw `<N>.dp` literal(s) (Rule 8; no baseline supplied)"
+        }
+    }
+
+    // Rule 9: shadowElevation = N.dp in ui/. Zero tolerance; the existing debt was
+    // 2 sites and both now read LocalTastileSurfaceElevationTokens.
+    val shadowElevation = Regex("""shadowElevation\s*=\s*(\d+(?:\.\d+)?)\.dp""")
+    uiConsumerRoots.forEach { root ->
+        if (!root.exists()) return@forEach
+        root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+            file.readText().lines().forEachIndexed { idx, line ->
+                shadowElevation.find(line)?.let { match ->
+                    val raw = match.groupValues[1]
+                    violations += "${file.path}:${idx + 1}: shadowElevation = ${raw}.dp in ui/ (Rule 9)"
+                }
+            }
+        }
+    }
+
+    // Rule 10: Color(0xFF...) in ui/, except designsystem/theme/Color.kt.
+    //
+    // Policy, in order:
+    //  1. `0xFF000000` on the left of a bitwise `or` is an alpha mask, not a color.
+    //     The RGB comes from parsed user data, so there is no literal to route.
+    //  2. A semantic color approved by `path` + `symbol` + `purpose` is allowed.
+    //  3. Everything else is a violation.
+    //
+    // The enclosing symbol is the nearest preceding `val` / `var` / `fun`
+    // declaration, so an approved entry follows a rename. An entry that no longer
+    // matches a literal is reported so the registry cannot rot.
+    val hexColor = Regex("""Color\(\s*0[xX][0-9A-Fa-f]{6,8}""")
+    val alphaMask = Regex("""0[xX]FF000000L?\s+or\b""")
+    val declaration = Regex(
+        """^\s*(?:@\w+\s+)*(?:(?:private|internal|public|protected|override|const|lateinit|open|final|suspend)\s+)*(?:val|var|fun)\s+([A-Za-z_][A-Za-z0-9_]*)"""
+    )
+    val approved = if (approvedColorsFile != null && approvedColorsFile.exists()) {
+        val slurper = groovy.json.JsonSlurper()
+        @Suppress("UNCHECKED_CAST")
+        val parsed = slurper.parse(approvedColorsFile) as Map<*, *>
+        (parsed["approved"] as? List<*> ?: emptyList<Any>())
+            .filterIsInstance<Map<*, *>>()
+            .mapNotNull { entry ->
+                val p = entry["path"] as? String
+                val s = entry["symbol"] as? String
+                if (p != null && s != null) "$p#$s" else null
+            }
+            .toSet()
+    } else {
+        emptySet()
+    }
+    val approvedSeen = mutableSetOf<String>()
+    uiConsumerRoots.forEach { root ->
+        if (!root.exists()) return@forEach
+        root.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+            val path = file.path.replace(File.separatorChar, '/')
+            if (path.endsWith("core/designsystem/theme/Color.kt") ||
+                path.endsWith("designsystem/theme/Color.kt")
+            ) return@forEach
+            val relative = path.removePrefix(uiPrefix)
+            val lines = file.readText().lines()
+            lines.forEachIndexed { idx, line ->
+                if (!hexColor.containsMatchIn(line)) return@forEachIndexed
+                if (alphaMask.containsMatchIn(line)) return@forEachIndexed
+                val symbol = (idx downTo 0)
+                    .mapNotNull { declaration.find(lines[it]) }
+                    .map { it.groupValues[1] }
+                    .firstOrNull()
+                    ?: "<unknown>"
+                val key = "$relative#$symbol"
+                if (approved.contains(key)) {
+                    approvedSeen += key
+                } else {
+                    violations += "${file.path}:${idx + 1}: hardcoded Color(0xFF...) literal in ui/ " +
+                        "(Rule 10) in `$symbol`. Route it through the design-system color layer, or " +
+                        "record a reasoned exemption for `$key` in ${approvedColorsFile?.name}."
+                }
+            }
+        }
+    }
+    if (approvedColorsFile != null) {
+        (approved - approvedSeen).sorted().forEach { key ->
+            violations += "${approvedColorsFile.path}: approved Rule 10 entry `$key` no longer " +
+                "matches any Color(0xFF...) literal. Remove the stale exemption."
+        }
+    }
+
     return violations
 }
 
@@ -261,6 +426,11 @@ fun formatDesignSystemViolations(violations: List<String>): String = buildString
     appendLine("Use LocalTastileCardRoleTokens.current / LocalTastileStatusTokens.current instead of MaterialTheme.colorScheme.")
     appendLine("Use RoundedCornerShape(LocalTastileShapeTokens.current.<key>) instead of hardcoded <n>.dp shapes.")
     appendLine("Direct Material3 imports require an immediately-preceding `// m2-allow:` marker line.")
+    appendLine("Raw `<N>.dp` literals (Rule 8) must route through LocalTastileLayoutTokens.current.*.")
+    appendLine("Rule 8 is a per-file ratchet: debt may shrink, never grow. Move the baseline in the same change.")
+    appendLine("`shadowElevation = N.dp` (Rule 9) must use Card / Surface or LocalTastileSurfaceElevationTokens.")
+    appendLine("Hardcoded `Color(0xFF...)` (Rule 10) is allowed in core/designsystem/theme/Color.kt and for symbols")
+    appendLine("carrying a reasoned path+symbol exemption in design_system_rule10_approved_colors.json.")
 }
 
 tasks.register("verifyNoEmbeddedServerSecrets") {
@@ -286,6 +456,160 @@ tasks.register("verifyNoEmbeddedServerSecrets") {
 
 tasks.named("check").configure {
     dependsOn("verifyDesignSystemImports", "verifyNoEmbeddedServerSecrets")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1 UI rebuild guards (Issue #11 = plan ticket #102)
+//
+// Rule 5 (`// m2-allow:` marker ratchet), Rule 8 (raw `.dp` debt ratchet),
+// Rule 9 (`shadowElevation = N.dp`, zero tolerance) and Rule 12 (SourceTileRead
+// wire-shape contract) all gate `:app:check`; Rule 8, 9 and 10 are enforced
+// inside `verifyDesignSystemImports` and Rule 10 additionally allows reasoned
+// path+symbol exemptions. Rule 11 (branch name `^\d+$`) gates `:app:check` too.
+// Rules 4 and 6 ship as UAST lint detectors in `:lint-rules`; Rule 7 ships with
+// the Phase 4 TileComposer work.
+// ---------------------------------------------------------------------------
+
+// Rule 5 freezes the existing `// m2-allow:` debt rather than allowing more of it.
+// `m2AllowBaseline` is the count that actually exists in the tree today, so the
+// limit is the current count: any new marker fails, and removing markers is the
+// only way to create room. Lower the baseline in the same change that removes
+// markers so the ceiling keeps falling. A raise needs an ADR, not a build edit.
+val m2AllowBaseline = 610
+val m2AllowLimit = m2AllowBaseline
+
+tasks.register("verifyM2AllowBudget") {
+    group = "verification"
+    description = "Rule 5: `// m2-allow:` marker ratchet — fail if the count exceeds the " +
+        "frozen baseline of $m2AllowBaseline."
+    doLast {
+        val allowMarker = "// m2-allow:"
+        val allKt = fileTree("src/main") { include("**/*.kt") }.files
+        val count = allKt.sumOf { file ->
+            file.readText().lineSequence().count { it.contains(allowMarker) }
+        }
+        if (count > m2AllowLimit) {
+            throw GradleException(
+                "Rule 5: `// m2-allow:` marker count is $count, which exceeds the frozen " +
+                    "baseline of $m2AllowBaseline. Existing debt may shrink but never grow; " +
+                    "remove marker usage rather than raising the baseline. Raising it " +
+                    "requires an ADR.",
+            )
+        }
+        logger.lifecycle(
+            "verifyM2AllowBudget: $count markers used, $m2AllowLimit allowed " +
+                "(${m2AllowBaseline - count} below the frozen baseline)",
+        )
+    }
+}
+
+tasks.register("verifyBranchName") {
+    group = "verification"
+    description = "Rule 11: branch name must match `^\\d+$` (ADR-0007)."
+    doLast {
+        // GitHub Actions checks a `pull_request` out as a detached HEAD, so
+        // `git rev-parse --abbrev-ref HEAD` answers `HEAD` and every correctly
+        // named ticket branch failed the gate. Prefer the ref GitHub exports
+        // and only fall back to git for a local invocation.
+        val githubHeadRef = providers.environmentVariable("GITHUB_HEAD_REF").orNull?.trim()
+        val githubRefName = providers.environmentVariable("GITHUB_REF_NAME").orNull?.trim()
+        val branch = githubHeadRef?.takeIf { it.isNotEmpty() }
+            ?: githubRefName?.takeIf { it.isNotEmpty() }
+            ?: providers.exec {
+                commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+            }.standardOutput.asText.get().trim()
+
+        // The integration branches are not ticket branches, so the rule does
+        // not apply to them.
+        if (branch == "main" || branch.matches(Regex("""^release-[0-9]+-[0-9]+-[0-9]+$"""))) {
+            logger.lifecycle("verifyBranchName: `$branch` is an integration branch — skipped")
+            return@doLast
+        }
+
+        check(branch.matches(Regex("""^\d+$"""))) {
+            "Rule 11: branch name `$branch` does not match `^\\d+$` (ADR-0007). " +
+                "Rename the branch to its GitHub Issue number before opening a PR."
+        }
+        logger.lifecycle("verifyBranchName: branch `$branch` matches `^\\d+$` — OK")
+    }
+}
+
+tasks.register("verifyWireShapeContract") {
+    group = "verification"
+    description = "Rule 12: SourceTileRead wire-shape contract gate — every fixture " +
+        "under app/src/test/resources/wire_fixtures/source_tile/*.json must match the " +
+        "canonical key set in app/src/main/assets/source_tile_canonical_keys.json."
+    doLast {
+        val canonicalFile = layout.projectDirectory
+            .file("src/main/assets/source_tile_canonical_keys.json").asFile
+        check(canonicalFile.exists()) {
+            "Missing canonical keys file at ${canonicalFile.path}"
+        }
+        // The canonical file uses a small JSON schema (see app/src/main/assets/source_tile_canonical_keys.json):
+        //   { "fields": [ { "wire": "...", ... } ] }
+        // Parse it with a real JSON reader rather than a regex: `SourceTileRead`
+        // is a nested payload, so a text scan cannot tell a top-level key from
+        // one inside `schedule` and would flag every nested key as `extra`.
+        val slurper = groovy.json.JsonSlurper()
+        @Suppress("UNCHECKED_CAST")
+        val canonicalJson = slurper.parse(canonicalFile) as Map<*, *>
+        val canonicalFields = canonicalJson["fields"] as? List<*>
+        checkNotNull(canonicalFields) { "`fields` missing from $canonicalFile" }
+        val canonical = canonicalFields
+            .filterIsInstance<Map<*, *>>()
+            .mapNotNull { it["wire"] as? String }
+            .toSet()
+        check(canonical.isNotEmpty()) {
+            "No `wire` keys found in $canonicalFile — is the schema valid?"
+        }
+
+        val fixturesDir = layout.projectDirectory
+            .dir("src/test/resources/wire_fixtures/source_tile").asFile
+        if (!fixturesDir.exists()) {
+            logger.lifecycle("verifyWireShapeContract: no fixtures directory yet — OK")
+            return@doLast
+        }
+        val fixtures = fixturesDir.walkTopDown()
+            .filter { it.isFile && it.extension == "json" }
+            .toList()
+        if (fixtures.isEmpty()) {
+            logger.lifecycle("verifyWireShapeContract: no fixtures yet — OK")
+            return@doLast
+        }
+        val violations = mutableListOf<String>()
+        fixtures.forEach { fixture ->
+            // Compare the **root** key set only. A regex over the raw text also
+            // matched keys inside `schedule`, so a correct nested fixture was
+            // rejected as `extra`.
+            @Suppress("UNCHECKED_CAST")
+            val parsed = slurper.parse(fixture) as Map<*, *>
+            val keys = parsed.keys.map { it.toString() }.toSet()
+            val missing = canonical - keys
+            val extra = keys - canonical
+            if (missing.isNotEmpty() || extra.isNotEmpty()) {
+                violations += buildString {
+                    append("${fixture.path}: missing=").append(missing)
+                    append(", extra=").append(extra)
+                }
+            }
+        }
+        check(violations.isEmpty()) {
+            "Rule 12: wire-shape contract drift:\n" +
+                violations.joinToString("\n") { "  - $it" }
+        }
+        logger.lifecycle(
+            "verifyWireShapeContract: ${fixtures.size} fixture(s), " +
+                "${canonical.size} canonical key(s) — OK",
+        )
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn("verifyM2AllowBudget", "verifyBranchName", "verifyWireShapeContract")
+    // `:lint-rules` unit tests were unreachable from `:app:check`, so they never
+    // ran in CI. That is how nine detectors against a removed lint API sat in
+    // the module un-compiled. Keep the detector tests inside the gate.
+    dependsOn(":lint-rules:test")
 }
 
 // ---------------------------------------------------------------------------

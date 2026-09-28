@@ -66,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.designsystem.theme.LocalTastileCardRoleTokens
 import app.tastile.android.core.designsystem.theme.LocalTastileShapeTokens
+import app.tastile.android.core.designsystem.theme.LocalTastileSurfaceElevationTokens
 import app.tastile.android.core.designsystem.theme.LocalTastileStatusTokens
 import app.tastile.android.data.model.Plan
 import app.tastile.android.data.model.Profile
@@ -101,7 +102,7 @@ fun AccountScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = LocalTastileCardRoleTokens.current.neutral.container,
-                shadowElevation = 4.dp
+                shadowElevation = LocalTastileSurfaceElevationTokens.current.level2.shadowElevation
             ) {
                 Text(
                     text = stringResource(R.string.account_screen_title),
