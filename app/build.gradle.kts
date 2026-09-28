@@ -464,11 +464,15 @@ tasks.register("verifySkillAdapterDrift") {
             "scripts/ci/sync-skill-adapters.sh not found at ${script.path}; " +
                 "rebuild from git or restore from upstream."
         }
-        val result = providers.exec {
-            commandLine("bash", script.absolutePath)
-        }
-        val output = result.standardOutput.asText.get()
-        check(result.result.exitValue == 0) { "Skill adapter drift detected:\n${output}" }
+        // ProcessBuilder rather than providers.exec: the exit code of the
+        // exec providers has moved between Gradle versions, and this gate must
+        // not depend on which shape the current one exposes.
+        val process = ProcessBuilder("bash", script.absolutePath)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        val exitValue = process.waitFor()
+        check(exitValue == 0) { "Skill adapter drift detected:\n${output}" }
         logger.lifecycle(output.trim())
     }
 }
