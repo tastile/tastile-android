@@ -20,10 +20,12 @@ import org.jetbrains.uast.UElement
  * properties (or non-StateFlow types named `uiState`) indicate accidental
  * split state that has to be migrated before Phase 4.
  *
- * NOTE: Phase 1 ships the rule but does NOT enable it via
- * `verifyDesignSystemImports` (existing screens do not conform yet).
- * `:app:lint` still surfaces the warning so editors see it. Phase 5
- * turns it into a hard gate.
+ * The "more than one" branch is defensive only: Kotlin rejects two properties
+ * with the same name in a class, so it cannot trigger for code that compiles.
+ * The load-bearing checks are the zero-property and non-StateFlow cases.
+ *
+ * NOTE: this ships as a `:app:lint` warning, not a Gradle gate. The existing
+ * screens do not conform yet, so making it a hard gate would fail the build.
  */
 class SingleUiStateRule : Detector(), Detector.UastScanner {
 

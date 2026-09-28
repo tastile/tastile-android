@@ -26,56 +26,69 @@ import org.jetbrains.uast.UMethod
  *     tonal elevation tint),
  *   - the contrast contract in accessibility settings.
  *
- * NOTE: Phase 1 ships the rule but does NOT enable it via
- * `verifyDesignSystemImports` (existing 200+ screens do not conform yet).
- * The Gradle task `:app:verifyFrameLocalBackground` is added so the rule
- * can be turned on in isolation. Phase 5 migrates the screens and turns
- * the rule into a hard gate.
+ * NOTE: this ships as a `:app:lint` warning, not a Gradle gate. The existing
+ * 200+ screens do not conform yet, so making it a hard gate would fail the build.
+ * It becomes a gate once those screens are migrated.
  */
 class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
 
-    override fun getApplicableUastTypes(): List<Class<out UElement>> = listOf(UClass::class.java)
+    // Both types are needed. A frame composable is usually a top-level
+    // `fun FooScreen()`, which never appears in a UClass, so scanning classes
+    // alone silently missed the main case this rule exists for.
+    override fun getApplicableUastTypes(): List<Class<out UElement>> =
+        listOf(UClass::class.java, UMethod::class.java)
 
     override fun createUastHandler(context: JavaContext): UElementHandler =
         object : UElementHandler() {
+
             override fun visitClass(node: UClass) {
-                val fileText = node.sourcePsi?.containingFile?.text ?: return
-                // Helper: name match across both top-level `fun FooScreen()`
-                // and methods declared in a class.
-                val methods = buildList {
-                    if (node.name.orEmpty().matches(FRAME_NAME_REGEX)) add(node)
-                    addAll(node.methods.filter { method ->
-                        method.name.orEmpty().matches(FRAME_NAME_REGEX)
-                    })
-                }
-                if (methods.isEmpty()) return
+                checkTargets(context, listOf(node) + node.methods.toList())
+            }
 
-                val hasLocalBg = fileText.contains("LocalBackgroundTheme")
-                // Use `\b` so an import like `import androidx.compose.material3.Surface`
-                // (which is normally terminated by `\n` or `;`) still matches.
-                // Without `\b`, `import ... .SurfaceView` would false-positive.
-                val hasSurface = Regex("""import\s+(\S+\.)?Surface\b""").containsMatchIn(fileText)
-
-                if (hasLocalBg || hasSurface) return
-
-                for (target in methods) {
-                    // Report against the PSI node: a `UElement` scope is
-                    // ambiguous between the PsiElement and UElement overloads
-                    // of report(), and getLocation is ambiguous for the same
-                    // reason.
-                    val psi = target.sourcePsi ?: continue
-                    context.report(
-                        ISSUE,
-                        psi,
-                        context.getLocation(psi),
-                        "Rule 4: `${target.name}` is a Screen/Sheet/Frame/Dialog/Panel/Scaffold " +
-                            "composable but the file does not import `LocalBackgroundTheme` " +
-                            "or `Surface`. Add one of those imports so the tonal / elevation " +
-                            "theme is applied.",
-                    )
-                }
+            override fun visitMethod(node: UMethod) {
+                // Class members are already covered by visitClass; only top-level
+                // functions need handling here.
+                if (node.uastParent is UClass) return
+                checkTargets(context, listOf(node))
             }
         }
+
+    /**
+     * Reports every frame-shaped declaration in [candidates] when the declaring
+     * file imports neither `LocalBackgroundTheme` nor `Surface`. The check is
+     * per file, so one compliant import clears every frame composable in it.
+     */
+    private fun checkTargets(
+        context: JavaContext,
+        candidates: List<UElement>,
+    ) {
+        val targets = candidates.filter { it.name.orEmpty().matches(FRAME_NAME_REGEX) }
+        if (targets.isEmpty()) return
+
+        val fileText = targets.first().sourcePsi?.containingFile?.text ?: return
+        val hasLocalBackgroundTheme = fileText.contains("LocalBackgroundTheme")
+        // `\b` so an import like `import androidx.compose.material3.Surface`
+        // (normally terminated by `\n` or `;`) still matches, while
+        // `import ... .SurfaceView` does not false-positive.
+        val hasSurface = Regex("""import\s+(\S+\.)?Surface\b""").containsMatchIn(fileText)
+        if (hasLocalBackgroundTheme || hasSurface) return
+
+        for (target in targets) {
+            // Report against the PSI node: a UElement scope is ambiguous
+            // between the PsiElement and UElement overloads of report(), and
+            // getLocation is ambiguous for the same reason.
+            val psi = target.sourcePsi ?: continue
+            context.report(
+                ISSUE,
+                psi,
+                context.getLocation(psi),
+                "Rule 4: `${target.name}` is a Screen/Sheet/Frame/Dialog/Panel/Scaffold " +
+                    "composable but the file does not import `LocalBackgroundTheme` " +
+                    "or `Surface`. Add one of those imports so the tonal / elevation " +
+                    "theme is applied.",
+            )
+        }
+    }
 
     companion object {
         // Matches function names whose last suffix is Screen/Sheet/Frame/Dialog/Panel/Scaffold.
