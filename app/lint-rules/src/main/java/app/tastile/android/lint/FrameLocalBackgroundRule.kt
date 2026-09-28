@@ -59,13 +59,14 @@ class FrameLocalBackgroundRule : Detector(), Detector.UastScanner {
                 if (hasLocalBg || hasSurface) return
 
                 for (target in methods) {
-                    // Resolve the location from the PSI node: passing the
-                    // UElement itself is ambiguous between the `PsiElement`,
-                    // `UElement`, and `Any?` overloads of getLocation.
+                    // Report against the PSI node: a `UElement` scope is
+                    // ambiguous between the PsiElement and UElement overloads
+                    // of report(), and getLocation is ambiguous for the same
+                    // reason.
                     val psi = target.sourcePsi ?: continue
                     context.report(
                         ISSUE,
-                        target,
+                        psi,
                         context.getLocation(psi),
                         "Rule 4: `${target.name}` is a Screen/Sheet/Frame/Dialog/Panel/Scaffold " +
                             "composable but the file does not import `LocalBackgroundTheme` " +
