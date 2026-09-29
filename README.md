@@ -1,6 +1,6 @@
 # Tastile Android
 
-Android client for Tastile. The app is written in Kotlin with Jetpack Compose, uses AWS Cognito for mobile-facing auth, and integrates with `tastile-core` through Android native libraries built from the sibling Rust repository.
+Android client for Tastile. The app is written in Kotlin with Jetpack Compose, uses Better Auth (via the web login surface) for mobile-facing auth, and integrates with `tastile-core` through Android native libraries built from the sibling Rust repository.
 
 ## Current State
 
