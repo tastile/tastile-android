@@ -960,8 +960,8 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.12.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.12.0")
     implementation("com.squareup.retrofit2:converter-scalars:2.12.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.5.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.5.0")
     implementation("com.squareup.moshi:moshi:1.15.2")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
     implementation("com.squareup.moshi:moshi-adapters:1.15.2")
@@ -991,8 +991,8 @@ dependencies {
     // generated v1 client both target okhttp 4.x APIs anyway.
     configurations.all {
         resolutionStrategy {
-            force("com.squareup.okhttp3:okhttp:4.12.0")
-            force("com.squareup.okhttp3:mockwebserver:4.12.0")
+            force("com.squareup.okhttp3:okhttp:5.5.0")
+            force("com.squareup.okhttp3:mockwebserver:5.5.0")
         }
     }
 
@@ -1018,7 +1018,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.robolectric:robolectric:4.16.1")
     testImplementation("androidx.room:room-testing:$roomVersion")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.5.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
