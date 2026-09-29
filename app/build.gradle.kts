@@ -949,7 +949,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.navigation:navigation-compose:2.10.0")
 
-    implementation("io.ktor:ktor-client-okhttp:3.5.2")
+    implementation("io.ktor:ktor-client-okhttp:3.6.0")
 
     // OpenAPI auto-generation pipeline (see `generateV1Api` task above).
     // The generator emits a Retrofit interface + Moshi-backed DTOs, plus an
