@@ -1,0 +1,106 @@
+name: Bug report
+description: tastile-android の不具合を報告する (build / runtime / data / native bridge / test)。
+title: '[bug]: '
+labels: ['type/bug']
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug
+
+        不具合の再現条件、期待する挙動、実際の挙動を記入する。`project-board` Skill
+        が必須 field を Project に同期する (ADR-0009)。
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (ADR-0009)
+      description: P0 = current sprint、 P1 = next sprint、 P2+ = backlog
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size (ADR-0009)
+      options:
+        - XS
+        - S
+        - M
+        - L
+        - XL
+    validations:
+      required: true
+
+  - type: input
+    id: target_version
+    attributes:
+      label: Target Release (release-x-y-z 形式、空欄で backlog)
+      placeholder: 'release-0-4-0'
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: area
+    attributes:
+      label: Area / Component
+      description: 影響するコンポーネントを1つ以上選ぶ (ADR-0009 の multi-select)。
+      options:
+        - label: dashboard
+        - label: mobile
+        - label: account
+        - label: design-system
+        - label: native
+        - label: sync
+        - label: release
+        - label: docs
+        - label: infra
+
+  - type: input
+    id: execution_generation
+    attributes:
+      label: Execution Generation (ADR-0008)
+      description: recovery 時に increment する。default 1。
+      default: '1'
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 再現手順
+      placeholder: |
+        1. この repo を clone (`tastile-core` 隣接)
+        2. `./gradlew verify`
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する挙動
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の挙動
+    validations:
+      required: true
+
+  - type: textarea
+    id: device_log
+    attributes:
+      label: device / emulator log / screenshot (任意)
+      description: logcat や screenshot を直接 paste せず、`reference/<id>/` へ置いて URL を貼る。
+    validations:
+      required: false

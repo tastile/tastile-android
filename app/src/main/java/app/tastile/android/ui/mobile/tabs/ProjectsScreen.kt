@@ -105,7 +105,11 @@ private fun ProjectListRow(
         else -> workspace.slug?.takeIf { it.isNotBlank() }
             ?: stringResource(R.string.projects_owner_prefix, workspace.id.take(8))
     }
-    val dotColor = parseHexColor(workspace.color) ?: Color(0xFF6B7280)
+    // The workspace color is user-authored, so a missing or unparseable value
+    // falls back to the neutral design-system border rather than a hardcoded
+    // gray literal.
+    val dotColor = parseHexColor(workspace.color)
+        ?: LocalTastileCardRoleTokens.current.neutral.border
 
     Row(
         modifier = Modifier

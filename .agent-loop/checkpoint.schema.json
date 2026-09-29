@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/tastile/tastile-android/blob/main/.agent-loop/checkpoint.schema.json",
+  "title": "tastile-android recovery checkpoint",
+  "description": "Structured recovery checkpoint (ADR-0008). Externalizable operational state only: no secrets, no machine-specific absolute paths, no private reasoning.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "issue_id",
+    "target_release",
+    "ticket_branch",
+    "base_sha",
+    "checkpoint_sha_or_snapshot",
+    "execution_generation",
+    "status",
+    "completed_steps",
+    "next_steps",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "issue_id": { "type": "integer" },
+    "target_release": { "type": "string", "pattern": "^release-[0-9]+-[0-9]+-[0-9]+$" },
+    "ticket_branch": { "type": "string" },
+    "pr_number": { "type": ["integer", "null"] },
+    "immediate_pr_base": { "type": ["string", "null"] },
+    "predecessor_issue_or_pr": { "type": ["string", "null"] },
+    "predecessor_sha": { "type": ["string", "null"] },
+    "base_sha": { "type": "string" },
+    "checkpoint_sha_or_snapshot": { "type": "string" },
+    "execution_generation": { "type": "integer", "minimum": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["in_progress", "blocked", "in_review", "integrated", "abandoned"]
+    },
+    "completed_steps": { "type": "array", "items": { "type": "string" } },
+    "next_steps": { "type": "array", "items": { "type": "string" } },
+    "pending_validation": { "type": "array", "items": { "type": "string" } },
+    "active_children": { "type": "array", "items": { "type": "string" } },
+    "integrated_child_results": { "type": "array", "items": { "type": "string" } },
+    "external_side_effects": { "type": "array", "items": { "type": "string" } },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "decision_refs": { "type": "array", "items": { "type": "string" } },
+    "artifact_refs": { "type": "array", "items": { "type": "string" } },
+    "updated_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

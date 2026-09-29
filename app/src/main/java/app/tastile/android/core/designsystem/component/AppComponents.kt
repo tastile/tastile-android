@@ -65,6 +65,14 @@ import app.tastile.android.core.designsystem.theme.TastileTheme
  * Mobile-design spacing tokens. Mirrors the deleted `MobileSpacing` object
  * that lived under `ui/mobile/designsystem/`. Values match the previous
  * reference so existing call sites continue to produce identical layouts.
+ *
+ * TODO(designsystem): unify field names with `TastileSpacingTokens`
+ * (currently `sm` / `md` / `lg` vs `s` / `m` / `l`). Once Issue #100 lands
+ * and we adopt `TastileSpacingTokens` everywhere, this object should
+ * either become `typealias MobileSpacing = TastileSpacingTokens` after a
+ * caller-side rename, or be deleted once the legacy `mobile/tabs/` panels
+ * migrate. Until then it is the source of truth used by `ui/mobile/` and
+ * many call sites in this file.
  */
 object MobileSpacing {
     val xs: Dp = 4.dp
