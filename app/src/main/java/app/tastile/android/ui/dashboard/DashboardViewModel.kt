@@ -25,6 +25,8 @@ import app.tastile.android.data.api.SourceTileDetailRead
 import app.tastile.android.data.command.ExecutionStateLookup
 import app.tastile.android.data.repository.TilesResponse
 import app.tastile.android.data.time.formatIsoDateTime
+import app.tastile.android.data.timeline.normalizeTimelineOwnerIds
+import app.tastile.android.data.timeline.timelineScopeFingerprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -193,14 +195,31 @@ class DashboardViewModel @Inject constructor(
 
     /** Applies Calendar's checked workspace tree as the v1 `owner_ids` selection. */
     fun setOwnerFilters(ownerIds: Collection<String>) {
-        _tileFilter.value = _tileFilter.value.copy(ownerIds = ownerIds.filter { it.isNotBlank() }.distinct())
-        refreshTimeline()
+        // v1 owner_ids only address UUID owners. The synthesized Personal entry
+        // carries the BetterAuth user id, which the server's UUID parser drops
+        // to an empty set (=> empty timeline/tiles). Keep only UUIDs so an
+        // empty selection omits the param and the server defaults to the actor
+        // (Personal scope). (A05)
+        _tileFilter.value = _tileFilter.value.copy(ownerIds = ownerIds.mapNotNull { id ->
+            id.takeIf { it.isNotBlank() && isOwnerUuid(it) }
+        }.distinct())
     }
+
+    private fun isOwnerUuid(id: String): Boolean =
+        runCatching { java.util.UUID.fromString(id) }.isSuccess
 
     private val _selectedTileId = MutableStateFlow<String?>(null)
 
-    val selectedTile: StateFlow<Tile?> = combine(tiles, _selectedTileId) { list, id ->
-        id?.let { tid -> list.firstOrNull { it.id == tid } }
+    /**
+     * Single-tile supplement for timeline taps outside the truncated visible
+     * list (A05). [selectedTile] prefers the visible list; the override fills
+     * the gap so the edit sheet's save/actions gates still resolve. Server
+     * data only — never synthesized.
+     */
+    private val _selectedTileOverride = MutableStateFlow<Tile?>(null)
+
+    val selectedTile: StateFlow<Tile?> = combine(tiles, _selectedTileId, _selectedTileOverride) { list, id, override ->
+        id?.let { tid -> list.firstOrNull { it.id == tid } ?: override?.takeIf { it.id == tid } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _selectedTileDetail = MutableStateFlow<SourceTileDetailRead?>(null)
@@ -209,12 +228,28 @@ class DashboardViewModel @Inject constructor(
     private val _selectedTileDetailLoading = MutableStateFlow(false)
     val selectedTileDetailLoading: StateFlow<Boolean> = _selectedTileDetailLoading.asStateFlow()
 
+    /**
+     * The detail id of the in-flight (or last completed) [loadTileDetail]
+     * request. The edit sheet addresses the canonical source id while tile
+     * selection tracks the placement tile id (A05), so the commit gate keys
+     * on the requested detail id — never on [_selectedTileId].
+     */
+    private val _selectedTileDetailRequest = MutableStateFlow<String?>(null)
+
     fun selectTile(id: String) {
         _selectedTileId.value = id
+        _selectedTileOverride.value = null
+        viewModelScope.launch {
+            if (_tiles.value.none { it.id == id }) {
+                _selectedTileOverride.value = tileRepository.fetchTileById(id)
+            }
+        }
     }
 
     fun clearSelectedTile() {
         _selectedTileId.value = null
+        _selectedTileOverride.value = null
+        _selectedTileDetailRequest.value = null
         _selectedTileDetail.value = null
         _selectedTileDetailLoading.value = false
     }
@@ -223,19 +258,21 @@ class DashboardViewModel @Inject constructor(
      * Fetches the v1 source-tile detail for [id] and stores it in
      * [selectedTileDetail] so [TileEditSheet] can render the real title,
      * description, schedule, etc. Clears any previous detail if [id] is blank
-     * or the fetch fails. No-op when [id] matches the currently selected id
-     * and a detail is already loaded.
+     * or the fetch fails. Late responses from a superseded request (fast
+     * re-select / dismiss race) are dropped via [_selectedTileDetailRequest].
      */
     fun loadTileDetail(id: String) {
         if (id.isBlank()) {
+            _selectedTileDetailRequest.value = null
             _selectedTileDetail.value = null
             _selectedTileDetailLoading.value = false
             return
         }
+        _selectedTileDetailRequest.value = id
         viewModelScope.launch {
             _selectedTileDetailLoading.value = true
             val detail = tileRepository.getTileDetail(id)
-            if (_selectedTileId.value == id) {
+            if (_selectedTileDetailRequest.value == id) {
                 _selectedTileDetail.value = detail
                 _selectedTileDetailLoading.value = false
             }
@@ -255,6 +292,7 @@ class DashboardViewModel @Inject constructor(
      */
     internal fun replaceTimelineForTest(list: List<CoreTimelineItem>) {
         _timeline.value = list
+        _timelineCache.value = null
     }
 
     internal fun replaceExecutionControlStatesForTest(states: Map<String, ExecutionControlState>) {
@@ -288,13 +326,35 @@ class DashboardViewModel @Inject constructor(
     private val _timeline = MutableStateFlow<List<CoreTimelineItem>>(emptyList())
     val timeline: StateFlow<List<CoreTimelineItem>> = _timeline.asStateFlow()
 
+    /**
+     * Stable account identity used to scope the local timeline read model.
+     * The page-scoped timeline owns its snapshots; this scalar remains on the
+     * dashboard only so the screen can select the correct account partition.
+     */
+    val timelineAccountId: String?
+        get() = authRepository.currentUserId()
+
     private val _isLoadingTimeline = MutableStateFlow(false)
     val isLoadingTimeline: StateFlow<Boolean> = _isLoadingTimeline.asStateFlow()
 
-    private val _timelineRange = MutableStateFlow(
-        computeTimelineRange(LocalDate.now(), TimelineScale.Day)
+    /**
+     * Legacy projection cache. The cache is keyed by the exact range and
+     * normalized owner scope the deprecated panel rendered last, with an
+     * `Instant.now()` timestamp so
+     * stale entries can still be shown immediately while a fresh fetch
+     * runs in the background. A successful refetch is merged into the
+     * existing list (same id → replaced, missing id → dropped, new id →
+     * appended) so the user never sees the screen flash empty. (A05)
+     */
+    private data class TimelineCacheEntry(
+        val range: Pair<Instant, Instant>,
+        val scopeFingerprint: String,
+        val ownerIds: List<String>,
+        val items: List<CoreTimelineItem>,
+        val loadedAt: Instant,
     )
-    val timelineRange: StateFlow<Pair<Instant, Instant>> = _timelineRange.asStateFlow()
+    private val _timelineCache = MutableStateFlow<TimelineCacheEntry?>(null)
+    private val timelineCacheTtlMs = 60_000L
 
     private val _selectedDay = MutableStateFlow(java.time.LocalDate.now())
     val selectedDay: StateFlow<java.time.LocalDate> = _selectedDay.asStateFlow()
@@ -321,7 +381,6 @@ class DashboardViewModel @Inject constructor(
 
     fun setCalendarMinimumDuration(minutes: Int) {
         _calendarMinimumDurationMinutes.value = minutes.coerceAtLeast(0)
-        refreshTimeline()
     }
 
     fun moveCalendar(delta: Long) {
@@ -801,16 +860,6 @@ class DashboardViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(_selectedDay, _scale, _calendarMode) { d, s, m ->
-                calendarRange(d, s, m)
-            }
-                .distinctUntilChanged()
-                .collect { range ->
-                    _timelineRange.value = range
-                    refreshTimeline()
-                }
-        }
-        viewModelScope.launch {
             authRepository.authState.collect { state ->
                 if (state is TastileAuthState.Authenticated) {
                     // Fetch the Workspace list now that we have an auth token.
@@ -827,7 +876,6 @@ class DashboardViewModel @Inject constructor(
                     } catch (t: Throwable) {
                         android.util.Log.e("DashboardViewModel", "workspace fetch failed", t)
                     }
-                    refreshTimeline()
                 }
             }
         }
@@ -850,21 +898,72 @@ class DashboardViewModel @Inject constructor(
         refreshAll()
     }
 
-    private fun refreshTimeline() {
-        val (start, end) = _timelineRange.value
-        viewModelScope.launch {
-            _isLoadingTimeline.value = true
-            try {
-                _timeline.value = filterCalendarByMinimumDuration(
-                    tileRepository.getTimeline(start, end, _tileFilter.value.ownerIds),
-                    _calendarMinimumDurationMinutes.value,
-                )
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load timeline"
-            } finally {
-                _isLoadingTimeline.value = false
+    /**
+     * Legacy projection refresh retained for the deprecated dashboard/panel
+     * surfaces. The active calendar route uses [TimelinePageViewModel] and no
+     * production caller invokes this method, so page snapshots cannot be
+     * fetched twice. New callers must send a page refresh intent instead.
+     */
+    @Deprecated("Use TimelinePageViewModel.requestRefresh")
+    internal fun refreshTimeline() {
+        val (start, end) = calendarRange(_selectedDay.value, _scale.value, _calendarMode.value)
+        val ownerIds = normalizeTimelineOwnerIds(_tileFilter.value.ownerIds)
+        val scopeFingerprint = timelineScopeFingerprint(ownerIds)
+        // Serve cached data immediately when it matches the current range
+        // and is still within TTL. The fresh fetch still runs in the
+        // background, but the user never sees the screen flash empty on
+        // a fast day-pagination tap. (A05)
+        val cached = _timelineCache.value
+        if (
+            cached != null &&
+            cached.range == start to end &&
+            cached.scopeFingerprint == scopeFingerprint &&
+            cached.ownerIds == ownerIds
+        ) {
+            val age = Instant.now().toEpochMilli() - cached.loadedAt.toEpochMilli()
+            if (age <= timelineCacheTtlMs && cached.items.isNotEmpty()) {
+                publishTimelineIfDifferent(cached.items)
+                viewModelScope.launch { fetchTimeline(start, end, ownerIds) }
+                return
             }
         }
+        viewModelScope.launch { fetchTimeline(start, end, ownerIds) }
+    }
+
+    private suspend fun fetchTimeline(start: Instant, end: Instant, ownerIds: List<String>) {
+        _isLoadingTimeline.value = true
+        try {
+            val raw = tileRepository.getTimeline(start, end, ownerIds)
+            val filtered = filterCalendarByMinimumDuration(raw, _calendarMinimumDurationMinutes.value)
+            publishTimelineIfDifferent(filtered)
+            _timelineCache.value = TimelineCacheEntry(
+                range = start to end,
+                scopeFingerprint = timelineScopeFingerprint(ownerIds),
+                ownerIds = ownerIds,
+                items = filtered,
+                loadedAt = Instant.now(),
+            )
+        } catch (e: Exception) {
+            _error.value = e.message ?: "Failed to load timeline"
+        } finally {
+            _isLoadingTimeline.value = false
+        }
+    }
+
+    /**
+     * Apply [items] to [_timeline]. When [merge] is true, keep any
+     * existing item whose id is missing from the new payload — this
+     * prevents a fresh fetch from clobbering cards that the user is
+     * actively looking at (e.g. a tile edit sheet, an open detail
+     * panel). When [merge] is false, the cache hit path just restores
+     * the previous view.
+     */
+    private fun publishTimelineIfDifferent(items: List<CoreTimelineItem>) {
+        val current = _timeline.value
+        if (current.size == items.size && current.zip(items).all { (a, b) -> a.id == b.id }) {
+            return
+        }
+        _timeline.value = items
     }
 
     fun refreshAll() {
@@ -878,11 +977,6 @@ class DashboardViewModel @Inject constructor(
                 if (userId != null) {
                     _profile.value = profileRepository.getProfile(userId)
                     _avatarUrl.value = _profile.value?.avatarUrl
-                    val (tlStart, tlEnd) = _timelineRange.value
-                    _timeline.value = filterCalendarByMinimumDuration(
-                        tileRepository.getTimeline(tlStart, tlEnd, _tileFilter.value.ownerIds),
-                        _calendarMinimumDurationMinutes.value,
-                    )
                 } else {
                     _timeline.value = emptyList()
                     _profile.value = null
@@ -958,6 +1052,28 @@ class DashboardViewModel @Inject constructor(
                 _error.value = e.message ?: "Failed to start execution"
             } finally {
                 endExecutionControl(tileId)
+            }
+        }
+    }
+
+    /**
+     * Placement-anchored execution start (A05). The tile-edit sheet calls this
+     * when the timeline occurrence already carries a placement id, bypassing the
+     * tile-start plan bootstrap that source-emitted tiles never satisfy.
+     */
+    fun startPlacementExecution(placementId: String, tileId: String? = null) {
+        val controlKey = tileId ?: placementId
+        if (!beginExecutionControl(controlKey)) return
+        viewModelScope.launch {
+            try {
+                tileRepository.startPlacementExecution(placementId, tileId)
+                _executionControlStates.value = _executionControlStates.value + (controlKey to ExecutionControlState.Active)
+                _lastActionMessage.value = "Execution started"
+                reloadVisibleTilesAndExecutionControls(_tileFilter.value)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to start execution"
+            } finally {
+                endExecutionControl(controlKey)
             }
         }
     }

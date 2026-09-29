@@ -1,0 +1,32 @@
+{
+  "source_tile_id": "src_01HZ000000000000000000000",
+  "plan_id": "plan_01HZ0000000000000000000000",
+  "owner_id": "own_01HZ0000000000000000000000",
+  "revision": 3,
+  "title": "Morning standup",
+  "description": "Recurring weekday standup",
+  "color": "#4C6EF5",
+  "icon": "users",
+  "external_id": "ext-4711",
+  "plan_role": 1,
+  "schedule": {
+    "required_duration_ms": 900000,
+    "priority": 5,
+    "generation": {
+      "kind": "recurring",
+      "rrule": "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
+      "timezone": "America/New_York"
+    },
+    "window": {
+      "start_local": "09:00",
+      "end_local": "09:15",
+      "anchor_date": "2026-09-16"
+    },
+    "split_policy": {
+      "mode": "single",
+      "allow_partial": false
+    }
+  },
+  "created_at": "2026-09-16T13:04:05Z",
+  "updated_at": "2026-09-16T13:04:05Z"
+}

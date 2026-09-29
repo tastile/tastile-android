@@ -47,6 +47,7 @@ import app.tastile.android.ui.mobile.tabs.tiles.TilesFilterBar
 import app.tastile.android.ui.mobile.tabs.tiles.TilesSectionColumn
 import app.tastile.android.ui.mobile.tabs.tiles.TilesTabSwitcher
 import app.tastile.android.ui.mobile.tabs.tiles.TilesTimelineBody
+import app.tastile.android.ui.mobile.tabs.tiles.TilesTimelineProjectionViewModel
 
 private val TILES_SPACING_SM = 8.dp
 private val TILES_SPACING_MD = 12.dp
@@ -65,6 +66,7 @@ private val TILES_SPACING_MD = 12.dp
 fun TilesScreen(
     viewModel: DashboardViewModel,
     overlay: OverlayViewModel = hiltViewModel(),
+    timelineProjectionViewModel: TilesTimelineProjectionViewModel? = null,
 ) {
     val activeTab by viewModel.activeTilesTab.collectAsStateWithLifecycle()
     val deleteCandidate by viewModel.requestDeleteTileId.collectAsStateWithLifecycle()
@@ -76,6 +78,12 @@ fun TilesScreen(
     val listViewMode by viewModel.listViewMode.collectAsStateWithLifecycle()
     val tiles by viewModel.tiles.collectAsStateWithLifecycle()
     val locale by viewModel.locale.collectAsStateWithLifecycle()
+    val resolvedTimelineProjectionViewModel = if (activeTab == TilesTab.LIST) {
+        null
+    } else {
+        timelineProjectionViewModel
+            ?: runCatching { hiltViewModel<TilesTimelineProjectionViewModel>() }.getOrNull()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -117,8 +125,16 @@ fun TilesScreen(
                         viewModel.toggleSectionExpanded(section.groupId)
                     },
                 )
-                TilesTab.TIMELINE -> TilesTimelineBody(vm = viewModel, locale = locale)
-                TilesTab.CHANGES -> TilesChangesBody(vm = viewModel, locale = locale)
+                TilesTab.TIMELINE -> TilesTimelineBody(
+                    vm = viewModel,
+                    locale = locale,
+                    projectionViewModel = resolvedTimelineProjectionViewModel,
+                )
+                TilesTab.CHANGES -> TilesChangesBody(
+                    vm = viewModel,
+                    locale = locale,
+                    projectionViewModel = resolvedTimelineProjectionViewModel,
+                )
             }
         }
 

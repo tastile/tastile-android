@@ -29,8 +29,8 @@ All commands run from this repo root. JDK 17 or 21, Android SDK with API 35, NDK
 
 These guards fail the build rather than silently degrading — they exist to prevent environment drift from shipping to users.
 
-- `gradle.projectsEvaluated` in `app/build.gradle.kts` requires every `BuildConfig.*` field listed in `app/build.gradle.kts` (Cognito client/region/hosted-ui/redirect/web-auth base, `TASTILE_CORE_URL`, `GOOGLE_WEB_CLIENT_ID`) to be non-blank. Set them in `gradle.properties` (CI), `~/.gradle/gradle.properties` (local dev), or `-PKEY=value`.
-- Release tasks (`assembleRelease`, `bundleRelease`) fail fast if `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` are not provided via the same paths. Never commit keystore or `google-services.json`.
+- `gradle.projectsEvaluated` in `app/build.gradle.kts` requires each runtime configuration value to be non-blank. Read these values from the dedicated Infisical project through environment variables; local Gradle properties and `-P` overrides are not configuration sources.
+- Release tasks (`assembleRelease`, `bundleRelease`) require signing environment variables supplied by Infisical. Never commit keystores or `google-services.json`.
 - `verifyDesignSystemImports`: direct `androidx.compose.material3.*` imports are forbidden in `app/src/main/java/app/tastile/android/ui/{dashboard,mobile,account}/` unless the immediately preceding non-blank line is `// m2-allow:`. M3 unified screens must go through the design system.
 - `verifyNoEmbeddedServerSecrets`: rejects `TASTILE_WEB_BRIDGE_SECRET` / `x-tastile-web-bridge-secret` from Android sources and the build script. Server-only bridge credentials must not enter Android artifacts.
 - The lint block in `app/build.gradle.kts` must not add `disable +=`. Every lint rule surfaces; unaddressable rules go in a tracking doc with a hard BLOCKED rationale.
@@ -38,7 +38,7 @@ These guards fail the build rather than silently degrading — they exist to pre
 
 ## Architecture (Quick Map)
 
-Compose UI → ViewModels → Repositories → Cognito auth and/or `tastile-core` native bridge.
+Compose UI → ViewModels → Repositories → Better Auth (via web login) and/or the `tastile-core` HTTP API. (The JNI native bridge is dead code; see `core/TastileCoreBridge.kt`.)
 
 - `ui/` — Compose screens, state holders, presentation helpers
 - `data/` — Auth repository, data models, repository interfaces
@@ -49,14 +49,14 @@ Compose UI → ViewModels → Repositories → Cognito auth and/or `tastile-core
 - `di/` — Hilt modules
 - `execution/` — Execution state projection
 
-Auth and server-backed reads go through Cognito + daemon API. Command execution, replay, and projected execution state are moving behind `tastile-core`; keep that boundary explicit until migration completes.
+Auth and server-backed reads go through Better Auth (system browser → `/api/mobile/api-token`) and the `tastile-core` HTTP API. Command execution, replay, and projected execution state are moving behind `tastile-core`; keep that boundary explicit until migration completes.
 
 ## Toolchain
 
-- AGP 9.2.1, Kotlin 2.1.0, Compose Compiler plugin 2.1.0, Hilt 2.60.1, KSP 2.1.0-1.0.29
-- Compose BOM 2024.12.01, Navigation Compose 2.9.8
-- `minSdk` 26, `targetSdk` 35, `compileSdk` 37, `versionCode` 32, `versionName` 0.3.1
-- `kotlinx-datetime` is pinned at 0.6.1 and `kotlinx-coroutines-test` at 1.9.0 — bumping either surfaces an `ExperimentalTime` opt-in requirement. See `docs/plans/`.
+- AGP 9.4.0, Kotlin 2.2.10, Compose Compiler plugin 2.2.10, Hilt 2.60.1, KSP 2.3.11
+- Compose BOM 2026.08.00, Navigation Compose 2.10.0
+- `minSdk` 26, `targetSdk` 35, `compileSdk` 37, `versionCode` 33, `versionName` 0.4.0
+- `kotlinx-datetime` is pinned at 0.6.1 and `kotlinx-coroutines-test` at 1.11.0 — bumping either surfaces an `ExperimentalTime` opt-in requirement. See `docs/plans/`.
 - Compose Compiler Reports land in `app/build/compose-reports/` and `app/build/compose-metrics/`; baseline at `docs/superpowers/m3/before-reports/`.
 
 ## WSLC Dev Container
@@ -71,22 +71,21 @@ Auth and server-backed reads go through Cognito + daemon API. Command execution,
 
 - Branch workflow follows ADR-0007. `main` is released / integrated state; the active
   sprint lives on `release-<major>-<minor>-<patch>`. Implement one ticket per
-  branch, with the branch named after the GitHub Issue number only. No
-  feature/temporary branches, no worktrees. The `release-branch-workflow` Skill
-  is canonical reference.
+  branch, with the branch named after the GitHub Issue number only. Never commit
+  directly to `main`; no `feature/*`, `fix-*`, `hotfix-*`, or `wip-*` branches.
+  The `release-branch-workflow` adapter is canonical reference.
 - Source code, identifiers, code comments, and Git/GitHub messages are English. Internal development docs are Japanese.
 
 ## Recovery
 
 - After context loss, session expiry, or sandbox recreation, fresh agents run the
-  `recover-task` Skill (canonical: `../../.agents/skills/recover-task/SKILL.md`,
+  `recover-task` adapter (canonical: `.agents/skills/agent-recovery/SKILL.md`,
   ADR-0008). They reconstruct from Issue / PR / commit graph plus the canonical
-  schemas under `../../.agent-loop/checkpoint.schema.json` and
-  `agent-result.schema.json`; they do not infer from prior conversation.
-- Commit-time isolation is provided by `.agent-loop/Invoke-PreCommitReview.ps1`
-  (snapshot / patch apply / fast gate / cross-agent reviewer); its snapshot is
-  the de-facto soft checkpoint when the commit boundary is the recovery
-  boundary.
+  schemas under `.agent-loop/checkpoint.schema.json` and
+  `.agent-loop/agent-result.schema.json`; they do not infer from prior conversation.
+- Commit-time isolation is provided by the `tastile-precommit-review` Skill
+  (snapshot / fast gate / reviewer); a committed snapshot is the de-facto soft
+  checkpoint when the commit boundary is the recovery boundary.
 - Do not write new Python scripts in this repo. Use Kotlin, shell, or PowerShell as appropriate.
 - Search with `rg` / `rg --files`; prefer semantic navigation via the Kotlin language tooling already in `.tools/`.
 - Never commit: `local.properties`, `google-services.json`, keystores, `.env*` with real values, generated `app/src/main/jniLibs/`, or anything in `reference/`, `.build-logs/`, `.tools/`.
@@ -96,5 +95,5 @@ Auth and server-backed reads go through Cognito + daemon API. Command execution,
 ## Related Workspace Siblings
 
 - `../tastile-core/` — Rust core, produces Android native libs via `cargo-ndk`. Required for artifact builds.
-- `../tastile-web/` — Next.js sibling; shares Cognito config values with this repo.
+- `tastile-web` (Next.js) holds the account auth surface; this repository obtains Google/Android OAuth client ids from the same secret store path (`/tastile/android`) and must not read a sibling checkout.
 - `../AGENTS.md` — workspace contract. Read it before any cross-repo change.

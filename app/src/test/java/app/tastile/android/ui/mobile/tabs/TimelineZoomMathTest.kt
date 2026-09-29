@@ -1,6 +1,12 @@
 package app.tastile.android.ui.mobile.tabs
 
+import app.tastile.android.data.timeline.TimelinePageKey
+import app.tastile.android.ui.dashboard.TimelineScale
+import java.time.LocalDate
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TimelineZoomMathTest {
@@ -70,5 +76,41 @@ class TimelineZoomMathTest {
         )
 
         assertEquals(470, target)
+    }
+
+    @Test
+    fun pagerSettleGuard_rejectsStaleScaleGenerationAndPageKey() {
+        val dayKey = TimelinePageKey.forScope(
+            accountId = "account-a",
+            ownerIds = listOf("owner-a"),
+            zoneId = ZoneId.of("UTC"),
+            scale = TimelineScale.Day,
+            anchor = LocalDate.of(2026, 9, 16),
+        ).normalized()
+        val token = TimelinePagerSettleToken(
+            scale = TimelineScale.Day,
+            generation = 7L,
+            key = dayKey,
+        )
+
+        assertTrue(shouldApplyTimelinePagerSettle(token, token))
+        assertFalse(
+            shouldApplyTimelinePagerSettle(
+                token,
+                token.copy(scale = TimelineScale.Week),
+            ),
+        )
+        assertFalse(
+            shouldApplyTimelinePagerSettle(
+                token,
+                token.copy(generation = 8L),
+            ),
+        )
+        assertFalse(
+            shouldApplyTimelinePagerSettle(
+                token,
+                token.copy(key = dayKey.copy(anchor = dayKey.anchor.plusDays(1))),
+            ),
+        )
     }
 }

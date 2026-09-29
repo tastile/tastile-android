@@ -14,7 +14,6 @@
 # Release / security critical paths.
 /.github/                  @tastile/tastile-android-maintainers
 /gradle.properties         @tastile/tastile-android-maintainers
-/local.properties.example  @tastile/tastile-android-maintainers
 /app/build.gradle.kts      @tastile/tastile-android-build-owners
 /build.gradle.kts          @tastile/tastile-android-build-owners
 /settings.gradle.kts       @tastile/tastile-android-build-owners
