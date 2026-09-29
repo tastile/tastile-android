@@ -1,0 +1,56 @@
+name: Verify GCP WIF access
+
+on:
+  workflow_dispatch:
+    inputs:
+      workload_identity_provider:
+        description: Full GCP WIF provider resource name from root tofu output github_wif.dev-android-poc
+        required: true
+        type: string
+      service_account:
+        description: gha-android-poc service-account email from root tofu output
+        required: true
+        type: string
+      project_id:
+        description: GCP dev project id
+        required: true
+        default: tastile-dev
+        type: string
+      secret_name:
+        description: WIF probe secret
+        required: true
+        default: poc-wif-probe
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  secret-manager-read:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Authenticate through Android-scoped WIF
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: ${{ inputs.project_id }}
+          workload_identity_provider: ${{ inputs.workload_identity_provider }}
+          service_account: ${{ inputs.service_account }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Read probe secret without exposing its value
+        env:
+          PROJECT_ID: ${{ inputs.project_id }}
+          SECRET_NAME: ${{ inputs.secret_name }}
+        run: |
+          set -euo pipefail
+          gcloud secrets versions access latest \
+            --project="$PROJECT_ID" \
+            --secret="$SECRET_NAME" \
+            >/dev/null
+          echo "PASS: Android WIF identity can read the repository-scoped probe secret."
