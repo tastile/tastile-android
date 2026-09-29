@@ -7,7 +7,7 @@
 # Dev:   .wslc/wslc-dev.ps1
 # ────────────────────────────────────────────────────────────────────
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=13114758
 ARG ANDROID_COMPILE_SDK
