@@ -74,7 +74,7 @@ These guards fail the build rather than silently degrading — they exist to pre
 
 ## Architecture (Quick Map)
 
-Compose UI → ViewModels → Repositories → Cognito auth and/or `tastile-core` native bridge.
+Compose UI → ViewModels → Repositories → Better Auth (via web login) and/or the `tastile-core` HTTP API. (The JNI native bridge is dead code; see `core/TastileCoreBridge.kt`.)
 
 - `ui/` — Compose screens, state holders, presentation helpers
 - `data/` — Auth repository, data models, repository interfaces
@@ -85,7 +85,7 @@ Compose UI → ViewModels → Repositories → Cognito auth and/or `tastile-core
 - `di/` — Hilt modules
 - `execution/` — Execution state projection
 
-Auth and server-backed reads go through Cognito + daemon API. Command execution, replay, and projected execution state are moving behind `tastile-core`; keep that boundary explicit until migration completes.
+Auth and server-backed reads go through Better Auth (system browser → `/api/mobile/api-token`) and the `tastile-core` HTTP API. Command execution, replay, and projected execution state are moving behind `tastile-core`; keep that boundary explicit until migration completes.
 
 ## Toolchain
 
@@ -134,7 +134,7 @@ JDK 25 を別途用意する必要がある。優先順: `$KOTLIN_LSP_JAVA_HOME`
 ## Related Workspace Siblings
 
 - `../tastile-core/` — Rust core, produces Android native libs via `cargo-ndk`. Required for artifact builds.
-- `../tastile-web/` — Next.js sibling; shares Cognito config values with this repo.
+- `tastile-web` (Next.js) holds the account auth surface; this repository obtains Google/Android OAuth client ids from the same secret store path (`/tastile/android`) and must not read a sibling checkout.
 - `../AGENTS.md` — workspace contract. Read it before any cross-repo change.
 
 ## Workflow (release sprint, projects, recovery)
