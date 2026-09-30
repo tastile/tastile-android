@@ -13,3 +13,4 @@ Hilt fail は production ではそのまま fail closed とし、例外を握り
 対象: TimelineScreen.kt、TilesScreen.kt、MobileScaffold.kt。本plan以外のdocument/skill修正は#80に保持する。
 
 Compose compileとfull gradlew verify、既存TimelineScreenFabTest / TimelineScreenLoadingTest / TilesScreenTestを実行する。productionHilt routeは対象device/emulatorで検証し、証跡がなければ未検証として保持する。SDKはofficialdownloadのchecksumを照合してlocalignored .tools/へ配置し、configurationは既存Infisicalからprocessへ取得する。test timeout/skip/guardを変更しない。
+local full gateでは既存adapter drift taskがWindows absolute pathをWSL Bashへ渡して失敗した。app/build.gradle.ktsのProcessBuilderを明示repository working directoryと相対script pathへ変更し、同じscript/exit-code checkをLinuxとWindowsで実行する。guard内容やskip条件は変更しない。
