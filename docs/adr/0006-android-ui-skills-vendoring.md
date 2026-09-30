@@ -86,7 +86,7 @@ Material 3 / adaptive / edge-to-edge / Navigation 3 / Compose performance 等の
 ├── skills/                          ← canonical pointer (15 new + 4 existing)
 │   ├── <name>/SKILL.md              15 個 (本 ADR の対象)
 │   └── (buildconfig-guard-check / design-system-imports-check /
-│        openapi-spec-refresh / tastile-precommit-review — 既存, 変更なし)
+│        openapi-spec-refresh — 既存, 変更なし)
 └── upstream-skills/                 ← subtree root
     ├── android-skills/              @ aaca635061a4
     ├── material-3-skill/            @ 14385f2bf380
