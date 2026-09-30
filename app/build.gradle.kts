@@ -467,7 +467,8 @@ tasks.register("verifySkillAdapterDrift") {
         // ProcessBuilder rather than providers.exec: the exit code of the
         // exec providers has moved between Gradle versions, and this gate must
         // not depend on which shape the current one exposes.
-        val process = ProcessBuilder("bash", script.absolutePath)
+        val process = ProcessBuilder("bash", "scripts/ci/sync-skill-adapters.sh")
+            .directory(rootProject.projectDir)
             .redirectErrorStream(true)
             .start()
         val output = process.inputStream.bufferedReader().use { it.readText() }
