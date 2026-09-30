@@ -42,7 +42,7 @@ adapter) として保持する。通常 task では必要な Skill だけを読�
   (project-local authored, 2026-09-15 — no upstream; reconcile against task
   prompt §10 on next init)
 - `buildconfig-guard-check`, `design-system-imports-check`,
-  `openapi-spec-refresh`, `tastile-precommit-review` (repo-specific guards)
+  `openapi-spec-refresh` (repo-specific guards)
 
 ## Build and Verify
 
