@@ -947,7 +947,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.navigation:navigation-compose:2.10.0")
+    implementation("androidx.navigation:navigation-compose:2.10.2")
 
     implementation("io.ktor:ktor-client-okhttp:3.5.2")
 
@@ -1036,7 +1036,7 @@ dependencies {
     // QuickCreateGestureCanaryTest: true platform pointer input (UiDevice.click
     // at display coordinates) to prove dragHandle-vs-Button gesture arbitration
     // that Compose semantics performClick() bypasses by design.
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("io.mockk:mockk-android:1.14.11")
