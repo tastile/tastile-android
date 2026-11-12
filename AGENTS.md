@@ -94,7 +94,7 @@ Authoritative versions live in `build.gradle.kts` (plugins) and `app/build.gradl
 - AGP 9.4.0, Kotlin 2.2.10, Compose Compiler plugin 2.2.10, Hilt plugin 2.60.1 / Hilt 2.60.1, KSP 2.3.11
 - Compose BOM 2026.08.00, Navigation Compose 2.10.0
 - `minSdk` 26, `targetSdk` 35, `compileSdk` 37, `versionCode` 33, `versionName` 0.4.0
-- `kotlinx-datetime` is pinned at 0.6.1 and `kotlinx-coroutines-test` at 1.11.0 — bumping either surfaces an `ExperimentalTime` opt-in requirement. See `docs/plans/`.
+- `kotlinx-datetime` is pinned at 0.6.1 and `kotlinx-coroutines-test` at 1.11.0 — bumping either surfaces an `ExperimentalTime` opt-in requirement. See `docs/archive/plans/2026-09-12-a04-pinned-openapi.md`.
 - Compose Compiler Reports land in `app/build/compose-reports/` and `app/build/compose-metrics/`; baseline at `docs/superpowers/m3/before-reports/`.
 
 ## IDE-agnostic Kotlin tooling (kotlin-lsp)
