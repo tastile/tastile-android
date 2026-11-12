@@ -1,5 +1,6 @@
 package app.tastile.android.data.api
 
+import android.util.Log
 import app.tastile.android.BuildConfig
 import app.tastile.android.data.tile.TileFilter
 import app.tastile.android.data.tile.toQueryString
@@ -60,9 +61,12 @@ internal object V1Endpoints {
         return "/v1/timeline?start=$startIso&end=$endIso$owners"
     }
 }
-
-/** Serializes the v1 `CommandRequest<T>` wire format used by tastile-web. */
-internal object V1Wire {
+ 
+ private const val HTTP_UNAUTHORIZED = 401
+private const val TAG = "V1ApiClient"
+ 
+ /** Serializes the v1 `CommandRequest<T>` wire format used by tastile-web. */
+ internal object V1Wire {
     fun commandEnvelope(
         payload: JsonElement,
         idempotencyKey: String = V1Idempotency.generate(),
@@ -87,11 +91,22 @@ internal object V1WorkspaceWire {
 
 @Singleton
 class V1ApiClient @Inject constructor(
-    private val tokenProvider: AuthTokenProvider
+    private val tokenProvider: AuthTokenProvider,
+    private val tokenRefresher: TokenRefresher,
 ) {
     private var coreUrlOverride: String? = null
 
-    internal constructor(tokenProvider: AuthTokenProvider, coreUrl: String) : this(tokenProvider) {
+    /**
+     * Test-only constructor that points the client at a local server.
+     * [tokenRefresher] defaults to a no-op that reports failure, so a test
+     * server that answers 401 fails the request with [V1Error.Auth]
+     * instead of retrying; retry tests pass a real refresher.
+     */
+    internal constructor(
+        tokenProvider: AuthTokenProvider,
+        coreUrl: String,
+        tokenRefresher: TokenRefresher = TokenRefresher { null },
+    ) : this(tokenProvider, tokenRefresher) {
         coreUrlOverride = coreUrl.trim().trimEnd('/')
     }
 
@@ -103,34 +118,73 @@ class V1ApiClient @Inject constructor(
     private fun webAuthBaseUrl(): String =
         BuildConfig.WEB_BASE_URL.trim().trimEnd('/')
 
+    /**
+     * Runs [block] with a bearer token, recovering from a Core 401 exactly
+     * once: the rejected [staleToken] is discarded and re-minted through
+     * [TokenRefresher.refreshAfterUnauthorized] (single-flight, so
+     * parallel 401s share one re-mint), then [block] runs once more with
+     * the replacement token.
+     *
+     * Contracts:
+     *  - 401 is the only refresh trigger. The minted token expires at
+     *    now + 90 days (tastile-web#199) and time-based renewal is out of
+     *    scope here — a non-401 error propagates without any retry.
+     *  - a failed re-mint surfaces as [V1Error.Auth]; by then
+     *    [app.tastile.android.data.auth.ApiTokenCache] has already
+     *    transitioned the auth state to unauthenticated, so callers stop
+     *    instead of retrying (bounded: at most one retry per request).
+     *  - a second 401 propagates as [V1Error.Unauthorized] — never a
+     *    third attempt.
+     */
+    private suspend fun <T> withBearer(block: suspend (token: String) -> T): T {
+        val stale = tokenProvider()
+        if (stale.isNullOrBlank()) throw V1Error.Auth()
+        try {
+            return block(stale)
+        } catch (e: V1Error.Unauthorized) {
+            Log.w(TAG, "core rejected bearer; re-minting and retrying the request once")
+            val fresh = tokenRefresher.refreshAfterUnauthorized(stale)
+                ?: throw V1Error.Auth()
+            return block(fresh)
+        }
+    }
+
+    /** Maps a non-2xx Core status onto the sealed [V1Error]; 401 first. */
+    private fun errorFor(status: Int, body: String): V1Error =
+        if (status == HTTP_UNAUTHORIZED) {
+            V1Error.Unauthorized()
+        } else {
+            runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
+                ?.let { V1Error.fromApiBody(it) }
+                ?: V1Error.Unknown(status, body.take(200))
+        }
+
     private suspend inline fun <reified T> get(path: String): T =
         json.decodeFromString(getRaw(path))
 
-    private suspend fun getRaw(path: String): String = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    private suspend fun getRaw(path: String): String = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                val status = connection.responseCode
+                val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, body)
+                }
+                body
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            val status = connection.responseCode
-            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-            body
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -317,39 +371,37 @@ class V1ApiClient @Inject constructor(
         payloadSerializer: KSerializer<Req>,
         responseSerializer: KSerializer<Resp>,
         expectedRevision: Long? = null,
-    ): Resp = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val encodedPayload = json.encodeToJsonElement(payloadSerializer, payload)
-            val envelope = V1Wire.commandEnvelope(
-                payload = encodedPayload,
-                expectedRevision = expectedRevision,
-            )
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ): Resp = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val encodedPayload = json.encodeToJsonElement(payloadSerializer, payload)
+                val envelope = V1Wire.commandEnvelope(
+                    payload = encodedPayload,
+                    expectedRevision = expectedRevision,
+                )
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, body)
+                }
+                json.decodeFromString(responseSerializer, body)
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-            json.decodeFromString(responseSerializer, body)
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -359,37 +411,35 @@ class V1ApiClient @Inject constructor(
         payloadSerializer: KSerializer<Req>,
         responseSerializer: KSerializer<Resp>,
         expectedRevision: Long? = null,
-    ): Resp = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val envelope = V1Wire.commandEnvelope(
-                payload = json.encodeToJsonElement(payloadSerializer, payload),
-                expectedRevision = expectedRevision,
-            )
-            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
-                requestMethod = "PUT"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ): Resp = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val envelope = V1Wire.commandEnvelope(
+                    payload = json.encodeToJsonElement(payloadSerializer, payload),
+                    expectedRevision = expectedRevision,
+                )
+                val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "PUT"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, body)
+                }
+                json.decodeFromString(responseSerializer, body)
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-            json.decodeFromString(responseSerializer, body)
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -403,21 +453,21 @@ class V1ApiClient @Inject constructor(
         responseSerializer = responseSerializer,
     )
 
-    suspend fun <Req> postCommandNoResponse(path: String, payload: Req, payloadSerializer: KSerializer<Req>) = withContext(Dispatchers.IO) {
-        val token = tokenProvider()
-        if (token.isNullOrBlank()) throw V1Error.Auth()
-        val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"; doOutput = true; doInput = true
-            setRequestProperty("Authorization", "Bearer $token")
-            setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Accept", "application/json")
-            connectTimeout = 15_000; readTimeout = 15_000
+    suspend fun <Req> postCommandNoResponse(path: String, payload: Req, payloadSerializer: KSerializer<Req>) = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"; doOutput = true; doInput = true
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000; readTimeout = 15_000
+            }
+            val envelope = V1Wire.commandEnvelope(json.encodeToJsonElement(payloadSerializer, payload))
+            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+            val status = connection.responseCode
+            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (status !in 200..299) throw errorFor(status, body)
         }
-        val envelope = V1Wire.commandEnvelope(json.encodeToJsonElement(payloadSerializer, payload))
-        connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-        val status = connection.responseCode
-        val body = (if (status in 200..299) connection.inputStream else connection.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
-        if (status !in 200..299) throw V1Error.Unknown(status, body.take(200))
     }
 
     /**
@@ -429,35 +479,33 @@ class V1ApiClient @Inject constructor(
         path: String,
         body: JsonObject,
         responseSerializer: KSerializer<Resp>
-    ): Resp = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("Idempotency-Key", V1Idempotency.generate())
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ): Resp = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    setRequestProperty("Idempotency-Key", V1Idempotency.generate())
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, responseBody)
+                }
+                json.decodeFromString(responseSerializer, responseBody)
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(responseBody) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, responseBody.take(200))
-            }
-            json.decodeFromString(responseSerializer, responseBody)
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -465,32 +513,30 @@ class V1ApiClient @Inject constructor(
         path: String,
         body: JsonObject,
         responseSerializer: KSerializer<Resp>,
-    ): Resp = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
-                requestMethod = "PATCH"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ): Resp = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "PATCH"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }.orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, responseBody)
+                }
+                json.decodeFromString(responseSerializer, responseBody)
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }.orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(responseBody) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, responseBody.take(200))
-            }
-            json.decodeFromString(responseSerializer, responseBody)
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -500,38 +546,36 @@ class V1ApiClient @Inject constructor(
         payload: Req,
         payloadSerializer: KSerializer<Req>,
         expectedRevision: Long? = null,
-    ) = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "DELETE"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ) = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "DELETE"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                val envelope = V1Wire.commandEnvelope(
+                    payload = json.encodeToJsonElement(payloadSerializer, payload),
+                    expectedRevision = expectedRevision,
+                )
+                connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, body)
+                }
+                Unit
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            val envelope = V1Wire.commandEnvelope(
-                payload = json.encodeToJsonElement(payloadSerializer, payload),
-                expectedRevision = expectedRevision,
-            )
-            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-            Unit
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -541,27 +585,25 @@ class V1ApiClient @Inject constructor(
      * 204 NO CONTENT) where the [deleteCommand] envelope-decoding
      * path is not appropriate.
      */
-    suspend fun deleteRaw(path: String) = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "DELETE"
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    suspend fun deleteRaw(path: String) = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "DELETE"
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                val status = connection.responseCode
+                if (status !in 200..299) {
+                    val body = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                    throw errorFor(status, body)
+                }
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            val status = connection.responseCode
-            if (status !in 200..299) {
-                val body = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 

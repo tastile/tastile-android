@@ -71,6 +71,21 @@ interface AuthRepositoryContract {
     /** Server-side revoke + on-device token wipe. Idempotent. */
     suspend fun signOut()
 
+    /**
+     * Forces [authState] to [TastileAuthState.Unauthenticated] in memory
+     * without contacting the server and without touching the stored
+     * BetterAuth session — wiping the session remains [signOut]'s job, so
+     * the sign-in / sign-out lifecycle is not duplicated.
+     *
+     * [app.tastile.android.data.auth.ApiTokenCache] calls this when
+     * re-minting the mobile API token after a Core 401 exhausts its
+     * bounded retries: without a token no v1 request can succeed, so the
+     * app must fall back to the sign-in gate instead of retrying
+     * indefinitely (android#92). A later successful sign-in or token
+     * adoption restores the authenticated state.
+     */
+    fun markUnauthenticated()
+
     /** Bootstrap credential for [EncryptedTokenStorage.apiTokenPrefs]. */
     fun currentSessionToken(): String?
 }

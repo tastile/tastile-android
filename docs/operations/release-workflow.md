@@ -50,8 +50,7 @@ branch 名 canonical pattern は次の正規表現に従う。
 ^(?:[0-9]+|release-[0-9]+-[0-9]+-[0-9]+|main)$
 ```
 
-`feature/*`、`fix-*`、`hotfix-*`、`wip-*` 等の prefix は禁止。`tastile-precommit-review`
-Skill が commit 時に spot check する。
+`feature/*`、`fix-*`、`hotfix-*`、`wip-*` 等の prefix は禁止。root の`../.agents/skills/verify-tastile-change/SKILL.md` による binding verification で確認する (ADR-0021)。
 
 ## PR body 必須 marker
 
