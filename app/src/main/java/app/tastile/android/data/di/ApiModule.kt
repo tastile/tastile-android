@@ -33,7 +33,10 @@ object ApiModule {
     @Provides
     @Singleton
     fun provideV1ApiClient(apiTokenCache: ApiTokenCache): V1ApiClient =
-        V1ApiClient { apiTokenCache.getOrMint() }
+        V1ApiClient(
+            tokenProvider = { apiTokenCache.getOrMint() },
+            tokenRefresher = apiTokenCache,
+        )
 
     @Provides
     @Singleton
