@@ -170,6 +170,10 @@ class AuthRepository @Inject constructor(
         _authState.value = TastileAuthState.Unauthenticated
     }
 
+    override fun markUnauthenticated() {
+        _authState.value = TastileAuthState.Unauthenticated
+    }
+
     private fun persistSession(session: BetterAuthHttpClient.BetterAuthSession) {
         sessionPrefs.edit {
             putString(KEY_SESSION_TOKEN, session.sessionToken)

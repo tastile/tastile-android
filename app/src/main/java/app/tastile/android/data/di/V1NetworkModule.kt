@@ -1,6 +1,7 @@
 package app.tastile.android.data.di
 
 import app.tastile.android.BuildConfig
+import app.tastile.android.data.api.TokenRefresher
 import app.tastile.android.data.api.V1AuthInterceptor
 import app.tastile.android.data.api.generated.v1.apis.ReadApi
 import app.tastile.android.data.api.generated.v1.apis.SourceTileApi
@@ -64,6 +65,10 @@ object V1NetworkModule {
     fun provideAuthTokenProvider(
         apiTokenCache: ApiTokenCache,
     ): suspend () -> String? = { apiTokenCache.getOrMint() }
+
+    @Provides
+    @Singleton
+    fun provideTokenRefresher(apiTokenCache: ApiTokenCache): TokenRefresher = apiTokenCache
 
     @Provides
     @Singleton
