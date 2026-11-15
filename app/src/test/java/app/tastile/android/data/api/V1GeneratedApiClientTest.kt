@@ -87,10 +87,11 @@ class V1GeneratedApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]")
+                .setBody("""{"items":[],"count":0,"next_cursor":null}""")
         )
-        val tiles = client.listTiles()
-        assertEquals(0, tiles.size)
+        val page = client.listTiles()
+        assertEquals(0, page.items.size)
+        assertEquals(0, page.count)
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
         assertEquals("/v1/tiles", recorded.path)
@@ -102,7 +103,7 @@ class V1GeneratedApiClientTest {
         server.enqueue(
             MockResponse().setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]")
+                .setBody("""{"items":[],"count":0,"next_cursor":null}""")
         )
         client.listTiles(
             ownerIds = "11111111-1111-1111-1111-111111111111,22222222-2222-2222-2222-222222222222",

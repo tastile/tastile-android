@@ -66,8 +66,8 @@ internal object V1Endpoints {
 private const val TAG = "V1ApiClient"
 
 /**
- * Contract v2.0.0 page size for the keyset-paged read endpoints. The spec
- * accepts 1..1000 (default 100); the client always asks for the maximum so
+ * Page size for the keyset-paged read endpoints (contract v2.0.0+). The
+ * spec accepts 1..1000 (default 100); the client always asks for the maximum so
  * full-list reads need as few round-trips as possible.
  */
 private const val PAGED_READ_LIMIT = 1000
@@ -181,7 +181,8 @@ class V1ApiClient @Inject constructor(
 
     /**
      * Fetches every page of a `{items, count, next_cursor}` list endpoint
-     * (contract v2.0.0) and returns the concatenated items. Callers that
+     * (contract v2.0.0+, extended to more reads in v3.0.0) and returns the
+     * concatenated items. Callers that
      * need the full list — e.g. `findPlacementForTile` picking the freshest
      * placement — must not stop at the first page.
      */
@@ -232,23 +233,47 @@ class V1ApiClient @Inject constructor(
     }
 
     /**
-     * `/v1/tiles` from core returns a bare `[TileListView, ...]` array; the original
-     * envelope `{tiles: [...]}` is legacy. When the response is bare, we wrap it before
-     * handing the body to `V1ListTilesResponse`'s serializer so `nextActionableTileId`
-     * / `nextActionableStartAt` fall back to `null` (they're nullable in the DTO).
+     * `GET /v1/tiles` under contract v3.0.0 returns the keyset-paged
+     * `TileListResponse` envelope (`{items, count, next_cursor}`); `offset`
+     * was retired in favor of `cursor`. This reads the first page only —
+     * the dashboard list is intentionally page-sized by [TileFilter.limit].
+     * Callers that must see every row (e.g. `fetchTileById` resolving a
+     * tile outside the first page) use [listAllTiles] to follow
+     * `next_cursor`.
      */
     suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): V1ListTilesResponse {
         val query = filter.toQueryString()
         val path = if (query.isEmpty()) "/v1/tiles" else "/v1/tiles?$query"
-        val body = getRaw(path)
-        val trimmed = body.trimStart()
-        // Core returns a bare `[TileListView, ...]` array; envelope `{tiles: [...]}` is legacy.
-        val wrapped = if (trimmed.startsWith("[")) {
-            "{\"tiles\":$body}"
-        } else {
-            body
-        }
-        return json.decodeFromString(wrapped)
+        return get(path)
+    }
+
+    /**
+     * Follows every `next_cursor` page of `GET /v1/tiles` for [filter] and
+     * returns the concatenated items, preserving the pre-v3.0.0 full-list
+     * semantics for lookups that must not stop at the first page. The
+     * filter's own `limit` stays the page size; `cursor` is appended per
+     * page.
+     */
+    suspend fun listAllTiles(filter: TileFilter): List<TileListView> {
+        // TileFilter always emits view_mode + limit, so the base query is
+        // never empty and "/v1/tiles?…" is always well-formed.
+        val base = filter.toQueryString()
+        val items = mutableListOf<TileListView>()
+        var cursor: String? = null
+        var pages = 0
+        do {
+            pages += 1
+            if (pages > MAX_PAGE_COUNT) {
+                throw V1Error.Unknown(0, "tiles paging did not terminate: /v1/tiles")
+            }
+            val page: V1ListTilesResponse = get(
+                "/v1/tiles?$base" +
+                    cursor?.let { "&cursor=${encodeQueryParam(it)}" }.orEmpty()
+            )
+            items += page.tiles
+            cursor = page.nextCursor
+        } while (cursor != null)
+        return items
     }
 
     suspend fun readTile(tileId: String): TileDetailView =
@@ -281,7 +306,14 @@ class V1ApiClient @Inject constructor(
     suspend fun finishExecution(executionId: String, kind: Int, note: String?): CommandResponse =
         postCommand(V1Endpoints.finishExecution(executionId), FinishExecutionPayload(kind, note), FinishExecutionPayload.serializer(), CommandResponse.serializer())
 
-    suspend fun listPendingSessions(): List<PendingSessionView> = get(V1Endpoints.PENDING_SESSIONS)
+    /**
+     * `GET /v1/sessions` is keyset-paged under contract v3.0.0
+     * (`{items, count, next_cursor}`); all cursor pages are followed to
+     * preserve the pre-v3.0.0 full-list semantics (the old bare array was
+     * capped at LIMIT 200).
+     */
+    suspend fun listPendingSessions(): List<PendingSessionView> =
+        getAllPages(V1Endpoints.PENDING_SESSIONS)
 
     suspend fun listEndpoints(): List<EndpointView> = get(V1Endpoints.ENDPOINTS)
 
