@@ -282,8 +282,8 @@ class V1MappersTest {
         assertEquals(TileLifecycle.STARTED.value, tiles[0].lifecycle)
         assertEquals(TileLifecycle.READY.value, tiles[1].lifecycle)
         assertEquals(TileLifecycle.DONE.value, tiles[2].lifecycle)
-        // next_* optional fields are surfaced at the response level for C3+;
-        // assert they at least exist on the wire class.
+        // next_* fields are retained on the DTO for TilesResponse plumbing
+        // but are no longer emitted by the v3.0.0 contract.
         assertNotNull(response.nextActionableTileId)
         assertNotNull(response.nextActionableStartAt)
     }

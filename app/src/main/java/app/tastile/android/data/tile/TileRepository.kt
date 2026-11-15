@@ -8,6 +8,7 @@ import app.tastile.android.data.api.SourceTileDetailRead
 import app.tastile.android.data.api.TimelineItem
 import app.tastile.android.data.api.V1ApiClient
 import app.tastile.android.data.api.V1Error
+import app.tastile.android.data.api.toTile
 import app.tastile.android.data.api.toTiles
 import app.tastile.android.data.auth.CurrentUserProvider
 import app.tastile.android.data.command.V1CommandDispatcher
@@ -54,8 +55,11 @@ class TileRepository @Inject constructor(
     // C3 (web→android parity sweep): the read path now goes through
     // [getTiles] honoring the `GET /v1/tiles?view_mode=...&limit=...`
     // query contract that `tastile-web/src/lib/hooks/use-tile-list.ts`
-    // uses. The two `next_actionable_*` fields on the wire response
-    // thread through `TilesResponse` to the dashboard.
+    // uses. Under contract v3.0.0 the endpoint is keyset-paged
+    // (`{items, count, next_cursor}`); [V1ApiClient.getTiles] reads the
+    // first page and [V1ApiClient.listAllTiles] follows `next_cursor` for
+    // full-list lookups. The `next_actionable_*` fields are no longer part
+    // of the contract and always surface as null on [TilesResponse].
     //
     // Every command still routes to v1 through [v1CommandDispatcher]
     // (Macro Step 5). No more v0 command-name strings, no more
@@ -142,8 +146,10 @@ class TileRepository @Inject constructor(
     /**
      * Resolves a single tile for timeline-tap selection (A05). The visible tile
      * list is a truncated `view_mode=list` page, so taps outside the first page
-     * miss it. Falls back to a wider server-capped read (limit=500) without
-     * disturbing the visible list. Returns null when the tile is genuinely absent.
+     * miss it. Falls back to a wider server-capped read (limit=500) that
+     * follows every `next_cursor` page — under contract v3.0.0 `limit` is a
+     * page size, not a total cap — without disturbing the visible list.
+     * Returns null when the tile is genuinely absent.
      */
     suspend fun fetchTileById(tileId: String): Tile? {
         if (tileId.isBlank()) return null
@@ -158,7 +164,8 @@ class TileRepository @Inject constructor(
         if (currentUserProvider.currentSessionToken().isNullOrBlank()) return null
         return try {
             val userId = currentUserProvider.currentUserId().orEmpty()
-            val wide = v1ApiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)).toTiles(userId = userId)
+            val wide = v1ApiClient.listAllTiles(TileFilter.DEFAULT.copy(limit = 500))
+                .map { it.toTile(userId = userId) }
             wideTilesCache = CachedTiles(System.currentTimeMillis(), wide)
             val found = wide.firstOrNull { it.id == tileId }
             android.util.Log.d("TileRepository", "fetchTileById wider-read: $tileId -> ${found != null}")

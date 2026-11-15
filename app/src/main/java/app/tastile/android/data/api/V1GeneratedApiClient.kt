@@ -10,7 +10,7 @@ import app.tastile.android.data.api.generated.v1.models.PublishScheduleDefinitio
 import app.tastile.android.data.api.generated.v1.models.ReflowSourceTileRequest
 import app.tastile.android.data.api.generated.v1.models.SourceTileDetailRead
 import app.tastile.android.data.api.generated.v1.models.SourceTileListResponse
-import app.tastile.android.data.api.generated.v1.models.TileListView
+import app.tastile.android.data.api.generated.v1.models.TileListResponse
 import app.tastile.android.data.api.generated.v1.models.UpdateSourceTileRequest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -47,18 +47,25 @@ class V1GeneratedApiClient @Inject constructor(
 ) {
     // ---- Read API (v1/14 §9) ----------------------------------------------
 
+    /**
+     * Contract v3.0.0: `GET /v1/tiles` returns the keyset-paged
+     * `TileListResponse` envelope (`{items, count, next_cursor}`); `offset`
+     * was retired in favor of `cursor` and is intentionally not exposed.
+     */
     suspend fun listTiles(
         ownerIds: String? = null,
         limit: Long? = null,
+        cursor: String? = null,
         viewMode: String? = null,
         lifecycle: String? = null,
         range: String? = null,
         granularity: String? = null,
         search: String? = null,
         excludeFuture: Boolean? = null,
-    ): List<TileListView> = readApi.listTiles(
+    ): TileListResponse = readApi.listTiles(
         ownerIds = ownerIds,
         limit = limit,
+        cursor = cursor,
         viewMode = viewMode,
         lifecycle = lifecycle,
         range = range,
