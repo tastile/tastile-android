@@ -5,11 +5,11 @@ import app.tastile.android.data.api.generated.v1.apis.SourceTileApi
 import app.tastile.android.data.api.generated.v1.models.CancelSourceTileRequest
 import app.tastile.android.data.api.generated.v1.models.CommandResponse
 import app.tastile.android.data.api.generated.v1.models.CreateSourceTileRequest
-import app.tastile.android.data.api.generated.v1.models.PlacementTileRead
+import app.tastile.android.data.api.generated.v1.models.PlacementTileListResponse
 import app.tastile.android.data.api.generated.v1.models.PublishScheduleDefinitionRequest
 import app.tastile.android.data.api.generated.v1.models.ReflowSourceTileRequest
 import app.tastile.android.data.api.generated.v1.models.SourceTileDetailRead
-import app.tastile.android.data.api.generated.v1.models.SourceTileRead
+import app.tastile.android.data.api.generated.v1.models.SourceTileListResponse
 import app.tastile.android.data.api.generated.v1.models.TileListView
 import app.tastile.android.data.api.generated.v1.models.UpdateSourceTileRequest
 import javax.inject.Inject
@@ -69,29 +69,44 @@ class V1GeneratedApiClient @Inject constructor(
 
     // ---- SourceTile API (canonical surface) -------------------------------
 
+    /**
+     * Contract v2.0.0: `GET /v1/source-tiles` returns a keyset-paged
+     * envelope (`{items, count, next_cursor}`); the `offset` parameter was
+     * removed in favor of `cursor`.
+     */
     suspend fun listSourceTiles(
         ownerId: java.util.UUID? = null,
-        limit: Int? = null,
-        offset: Int? = null,
-    ): List<SourceTileRead> = sourceTileApi.listSourceTiles(
+        limit: Long? = null,
+        cursor: String? = null,
+    ): SourceTileListResponse = sourceTileApi.listSourceTiles(
         ownerId = ownerId,
         limit = limit,
-        offset = offset,
+        cursor = cursor,
     ).unwrap()
 
     suspend fun createSourceTile(request: CreateSourceTileRequest): CommandResponse =
         sourceTileApi.createSourceTile(request).unwrap()
 
+    /**
+     * Contract v2.0.0: `GET /v1/source-tiles/{id}` pages its `occurrences`
+     * and `placements` collections independently via `occurrence_*` /
+     * `placement_*` limit+cursor parameter pairs; the detail's collections
+     * are paged envelopes, not bare arrays.
+     */
     suspend fun getSourceTile(
         id: java.util.UUID,
         ownerId: java.util.UUID? = null,
-        limit: Int? = null,
-        offset: Int? = null,
+        occurrenceLimit: Long? = null,
+        occurrenceCursor: String? = null,
+        placementLimit: Long? = null,
+        placementCursor: String? = null,
     ): SourceTileDetailRead = sourceTileApi.getSourceTile(
         id = id,
         ownerId = ownerId,
-        limit = limit,
-        offset = offset,
+        occurrenceLimit = occurrenceLimit,
+        occurrenceCursor = occurrenceCursor,
+        placementLimit = placementLimit,
+        placementCursor = placementCursor,
     ).unwrap()
 
     suspend fun updateSourceTile(
@@ -114,16 +129,20 @@ class V1GeneratedApiClient @Inject constructor(
         ownerId: java.util.UUID? = null,
     ): Any = sourceTileApi.getSourceTileCompletion(id, ownerId).unwrap()
 
+    /**
+     * Contract v2.0.0: `GET /v1/source-tiles/{id}/placements` returns a
+     * keyset-paged envelope; `offset` was removed in favor of `cursor`.
+     */
     suspend fun listSourceTilePlacements(
         id: java.util.UUID,
         ownerId: java.util.UUID? = null,
-        limit: Int? = null,
-        offset: Int? = null,
-    ): List<PlacementTileRead> = sourceTileApi.listSourceTilePlacements(
+        limit: Long? = null,
+        cursor: String? = null,
+    ): PlacementTileListResponse = sourceTileApi.listSourceTilePlacements(
         id = id,
         ownerId = ownerId,
         limit = limit,
-        offset = offset,
+        cursor = cursor,
     ).unwrap()
 
     suspend fun publishScheduleDefinition(

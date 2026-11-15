@@ -156,10 +156,11 @@ class V1GeneratedApiClientTest {
         server.enqueue(
             MockResponse().setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]")
+                .setBody("""{"items":[],"count":0,"next_cursor":null}""")
         )
-        val list = client.listSourceTiles()
-        assertEquals(0, list.size)
+        val page = client.listSourceTiles()
+        assertEquals(0, page.items.size)
+        assertEquals(0, page.count)
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
         assertEquals("/v1/source-tiles", recorded.path)
@@ -170,10 +171,10 @@ class V1GeneratedApiClientTest {
         server.enqueue(
             MockResponse().setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]")
+                .setBody("""{"items":[],"count":0,"next_cursor":null}""")
         )
-        val placements = client.listSourceTilePlacements(UUID.fromString(SOURCE_ID))
-        assertEquals(0, placements.size)
+        val page = client.listSourceTilePlacements(UUID.fromString(SOURCE_ID))
+        assertEquals(0, page.items.size)
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
         assertEquals("/v1/source-tiles/$SOURCE_ID/placements", recorded.path)
@@ -226,7 +227,7 @@ class V1GeneratedApiClientTest {
                         end = REFLOW_END,
                     ),
                 ),
-                expectedRevision = null,
+                expectedRevision = 9,
                 occurredAt = null,
             ),
         )
@@ -238,6 +239,10 @@ class V1GeneratedApiClientTest {
         assertTrue(
             "expected range in body, got: $body",
             body.contains("\"range\":{")
+        )
+        assertTrue(
+            "expected_revision is required (non-null) under contract v2.0.0, got: $body",
+            body.contains("\"expected_revision\":9")
         )
     }
 
