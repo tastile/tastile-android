@@ -64,6 +64,23 @@ internal object V1Endpoints {
  
  private const val HTTP_UNAUTHORIZED = 401
 private const val TAG = "V1ApiClient"
+
+/**
+ * Contract v2.0.0 page size for the keyset-paged read endpoints. The spec
+ * accepts 1..1000 (default 100); the client always asks for the maximum so
+ * full-list reads need as few round-trips as possible.
+ */
+private const val PAGED_READ_LIMIT = 1000
+
+/**
+ * Safety bound on cursor-following loops. A well-behaved server ends every
+ * list with `next_cursor = null`; this only guards against a buggy cursor
+ * that never terminates.
+ */
+private const val MAX_PAGE_COUNT = 100
+
+private fun encodeQueryParam(value: String): String =
+    URLEncoder.encode(value, Charsets.UTF_8.name())
  
  /** Serializes the v1 `CommandRequest<T>` wire format used by tastile-web. */
  internal object V1Wire {
@@ -162,6 +179,32 @@ class V1ApiClient @Inject constructor(
     private suspend inline fun <reified T> get(path: String): T =
         json.decodeFromString(getRaw(path))
 
+    /**
+     * Fetches every page of a `{items, count, next_cursor}` list endpoint
+     * (contract v2.0.0) and returns the concatenated items. Callers that
+     * need the full list — e.g. `findPlacementForTile` picking the freshest
+     * placement — must not stop at the first page.
+     */
+    private suspend inline fun <reified T> getAllPages(path: String): List<T> {
+        val items = mutableListOf<T>()
+        var cursor: String? = null
+        var pages = 0
+        do {
+            pages += 1
+            if (pages > MAX_PAGE_COUNT) {
+                throw V1Error.Unknown(0, "paged read did not terminate: $path")
+            }
+            val query = buildString {
+                append("limit=$PAGED_READ_LIMIT")
+                cursor?.let { append("&cursor=").append(encodeQueryParam(it)) }
+            }
+            val page: V1PagedRead<T> = get("$path?$query")
+            items += page.items
+            cursor = page.nextCursor
+        } while (cursor != null)
+        return items
+    }
+
     private suspend fun getRaw(path: String): String = withBearer { token ->
         withContext(Dispatchers.IO) {
             try {
@@ -211,8 +254,13 @@ class V1ApiClient @Inject constructor(
     suspend fun readTile(tileId: String): TileDetailView =
         get("/v1/tiles/$tileId")
 
+    /**
+     * `GET /v1/placements` is keyset-paged under contract v2.0.0
+     * (`{items, count, next_cursor}`). The dispatcher scans the whole list to
+     * find a tile's freshest placement, so every cursor page is followed.
+     */
     suspend fun listPlacements(): List<V1PlacementListItem> =
-        get("/v1/placements")
+        getAllPages("/v1/placements")
 
     /** Returns null when the account has no running execution. */
     suspend fun getActiveTile(): ActiveTileView? =
@@ -302,10 +350,54 @@ class V1ApiClient @Inject constructor(
     suspend fun reflowSourceTile(sourceTileId: String, payload: ReflowSourceTilePayload, expectedRevision: Long): CommandResponse =
         postCommand(V1Endpoints.reflowSourceTile(sourceTileId), payload, ReflowSourceTilePayload.serializer(), CommandResponse.serializer(), expectedRevision)
 
-    suspend fun readSourceTile(sourceTileId: String): SourceTileDetailRead = get(V1Endpoints.sourceTile(sourceTileId))
+    /**
+     * `GET /v1/source-tiles/{id}` pages its `occurrences` and `placements`
+     * collections independently (`occurrence_cursor` / `placement_cursor`).
+     * Both cursors are followed until exhausted and the pages are merged
+     * back into the flat [SourceTileDetailRead] lists, preserving the
+     * pre-v2.0.0 full-list semantics for callers.
+     */
+    suspend fun readSourceTile(sourceTileId: String): SourceTileDetailRead {
+        val path = V1Endpoints.sourceTile(sourceTileId)
+        val first: SourceTileDetailPage = get(path)
+        val occurrences = LinkedHashMap<String, SourceOccurrenceRead>()
+        first.occurrences.items.forEach { occurrences[it.occurrenceId] = it }
+        val placements = LinkedHashMap<String, SourcePlacementRead>()
+        first.placements.items.forEach { placements[it.placementId] = it }
+        var occurrenceCursor = first.occurrences.nextCursor
+        var placementCursor = first.placements.nextCursor
+        var pages = 0
+        while (occurrenceCursor != null || placementCursor != null) {
+            pages += 1
+            if (pages > MAX_PAGE_COUNT) {
+                throw V1Error.Unknown(0, "source tile detail paging did not terminate: $path")
+            }
+            val query = listOfNotNull(
+                occurrenceCursor?.let { "occurrence_cursor=${encodeQueryParam(it)}" },
+                placementCursor?.let { "placement_cursor=${encodeQueryParam(it)}" },
+            ).joinToString("&")
+            val page: SourceTileDetailPage = get("$path?$query")
+            // A collection whose cursor is exhausted resets to its first
+            // page on the next request; dedup by id keeps the merge correct.
+            page.occurrences.items.forEach { occurrences.putIfAbsent(it.occurrenceId, it) }
+            page.placements.items.forEach { placements.putIfAbsent(it.placementId, it) }
+            occurrenceCursor = page.occurrences.nextCursor
+            placementCursor = page.placements.nextCursor
+        }
+        return SourceTileDetailRead(
+            source = first.source,
+            occurrences = occurrences.values.toList(),
+            placements = placements.values.toList(),
+        )
+    }
 
+    /**
+     * `GET /v1/source-tiles/{id}/placements` is keyset-paged under contract
+     * v2.0.0; all cursor pages are followed to preserve the full-list
+     * contract.
+     */
     suspend fun listSourceTilePlacements(sourceTileId: String): List<SourcePlacementRead> =
-        get(V1Endpoints.sourceTilePlacements(sourceTileId))
+        getAllPages(V1Endpoints.sourceTilePlacements(sourceTileId))
 
     suspend fun listRuntimePaths(): V1ListRuntimePathsResponse =
         get("/v1/runtime/paths")

@@ -239,6 +239,34 @@ data class SourceTileDetailRead(
     val placements: List<SourcePlacementRead> = emptyList(),
 )
 
+/**
+ * Server-side keyset page envelope (`{items, count, next_cursor}`) shared by
+ * the paged read endpoints introduced in OpenAPI contract v2.0.0
+ * (`GET /v1/placements`, `GET /v1/source-tiles`,
+ * `GET /v1/source-tiles/{id}/placements`, and the nested occurrence /
+ * placement collections of `GET /v1/source-tiles/{id}`). `nextCursor` is
+ * null on the last page.
+ */
+@Serializable
+data class V1PagedRead<T>(
+    val items: List<T> = emptyList(),
+    val count: Int = 0,
+    @SerialName("next_cursor") val nextCursor: String? = null,
+)
+
+/**
+ * Wire shape of `GET /v1/source-tiles/{id}` under contract v2.0.0: the
+ * `occurrences` and `placements` collections are paged envelopes, not bare
+ * arrays. `V1ApiClient.readSourceTile` follows both cursors and collapses
+ * the pages back into the flat [SourceTileDetailRead] lists.
+ */
+@Serializable
+internal data class SourceTileDetailPage(
+    val source: SourceTileRead,
+    val occurrences: V1PagedRead<SourceOccurrenceRead> = V1PagedRead(),
+    val placements: V1PagedRead<SourcePlacementRead> = V1PagedRead(),
+)
+
 // --- Step 5 lookup models -----------------------------------------------
 //
 // The dispatcher uses these to translate v0 `tile.start / pause / continue /
