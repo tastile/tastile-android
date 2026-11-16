@@ -1,102 +1,175 @@
 ---
 name: design-refinement
-description: Use before planning any non-trivial feature, architecture, or product design: evidence-first design, unknown decomposition, scope-risk adjustment, trade-off documentation. Keywords: design, refinement, trade-off, scope, unknown.
+description: 非自明なfeature・architecture・product designを実装計画へ渡す前に、repository evidenceからfactと未決定事項を整理し、本当に必要なuser decisionだけを質問する時に使用する。
 ---
 
 # Design Refinement
 
-## Overview
+非自明なtaskでは、質問を作る前にprojectを読む。
+目的はuserを大量の質問でinterviewすることではなく、**read relentlessly, ask minimally** を実行し、implementationが暗黙のassumptionに依存しない状態へすることである。
 
-No non-trivial plan starts from a blank page. Design refinement is the
-mandatory gate between "we want this" and "here is the plan": gather the
-evidence that already exists, separate facts from open decisions, shrink or
-re-scope around the unknowns, and record the trade-offs so the plan's readers
-never have to guess why an option was rejected. A plan that skips this gate
-is a guess with formatting.
+## 1. Read before asking
 
-## When to use
+最低限、taskに関係するものを必要な範囲で確認する。
 
-- Before sprint planning or any weekly-release plan that contains feature,
-  architecture, or product-surface work.
-- Before writing an ADR, a technical proposal, or a multi-ticket Issue.
-- When an existing design meets new evidence (a failed spike, a changed API
-  contract, a review objection) and must be re-refined.
+- current user request / Issue / acceptance criteria
+- project-wide policy / canonical architecture / invariants
+- design / specification
+- relevant ADR
+- relevant project-local Skills / operational docs
+- relevant existing implementationを複数箇所
+- tests / fixtures / schemas / contracts
+- Git history / PR discussion when current codeだけではdecision intentが分からない場合
+- framework/runtime/API/toolのcurrent official documentation when version-sensitive
+- domain vocabulary / glossary when存在する場合
 
-The gate may be skipped only for trivial changes: typos, string-resource
-fixes, and localized bug fixes whose blast radius is one screen and whose
-fix is evident. Everything else passes through it.
+最初に見つけたfile、会話上の印象、一般的なbest practiceだけでproject intentを補完しない。
 
-## Procedure
+## 2. Factとdecisionを分離する
 
-### 1. Collect the evidence first
+発見したunknownを少なくとも次へ分類する。
 
-1. Read the directly relevant sources before proposing anything: the
-   neighboring implementation files, applicable ADRs, the skills that govern
-   the area (design system, navigation, testing, correctness), and the
-   official guidance (Material 3, Android documentation, library docs).
-2. Note the repo's hard constraints that bind the design: the
-   `verifyDesignSystemImports` and `verifyNoEmbeddedServerSecrets` guards,
-   the non-blank `BuildConfig` requirements, min/target SDK levels, and the
-   `tastile-core` bridge boundary.
-3. Summarize what each source actually says in one line. Paraphrase forces
-   understanding; pasted quotes preserve ambiguity.
-4. Evidence collection stops when further reading no longer changes the
-   option set. Record the sources consulted so reviewers can spot gaps.
+### Fact
 
-### 2. Separate facts from open decisions
+repository、official source、実行可能なprobe、既存system stateから調査できるもの。
 
-1. Build two lists: FACTS (verified in code, docs, or contracts) and OPEN
-   (undecided, unconfirmed, or contested). Every design input goes in
-   exactly one list.
-2. For each OPEN item, name the decision-maker and the cheapest experiment
-   or question that would close it (spike, prototype, contract check with
-   the backend, design sign-off).
-3. Material unknowns are never filled with convenient constants. An OPEN
-   item stays open until evidence closes it; the plan routes around it.
-4. If the OPEN list dominates the FACTS list, the design is premature.
-   Schedule the closing experiments first and re-enter the gate after.
+例:
 
-### 3. Adjust scope for risk
+- 現在のAPI behavior
+- existing naming/layout convention
+- framework/runtime capability
+- schema shape
+- test coverage
+- current release/branch state
 
-1. Order candidate scope by risk-adjusted value: user-visible value divided
-   by uncertainty. High-uncertainty items go last or into a follow-up.
-2. Define the shippable core: the smallest scope that is useful, verifiable
-   with `./gradlew verify`, and releasable alone. Everything beyond the
-   core is staged, not promised.
-3. Attach each deferred item to an explicit re-entry condition ("revisit
-   after the core API contract is signed"), not to a vague "later".
-4. Check the adjusted scope against the release workflow
-   (`docs/operations/release-workflow.md`): it must fit a weekly cadence
-   or be honestly staged across weeks.
+Factは原則としてagentが調査して解決する。userへ質問しない。
 
-### 4. Document the trade-offs
+### Determined decision
 
-1. For every rejected option, record: the option, why it lost, and what
-   evidence would revive it. Future agents must not re-litigate settled
-   choices without new facts.
-2. Name the load-bearing decisions: the two or three choices the whole
-   design rests on (data ownership, navigation shape, state boundary).
-   These get the most review attention.
-3. State the failure modes accepted knowingly (offline gaps, large-screen
-   degradation, older-API fallbacks) and who accepted them.
-4. Write the outcome as a durable artifact (Issue, ADR, or plan doc) that a
-   reader with no prior context can reconstruct the reasoning from. The
-   writing bar is set by the writing-discipline skill.
+`engineering-decisions` のprecedenceとproject evidenceから実質一意に決まるもの。
 
-## Checklist
+reversibleで局所的、acceptance criteriaやpublic contract等を変えない場合はagentが決めて進む。
 
-- [ ] Relevant code, ADRs, skills, and official guidance read and cited.
-- [ ] Repo hard constraints (guards, SDK, bridge boundary) accounted for.
-- [ ] FACTS and OPEN lists built; every input classified.
-- [ ] Each OPEN item has an owner and a closing experiment.
-- [ ] No unknown filled with an invented value.
-- [ ] Shippable core defined; deferred work has re-entry conditions.
-- [ ] Rejected options recorded with revival evidence.
-- [ ] Outcome written as a context-independent artifact.
+### Unresolved consequential decision
 
-## References
+evidenceを読んでも複数のmeaningful optionが残り、選択によってproduct semantics、architecture、public contract、risk、cost、release scope等が変わるもの。
 
-- `docs/operations/release-workflow.md` (weekly release planning gate)
-- `docs/operations/project-board.md` (tracking OPEN items to closure)
-- `docs/operations/recovery.md` (re-refining after a design failure)
-- `./gradlew verify` (verifiability bar for the shippable core)
+user escalation候補はこのcategoryに限定する。
+
+## 3. Assumptionをhidden stateにしない
+
+implementationを成立させるために必要だがevidenceで確定していない前提を検出する。
+
+特に確認する:
+
+- user-visible behavior
+- domain semantics
+- ownership / responsibility boundary
+- source of truth
+- persistence / lifecycle
+- failure behavior
+- compatibility / migration
+- security / privacy / permission
+- performance / cost budget
+- release / rollout behavior
+
+「おそらくこうだろう」でimplementationへ進まず、factなら調査し、decisionならdecision graphへ入れる。
+
+## 4. Decision dependency graph
+
+unresolved decisionに依存関係がある場合、平坦な質問listにしない。
+
+例:
+
+```text
+A: canonical source of truth
+├─ B: conflict resolution behavior
+└─ C: offline/cache policy
+   └─ D: stale-data UX
+```
+
+B/C/Dの回答がAに依存するなら、Aが未確定な状態で下流質問をuserへ投げない。
+
+各decision nodeは必要に応じて:
+
+- question / decision statement
+- known evidence
+- alternatives
+- consequences
+- dependency
+- recommended option
+- escalation reason
+
+を持つ。
+
+## 5. Ask only the decision frontier
+
+現在回答可能で、未解決の上流decisionを持たないnodeだけをdecision frontierとする。
+
+userへ質問するのは、そのfrontierのうち `engineering-decisions` のescalation criteriaに該当するものだけに限定する。
+
+質問時は単なる「A/Bどちらですか」ではなく、可能な範囲で:
+
+- 既に確認したevidence
+- 残った選択肢
+- 各選択肢のmeaningful consequence
+- agentの推奨案と理由
+
+を簡潔に示す。
+
+複数decisionが独立しており一度に答えられる場合はまとめてよい。依存しているdecisionを先読みして大量質問しない。
+
+## 6. Stop condition
+
+次を満たしたらrefinementを終了し、planning / ticketization / implementationへ進む。
+
+- task scopeとacceptance criteriaが実装可能な粒度で明確
+- relevant factが調査済み、または明示的なexternal blockerとして特定済み
+- consequential unresolved decisionが残っていない
+- implementationを左右するhidden assumptionが残っていない
+- decision resultが必要なcanonical locationへ反映されている
+
+すべてを完全仕様化することは目的ではない。implementationを安全に開始するために必要なuncertaintyだけを解消する。
+
+## 7. Persist selectively
+
+long-lived valueを持つdecisionやdomain knowledgeだけをrepository-controlled stateへ永続化する。
+
+候補:
+
+- design / specification
+- ADR
+- project-local Skill
+- architecture / development docs
+- domain glossary / domain context
+- schema / contract / test
+
+次は通常永続化しない。
+
+- formatter等が決める自明なchoice
+- 一時的な調査結果
+- reversibleな局所implementation detail
+- conversationでのみ意味を持つ説明
+- private chain-of-thought
+
+domain vocabularyが複雑で複数contributor/agentの共通理解に価値がある場合は、projectに適したglossary/domain contextを作成・更新する。固定の `CONTEXT.md` file名や独立documentを全projectへ強制しない。
+
+## 8. Relationship with engineering-decisions
+
+このSkillは `engineering-decisions` を置き換えない。
+
+- `design-refinement`: implementation前にunknown / assumption / decision dependencyを発見し、質問対象を絞る
+- `engineering-decisions`: 発見されたdecisionをproject evidenceのprecedenceで自律決定するかuser escalationするか判定する
+
+原則:
+
+```text
+inspect evidence
+  -> classify facts / decisions
+  -> investigate facts
+  -> resolve determined decisions
+  -> build unresolved decision graph
+  -> ask only consequential frontier
+  -> persist significant results
+  -> plan / implement
+```
