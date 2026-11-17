@@ -6,9 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TilesResponse(
-    val tiles: List<Tile>,
-    @SerialName("next_actionable_tile_id") val nextActionableTileId: String? = null,
-    @SerialName("next_actionable_start_at") val nextActionableStartAt: String? = null
+    val tiles: List<Tile>
 )
 
 @Serializable

@@ -76,7 +76,7 @@ class QuickCreateSheetMobileTest {
         // selectedDay/scale combine) still runs, so stub getTimeline explicitly.
         every { authRepo.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()
-        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")
         return DashboardViewModel(
             authRepository = authRepo,

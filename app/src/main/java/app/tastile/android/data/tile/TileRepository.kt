@@ -58,8 +58,8 @@ class TileRepository @Inject constructor(
     // uses. Under contract v3.0.0 the endpoint is keyset-paged
     // (`{items, count, next_cursor}`); [V1ApiClient.getTiles] reads the
     // first page and [V1ApiClient.listAllTiles] follows `next_cursor` for
-    // full-list lookups. The `next_actionable_*` fields are no longer part
-    // of the contract and always surface as null on [TilesResponse].
+    // full-list lookups. The `next_actionable_*` fields were removed from
+    // the contract in OpenAPI v3.0.0.
     //
     // Every command still routes to v1 through [v1CommandDispatcher]
     // (Macro Step 5). No more v0 command-name strings, no more
@@ -98,7 +98,7 @@ class TileRepository @Inject constructor(
         val token = currentUserProvider.currentSessionToken()
         if (token.isNullOrBlank()) {
             latestReadDiagnostics = "source=v1_skipped reason=no_token count=0 user_match=true"
-            return TilesResponse(emptyList(), null, null)
+            return TilesResponse(emptyList())
         }
         return try {
             val userId = currentUserProvider.currentUserId().orEmpty()
@@ -109,22 +109,16 @@ class TileRepository @Inject constructor(
                 append("source=v1")
                 append(" count=${tiles.size}")
                 append(" user_match=true")
-                if (!resp.nextActionableTileId.isNullOrBlank()) {
-                    append(" next_tile=${resp.nextActionableTileId}")
-                }
-                if (!resp.nextActionableStartAt.isNullOrBlank()) {
-                    append(" next_at=${resp.nextActionableStartAt}")
-                }
             }
-            TilesResponse(tiles, resp.nextActionableTileId, resp.nextActionableStartAt)
+            TilesResponse(tiles)
         } catch (e: V1Error) {
             android.util.Log.w("TileRepository", "v1 getTiles failed: ${e.message}", e)
             latestReadDiagnostics = "source=v1_unavailable count=0 user_match=true"
-            TilesResponse(emptyList(), null, null)
+            TilesResponse(emptyList())
         } catch (e: Exception) {
             android.util.Log.w("TileRepository", "v1 getTiles failed: ${e.message}", e)
             latestReadDiagnostics = "source=v1_unavailable count=0 user_match=true"
-            TilesResponse(emptyList(), null, null)
+            TilesResponse(emptyList())
         }
     }
 
