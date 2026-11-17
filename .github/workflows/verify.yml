@@ -53,9 +53,10 @@ jobs:
         with:
           repository: tastile/tastile-openapi
           path: tastile-openapi
-          # A04: pin to canonical v1.0.0 freeze (C07 confirmed, R01 status:ready).
-          # Do NOT change without an associated plan and the next release's SHA bump.
-          ref: b0c781dc18111645324e2abc38621b1564d4c518
+          # Pin to the contract this client implements: tastile-openapi v3.0.0
+          # (tag commit 0c130c5, core release-1-1-0 @ 2a349aa1). Bump only
+          # together with a client contract migration (issue #102).
+          ref: 0c130c5c2e8aa1afbf74b3eca5c4b5d433e6a28c
 
       - name: Set verify-only environment configuration
         run: |
@@ -115,9 +116,8 @@ jobs:
         with:
           repository: tastile/tastile-openapi
           path: tastile-openapi
-          # Same canonical v1.0.0 freeze as the unit-tests job. Do NOT change
-          # without an associated plan and the next release's SHA bump.
-          ref: b0c781dc18111645324e2abc38621b1564d4c518
+          # Same v3.0.0 contract pin as the unit-tests job (issue #102).
+          ref: 0c130c5c2e8aa1afbf74b3eca5c4b5d433e6a28c
 
       - name: Set verify-only environment configuration
         run: |
