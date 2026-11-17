@@ -55,6 +55,7 @@ class V1GeneratedApiClientTest {
         val moshi = Moshi.Builder()
             .add(UuidAdapter)
             .add(OffsetDateTimeAdapter)
+            .add(LocalDateAdapter)
             .add(KotlinJsonAdapterFactory())
             .build()
         val token: suspend () -> String? = { "test-token" }
@@ -329,6 +330,14 @@ private object UuidAdapter {
 
     @ToJson
     fun toJson(value: UUID): String = value.toString()
+}
+
+private object LocalDateAdapter {
+    @FromJson
+    fun fromJson(value: String): java.time.LocalDate = java.time.LocalDate.parse(value)
+
+    @ToJson
+    fun toJson(value: java.time.LocalDate): String = value.toString()
 }
 
 private object OffsetDateTimeAdapter {
