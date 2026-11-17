@@ -315,7 +315,15 @@ class V1ApiClient @Inject constructor(
     suspend fun listPendingSessions(): List<PendingSessionView> =
         getAllPages(V1Endpoints.PENDING_SESSIONS)
 
-    suspend fun listEndpoints(): List<EndpointView> = get(V1Endpoints.ENDPOINTS)
+    /**
+     * `GET /v1/endpoints` migrated to the canonical §15 list envelope
+     * (`{items, count, next_cursor}`) under the tastile-core#334 contract
+     * change. All cursor pages are followed to preserve the pre-migration
+     * full-list semantics — `PushEndpointRepository` scans the whole list
+     * for its stored endpoint id.
+     */
+    suspend fun listEndpoints(): List<EndpointView> =
+        getAllPages(V1Endpoints.ENDPOINTS)
 
     suspend fun registerEndpoint(payload: EndpointRegistrationPayload): EndpointView =
         postRawJson(

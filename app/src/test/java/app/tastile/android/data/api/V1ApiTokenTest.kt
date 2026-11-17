@@ -44,10 +44,20 @@ class V1ApiTokenTest {
     }
 
     @Test
-    fun `list response defaults tokens to empty when missing`() {
+    fun `list response decodes the §15 items envelope`() {
+        val body = """{"items":[{"id":"tok-1","label":"ci","prefix":"tastile_","scopes":"all","created_at":"2026-07-23T07:53:01Z","expires_at":null,"revoked_at":null,"last_used_at":null}],"count":1,"next_cursor":null}"""
+        val resp = json.decodeFromString<V1ListApiTokensResponse>(body)
+        assertEquals(1, resp.items.size)
+        assertEquals("tok-1", resp.items[0].id)
+        assertEquals("tastile_", resp.items[0].prefix)
+        assertEquals(null, resp.nextCursor)
+    }
+
+    @Test
+    fun `list response defaults items to empty when missing`() {
         val body = """{}"""
         val resp = json.decodeFromString<V1ListApiTokensResponse>(body)
-        assertTrue(resp.tokens.isEmpty())
+        assertTrue(resp.items.isEmpty())
     }
 
     @Test

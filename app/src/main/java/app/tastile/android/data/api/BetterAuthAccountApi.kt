@@ -102,21 +102,35 @@ class BetterAuthAccountApi @Inject constructor(
         connection.discardResponseBody()
     }
 
+    /**
+     * `GET /v1/api-tokens` answers with the canonical §15 list envelope
+     * (`{items, count, next_cursor}`; tastile-core#334). All cursor pages
+     * are followed so the account screen sees every token, matching the
+     * full-list semantics the pre-envelope bare array provided.
+     */
     suspend fun listTokens(): List<AccountTokenDto> = withContext(Dispatchers.IO) {
-        val token = v1ApiTokenProvider()
-        val url = URL("${v1BaseUrl()}/v1/api-tokens")
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            doInput = true
-            if (!token.isNullOrBlank()) {
-                setRequestProperty("Authorization", "Bearer $token")
+        val items = mutableListOf<AccountTokenDto>()
+        var cursor: String? = null
+        var pages = 0
+        do {
+            pages += 1
+            if (pages > MAX_PAGE_COUNT) {
+                throw IOException("api-tokens paging did not terminate")
             }
-            setRequestProperty("Accept", "application/json")
-            connectTimeout = 15_000
-            readTimeout = 15_000
-        }
-        val body = connection.readResponseBody()
-        json.decodeFromString<AccountTokenListResponse>(body).tokens
+            val query = buildString {
+                append("limit=").append(PAGE_SIZE_LIMIT)
+                cursor?.let {
+                    append("&cursor=")
+                        .append(URLEncoder.encode(it, Charsets.UTF_8.name()))
+                }
+            }
+            val page = json.decodeFromString<AccountTokenListResponse>(
+                v1Get("/v1/api-tokens?$query"),
+            )
+            items += page.items
+            cursor = page.nextCursor
+        } while (cursor != null)
+        items
     }
 
     suspend fun createToken(label: String?): AccountTokenWithSecretDto = withContext(Dispatchers.IO) {
@@ -158,6 +172,23 @@ class BetterAuthAccountApi @Inject constructor(
         connection.discardResponseBody()
     }
 
+    /** Authenticated GET against the v1 core base URL; returns the body. */
+    private suspend fun v1Get(path: String): String {
+        val token = v1ApiTokenProvider()
+        val url = URL("${v1BaseUrl()}$path")
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            doInput = true
+            if (!token.isNullOrBlank()) {
+                setRequestProperty("Authorization", "Bearer $token")
+            }
+            setRequestProperty("Accept", "application/json")
+            connectTimeout = 15_000
+            readTimeout = 15_000
+        }
+        return connection.readResponseBody()
+    }
+
     private fun HttpURLConnection.readResponseBody(): String {
         val status = responseCode
         val stream = if (status in 200..299) inputStream else errorStream
@@ -191,9 +222,15 @@ class BetterAuthAccountApi @Inject constructor(
         val preferredUsername: String? = null,
     )
 
+    /**
+     * §15 list envelope (`{items, count, next_cursor}`) returned by
+     * `GET /v1/api-tokens` (tastile-core#334).
+     */
     @Serializable
     data class AccountTokenListResponse(
-        val tokens: List<AccountTokenDto> = emptyList(),
+        val items: List<AccountTokenDto> = emptyList(),
+        val count: Int = 0,
+        @SerialName("next_cursor") val nextCursor: String? = null,
     )
 
     @Serializable
@@ -203,6 +240,11 @@ class BetterAuthAccountApi @Inject constructor(
         val name: String? = null,
         val label: String? = null,
         @SerialName("token_prefix") val tokenPrefix: String? = null,
+        /**
+         * v1 `ApiTokenView` sends the display prefix as `prefix`; the web
+         * proxy normalizes it to `token_prefix`. Either may be populated.
+         */
+        @SerialName("prefix") val prefix: String? = null,
         @SerialName("created_at") val createdAt: String? = null,
         @SerialName("last_used_at") val lastUsedAt: String? = null,
         @SerialName("last_used_path") val lastUsedPath: String? = null,
@@ -213,19 +255,39 @@ class BetterAuthAccountApi @Inject constructor(
 
         /** `id` (v1) or `token_id` (web); whichever is populated wins. */
         val canonicalId: String get() = id.ifBlank { tokenId }
+
+        /** `token_prefix` (web) or `prefix` (v1); whichever is populated wins. */
+        val resolvedTokenPrefix: String? get() = tokenPrefix ?: prefix
     }
 
     @Serializable
     data class AccountTokenWithSecretDto(
         val token: String = "",
+        @SerialName("id") val id: String = "",
         @SerialName("token_id") val tokenId: String = "",
         @SerialName("access_token") val accessToken: String = "",
         val name: String? = null,
         val label: String? = null,
         @SerialName("token_prefix") val tokenPrefix: String? = null,
+        /** v1 `ApiTokenCreatedView` sends the display prefix as `prefix`. */
+        @SerialName("prefix") val prefix: String? = null,
         @SerialName("created_at") val createdAt: String? = null,
     ) {
         /** The raw token, returned at most once; either `access_token` or `token`. */
         val secret: String get() = accessToken.ifBlank { token }
+
+        /** `token_id` (web) or `id` (v1); whichever is populated wins. */
+        val canonicalId: String get() = tokenId.ifBlank { id }
+
+        /** `token_prefix` (web) or `prefix` (v1); whichever is populated wins. */
+        val resolvedTokenPrefix: String? get() = tokenPrefix ?: prefix
+    }
+
+    private companion object {
+        /** Page size for `GET /v1/api-tokens`; the spec accepts 1..=1000. */
+        const val PAGE_SIZE_LIMIT = 1000
+
+        /** Guards against a buggy cursor that never terminates. */
+        const val MAX_PAGE_COUNT = 100
     }
 }

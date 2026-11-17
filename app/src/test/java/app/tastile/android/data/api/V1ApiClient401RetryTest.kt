@@ -30,7 +30,7 @@ class V1ApiClient401RetryTest {
 
     /** Per-test responder: 0-based request index → (status, body). */
     @Volatile
-    private var respond: (Int) -> Pair<Int, String> = { 200 to "[]" }
+    private var respond: (Int) -> Pair<Int, String> = { 200 to EMPTY_ENDPOINT_LIST }
 
     @Before
     fun setUp() {
@@ -59,7 +59,7 @@ class V1ApiClient401RetryTest {
 
     @Test
     fun unauthorized_getDiscardsStaleTokenAndRetriesOnceWithFreshToken() = runBlocking {
-        respond = { index -> if (index == 0) 401 to "{}" else 200 to "[]" }
+        respond = { index -> if (index == 0) 401 to "{}" else 200 to EMPTY_ENDPOINT_LIST }
         val refreshedStaleTokens = CopyOnWriteArrayList<String>()
         val api = V1ApiClient({ "stale-token" }, clientUrl()) { stale ->
             refreshedStaleTokens += stale
@@ -165,6 +165,9 @@ class V1ApiClient401RetryTest {
     }
 
     private companion object {
+        /** §15 list envelope (`{items, count, next_cursor}`) for `GET /v1/endpoints`. */
+        const val EMPTY_ENDPOINT_LIST = """{"items":[],"count":0,"next_cursor":null}"""
+
         const val endpointJson =
             """{"id":"endpoint-1","owner_id":"owner-1","channel":0,"capability":{"supports_interaction":true,"supports_action_reply":true},"created_at":"2026-07-29T00:00:00Z","updated_at":"2026-07-29T00:00:00Z"}"""
     }
