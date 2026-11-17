@@ -342,10 +342,16 @@ data class UpdateWorkspaceInput(
     @SerialName("parent_subject_id") val parentSubjectId: String? = null,
 )
 
+/**
+ * `GET /v1/access/subjects?kind=1` is a §15-4 complete-set read: the
+ * caller's entire workspace set is returned untruncated, so `next_cursor`
+ * is always null. The field is modeled for contract fidelity.
+ */
 @Serializable
 data class V1ListWorkspacesResponse(
     val items: List<Workspace> = emptyList(),
     val count: Int = 0,
+    @SerialName("next_cursor") val nextCursor: String? = null,
 )
 
 @Serializable
