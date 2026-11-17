@@ -611,7 +611,13 @@ private fun nextSlotIso(slotMinutes: Int, now: Instant = Instant.now()): Instant
     val zoned = now.atZone(zone)
     val minuteOfDay = zoned.hour * 60 + zoned.minute
     val next = ((minuteOfDay / slotMinutes) + 1) * slotMinutes
-    val target = zoned.withHour(next / 60).withMinute(next % 60).withSecond(0).withNano(0)
+    // `next` can reach 24*60 in the last slot of the day; roll over to
+    // the next local midnight instead of asking for hour 24.
+    val target = if (next >= 24 * 60) {
+        zoned.toLocalDate().plusDays(1).atStartOfDay(zone)
+    } else {
+        zoned.withHour(next / 60).withMinute(next % 60).withSecond(0).withNano(0)
+    }
     return target.toInstant()
 }
 
