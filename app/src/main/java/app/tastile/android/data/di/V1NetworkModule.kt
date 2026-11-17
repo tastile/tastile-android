@@ -80,6 +80,7 @@ object V1NetworkModule {
         // while preserving the server-supplied offset.
         .add(OffsetDateTimeJsonAdapter())
         .add(OffsetTimeJsonAdapter())
+        .add(LocalDateJsonAdapter())
         // Generated v1 DTOs also expose `java.util.UUID` fields (e.g.
         // `ownerId` on SourceTileRead). Moshi refuses platform types without
         // an explicit adapter, so register a string-backed one.

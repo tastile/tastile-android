@@ -5,6 +5,7 @@ import com.squareup.moshi.JsonReader
 import com.squareup.moshi.JsonWriter
 import com.squareup.moshi.ToJson
 import java.io.IOException
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.OffsetTime
 import java.time.format.DateTimeFormatter
@@ -43,6 +44,26 @@ class OffsetTimeJsonAdapter {
     @Throws(IOException::class)
     fun toJson(writer: JsonWriter, value: OffsetTime) {
         writer.value(value.format(DateTimeFormatter.ISO_OFFSET_TIME))
+    }
+}
+
+/**
+ * Moshi adapter for `java.time.LocalDate`. Generated v1 DTOs expose it on
+ * `DateRangeSchema` (reachable through `SourceTileDetailRead.definition`
+ * since contract v3.4.0); without an explicit adapter Moshi fails at
+ * adapter-creation time, before any request reaches the wire.
+ */
+class LocalDateJsonAdapter {
+
+    @FromJson
+    @Throws(IOException::class)
+    fun fromJson(reader: JsonReader): LocalDate =
+        LocalDate.parse(reader.nextString(), DateTimeFormatter.ISO_LOCAL_DATE)
+
+    @ToJson
+    @Throws(IOException::class)
+    fun toJson(writer: JsonWriter, value: LocalDate) {
+        writer.value(value.format(DateTimeFormatter.ISO_LOCAL_DATE))
     }
 }
 

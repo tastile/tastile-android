@@ -149,10 +149,10 @@ jobs:
         with:
           repository: tastile/tastile-openapi
           path: tastile-openapi
-          # Pin to the contract this client implements: tastile-openapi v3.0.0
-          # (tag commit 0c130c5, core release-1-1-0 @ 2a349aa1). Bump only
-          # together with a client contract migration (issue #102).
-          ref: 0c130c5c2e8aa1afbf74b3eca5c4b5d433e6a28c
+          # Pin to the contract this client implements: tastile-openapi v3.4.0
+          # (tag commit 87fc1a1). Bump only
+          # together with a client contract migration (issue #107).
+          ref: 87fc1a164357b13878bd8f6ac06d2f30cad7f9d4
 
       - name: Set OpenAPI spec path
         run: echo 'openapi.input=../tastile-openapi/openapi.yaml' >> gradle.properties

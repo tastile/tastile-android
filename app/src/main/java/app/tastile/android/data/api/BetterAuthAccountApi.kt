@@ -14,6 +14,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -138,6 +139,12 @@ class BetterAuthAccountApi @Inject constructor(
         val url = URL("${v1BaseUrl()}/v1/api-tokens")
         val body = buildJsonObject {
             put("label", label?.let { JsonPrimitive(it) } ?: JsonNull)
+            // Core requires `expires_at` on every mint (ADR-0010 D-1.1) and
+            // `scopes` when the caller authenticates with a bearer token
+            // (v1/14 §14.5 §A.2). Defaults mirror the CLI token contract:
+            // 30-day TTL and `tastile.read tastile.write` without OwnerAdmin.
+            put("expires_at", JsonPrimitive(Instant.now().plusSeconds(TOKEN_TTL_SECONDS).toString()))
+            put("scopes", JsonPrimitive(TOKEN_SCOPES))
         }
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -289,5 +296,11 @@ class BetterAuthAccountApi @Inject constructor(
 
         /** Guards against a buggy cursor that never terminates. */
         const val MAX_PAGE_COUNT = 100
+
+        /** Matches the CLI token lifetime (web `core-mint.ts`: 30 days). */
+        const val TOKEN_TTL_SECONDS = 30L * 24 * 60 * 60
+
+        /** CLI public-client scope set; excludes OwnerAdmin (v1/14 §14.5). */
+        const val TOKEN_SCOPES = "tastile.read tastile.write"
     }
 }
