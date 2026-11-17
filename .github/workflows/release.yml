@@ -150,7 +150,7 @@ jobs:
           repository: tastile/tastile-openapi
           path: tastile-openapi
           # Pin to the contract this client implements: tastile-openapi v3.5.0
-          # (tag commit 87fc1a1). Bump only
+          # (tag commit 8a61003). Bump only
           # together with a client contract migration (issue #107).
           ref: 8a6100393990e43b959824690c1106f08895df21
 
