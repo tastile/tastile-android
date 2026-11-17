@@ -116,7 +116,7 @@ jobs:
         with:
           repository: tastile/tastile-openapi
           path: tastile-openapi
-          # Same v3.4.0 contract pin as the unit-tests job (issue #102).
+          # Same v3.4.0 contract pin as the unit-tests job (issue #107).
           ref: 87fc1a164357b13878bd8f6ac06d2f30cad7f9d4
 
       - name: Set verify-only environment configuration
