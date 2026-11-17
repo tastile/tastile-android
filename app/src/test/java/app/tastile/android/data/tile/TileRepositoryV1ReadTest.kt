@@ -18,7 +18,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import java.time.Instant
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -79,8 +78,6 @@ class TileRepositoryV1ReadTest {
         val response = repository.getTiles()
 
         assertTrue(response.tiles.isEmpty())
-        assertNull(response.nextActionableTileId)
-        assertNull(response.nextActionableStartAt)
         // readCloudTiles failed -> v1_unavailable diagnostic is preserved.
         assertTrue(repository.latestReadDiagnostics().startsWith("source=v1_unavailable "))
     }
@@ -111,7 +108,7 @@ class TileRepositoryV1ReadTest {
     }
 
     @Test
-    fun getTiles_threadsNextActionableFieldsIntoResponse() = runTest {
+    fun getTiles_mapsResponseTilesIntoDomainTiles() = runTest {
         val apiClient = mockk<V1ApiClient>()
         coEvery { apiClient.getTiles(any()) } returns V1ListTilesResponse(
             tiles = listOf(
@@ -121,17 +118,15 @@ class TileRepositoryV1ReadTest {
                     lifecycle = V1NumericConstants.LifecycleCode.READY,
                 )
             ),
-            nextActionableTileId = "t-1",
-            nextActionableStartAt = "2026-07-08T09:00:00Z"
         )
         val repository = newRepository(apiClient)
 
         val response = repository.getTiles()
 
-        assertEquals("t-1", response.nextActionableTileId)
-        assertEquals("2026-07-08T09:00:00Z", response.nextActionableStartAt)
-        assertTrue(repository.latestReadDiagnostics().contains("next_tile=t-1"))
-        assertTrue(repository.latestReadDiagnostics().contains("next_at=2026-07-08T09:00:00Z"))
+        assertEquals(1, response.tiles.size)
+        assertEquals("t-1", response.tiles.first().id)
+        assertEquals("Next", response.tiles.first().title)
+        assertTrue(repository.latestReadDiagnostics().startsWith("source=v1 "))
     }
 
     @Test

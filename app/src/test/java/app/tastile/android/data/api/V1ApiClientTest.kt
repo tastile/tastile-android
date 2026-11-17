@@ -208,8 +208,6 @@ class V1ApiClientTest {
         assertEquals("plan-1", parsed.tiles[0].planId)
         assertEquals("Inbox item", parsed.tiles[1].title)
         assertEquals("cursor-abc", parsed.nextCursor)
-        assertNull(parsed.nextActionableTileId)
-        assertNull(parsed.nextActionableStartAt)
     }
 
     @Test

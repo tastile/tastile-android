@@ -168,18 +168,13 @@ data class TileView(
  * `GET /v1/tiles` under contract v3.0.0 returns the keyset-paged
  * `TileListResponse` envelope (`{items, count, next_cursor}`); `offset` was
  * retired in favor of `cursor`. The `items` array maps onto [tiles] so the
- * existing mapper keeps its name. `nextActionableTileId` /
- * `nextActionableStartAt` are no longer part of the contract (and were
- * already absent on the wire); they stay as nullable fields only so the
- * `TilesResponse` plumbing keeps compiling — they always decode as null.
+ * existing mapper keeps its name.
  */
 @Serializable
 data class V1ListTilesResponse(
     @SerialName("items") val tiles: List<TileListView> = emptyList(),
     val count: Int = 0,
-    @SerialName("next_cursor") val nextCursor: String? = null,
-    @SerialName("next_actionable_tile_id") val nextActionableTileId: String? = null,
-    @SerialName("next_actionable_start_at") val nextActionableStartAt: String? = null
+    @SerialName("next_cursor") val nextCursor: String? = null
 )
 
 @Serializable
