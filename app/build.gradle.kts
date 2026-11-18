@@ -47,8 +47,8 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         targetSdk = 35
         // Play has already accepted versionCode 31. Keep the checked-in
         // release baseline monotonic; CI must never re-upload that artifact.
-        versionCode = 33
-        versionName = "0.6.0"
+        versionCode = 34
+        versionName = "0.7.0"
 
         // R17 (android-archdoc audit 2026-07-16): instrumented UI navigation tests.
         // The runner swaps the production Application for Hilt's HiltTestApplication
