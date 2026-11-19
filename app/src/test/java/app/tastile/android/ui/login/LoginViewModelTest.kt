@@ -225,6 +225,10 @@ class LoginViewModelTest {
             signOutError?.let { throw it }
         }
 
+        override fun markUnauthenticated() {
+            auth.value = TastileAuthState.Unauthenticated
+        }
+
         override fun currentSessionToken(): String? = null
     }
 }

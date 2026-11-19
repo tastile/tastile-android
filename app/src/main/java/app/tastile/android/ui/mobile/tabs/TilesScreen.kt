@@ -82,7 +82,6 @@ fun TilesScreen(
         null
     } else {
         timelineProjectionViewModel
-            ?: runCatching { hiltViewModel<TilesTimelineProjectionViewModel>() }.getOrNull()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

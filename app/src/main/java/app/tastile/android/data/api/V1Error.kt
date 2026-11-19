@@ -21,6 +21,14 @@ data class ResolutionViolationBody(
 sealed class V1Error(message: String, cause: Throwable? = null) : Exception(message, cause) {
     class Network(cause: Throwable) : V1Error("network error", cause)
     class Auth : V1Error("auth missing or invalid")
+
+    /**
+     * Core rejected the bearer token with HTTP 401. This is the only signal
+     * that triggers a token re-mint + single-flight retry in
+     * [V1ApiClient.withBearer]; every other status is a normal error.
+     */
+    class Unauthorized : V1Error("http 401: bearer token rejected by core")
+
     class Unknown(status: Int, body: String) : V1Error("http $status: $body")
     data class Api(val kindValue: Short, val kindName: String, override val message: String, val currentRevision: Long? = null) : V1Error(message)
 

@@ -23,8 +23,8 @@ Tastile Android の current release-driven development で使用する Operating
 ### Release planning
 
 - cross-repository planning / portfolio は Tastile workspace root の current canonical decision に従う
-- この repository では GitHub Issues が無効なため、upstream の Issue-number ticket workflow はそのまま適用できない
-- durable work identity は workspace/root の canonical planning surface と Pull Request / Git ref で明示し、Issue が存在するふりをしない
+- GitHub Issues は有効で運用中。top-level durable work は Issue、ticket branch は Issue number only とする upstream の Issue-number ticket workflow をそのまま適用する
+- durable work identity は GitHub Issue / Pull Request / Git ref で明示する
 
 ### Delivery defaults
 
@@ -146,7 +146,7 @@ explicit user/project decisionとして固定されたrelease scope/version/publ
 
 - Shared cross-repository policy is coordinated by `tastile/tastile-root`.
 - This repository owns repository-local implementation, verification, and delivery facts.
-- GitHub Issues are currently disabled here; enabling them is a separate repository-setting decision.
+- GitHub Issues are enabled and in use; the Issue-number ticket workflow applies as written upstream.
 
 ## Agent Skills lifecycle
 

@@ -1,5 +1,6 @@
 package app.tastile.android.data.api
 
+import android.util.Log
 import app.tastile.android.BuildConfig
 import app.tastile.android.data.tile.TileFilter
 import app.tastile.android.data.tile.toQueryString
@@ -60,9 +61,29 @@ internal object V1Endpoints {
         return "/v1/timeline?start=$startIso&end=$endIso$owners"
     }
 }
+ 
+ private const val HTTP_UNAUTHORIZED = 401
+private const val TAG = "V1ApiClient"
 
-/** Serializes the v1 `CommandRequest<T>` wire format used by tastile-web. */
-internal object V1Wire {
+/**
+ * Page size for the keyset-paged read endpoints (contract v2.0.0+). The
+ * spec accepts 1..1000 (default 100); the client always asks for the maximum so
+ * full-list reads need as few round-trips as possible.
+ */
+private const val PAGED_READ_LIMIT = 1000
+
+/**
+ * Safety bound on cursor-following loops. A well-behaved server ends every
+ * list with `next_cursor = null`; this only guards against a buggy cursor
+ * that never terminates.
+ */
+private const val MAX_PAGE_COUNT = 100
+
+private fun encodeQueryParam(value: String): String =
+    URLEncoder.encode(value, Charsets.UTF_8.name())
+ 
+ /** Serializes the v1 `CommandRequest<T>` wire format used by tastile-web. */
+ internal object V1Wire {
     fun commandEnvelope(
         payload: JsonElement,
         idempotencyKey: String = V1Idempotency.generate(),
@@ -87,11 +108,22 @@ internal object V1WorkspaceWire {
 
 @Singleton
 class V1ApiClient @Inject constructor(
-    private val tokenProvider: AuthTokenProvider
+    private val tokenProvider: AuthTokenProvider,
+    private val tokenRefresher: TokenRefresher,
 ) {
     private var coreUrlOverride: String? = null
 
-    internal constructor(tokenProvider: AuthTokenProvider, coreUrl: String) : this(tokenProvider) {
+    /**
+     * Test-only constructor that points the client at a local server.
+     * [tokenRefresher] defaults to a no-op that reports failure, so a test
+     * server that answers 401 fails the request with [V1Error.Auth]
+     * instead of retrying; retry tests pass a real refresher.
+     */
+    internal constructor(
+        tokenProvider: AuthTokenProvider,
+        coreUrl: String,
+        tokenRefresher: TokenRefresher = TokenRefresher { null },
+    ) : this(tokenProvider, tokenRefresher) {
         coreUrlOverride = coreUrl.trim().trimEnd('/')
     }
 
@@ -103,62 +135,157 @@ class V1ApiClient @Inject constructor(
     private fun webAuthBaseUrl(): String =
         BuildConfig.WEB_BASE_URL.trim().trimEnd('/')
 
+    /**
+     * Runs [block] with a bearer token, recovering from a Core 401 exactly
+     * once: the rejected [staleToken] is discarded and re-minted through
+     * [TokenRefresher.refreshAfterUnauthorized] (single-flight, so
+     * parallel 401s share one re-mint), then [block] runs once more with
+     * the replacement token.
+     *
+     * Contracts:
+     *  - 401 is the only refresh trigger. The minted token expires at
+     *    now + 90 days (tastile-web#199) and time-based renewal is out of
+     *    scope here — a non-401 error propagates without any retry.
+     *  - a failed re-mint surfaces as [V1Error.Auth]; by then
+     *    [app.tastile.android.data.auth.ApiTokenCache] has already
+     *    transitioned the auth state to unauthenticated, so callers stop
+     *    instead of retrying (bounded: at most one retry per request).
+     *  - a second 401 propagates as [V1Error.Unauthorized] — never a
+     *    third attempt.
+     */
+    private suspend fun <T> withBearer(block: suspend (token: String) -> T): T {
+        val stale = tokenProvider()
+        if (stale.isNullOrBlank()) throw V1Error.Auth()
+        try {
+            return block(stale)
+        } catch (e: V1Error.Unauthorized) {
+            Log.w(TAG, "core rejected bearer; re-minting and retrying the request once")
+            val fresh = tokenRefresher.refreshAfterUnauthorized(stale)
+                ?: throw V1Error.Auth()
+            return block(fresh)
+        }
+    }
+
+    /** Maps a non-2xx Core status onto the sealed [V1Error]; 401 first. */
+    private fun errorFor(status: Int, body: String): V1Error =
+        if (status == HTTP_UNAUTHORIZED) {
+            V1Error.Unauthorized()
+        } else {
+            runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
+                ?.let { V1Error.fromApiBody(it) }
+                ?: V1Error.Unknown(status, body.take(200))
+        }
+
     private suspend inline fun <reified T> get(path: String): T =
         json.decodeFromString(getRaw(path))
 
-    private suspend fun getRaw(path: String): String = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    /**
+     * Fetches every page of a `{items, count, next_cursor}` list endpoint
+     * (contract v2.0.0+, extended to more reads in v3.0.0) and returns the
+     * concatenated items. Callers that
+     * need the full list — e.g. `findPlacementForTile` picking the freshest
+     * placement — must not stop at the first page.
+     */
+    private suspend inline fun <reified T> getAllPages(path: String): List<T> {
+        val items = mutableListOf<T>()
+        var cursor: String? = null
+        var pages = 0
+        do {
+            pages += 1
+            if (pages > MAX_PAGE_COUNT) {
+                throw V1Error.Unknown(0, "paged read did not terminate: $path")
             }
-            val status = connection.responseCode
-            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
+            val query = buildString {
+                append("limit=$PAGED_READ_LIMIT")
+                cursor?.let { append("&cursor=").append(encodeQueryParam(it)) }
             }
-            body
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
+            val page: V1PagedRead<T> = get("$path?$query")
+            items += page.items
+            cursor = page.nextCursor
+        } while (cursor != null)
+        return items
+    }
+
+    private suspend fun getRaw(path: String): String = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                val status = connection.responseCode
+                val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, body)
+                }
+                body
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
+            }
         }
     }
 
     /**
-     * `/v1/tiles` from core returns a bare `[TileListView, ...]` array; the original
-     * envelope `{tiles: [...]}` is legacy. When the response is bare, we wrap it before
-     * handing the body to `V1ListTilesResponse`'s serializer so `nextActionableTileId`
-     * / `nextActionableStartAt` fall back to `null` (they're nullable in the DTO).
+     * `GET /v1/tiles` under contract v3.0.0 returns the keyset-paged
+     * `TileListResponse` envelope (`{items, count, next_cursor}`); `offset`
+     * was retired in favor of `cursor`. This reads the first page only —
+     * the dashboard list is intentionally page-sized by [TileFilter.limit].
+     * Callers that must see every row (e.g. `fetchTileById` resolving a
+     * tile outside the first page) use [listAllTiles] to follow
+     * `next_cursor`.
      */
     suspend fun getTiles(filter: TileFilter = TileFilter.DEFAULT): V1ListTilesResponse {
         val query = filter.toQueryString()
         val path = if (query.isEmpty()) "/v1/tiles" else "/v1/tiles?$query"
-        val body = getRaw(path)
-        val trimmed = body.trimStart()
-        // Core returns a bare `[TileListView, ...]` array; envelope `{tiles: [...]}` is legacy.
-        val wrapped = if (trimmed.startsWith("[")) {
-            "{\"tiles\":$body}"
-        } else {
-            body
-        }
-        return json.decodeFromString(wrapped)
+        return get(path)
+    }
+
+    /**
+     * Follows every `next_cursor` page of `GET /v1/tiles` for [filter] and
+     * returns the concatenated items, preserving the pre-v3.0.0 full-list
+     * semantics for lookups that must not stop at the first page. The
+     * filter's own `limit` stays the page size; `cursor` is appended per
+     * page.
+     */
+    suspend fun listAllTiles(filter: TileFilter): List<TileListView> {
+        // TileFilter always emits view_mode + limit, so the base query is
+        // never empty and "/v1/tiles?…" is always well-formed.
+        val base = filter.toQueryString()
+        val items = mutableListOf<TileListView>()
+        var cursor: String? = null
+        var pages = 0
+        do {
+            pages += 1
+            if (pages > MAX_PAGE_COUNT) {
+                throw V1Error.Unknown(0, "tiles paging did not terminate: /v1/tiles")
+            }
+            val page: V1ListTilesResponse = get(
+                "/v1/tiles?$base" +
+                    cursor?.let { "&cursor=${encodeQueryParam(it)}" }.orEmpty()
+            )
+            items += page.tiles
+            cursor = page.nextCursor
+        } while (cursor != null)
+        return items
     }
 
     suspend fun readTile(tileId: String): TileDetailView =
         get("/v1/tiles/$tileId")
 
+    /**
+     * `GET /v1/placements` is keyset-paged under contract v2.0.0
+     * (`{items, count, next_cursor}`). The dispatcher scans the whole list to
+     * find a tile's freshest placement, so every cursor page is followed.
+     */
     suspend fun listPlacements(): List<V1PlacementListItem> =
-        get("/v1/placements")
+        getAllPages("/v1/placements")
 
     /** Returns null when the account has no running execution. */
     suspend fun getActiveTile(): ActiveTileView? =
@@ -179,9 +306,24 @@ class V1ApiClient @Inject constructor(
     suspend fun finishExecution(executionId: String, kind: Int, note: String?): CommandResponse =
         postCommand(V1Endpoints.finishExecution(executionId), FinishExecutionPayload(kind, note), FinishExecutionPayload.serializer(), CommandResponse.serializer())
 
-    suspend fun listPendingSessions(): List<PendingSessionView> = get(V1Endpoints.PENDING_SESSIONS)
+    /**
+     * `GET /v1/sessions` is keyset-paged under contract v3.0.0
+     * (`{items, count, next_cursor}`); all cursor pages are followed to
+     * preserve the pre-v3.0.0 full-list semantics (the old bare array was
+     * capped at LIMIT 200).
+     */
+    suspend fun listPendingSessions(): List<PendingSessionView> =
+        getAllPages(V1Endpoints.PENDING_SESSIONS)
 
-    suspend fun listEndpoints(): List<EndpointView> = get(V1Endpoints.ENDPOINTS)
+    /**
+     * `GET /v1/endpoints` migrated to the canonical §15 list envelope
+     * (`{items, count, next_cursor}`) under the tastile-core#334 contract
+     * change. All cursor pages are followed to preserve the pre-migration
+     * full-list semantics — `PushEndpointRepository` scans the whole list
+     * for its stored endpoint id.
+     */
+    suspend fun listEndpoints(): List<EndpointView> =
+        getAllPages(V1Endpoints.ENDPOINTS)
 
     suspend fun registerEndpoint(payload: EndpointRegistrationPayload): EndpointView =
         postRawJson(
@@ -248,10 +390,54 @@ class V1ApiClient @Inject constructor(
     suspend fun reflowSourceTile(sourceTileId: String, payload: ReflowSourceTilePayload, expectedRevision: Long): CommandResponse =
         postCommand(V1Endpoints.reflowSourceTile(sourceTileId), payload, ReflowSourceTilePayload.serializer(), CommandResponse.serializer(), expectedRevision)
 
-    suspend fun readSourceTile(sourceTileId: String): SourceTileDetailRead = get(V1Endpoints.sourceTile(sourceTileId))
+    /**
+     * `GET /v1/source-tiles/{id}` pages its `occurrences` and `placements`
+     * collections independently (`occurrence_cursor` / `placement_cursor`).
+     * Both cursors are followed until exhausted and the pages are merged
+     * back into the flat [SourceTileDetailRead] lists, preserving the
+     * pre-v2.0.0 full-list semantics for callers.
+     */
+    suspend fun readSourceTile(sourceTileId: String): SourceTileDetailRead {
+        val path = V1Endpoints.sourceTile(sourceTileId)
+        val first: SourceTileDetailPage = get(path)
+        val occurrences = LinkedHashMap<String, SourceOccurrenceRead>()
+        first.occurrences.items.forEach { occurrences[it.occurrenceId] = it }
+        val placements = LinkedHashMap<String, SourcePlacementRead>()
+        first.placements.items.forEach { placements[it.placementId] = it }
+        var occurrenceCursor = first.occurrences.nextCursor
+        var placementCursor = first.placements.nextCursor
+        var pages = 0
+        while (occurrenceCursor != null || placementCursor != null) {
+            pages += 1
+            if (pages > MAX_PAGE_COUNT) {
+                throw V1Error.Unknown(0, "source tile detail paging did not terminate: $path")
+            }
+            val query = listOfNotNull(
+                occurrenceCursor?.let { "occurrence_cursor=${encodeQueryParam(it)}" },
+                placementCursor?.let { "placement_cursor=${encodeQueryParam(it)}" },
+            ).joinToString("&")
+            val page: SourceTileDetailPage = get("$path?$query")
+            // A collection whose cursor is exhausted resets to its first
+            // page on the next request; dedup by id keeps the merge correct.
+            page.occurrences.items.forEach { occurrences.putIfAbsent(it.occurrenceId, it) }
+            page.placements.items.forEach { placements.putIfAbsent(it.placementId, it) }
+            occurrenceCursor = page.occurrences.nextCursor
+            placementCursor = page.placements.nextCursor
+        }
+        return SourceTileDetailRead(
+            source = first.source,
+            occurrences = occurrences.values.toList(),
+            placements = placements.values.toList(),
+        )
+    }
 
+    /**
+     * `GET /v1/source-tiles/{id}/placements` is keyset-paged under contract
+     * v2.0.0; all cursor pages are followed to preserve the full-list
+     * contract.
+     */
     suspend fun listSourceTilePlacements(sourceTileId: String): List<SourcePlacementRead> =
-        get(V1Endpoints.sourceTilePlacements(sourceTileId))
+        getAllPages(V1Endpoints.sourceTilePlacements(sourceTileId))
 
     suspend fun listRuntimePaths(): V1ListRuntimePathsResponse =
         get("/v1/runtime/paths")
@@ -317,39 +503,37 @@ class V1ApiClient @Inject constructor(
         payloadSerializer: KSerializer<Req>,
         responseSerializer: KSerializer<Resp>,
         expectedRevision: Long? = null,
-    ): Resp = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val encodedPayload = json.encodeToJsonElement(payloadSerializer, payload)
-            val envelope = V1Wire.commandEnvelope(
-                payload = encodedPayload,
-                expectedRevision = expectedRevision,
-            )
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ): Resp = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val encodedPayload = json.encodeToJsonElement(payloadSerializer, payload)
+                val envelope = V1Wire.commandEnvelope(
+                    payload = encodedPayload,
+                    expectedRevision = expectedRevision,
+                )
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, body)
+                }
+                json.decodeFromString(responseSerializer, body)
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-            json.decodeFromString(responseSerializer, body)
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -359,37 +543,35 @@ class V1ApiClient @Inject constructor(
         payloadSerializer: KSerializer<Req>,
         responseSerializer: KSerializer<Resp>,
         expectedRevision: Long? = null,
-    ): Resp = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val envelope = V1Wire.commandEnvelope(
-                payload = json.encodeToJsonElement(payloadSerializer, payload),
-                expectedRevision = expectedRevision,
-            )
-            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
-                requestMethod = "PUT"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ): Resp = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val envelope = V1Wire.commandEnvelope(
+                    payload = json.encodeToJsonElement(payloadSerializer, payload),
+                    expectedRevision = expectedRevision,
+                )
+                val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "PUT"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, body)
+                }
+                json.decodeFromString(responseSerializer, body)
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-            json.decodeFromString(responseSerializer, body)
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -403,21 +585,21 @@ class V1ApiClient @Inject constructor(
         responseSerializer = responseSerializer,
     )
 
-    suspend fun <Req> postCommandNoResponse(path: String, payload: Req, payloadSerializer: KSerializer<Req>) = withContext(Dispatchers.IO) {
-        val token = tokenProvider()
-        if (token.isNullOrBlank()) throw V1Error.Auth()
-        val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"; doOutput = true; doInput = true
-            setRequestProperty("Authorization", "Bearer $token")
-            setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Accept", "application/json")
-            connectTimeout = 15_000; readTimeout = 15_000
+    suspend fun <Req> postCommandNoResponse(path: String, payload: Req, payloadSerializer: KSerializer<Req>) = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"; doOutput = true; doInput = true
+                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15_000; readTimeout = 15_000
+            }
+            val envelope = V1Wire.commandEnvelope(json.encodeToJsonElement(payloadSerializer, payload))
+            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+            val status = connection.responseCode
+            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (status !in 200..299) throw errorFor(status, body)
         }
-        val envelope = V1Wire.commandEnvelope(json.encodeToJsonElement(payloadSerializer, payload))
-        connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-        val status = connection.responseCode
-        val body = (if (status in 200..299) connection.inputStream else connection.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
-        if (status !in 200..299) throw V1Error.Unknown(status, body.take(200))
     }
 
     /**
@@ -429,35 +611,33 @@ class V1ApiClient @Inject constructor(
         path: String,
         body: JsonObject,
         responseSerializer: KSerializer<Resp>
-    ): Resp = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("Idempotency-Key", V1Idempotency.generate())
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ): Resp = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    setRequestProperty("Idempotency-Key", V1Idempotency.generate())
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, responseBody)
+                }
+                json.decodeFromString(responseSerializer, responseBody)
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(responseBody) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, responseBody.take(200))
-            }
-            json.decodeFromString(responseSerializer, responseBody)
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -465,32 +645,30 @@ class V1ApiClient @Inject constructor(
         path: String,
         body: JsonObject,
         responseSerializer: KSerializer<Resp>,
-    ): Resp = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
-                requestMethod = "PATCH"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ): Resp = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val connection = (URL("${baseUrl()}$path").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "PATCH"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }.orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, responseBody)
+                }
+                json.decodeFromString(responseSerializer, responseBody)
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val responseBody = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }.orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(responseBody) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, responseBody.take(200))
-            }
-            json.decodeFromString(responseSerializer, responseBody)
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -500,38 +678,36 @@ class V1ApiClient @Inject constructor(
         payload: Req,
         payloadSerializer: KSerializer<Req>,
         expectedRevision: Long? = null,
-    ) = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "DELETE"
-                doOutput = true
-                doInput = true
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    ) = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "DELETE"
+                    doOutput = true
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                val envelope = V1Wire.commandEnvelope(
+                    payload = json.encodeToJsonElement(payloadSerializer, payload),
+                    expectedRevision = expectedRevision,
+                )
+                connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
+                val status = connection.responseCode
+                val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }
+                    .orEmpty()
+                if (status !in 200..299) {
+                    throw errorFor(status, body)
+                }
+                Unit
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            val envelope = V1Wire.commandEnvelope(
-                payload = json.encodeToJsonElement(payloadSerializer, payload),
-                expectedRevision = expectedRevision,
-            )
-            connection.outputStream.use { it.write(envelope.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            val body = (if (status in 200..299) connection.inputStream else connection.errorStream)
-                ?.bufferedReader()?.use { it.readText() }
-                .orEmpty()
-            if (status !in 200..299) {
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-            Unit
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 
@@ -541,27 +717,25 @@ class V1ApiClient @Inject constructor(
      * 204 NO CONTENT) where the [deleteCommand] envelope-decoding
      * path is not appropriate.
      */
-    suspend fun deleteRaw(path: String) = withContext(Dispatchers.IO) {
-        try {
-            val token = tokenProvider()
-            if (token.isNullOrBlank()) throw V1Error.Auth()
-            val url = URL("${baseUrl()}$path")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "DELETE"
-                setRequestProperty("Authorization", "Bearer $token")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+    suspend fun deleteRaw(path: String) = withBearer { token ->
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL("${baseUrl()}$path")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "DELETE"
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                }
+                val status = connection.responseCode
+                if (status !in 200..299) {
+                    val body = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                    throw errorFor(status, body)
+                }
+            } catch (e: IOException) {
+                throw V1Error.Network(e)
             }
-            val status = connection.responseCode
-            if (status !in 200..299) {
-                val body = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-                val err = runCatching { json.decodeFromString<V1ApiErrorBody>(body) }.getOrNull()
-                if (err != null) throw V1Error.fromApiBody(err)
-                throw V1Error.Unknown(status, body.take(200))
-            }
-        } catch (e: IOException) {
-            throw V1Error.Network(e)
         }
     }
 

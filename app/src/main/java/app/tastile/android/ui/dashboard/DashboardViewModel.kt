@@ -165,12 +165,6 @@ class DashboardViewModel @Inject constructor(
     private val _tileFilter = MutableStateFlow(TileFilter.DEFAULT)
     val tileFilter: StateFlow<TileFilter> = _tileFilter.asStateFlow()
 
-    private val _nextActionableTileId = MutableStateFlow<String?>(null)
-    val nextActionableTileId: StateFlow<String?> = _nextActionableTileId.asStateFlow()
-
-    private val _nextActionableStartAt = MutableStateFlow<String?>(null)
-    val nextActionableStartAt: StateFlow<String?> = _nextActionableStartAt.asStateFlow()
-
     private val _executionControlStates = MutableStateFlow<Map<String, ExecutionControlState>>(emptyMap())
     val executionControlStates: StateFlow<Map<String, ExecutionControlState>> = _executionControlStates.asStateFlow()
     private val _executionControlInFlightTileIds = MutableStateFlow<Set<String>>(emptySet())
@@ -888,8 +882,6 @@ class DashboardViewModel @Inject constructor(
                         reloadVisibleTilesAndExecutionControls(filter)
                     } else {
                         _tiles.value = emptyList()
-                        _nextActionableTileId.value = null
-                        _nextActionableStartAt.value = null
                         _executionControlStates.value = emptyMap()
                         _statsDiagnostics.value = "source=none reason=unauthenticated"
                     }
@@ -1159,8 +1151,6 @@ class DashboardViewModel @Inject constructor(
     private suspend fun reloadVisibleTilesAndExecutionControls(filter: TileFilter) {
         val response = tileRepository.getTiles(filter)
         _tiles.value = response.tiles.distinctBy { it.id }
-        _nextActionableTileId.value = response.nextActionableTileId
-        _nextActionableStartAt.value = response.nextActionableStartAt
         refreshExecutionControlStates(response.tiles.distinctBy { it.id })
         _statsDiagnostics.value = tileRepository.latestReadDiagnostics()
     }

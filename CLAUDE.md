@@ -83,9 +83,9 @@ Auth and server-backed reads go through Better Auth (system browser → `/api/mo
   ADR-0008). They reconstruct from Issue / PR / commit graph plus the canonical
   schemas under `.agent-loop/checkpoint.schema.json` and
   `.agent-loop/agent-result.schema.json`; they do not infer from prior conversation.
-- Commit-time isolation is provided by the `tastile-precommit-review` Skill
-  (snapshot / fast gate / reviewer); a committed snapshot is the de-facto soft
-  checkpoint when the commit boundary is the recovery boundary.
+- 旧 per-commit reviewer loop は ADR-0021 により廃止済み。commit 前は root の
+  `../.agents/skills/verify-tastile-change/SKILL.md` に従って binding verification を行う。
+  ADR-0008 の durable checkpoint と `.agent-loop/` schema は引き続き維持する。
 - Do not write new Python scripts in this repo. Use Kotlin, shell, or PowerShell as appropriate.
 - Search with `rg` / `rg --files`; prefer semantic navigation via the Kotlin language tooling already in `.tools/`.
 - Never commit: `local.properties`, `google-services.json`, keystores, `.env*` with real values, generated `app/src/main/jniLibs/`, or anything in `reference/`, `.build-logs/`, `.tools/`.

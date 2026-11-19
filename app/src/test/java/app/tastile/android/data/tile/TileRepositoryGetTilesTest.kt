@@ -14,14 +14,13 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * C3 read-path coverage: `TileRepository.getTiles(filter)` must pass the
- * filter through to `V1ApiClient.getTiles(filter)` and surface the
- * `next_actionable_*` fields into [TilesResponse].
+ * filter through to `V1ApiClient.getTiles(filter)` and map the tiles into
+ * [TilesResponse].
  */
 class TileRepositoryGetTilesTest {
 
@@ -67,22 +66,20 @@ class TileRepositoryGetTilesTest {
     }
 
     @Test
-    fun getTiles_threadsNextActionableFieldsIntoResponse() = runTest {
+    fun getTiles_mapsResponseTiles() = runTest {
         val apiClient = mockk<V1ApiClient>()
         coEvery { apiClient.getTiles(any()) } returns V1ListTilesResponse(
             tiles = listOf(
                 TileListView(id = "t-1", title = "Now", lifecycle = V1NumericConstants.LifecycleCode.STARTED)
             ),
-            nextActionableTileId = "t-1",
-            nextActionableStartAt = "2026-07-08T09:00:00Z",
         )
         val repository = newRepository(apiClient)
 
         val response = repository.getTiles(TileFilter.DEFAULT)
 
-        assertEquals("t-1", response.nextActionableTileId)
-        assertEquals("2026-07-08T09:00:00Z", response.nextActionableStartAt)
-        assertTrue(repository.latestReadDiagnostics().contains("next_tile=t-1"))
+        assertEquals(1, response.tiles.size)
+        assertEquals("Now", response.tiles.first().title)
+        assertTrue(repository.latestReadDiagnostics().startsWith("source=v1 "))
     }
 
     @Test
@@ -94,8 +91,6 @@ class TileRepositoryGetTilesTest {
 
         coVerify(exactly = 0) { apiClient.getTiles(any()) }
         assertEquals(0, response.tiles.size)
-        assertNull(response.nextActionableTileId)
-        assertNull(response.nextActionableStartAt)
         assertTrue(repository.latestReadDiagnostics().startsWith("source=v1_skipped "))
     }
 }
