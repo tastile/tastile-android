@@ -726,8 +726,21 @@ tasks.named("generateV1Api").configure {
                 val stripped = original
                     .replace(Regex("@JsonClass\\(generateAdapter = true\\)\\s*\n"), "")
                     .replace(Regex("@JsonClass\\(generateAdapter = false\\)\\s*\n"), "")
-                if (stripped != original) {
-                    file.writeText(stripped)
+                // The kotlin generator emits one `auth/<Scheme>Auth.kt` per
+                // security scheme but names every apiKey scheme `ApiKeyAuth`,
+                // so ApiClient.kt imports the same class once per apiKey
+                // scheme (CONFLICTING_IMPORT). The class is generic
+                // (location + paramName ctor args), so collapsing duplicate
+                // imports is sufficient (openapi v3.8.x added webAssertion /
+                // bridge / cookie apiKey schemes). The duplicates are not
+                // necessarily consecutive (HttpBearerAuth sits between them),
+                // so dedupe by first occurrence instead.
+                val seenImports = mutableSetOf<String>()
+                val deduped = (stripped.lines().filter { line ->
+                    !line.startsWith("import ") || seenImports.add(line)
+                }.joinToString("\n") + "\n")
+                if (deduped != original) {
+                    file.writeText(deduped)
                 }
             }
     }
