@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   unit-tests:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - name: Checkout
@@ -94,7 +94,7 @@ jobs:
   # Failure evidence uploaded on every run: connected-test reports +
   # androidTest results + logcat + on-device canary screenshots/hierarchy.
   android-interaction-canary:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     timeout-minutes: 45
 
     steps:
