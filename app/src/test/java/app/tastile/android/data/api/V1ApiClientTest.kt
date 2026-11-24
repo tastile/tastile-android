@@ -40,6 +40,27 @@ class V1ApiClientTest {
     }
 
     @Test
+    fun idempotency_key_random_bits_fill_tail_bytes() {
+        // Regression for the copyOfRange bug: bytes[9..15] stayed zero, leaving
+        // only ~10 effective random bits per millisecond and making same-ms
+        // collisions likely. With the full 74-bit random field, thousands of
+        // keys generated in a tight loop must all be distinct.
+        val keys = (1..4096).map { V1Idempotency.generate() }
+        assertEquals(
+            "UUIDv7 random tail must make every key unique",
+            keys.size,
+            keys.toSet().size,
+        )
+        // bytes[9..15] map to the last 14 hex digits; the copyOfRange bug left
+        // them all zero, collapsing every tail to "00000000000000".
+        val tails = keys.map { it.replace("-", "").takeLast(14) }
+        assertTrue(
+            "random tail bytes must vary across keys",
+            tails.distinct().size > 1000,
+        )
+    }
+
+    @Test
     fun api_error_maps_to_sealed_branch() {
         val body = V1ApiErrorBody(kind = V1NumericConstants.ApiErrorKind.STALE_REVISION, message = "stale", currentRevision = 12)
         val error = V1Error.fromApiBody(body)
