@@ -49,7 +49,7 @@ class AccountRepository @Inject constructor(
             AccountTokenView(
                 id = dto.canonicalId,
                 displayName = dto.displayName,
-                tokenPrefix = dto.tokenPrefix.orEmpty(),
+                tokenPrefix = dto.resolvedTokenPrefix.orEmpty(),
                 createdAt = dto.createdAt,
                 lastUsedAt = dto.lastUsedAt,
                 lastUsedPath = dto.lastUsedPath,
@@ -60,9 +60,9 @@ class AccountRepository @Inject constructor(
     suspend fun createToken(label: String?): AccountTokenWithSecret =
         accountApi.createToken(label).let { dto ->
             AccountTokenWithSecret(
-                id = dto.tokenId,
+                id = dto.canonicalId,
                 displayName = (dto.label ?: dto.name ?: "").trim(),
-                tokenPrefix = dto.tokenPrefix.orEmpty(),
+                tokenPrefix = dto.resolvedTokenPrefix.orEmpty(),
                 createdAt = dto.createdAt,
                 secret = dto.secret,
             )

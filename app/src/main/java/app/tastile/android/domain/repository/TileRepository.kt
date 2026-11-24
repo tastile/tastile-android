@@ -28,12 +28,8 @@ interface TileRepository {
 
 /**
  * Trimmed mirror of [app.tastile.android.data.tile.TileRepository.TilesResponse].
- * Domain callers don't need the raw v1 diagnostics strings, only the
- * surface list plus the two `next_actionable_*` hints the dashboard
- * surfaces.
+ * Domain callers only need the surface list.
  */
 data class TilesResult(
     val tiles: List<Tile>,
-    val nextActionableTileId: String?,
-    val nextActionableStartAt: String?,
 )

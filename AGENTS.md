@@ -28,21 +28,27 @@ upstream verbatim なので trigger は upstream と一致する。更新は `gi
 
 ## Agent Skills (delivery / orchestration, project-local)
 
-並行 agent 駆動の delivery / orchestration / governance 用に 16 件を
-project-local canonical (`.agents/skills/<name>/SKILL.md` + `.claude/skills/`
-adapter) として保持する。通常 task では必要な Skill だけを読む。
+並行 agent 駆動の delivery / orchestration / governance 用の Skill を
+project-local canonical (`.agents/skills/<name>/SKILL.md`) として保持する。
+`.claude/skills/` は adapter (symlink または pointer) で、`skills-lock.json`
+が導入元と content hash を記録する。通常 task では必要な Skill だけを読む。
 
-- `github-delivery`, `parallel-orchestration`, `agent-recovery`,
+- `rebuildup/project-init` 由来 (lock 管理、`mise run skills-update` で追従):
+  `github-delivery`, `parallel-orchestration`, `agent-recovery`,
   `quality-gate`, `sandbox-runtime`, `security-maintenance`,
-  `engineering-decisions`, `onboarding`
-  (from local agent config `~/.config/opencode/skills/`, vendored 2026-09-15)
-- `agent-delivery-estimation`, `correctness-assurance`, `policy-evaluation`,
-  `design-refinement`, `writing-discipline`, `interaction-discipline`,
-  `linear-release-control`, `worktree-workflow`
-  (project-local authored, 2026-09-15 — no upstream; reconcile against task
-  prompt §10 on next init)
+  `security-audit`, `secrets-management`, `engineering-decisions`,
+  `onboarding`, `interaction-discipline`, `agent-delivery-estimation`,
+  `correctness-assurance`, `policy-evaluation`, `design-refinement`,
+  `linear-release-control`, `worktree-workflow`, `herdr-runtime`,
+  `skill-selection`, `orca-frontend`, `code-naming`, `idea-discovery`
+- 外部 Skill (`--copy` 導入、lock 管理): `natural-japanese`
+  (rebuildup/writing-skills), `diagnosing-bugs` (mattpocock/skills),
+  `tdd` (cursor/plugins — `disable-model-invocation`, 手動起動のみ)
+- `writing-discipline` — upstream canonical が `rebuildup/writing-skills`
+  側へ移り project-init の `skills/` からは削除されたため、lock 管理を
+  外して project-local として保持する
 - `buildconfig-guard-check`, `design-system-imports-check`,
-  `openapi-spec-refresh`, `tastile-precommit-review` (repo-specific guards)
+  `openapi-spec-refresh` (repo-specific guards)
 
 ## Build and Verify
 

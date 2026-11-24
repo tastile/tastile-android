@@ -1,6 +1,7 @@
 package app.tastile.android.data.di
 
 import app.tastile.android.BuildConfig
+import app.tastile.android.data.api.TokenRefresher
 import app.tastile.android.data.api.V1AuthInterceptor
 import app.tastile.android.data.api.generated.v1.apis.ReadApi
 import app.tastile.android.data.api.generated.v1.apis.SourceTileApi
@@ -67,6 +68,10 @@ object V1NetworkModule {
 
     @Provides
     @Singleton
+    fun provideTokenRefresher(apiTokenCache: ApiTokenCache): TokenRefresher = apiTokenCache
+
+    @Provides
+    @Singleton
     @V1Moshi
     fun provideV1Moshi(): Moshi = Moshi.Builder()
         // Generated v1 DTOs expose `java.time.OffsetDateTime` / `OffsetTime`
@@ -75,6 +80,7 @@ object V1NetworkModule {
         // while preserving the server-supplied offset.
         .add(OffsetDateTimeJsonAdapter())
         .add(OffsetTimeJsonAdapter())
+        .add(LocalDateJsonAdapter())
         // Generated v1 DTOs also expose `java.util.UUID` fields (e.g.
         // `ownerId` on SourceTileRead). Moshi refuses platform types without
         // an explicit adapter, so register a string-backed one.

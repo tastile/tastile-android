@@ -55,6 +55,7 @@ class V1GeneratedApiClientTest {
         val moshi = Moshi.Builder()
             .add(UuidAdapter)
             .add(OffsetDateTimeAdapter)
+            .add(LocalDateAdapter)
             .add(KotlinJsonAdapterFactory())
             .build()
         val token: suspend () -> String? = { "test-token" }
@@ -87,10 +88,11 @@ class V1GeneratedApiClientTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]")
+                .setBody("""{"items":[],"count":0,"next_cursor":null}""")
         )
-        val tiles = client.listTiles()
-        assertEquals(0, tiles.size)
+        val page = client.listTiles()
+        assertEquals(0, page.items.size)
+        assertEquals(0, page.count)
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
         assertEquals("/v1/tiles", recorded.path)
@@ -102,7 +104,7 @@ class V1GeneratedApiClientTest {
         server.enqueue(
             MockResponse().setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]")
+                .setBody("""{"items":[],"count":0,"next_cursor":null}""")
         )
         client.listTiles(
             ownerIds = "11111111-1111-1111-1111-111111111111,22222222-2222-2222-2222-222222222222",
@@ -156,10 +158,11 @@ class V1GeneratedApiClientTest {
         server.enqueue(
             MockResponse().setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]")
+                .setBody("""{"items":[],"count":0,"next_cursor":null}""")
         )
-        val list = client.listSourceTiles()
-        assertEquals(0, list.size)
+        val page = client.listSourceTiles()
+        assertEquals(0, page.items.size)
+        assertEquals(0, page.count)
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
         assertEquals("/v1/source-tiles", recorded.path)
@@ -170,10 +173,10 @@ class V1GeneratedApiClientTest {
         server.enqueue(
             MockResponse().setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]")
+                .setBody("""{"items":[],"count":0,"next_cursor":null}""")
         )
-        val placements = client.listSourceTilePlacements(UUID.fromString(SOURCE_ID))
-        assertEquals(0, placements.size)
+        val page = client.listSourceTilePlacements(UUID.fromString(SOURCE_ID))
+        assertEquals(0, page.items.size)
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
         assertEquals("/v1/source-tiles/$SOURCE_ID/placements", recorded.path)
@@ -226,7 +229,7 @@ class V1GeneratedApiClientTest {
                         end = REFLOW_END,
                     ),
                 ),
-                expectedRevision = null,
+                expectedRevision = 9,
                 occurredAt = null,
             ),
         )
@@ -238,6 +241,10 @@ class V1GeneratedApiClientTest {
         assertTrue(
             "expected range in body, got: $body",
             body.contains("\"range\":{")
+        )
+        assertTrue(
+            "expected_revision is required (non-null) under contract v2.0.0, got: $body",
+            body.contains("\"expected_revision\":9")
         )
     }
 
@@ -323,6 +330,14 @@ private object UuidAdapter {
 
     @ToJson
     fun toJson(value: UUID): String = value.toString()
+}
+
+private object LocalDateAdapter {
+    @FromJson
+    fun fromJson(value: String): java.time.LocalDate = java.time.LocalDate.parse(value)
+
+    @ToJson
+    fun toJson(value: java.time.LocalDate): String = value.toString()
 }
 
 private object OffsetDateTimeAdapter {

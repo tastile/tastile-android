@@ -3,7 +3,6 @@ package app.tastile.android.data.api
 import app.tastile.android.data.model.Tile
 import app.tastile.android.data.model.TileLifecycle
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -271,8 +270,6 @@ class V1MappersTest {
                 listView(id = "t-2", title = "Place", lifecycleCode = V1NumericConstants.LifecycleCode.READY),
                 listView(id = "t-3", title = "Recur", lifecycleCode = V1NumericConstants.LifecycleCode.DONE),
             ),
-            nextActionableTileId = "t-1",
-            nextActionableStartAt = "2026-07-07T09:00:00Z",
         )
 
         val tiles: List<Tile> = response.toTiles(userId = "owner-1")
@@ -282,9 +279,5 @@ class V1MappersTest {
         assertEquals(TileLifecycle.STARTED.value, tiles[0].lifecycle)
         assertEquals(TileLifecycle.READY.value, tiles[1].lifecycle)
         assertEquals(TileLifecycle.DONE.value, tiles[2].lifecycle)
-        // next_* optional fields are surfaced at the response level for C3+;
-        // assert they at least exist on the wire class.
-        assertNotNull(response.nextActionableTileId)
-        assertNotNull(response.nextActionableStartAt)
     }
 }

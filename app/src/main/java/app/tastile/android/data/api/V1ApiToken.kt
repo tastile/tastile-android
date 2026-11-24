@@ -52,6 +52,7 @@ data class V1ApiTokenCreateResponse(
 data class V1ApiTokenView(
     @SerialName("id") val id: String,
     @SerialName("label") val label: String? = null,
+    @SerialName("prefix") val prefix: String? = null,
     @SerialName("scopes") val scopes: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("last_used_at") val lastUsedAt: String? = null,
@@ -59,7 +60,13 @@ data class V1ApiTokenView(
     @SerialName("revoked_at") val revokedAt: String? = null,
 )
 
+/**
+ * `GET /v1/api-tokens` returns the canonical §15 list envelope
+ * (`{items, count, next_cursor}`) since tastile-core#334.
+ */
 @Serializable
 data class V1ListApiTokensResponse(
-    val tokens: List<V1ApiTokenView> = emptyList(),
+    val items: List<V1ApiTokenView> = emptyList(),
+    val count: Int = 0,
+    @SerialName("next_cursor") val nextCursor: String? = null,
 )

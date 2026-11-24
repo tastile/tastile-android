@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   unit-tests:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - name: Checkout
@@ -53,9 +53,10 @@ jobs:
         with:
           repository: tastile/tastile-openapi
           path: tastile-openapi
-          # A04: pin to canonical v1.0.0 freeze (C07 confirmed, R01 status:ready).
-          # Do NOT change without an associated plan and the next release's SHA bump.
-          ref: b0c781dc18111645324e2abc38621b1564d4c518
+          # Pin to the contract this client implements: tastile-openapi v3.8.1
+          # (tag commit 49a1b44). Bump only
+          # together with a client contract migration (issue #107).
+          ref: 49a1b449f22ca70b66989dbcebe224fd50c57d26
 
       - name: Set verify-only environment configuration
         run: |
@@ -93,7 +94,7 @@ jobs:
   # Failure evidence uploaded on every run: connected-test reports +
   # androidTest results + logcat + on-device canary screenshots/hierarchy.
   android-interaction-canary:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     timeout-minutes: 45
 
     steps:
@@ -115,9 +116,8 @@ jobs:
         with:
           repository: tastile/tastile-openapi
           path: tastile-openapi
-          # Same canonical v1.0.0 freeze as the unit-tests job. Do NOT change
-          # without an associated plan and the next release's SHA bump.
-          ref: b0c781dc18111645324e2abc38621b1564d4c518
+          # Same v3.8.1 contract pin as the unit-tests job (issue #107).
+          ref: 49a1b449f22ca70b66989dbcebe224fd50c57d26
 
       - name: Set verify-only environment configuration
         run: |

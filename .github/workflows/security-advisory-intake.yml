@@ -46,7 +46,7 @@ permissions:
 jobs:
   open-issue:
     name: Open Issue from advisory
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     steps:
       - name: Validate inputs and open Issue
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7

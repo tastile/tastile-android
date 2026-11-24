@@ -112,7 +112,7 @@ class QuickCreateCreateJourneyCanaryTest {
         every { userSettingsRepo.getLocale() } returns AppLocale.EN
         every { authRepo.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()
-        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")
         val dashboardVm = DashboardViewModel(
             authRepository = authRepo,

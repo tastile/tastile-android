@@ -168,10 +168,10 @@ handlers and re-running `dump_openapi` — this is core-side work tracked here.
 | `GET /v1/auth/session` | — | not implemented |
 | `POST /v1/auth/session/restore` | — | not implemented |
 | `GET /v1/auth/oauth/status` | — | not implemented |
-| `POST /v1/api-tokens` | — | hand-rolled in `V1ApiClient.mintApiTokenViaWeb` |
-| `GET /v1/api-tokens` | — | not implemented |
+| `POST /v1/api-tokens` | — | hand-rolled in `V1ApiClient.mintApiTokenViaWeb` / `BetterAuthAccountApi.createToken` |
+| `GET /v1/api-tokens` | — | hand-rolled in `BetterAuthAccountApi.listTokens` (§15 `{items,count,next_cursor}` envelope) |
 | `PATCH /v1/api-tokens/{id}` | — | not implemented |
-| `DELETE /v1/api-tokens/{id}` | — | not implemented |
+| `DELETE /v1/api-tokens/{id}` | — | hand-rolled in `BetterAuthAccountApi.revokeToken` |
 | `GET /v1/health` | — | not implemented |
 | `GET /v1/ready` | — | not implemented |
 | `GET /v1/version` | — | not implemented |

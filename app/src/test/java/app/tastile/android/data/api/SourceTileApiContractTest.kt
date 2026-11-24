@@ -140,6 +140,6 @@ class SourceTileApiContractTest {
 
     private companion object {
         const val commandResponseJson = "{\"command_id\":\"019ef8d5-354a-7bd2-b22a-b4bd372ea0d1\",\"accepted_at\":\"2026-07-19T00:00:00Z\",\"result\":0,\"pending\":[]}"
-        const val sourceDetailJson = "{\"source\":{\"source_tile_id\":\"source-1\",\"plan_id\":\"plan-1\",\"owner_id\":\"owner-1\",\"revision\":1,\"title\":\"授業\",\"plan_role\":0,\"schedule\":{\"required_duration_ms\":1,\"generation\":{\"kind\":2,\"excluded_dates\":[]},\"window\":{\"start_offset_ms\":0,\"end_offset_ms\":1},\"split_policy\":{\"kind\":0},\"priority\":0},\"created_at\":\"2026-07-19T00:00:00Z\",\"updated_at\":\"2026-07-19T00:00:00Z\"},\"occurrences\":[],\"placements\":[]}"
+        const val sourceDetailJson = "{\"source\":{\"source_tile_id\":\"source-1\",\"plan_id\":\"plan-1\",\"owner_id\":\"owner-1\",\"revision\":1,\"title\":\"授業\",\"plan_role\":0,\"schedule\":{\"required_duration_ms\":1,\"generation\":{\"kind\":2,\"excluded_dates\":[]},\"window\":{\"start_offset_ms\":0,\"end_offset_ms\":1},\"split_policy\":{\"kind\":0},\"priority\":0},\"created_at\":\"2026-07-19T00:00:00Z\",\"updated_at\":\"2026-07-19T00:00:00Z\"},\"occurrences\":{\"items\":[],\"count\":0,\"next_cursor\":null},\"placements\":{\"items\":[],\"count\":0,\"next_cursor\":null}}"
     }
 }

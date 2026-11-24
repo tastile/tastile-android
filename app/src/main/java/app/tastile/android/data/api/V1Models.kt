@@ -164,11 +164,17 @@ data class TileView(
     val revision: Long
 )
 
+/**
+ * `GET /v1/tiles` under contract v3.0.0 returns the keyset-paged
+ * `TileListResponse` envelope (`{items, count, next_cursor}`); `offset` was
+ * retired in favor of `cursor`. The `items` array maps onto [tiles] so the
+ * existing mapper keeps its name.
+ */
 @Serializable
 data class V1ListTilesResponse(
-    val tiles: List<TileListView> = emptyList(),
-    @SerialName("next_actionable_tile_id") val nextActionableTileId: String? = null,
-    @SerialName("next_actionable_start_at") val nextActionableStartAt: String? = null
+    @SerialName("items") val tiles: List<TileListView> = emptyList(),
+    val count: Int = 0,
+    @SerialName("next_cursor") val nextCursor: String? = null
 )
 
 @Serializable
@@ -239,6 +245,36 @@ data class SourceTileDetailRead(
     val placements: List<SourcePlacementRead> = emptyList(),
 )
 
+/**
+ * Server-side keyset page envelope (`{items, count, next_cursor}`) shared by
+ * the paged read endpoints introduced in OpenAPI contract v2.0.0
+ * (`GET /v1/placements`, `GET /v1/source-tiles`,
+ * `GET /v1/source-tiles/{id}/placements`, and the nested occurrence /
+ * placement collections of `GET /v1/source-tiles/{id}`) and extended in
+ * contract v3.0.0 to `GET /v1/tiles`, `GET /v1/candidates`,
+ * `GET /v1/labels`, and `GET /v1/sessions`. `nextCursor` is null on the
+ * last page.
+ */
+@Serializable
+data class V1PagedRead<T>(
+    val items: List<T> = emptyList(),
+    val count: Int = 0,
+    @SerialName("next_cursor") val nextCursor: String? = null,
+)
+
+/**
+ * Wire shape of `GET /v1/source-tiles/{id}` under contract v2.0.0: the
+ * `occurrences` and `placements` collections are paged envelopes, not bare
+ * arrays. `V1ApiClient.readSourceTile` follows both cursors and collapses
+ * the pages back into the flat [SourceTileDetailRead] lists.
+ */
+@Serializable
+internal data class SourceTileDetailPage(
+    val source: SourceTileRead,
+    val occurrences: V1PagedRead<SourceOccurrenceRead> = V1PagedRead(),
+    val placements: V1PagedRead<SourcePlacementRead> = V1PagedRead(),
+)
+
 // --- Step 5 lookup models -----------------------------------------------
 //
 // The dispatcher uses these to translate v0 `tile.start / pause / continue /
@@ -306,10 +342,16 @@ data class UpdateWorkspaceInput(
     @SerialName("parent_subject_id") val parentSubjectId: String? = null,
 )
 
+/**
+ * `GET /v1/access/subjects?kind=1` is a §15-4 complete-set read: the
+ * caller's entire workspace set is returned untruncated, so `next_cursor`
+ * is always null. The field is modeled for contract fidelity.
+ */
 @Serializable
 data class V1ListWorkspacesResponse(
     val items: List<Workspace> = emptyList(),
     val count: Int = 0,
+    @SerialName("next_cursor") val nextCursor: String? = null,
 )
 
 @Serializable

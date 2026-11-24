@@ -24,7 +24,6 @@ import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.tastile.android.R
 import app.tastile.android.core.CoreTimelineItem
@@ -61,7 +60,7 @@ private const val INITIAL_ZOOM = 1.5f // day is 1.5x screen -> always scrollable
 /**
  * Top-level timeline screen. It observes page-local snapshots rather than
  * the dashboard's legacy aggregate timeline list. The optional ViewModel
- * parameter is a test seam; the production path resolves it from Hilt.
+ * parameter is a test seam; the production route supplies it from Hilt.
  */
 @Composable
 fun TimelineScreen(
@@ -72,13 +71,13 @@ fun TimelineScreen(
     val selectedDay by viewModel.selectedDay.collectAsStateWithLifecycle()
     val requestedScale by viewModel.scale.collectAsStateWithLifecycle()
     val zone = remember { ZoneId.systemDefault() }
-    val resolvedPageViewModel = resolveTimelinePageViewModel(pageViewModel)
+    val resolvedPageViewModel = pageViewModel
 
     if (resolvedPageViewModel == null) {
         // Plain ComponentActivity hosts used by isolated Compose tests do not
         // have a Hilt ViewModel factory. Keep the frame-first preview path
-        // deterministic there; the app's @AndroidEntryPoint always resolves
-        // the page ViewModel above.
+        // deterministic there; the production navigation route supplies
+        // the page ViewModel from Hilt.
         TimelineScreenContent(
             viewModel = viewModel,
             overlay = overlay,
@@ -151,17 +150,6 @@ fun TimelineScreen(
         requestedScale = requestedScale,
         zone = zone,
     )
-}
-
-@Composable
-private fun resolveTimelinePageViewModel(
-    explicit: TimelinePageViewModel?,
-): TimelinePageViewModel? {
-    if (explicit != null) return explicit
-    // Existing JVM Compose tests intentionally host screens in a plain
-    // ComponentActivity. They do not install Hilt, so resolving the optional
-    // screen seam must not prevent those frame/FAB tests from rendering.
-    return runCatching { hiltViewModel<TimelinePageViewModel>() }.getOrNull()
 }
 
 @Composable
