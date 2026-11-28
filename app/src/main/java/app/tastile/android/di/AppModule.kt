@@ -102,11 +102,7 @@ object AppModule {
         object : DomainTileRepository {
             override suspend fun getTiles(filter: TileFilter): TilesResult {
                 val response = tileRepository.getTiles(filter)
-                return TilesResult(
-                    tiles = response.tiles,
-                    nextActionableTileId = response.nextActionableTileId,
-                    nextActionableStartAt = response.nextActionableStartAt,
-                )
+                return TilesResult(tiles = response.tiles)
             }
 
             override suspend fun createTile(userId: String, title: String) =

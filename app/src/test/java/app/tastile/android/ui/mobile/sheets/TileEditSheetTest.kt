@@ -77,7 +77,7 @@ class TileEditSheetTest {
         // selectedDay/scale combine) still runs, so stub getTimeline explicitly.
         every { authRepo.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()
-        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")
         coEvery { tileRepo.getTileDetail(any()) } returns null
         return DashboardViewModel(
@@ -259,7 +259,7 @@ class TileEditSheetTest {
             )
         )
         coEvery { tileRepo.getTimeline(any(), any()) } returns emptyList()
-        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepo.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { tileRepo.executionStateLookupForTile(any()) } returns
             app.tastile.android.data.command.ExecutionStateLookup.NoActiveExecution
         coEvery { profileRepo.getProfile(any()) } returns Profile(id = "user-1")

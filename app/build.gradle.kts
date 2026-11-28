@@ -47,8 +47,8 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         targetSdk = 35
         // Play has already accepted versionCode 31. Keep the checked-in
         // release baseline monotonic; CI must never re-upload that artifact.
-        versionCode = 33
-        versionName = "0.6.0"
+        versionCode = 34
+        versionName = "0.7.0"
 
         // R17 (android-archdoc audit 2026-07-16): instrumented UI navigation tests.
         // The runner swaps the production Application for Hilt's HiltTestApplication
@@ -467,7 +467,8 @@ tasks.register("verifySkillAdapterDrift") {
         // ProcessBuilder rather than providers.exec: the exit code of the
         // exec providers has moved between Gradle versions, and this gate must
         // not depend on which shape the current one exposes.
-        val process = ProcessBuilder("bash", script.absolutePath)
+        val process = ProcessBuilder("bash", "scripts/ci/sync-skill-adapters.sh")
+            .directory(rootProject.projectDir)
             .redirectErrorStream(true)
             .start()
         val output = process.inputStream.bufferedReader().use { it.readText() }
@@ -725,8 +726,21 @@ tasks.named("generateV1Api").configure {
                 val stripped = original
                     .replace(Regex("@JsonClass\\(generateAdapter = true\\)\\s*\n"), "")
                     .replace(Regex("@JsonClass\\(generateAdapter = false\\)\\s*\n"), "")
-                if (stripped != original) {
-                    file.writeText(stripped)
+                // The kotlin generator emits one `auth/<Scheme>Auth.kt` per
+                // security scheme but names every apiKey scheme `ApiKeyAuth`,
+                // so ApiClient.kt imports the same class once per apiKey
+                // scheme (CONFLICTING_IMPORT). The class is generic
+                // (location + paramName ctor args), so collapsing duplicate
+                // imports is sufficient (openapi v3.8.x added webAssertion /
+                // bridge / cookie apiKey schemes). The duplicates are not
+                // necessarily consecutive (HttpBearerAuth sits between them),
+                // so dedupe by first occurrence instead.
+                val seenImports = mutableSetOf<String>()
+                val deduped = (stripped.lines().filter { line ->
+                    !line.startsWith("import ") || seenImports.add(line)
+                }.joinToString("\n") + "\n")
+                if (deduped != original) {
+                    file.writeText(deduped)
                 }
             }
     }

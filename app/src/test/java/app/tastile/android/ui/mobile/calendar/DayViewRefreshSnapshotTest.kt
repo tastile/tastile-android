@@ -80,7 +80,7 @@ class DayViewRefreshSnapshotTest {
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList())
         return DashboardViewModel(
             authRepository,
             accessRepository,
@@ -92,7 +92,7 @@ class DayViewRefreshSnapshotTest {
     }
 
     private fun mockRepo(): TileRepository = mockk<TileRepository>(relaxed = true).also {
-        coEvery { it.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { it.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { it.getTimeline(any(), any(), any()) } returns emptyList()
     }
 
@@ -121,7 +121,7 @@ class DayViewRefreshSnapshotTest {
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
 
         val tileRepository = mockk<TileRepository>(relaxed = true)
-        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList())
         // getTimeline throws — this is the failure path we want to cover.
         coEvery { tileRepository.getTimeline(any(), any(), any()) } throws
             RuntimeException("net down")
@@ -163,7 +163,7 @@ class DayViewRefreshSnapshotTest {
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
 
         val tileRepository = mockk<TileRepository>(relaxed = true)
-        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList())
         // Build a tiny state machine that returns `initial` once then
         // `refreshed` for every subsequent call. The 1-arg + 3-arg
         // overloads are both common in this codebase; match both.

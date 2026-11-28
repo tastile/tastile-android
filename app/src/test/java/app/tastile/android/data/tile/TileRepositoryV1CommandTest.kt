@@ -116,28 +116,28 @@ class TileRepositoryV1CommandTest {
 
         assertNotNull(found)
         assertEquals("t-123", found!!.id)
-        io.mockk.coVerify(exactly = 0) { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) }
+        io.mockk.coVerify(exactly = 0) { apiClient.listAllTiles(TileFilter.DEFAULT.copy(limit = 500)) }
     }
 
     @Test
     fun fetchTileById_fallsBackToWiderReadOnVisibleMiss() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         coEvery { apiClient.getTiles() } returns cloudTileListResponse("t-other")
-        coEvery { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-123")
+        coEvery { apiClient.listAllTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-123").tiles
         val repository = newRepository(apiClient, mockk(relaxed = true))
 
         val found = repository.fetchTileById("t-123")
 
         assertNotNull(found)
         assertEquals("t-123", found!!.id)
-        io.mockk.coVerify(exactly = 1) { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) }
+        io.mockk.coVerify(exactly = 1) { apiClient.listAllTiles(TileFilter.DEFAULT.copy(limit = 500)) }
     }
 
     @Test
     fun fetchTileById_returnsNullWhenGenuinelyAbsent() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         coEvery { apiClient.getTiles() } returns cloudTileListResponse("t-other")
-        coEvery { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-other")
+        coEvery { apiClient.listAllTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-other").tiles
         val repository = newRepository(apiClient, mockk(relaxed = true))
 
         assertNull(repository.fetchTileById("t-123"))
@@ -149,7 +149,7 @@ class TileRepositoryV1CommandTest {
     fun fetchTileById_reusesWideListWithinTtl() = runTest {
         val apiClient = mockk<V1ApiClient>(relaxed = true)
         coEvery { apiClient.getTiles() } returns cloudTileListResponse("t-other")
-        coEvery { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-123")
+        coEvery { apiClient.listAllTiles(TileFilter.DEFAULT.copy(limit = 500)) } returns cloudTileListResponse("t-123").tiles
         val repository = newRepository(apiClient, mockk(relaxed = true))
 
         assertNotNull(repository.fetchTileById("t-123"))
@@ -157,7 +157,7 @@ class TileRepositoryV1CommandTest {
 
         // The 3.5s server-side wide read must happen once; the second tap
         // resolves from the 60s cache.
-        io.mockk.coVerify(exactly = 1) { apiClient.getTiles(TileFilter.DEFAULT.copy(limit = 500)) }
+        io.mockk.coVerify(exactly = 1) { apiClient.listAllTiles(TileFilter.DEFAULT.copy(limit = 500)) }
     }
 
     @Test

@@ -25,8 +25,12 @@ object V1Idempotency {
         bytes[7] = (tsLow and 0xFF).toByte()
         // variant 10xx in high 2 bits of byte 8
         bytes[8] = (0x80 or (random.nextInt() and 0x3F)).toByte()
-        // bits 72-127: random
-        random.nextBytes(bytes.copyOfRange(9, 16))
+        // bits 72-127: random. java.security.SecureRandom.nextBytes has no
+        // offset overload, so fill a scratch buffer and copy it into place;
+        // writing to a copyOfRange result would leave bytes[9..15] zeroed.
+        val randB = ByteArray(7)
+        random.nextBytes(randB)
+        randB.copyInto(bytes, destinationOffset = 9)
 
         val msb = ((bytes[0].toLong() and 0xFF) shl 56) or
             ((bytes[1].toLong() and 0xFF) shl 48) or

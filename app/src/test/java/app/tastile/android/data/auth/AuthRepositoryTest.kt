@@ -286,6 +286,30 @@ class AuthRepositoryTest {
         }
         coVerify(exactly = 0) { httpClient.signInWithGoogleIdToken(any()) }
     }
+
+    @Test
+    fun markUnauthenticated_forcesUnauthenticatedWithoutTouchingSessionLifecycle() = runTest {
+        val api = mockk<ApiTokenCache>(relaxed = true)
+        val httpClient = mockk<BetterAuthHttpClient>()
+        coEvery { httpClient.signIn(email = "alice@example.com", password = "hunter2") } returns BetterAuthSession(
+            sessionToken = "session-abc",
+            userId = "user-1",
+            email = "alice@example.com",
+            expiresAtEpochSeconds = null,
+        )
+        val repo = AuthRepository(context, httpClient, lazyOf(api), mockk<GoogleSignInLauncher>(relaxed = true))
+        repo.signInWithEmail(email = "alice@example.com", password = "hunter2")
+        assertTrue(repo.authState.value is TastileAuthState.Authenticated)
+
+        repo.markUnauthenticated()
+
+        assertEquals(TastileAuthState.Unauthenticated, repo.authState.value)
+        // The transition must not duplicate the sign-out lifecycle: the
+        // stored BetterAuth session survives and no revoke/wipe runs.
+        assertEquals("session-abc", repo.currentSessionToken())
+        coVerify(exactly = 0) { httpClient.signOut(any()) }
+        coVerify(exactly = 0) { api.signOut() }
+    }
 }
 
 private fun lazyOf(api: ApiTokenCache): Lazy<ApiTokenCache> = Lazy { api }

@@ -69,7 +69,7 @@ class DashboardViewModelTest {
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { profileRepository.getProfile("user-1") } returns Profile(id = "user-1")
         return DashboardViewModel(
@@ -243,15 +243,11 @@ class DashboardViewModelTest {
         val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         var response = TilesResponse(
             listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Ready")),
-            null,
-            null,
         )
         coEvery { tileRepository.getTiles(any()) } answers { response }
         coEvery { tileRepository.startTile("tile-1") } answers {
             response = TilesResponse(
                 listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
-                null,
-                null,
             )
             Tile(id = "tile-1", title = "Focus", lifecycle = "Started")
         }
@@ -275,8 +271,6 @@ class DashboardViewModelTest {
         every { authRepository.authState } returns authState
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
             listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
-            null,
-            null,
         )
         coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.NoActiveExecution
 
@@ -296,8 +290,6 @@ class DashboardViewModelTest {
         coEvery { tileRepository.continueTile("tile-1") } returns Unit
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
             listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
-            null,
-            null,
         )
         coEvery { tileRepository.executionStateLookupForTile("tile-1") } returnsMany listOf(
             ExecutionStateLookup.Found(1),
@@ -321,7 +313,7 @@ class DashboardViewModelTest {
         val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { tileRepository.pauseTile("tile-1") } returns Unit
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
-            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")), null, null,
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
         )
         coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.NoActiveExecution
         val viewModel = DashboardViewModel(authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
@@ -346,7 +338,7 @@ class DashboardViewModelTest {
         val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         coEvery { tileRepository.pauseTile("tile-1") } returns Unit
         coEvery { tileRepository.getTiles(any()) } returns TilesResponse(
-            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")), null, null,
+            listOf(Tile(id = "tile-1", title = "Focus", lifecycle = "Started")),
         )
         coEvery { tileRepository.executionStateLookupForTile("tile-1") } returns ExecutionStateLookup.InvalidExecution
         val viewModel = DashboardViewModel(authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
@@ -584,7 +576,7 @@ class DashboardViewModelTest {
         val (authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore) = mocks()
         val authStates = MutableStateFlow<TastileAuthState>(TastileAuthState.Unauthenticated)
         every { authRepository.authState } returns authStates
-        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(listOf(Tile(id = "tile-1", title = "Walk")), null, null)
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(listOf(Tile(id = "tile-1", title = "Walk")))
         val viewModel = DashboardViewModel(
             authRepository,
             accessRepository,
@@ -647,7 +639,7 @@ class DashboardViewModelTest {
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         return Mocks(authRepository, accessRepository, profileRepository, tileRepository, userSettingsRepository, referenceOverlayStore)
     }

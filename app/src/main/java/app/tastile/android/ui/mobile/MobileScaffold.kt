@@ -217,7 +217,13 @@ fun MobileScaffold(
                     navController = navController,
                     startDestination = START,
                 ) {
-                    composable("timeline") { TimelineScreen(viewModel = dashboardViewModel, overlay = overlayViewModel) }
+                    composable("timeline") {
+                        TimelineScreen(
+                            viewModel = dashboardViewModel,
+                            overlay = overlayViewModel,
+                            pageViewModel = hiltViewModel(),
+                        )
+                    }
                     composable("execute") {
                         Box(modifier = Modifier.padding(top = topPad)) {
                             ExecuteScreen(viewModel = dashboardViewModel)

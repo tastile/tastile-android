@@ -62,7 +62,7 @@ class DashboardViewModelSelectedTileTest {
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         return DashboardViewModel(
             authRepository,
@@ -109,7 +109,7 @@ class DashboardViewModelSelectedTileTest {
         every { authRepository.authState } returns MutableStateFlow(TastileAuthState.Unauthenticated)
         every { userSettingsRepository.getThemeMode() } returns ThemeMode.DARK
         every { userSettingsRepository.getLocale() } returns AppLocale.JA
-        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList(), null, null)
+        coEvery { tileRepository.getTiles(any()) } returns TilesResponse(emptyList())
         coEvery { tileRepository.getTimeline(any(), any()) } returns emptyList()
         coEvery { tileRepository.requestPrompt("tile-1") } returns false
         val vm = DashboardViewModel(
